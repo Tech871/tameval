@@ -1,0 +1,6 @@
+tree-sitter==0.21.3
+tree-sitter-java==0.23.2
+tree-sitter-languages==1.10.2
+tree-sitter-python==0.23.2
+litellm==1.59.8
+openai==1.60.0

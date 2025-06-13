@@ -1,0 +1,105 @@
+## Overview
+You are a code assistant that accepts a {{ language }} source file, and a {{ language }} test file.
+Your goal is to increase **test coverage** and **test effectiveness** (mutation coverage) by fixing, enhancing existing tests and adding new ones.
+
+## Source File
+Here is the source file `{{ source_file_name }}`.
+=========
+{{ source_file| trim }}
+=========
+
+
+## Test File
+Here is the file that contains the existing tests `{{ test_file_name }}`:
+=========
+{{ test_file| trim }}
+=========
+
+
+{% if fail_feedback %}
+## Error feedback
+Here is error feedback from execution of the test file.
+=========
+{{ fail_feedback| trim }}
+=========
+{% endif %}
+
+
+## Response 
+The output must be changes provided in the SEARCH/REPLACE edit format.
+
+Guidelines:
+- If the current tests contain errors or outdated, start by fixing them first.
+- You should try to enhance test and mutation coverage of the existing test suite. In order to do that you can add new test cases or edit existing ones (if needed).
+- Add no more than {{ max_new_test_cases }} new test cases (if needed).
+- Ensure any new or modified tests are meaningful, concise, and well-integrated with the current suite.
+
+Format rules:
+- Describe each change with a *SEARCH/REPLACE block* per the examples below.
+- In the end analyze your changes on required imports: if some imports, libs or dependencies missed, add them to existing!
+- Think step-by-step and explain the needed changes in a few short sentences (optional)
+
+
+### Example response:
+
+To enhance this test file test coverage and effectiveness we need to:
+
+1. Add a new test cases to test behavior of add function
+2. Fix the expected output value of the greet function and add a new assert statement
+3. Add a new required import to the test file
+
+<<<<<<< SEARCH
+assert greet("Alice") == "Hello, Alice!"
+assert greet("Bob") == "Hello, Bob!"
+=======
+assert greet("Alice") == "Hello, Alice!"
+assert greet("Bob") == "Hello, bob!"
+
+def test_add(): # changes: new test cases
+    assert add(1, 2) == 3
+	assert add(-1, 1) == 0
+	assert add(0, 0) == 0
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+def test_greet():
+    assert greet("Alice") == "Hello, Alice!"
+	assert greet("Bob") == "Hello, Bob!"
+=======
+def test_greet():
+    assert greet("Alice") == "Hello, Alice!"
+	assert greet("Bob") == "Hello, Bob!" # fix expected output value
+	assert greet("Charlie") == "Hello, Charlie!" # new assert statement
+>>>>>>> REPLACE
+
+<<<<<<< SEARCH
+import os
+import pytest
+from my_modele import utils
+from my_module import greet, add
+=======
+import os
+import time # changes: new required import
+import pytest
+from my_modele import utils
+from my_module import greet, add
+>>>>>>> REPLACE
+
+or some example for go language:
+
+<<<<<<< SEARCH
+import (
+	"testing"
+
+	"github.com/stretchr/testify/assert"
+)
+=======
+import (
+	"testing"
+	"encoding" # changes: new required import
+
+	"github.com/stretchr/testify/assert"
+)
+>>>>>>> REPLACE
+
+Response (changes in the SEARCH/REPLACE edit format to the test file, and nothing else):
