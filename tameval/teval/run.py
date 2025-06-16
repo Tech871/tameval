@@ -3,6 +3,7 @@ import json
 import time
 import tomli
 import random
+import clearml
 import argparse
 import subprocess
 from glob import glob
@@ -174,8 +175,15 @@ def main(args: argparse.Namespace):
     # prepare: init experiment tracker
     tracker = None
     if args.clearml_task_name is not None and args.clearml_task_name:
-        clearml_task_name = f"{args.model_to_eval} | {args.edit_format} | {args.exp_tag}: {args.clearml_task_name}"
-        tracker = ClearMLTracker(task_name=clearml_task_name, env_path=args.env_file)
+        try:
+            clearml_task_name = f"{args.model_to_eval} | {args.edit_format} | {args.exp_tag}: {args.clearml_task_name}"
+            tracker = ClearMLTracker(
+                task_name=clearml_task_name, env_path=args.env_file
+            )
+        except clearml.backend_api.session.defs.MissingConfigError:
+            print("ClearML is not configured. Skipping ClearML tracking.")
+            args.clearml_task_name = None
+            tracker = None
 
     ### **evaluation loop** ###
     tasks_to_eval = args.tasks_to_eval.split(",")
@@ -212,13 +220,13 @@ def main(args: argparse.Namespace):
         mut_run_command = sample["run_info"]["mutation_run_command"]
         docker_test_run_command = docker_wrap.format(
             proj_path="$(pwd)/" + str(tmp_path),
-            host="/",
+            host="$HOME",
             img=image,
             cmd=test_run_command,
         )
         docker_mut_run_command = docker_wrap.format(
             proj_path="$(pwd)/" + str(tmp_path),
-            host="/",
+            host="$HOME",
             img=image,
             cmd=mut_run_command,
         )
@@ -226,7 +234,7 @@ def main(args: argparse.Namespace):
         if sample["run_info"].get("mut_run_fallback_command", None) is not None:
             mut_run_fallback_command = docker_wrap.format(
                 proj_path="$(pwd)/" + str(tmp_path),
-                host="/",
+                host="$HOME",
                 img=image,
                 cmd=sample["run_info"]["mut_run_fallback_command"],
             )
@@ -266,10 +274,6 @@ def main(args: argparse.Namespace):
             eval_result["repo"] = repo_name
             eval_result["attempt"] = sample_to_eval.get("attempt", 0) + 1
 
-            # if tracker is not None:
-            #     tracker.upload_eval_instance_result(
-            #         eval_result, name=sample_to_eval["_result_path"].split("/")[-1]
-            #     )
         except Exception as e:
             print("Exception: rewrite test file with its original content.")
             raise e
