@@ -33,3 +33,19 @@ and create `tameval/.env` with LLM_API_KEY (like in `tameval/.env_sample`)
 cd tameval
 sh run_model_evals.sh
 ```
+
+## Repo structure
+
+```
+tameval/
+    ├── benchmark
+    │   └── v1 # benchmark instances
+    ├── run.py # main entrypoint
+    ├── run_model_evals.sh # example run
+    ├── setup/ # preparing stage scripts
+    ├── generate/ # generation stage scripts
+    ├── teval/ # evaluation stage scripts
+    ├── download/ # dir for storing benchmark repos
+    ├── outputs/  # dir for storing LLMs outputs
+    └── results/  # dir for storing evaluation results
+```
