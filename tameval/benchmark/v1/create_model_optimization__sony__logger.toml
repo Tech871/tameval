@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "sony/model_optimization"
+sha = "0c4bc5984cea42c5cde2b05d4f3032596b054a4c"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=model_compression_toolkit/logger.py -m pytest -q --junit-xml=test_output.xml tests/common_tests/function_tests/test_logger.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target model_compression_toolkit.logger --unit-test tests.common_tests.function_tests.test_logger --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target model_compression_toolkit/logger.py --unit-test tests/common_tests/function_tests/test_logger.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 62.0
+original_coverage = 98.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 16, 17, 18, 19, 21, 24, 26, 33, 35, 36, 47, 48, 59, 60, 66, 67, 94, 95, 100, 101, 107, 108, 118, 119, 127, 129, 130, 140, 141, 151, 152, 163, 172, 173,]
+missed_lines = [ 44, 45, 56, 57, 64, 76, 78, 80, 81, 83, 84, 86, 88, 89, 90, 92, 115, 116, 138, 149, 160,]
+
+[input_info]
+test_file_path = "tests/common_tests/function_tests/test_logger.py"
+focal_file_path = "model_compression_toolkit/logger.py"
+test_file_url = "https://github.com/sony/model_optimization/blob/0c4bc5984cea42c5cde2b05d4f3032596b054a4c/tests/common_tests/function_tests/test_logger.py"
+focal_file_url = "https://github.com/sony/model_optimization/blob/0c4bc5984cea42c5cde2b05d4f3032596b054a4c/model_compression_toolkit/logger.py"
+first_commit_date = "2023-05-02"
+last_commit_date = "2025-01-28"
+test_file_content = "#  Copyright 2024 Sony Semiconductor Israel, Inc. All rights reserved.\n#  #\n#  Licensed under the Apache License, Version 2.0 (the \"License\");\n#  you may not use this file except in compliance with the License.\n#  You may obtain a copy of the License at\n#  #\n#      http://www.apache.org/licenses/LICENSE-2.0\n#  #\n#  Unless required by applicable law or agreed to in writing, software\n#  distributed under the License is distributed on an \"AS IS\" BASIS,\n#  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n#  See the License for the specific language governing permissions and\n#  limitations under the License.\n#  ==============================================================================\n\n\nimport unittest\nfrom unittest.mock import patch, MagicMock\nimport logging\nfrom io import StringIO\n\nfrom model_compression_toolkit.logger import Logger, set_log_folder\n\n\nclass TestLogger(unittest.TestCase):\n    def setUp(self):\n        self.log_folder = \"test_logs\"\n        self.log_level = logging.DEBUG\n        self.log_message = \"Test message\"\n\n\n\n\n\n    @patch('model_compression_toolkit.logger.logging.shutdown')\n    def test_shutdown(self, mock_shutdown):\n        Logger.shutdown()\n        mock_shutdown.assert_called_once()\n        self.assertIsNone(Logger.LOG_PATH)\n\n\n    @patch('model_compression_toolkit.logger.Logger.get_logger')\n    def test_debug(self, mock_get_logger):\n        logger_mock = MagicMock()\n        mock_get_logger.return_value = logger_mock\n        Logger.debug(self.log_message)\n        logger_mock.debug.assert_called_once_with(self.log_message)\n\n\n\n\n    @patch('model_compression_toolkit.logger.Logger.set_log_file')\n    @patch('model_compression_toolkit.logger.Logger.set_logger_level')\n    def test_set_log_folder(self, mock_set_logger_level, mock_set_log_file):\n        set_log_folder(self.log_folder, self.log_level)\n        mock_set_log_file.assert_called_once_with(self.log_folder)\n        mock_set_logger_level.assert_called_once_with(self.log_level)\n\n\nif __name__ == '__main__':\n    unittest.main()\n"

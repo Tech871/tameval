@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "milvus-io/milvus"
+sha = "16efcda5c46748062abcfe563f70e1e2e53d0da1"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/util/function/models/voyageai/voyageai_text_embedding.go internal/util/function/models/voyageai/voyageai_text_embedding_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/util/function/models/voyageai/voyageai_text_embedding.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 82.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/util/function/models/voyageai/voyageai_text_embedding_test.go"
+focal_file_path = "internal/util/function/models/voyageai/voyageai_text_embedding.go"
+test_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/internal/util/function/models/voyageai/voyageai_text_embedding_test.go"
+focal_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/internal/util/function/models/voyageai/voyageai_text_embedding.go"
+first_commit_date = "2025-01-24"
+last_commit_date = "2025-03-10"
+test_file_content = "// Licensed to the LF AI & Data foundation under one\n// or more contributor license agreements. See the NOTICE file\n// distributed with this work for additional information\n// regarding copyright ownership. The ASF licenses this file\n// to you under the Apache License, Version 2.0 (the\n// \"License\"); you may not use this file except in compliance\n// with the License. You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage voyageai\n\nimport (\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestEmbeddingClientCheck(t *testing.T) {\n\t{\n\t\tc := NewVoyageAIEmbeddingClient(\"\", \"mock_uri\")\n\t\terr := c.Check()\n\t\tassert.True(t, err != nil)\n\t\tfmt.Println(err)\n\t}\n\n\t{\n\t\tc := NewVoyageAIEmbeddingClient(\"mock_key\", \"\")\n\t\terr := c.Check()\n\t\tassert.True(t, err != nil)\n\t\tfmt.Println(err)\n\t}\n\n\t{\n\t\tc := NewVoyageAIEmbeddingClient(\"mock_key\", \"mock_uri\")\n\t\terr := c.Check()\n\t\tassert.True(t, err == nil)\n\t}\n}\n\nfunc TestEmbeddingOK(t *testing.T) {\n\tvar res EmbeddingResponse[float32]\n\trepStr := `{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"object\": \"embedding\",\n      \"embedding\": [\n        0.0,\n        0.1\n      ],\n      \"index\": 0\n    },\n    {\n      \"object\": \"embedding\",\n      \"embedding\": [\n        2.0,\n        2.1\n      ],\n      \"index\": 2\n    },\n    {\n      \"object\": \"embedding\",\n      \"embedding\": [\n        1.0,\n        1.1\n      ],\n      \"index\": 1\n    }\n  ],\n  \"model\": \"voyage-large-2\",\n  \"usage\": {\n    \"total_tokens\": 10\n  }\n}`\n\terr := json.Unmarshal([]byte(repStr), &res)\n\tassert.NoError(t, err)\n\tts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t\tdata, _ := json.Marshal(res)\n\t\tw.Write(data)\n\t}))\n\n\tdefer ts.Close()\n\turl := ts.URL\n\n\t{\n\t\tc := NewVoyageAIEmbeddingClient(\"mock_key\", url)\n\t\terr := c.Check()\n\t\tassert.True(t, err == nil)\n\t\tr, err := c.Embedding(\"voyage-3\", []string{\"sentence\"}, 0, \"query\", \"float\", 0)\n\t\tret := r.(*EmbeddingResponse[float32])\n\t\tassert.True(t, err == nil)\n\t\tassert.Equal(t, ret.Data[0].Index, 0)\n\t\tassert.Equal(t, ret.Data[1].Index, 1)\n\t\tassert.Equal(t, ret.Data[2].Index, 2)\n\n\t\tassert.Equal(t, ret.Data[0].Embedding, []float32{0.0, 0.1})\n\t\tassert.Equal(t, ret.Data[1].Embedding, []float32{1.0, 1.1})\n\t\tassert.Equal(t, ret.Data[2].Embedding, []float32{2.0, 2.1})\n\t}\n}\n\nfunc TestEmbeddingInt8Embed(t *testing.T) {\n\tvar res EmbeddingResponse[int8]\n\trepStr := `{\n  \"object\": \"list\",\n  \"data\": [\n    {\n      \"object\": \"embedding\",\n      \"embedding\": [\n        1,2\n      ],\n      \"index\": 0\n    },\n    {\n      \"object\": \"embedding\",\n      \"embedding\": [\n        5,6\n      ],\n      \"index\": 2\n    },\n    {\n      \"object\": \"embedding\",\n      \"embedding\": [\n        3,4\n      ],\n      \"index\": 1\n    }\n  ],\n  \"model\": \"voyage-large-2\",\n  \"usage\": {\n    \"total_tokens\": 10\n  }\n}`\n\terr := json.Unmarshal([]byte(repStr), &res)\n\tassert.NoError(t, err)\n\tts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t\tdata, _ := json.Marshal(res)\n\t\tw.Write(data)\n\t}))\n\n\tdefer ts.Close()\n\turl := ts.URL\n\n\t{\n\t\tc := NewVoyageAIEmbeddingClient(\"mock_key\", url)\n\t\terr := c.Check()\n\t\tassert.True(t, err == nil)\n\t\tr, err := c.Embedding(\"voyage-3\", []string{\"sentence\"}, 0, \"query\", \"int8\", 0)\n\t\tret := r.(*EmbeddingResponse[int8])\n\t\tassert.True(t, err == nil)\n\t\tassert.Equal(t, ret.Data[0].Index, 0)\n\t\tassert.Equal(t, ret.Data[1].Index, 1)\n\t\tassert.Equal(t, ret.Data[2].Index, 2)\n\n\t\tassert.Equal(t, ret.Data[0].Embedding, []int8{1, 2})\n\t\tassert.Equal(t, ret.Data[1].Embedding, []int8{3, 4})\n\t\tassert.Equal(t, ret.Data[2].Embedding, []int8{5, 6})\n\n\t\t_, err = c.Embedding(\"voyage-3\", []string{\"sentence\"}, 0, \"query\", \"unknow\", 0)\n\t\tassert.Error(t, err)\n\t}\n}\n\nfunc TestEmbeddingFailed(t *testing.T) {\n\tts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusUnauthorized)\n\t}))\n\n\tdefer ts.Close()\n\turl := ts.URL\n\n\t{\n\t\tc := NewVoyageAIEmbeddingClient(\"mock_key\", url)\n\t\terr := c.Check()\n\t\tassert.True(t, err == nil)\n\t\t_, err = c.Embedding(\"voyage-3\", []string{\"sentence\"}, 0, \"query\", \"float\", 0)\n\t\tassert.True(t, err != nil)\n\t}\n}"

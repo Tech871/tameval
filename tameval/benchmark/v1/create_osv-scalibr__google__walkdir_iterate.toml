@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.4"
+
+[repo_info]
+repository = "google/osv-scalibr"
+sha = "68757353cde699f714e3edbe2ef641c84e737ac6"
+
+[run_info]
+docker_image = "golang:1.23.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out extractor/filesystem/internal/walkdir_iterate.go extractor/filesystem/internal/walkdir_iterate_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting extractor/filesystem/internal/walkdir_iterate.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 69.0
+mutation_kill_rate = 31.25
+original_mutation_kill_rate = nan
+covered_lines = [ 39, 40, 41, 46, 49, 65, 66, 67, 68, 69, 70, 71, 86, 94, 105, 106, 109, 110, 111, 115, 119, 120, 125, 140, 154, 163, 164, 165, 166, 168, 172, 176,]
+missed_lines = [ 42, 43, 44, 45, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 62, 76, 77, 78, 79, 80, 81, 84, 87, 88, 89, 91, 107, 108, 112, 113, 114, 121, 122, 123, 126, 127, 128, 129, 130, 131, 132, 134, 135, 136, 137, 138, 155, 156, 157, 158, 159, 160, 173, 174, 175,]
+
+[input_info]
+test_file_path = "extractor/filesystem/internal/walkdir_iterate_test.go"
+focal_file_path = "extractor/filesystem/internal/walkdir_iterate.go"
+test_file_url = "https://github.com/google/osv-scalibr/blob/68757353cde699f714e3edbe2ef641c84e737ac6/extractor/filesystem/internal/walkdir_iterate_test.go"
+focal_file_url = "https://github.com/google/osv-scalibr/blob/68757353cde699f714e3edbe2ef641c84e737ac6/extractor/filesystem/internal/walkdir_iterate.go"
+first_commit_date = "2024-05-14"
+last_commit_date = "2025-02-27"
+test_file_content = "// Copyright 2025 Google LLC\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\n// These are the same tests as in io/fs/walk_test.go, but ignoring the order of walking.\npackage internal\n\nimport (\n\t\"errors\"\n\t\"io\"\n\t\"io/fs\"\n\t\"os\"\n\tpathpkg \"path\"\n\t\"testing\"\n\t\"testing/fstest\"\n\t\"time\"\n\n\tscalibrfs \"github.com/google/osv-scalibr/fs\"\n)\n\ntype Node struct {\n\tname    string\n\tentries []*Node // nil if the entry is a file\n\tmark    int\n}\n\nvar tree = &Node{\n\t\"testdata\",\n\t[]*Node{\n\t\t{\"a\", nil, 0},\n\t\t{\"b\", []*Node{}, 0},\n\t\t{\"c\", nil, 0},\n\t\t{\n\t\t\t\"d\",\n\t\t\t[]*Node{\n\t\t\t\t{\"x\", nil, 0},\n\t\t\t\t{\"y\", []*Node{}, 0},\n\t\t\t\t{\n\t\t\t\t\t\"z\",\n\t\t\t\t\t[]*Node{\n\t\t\t\t\t\t{\"u\", nil, 0},\n\t\t\t\t\t\t{\"v\", nil, 0},\n\t\t\t\t\t},\n\t\t\t\t\t0,\n\t\t\t\t},\n\t\t\t},\n\t\t\t0,\n\t\t},\n\t},\n\t0,\n}\n\nfunc walkTree(n *Node, path string, f func(path string, n *Node)) {\n\tf(path, n)\n\tfor _, e := range n.entries {\n\t\twalkTree(e, pathpkg.Join(path, e.name), f)\n\t}\n}\n\nfunc makeTree() scalibrfs.FS {\n\tfsys := fstest.MapFS{}\n\twalkTree(tree, tree.name, func(path string, n *Node) {\n\t\tif n.entries == nil {\n\t\t\tfsys[path] = &fstest.MapFile{}\n\t\t} else {\n\t\t\tfsys[path] = &fstest.MapFile{Mode: fs.ModeDir}\n\t\t}\n\t})\n\treturn fsys\n}\n\n// Assumes that each node name is unique. Good enough for a test.\n// If clearErr is true, any incoming error is cleared before return. The errors\n// are always accumulated, though.\nfunc mark(tree *Node, entry fs.DirEntry, err error, errors *[]error, clearErr bool) error {\n\tname := entry.Name()\n\twalkTree(tree, tree.name, func(path string, n *Node) {\n\t\tif n.name == name {\n\t\t\tn.mark++\n\t\t}\n\t})\n\tif err != nil {\n\t\t*errors = append(*errors, err)\n\t\tif clearErr {\n\t\t\treturn nil\n\t\t}\n\t\treturn err\n\t}\n\treturn nil\n}\n\nfunc TestWalkDir(t *testing.T) {\n\ttmpDir := t.TempDir()\n\n\torigDir, err := os.Getwd()\n\tif err != nil {\n\t\tt.Fatal(\"finding working dir:\", err)\n\t}\n\tif err = os.Chdir(tmpDir); err != nil {\n\t\tt.Fatal(\"entering temp dir:\", err)\n\t}\n\t//nolint:errcheck\n\tdefer os.Chdir(origDir)\n\n\tfsys := makeTree()\n\terrors := make([]error, 0, 10)\n\tclearErr := true\n\tmarkFn := func(path string, entry fs.DirEntry, err error) error {\n\t\treturn mark(tree, entry, err, &errors, clearErr)\n\t}\n\t// Expect no errors.\n\terr = WalkDirUnsorted(fsys, \".\", markFn)\n\tif err != nil {\n\t\tt.Fatalf(\"no error expected, found: %s\", err)\n\t}\n\tif len(errors) != 0 {\n\t\tt.Fatalf(\"unexpected errors: %s\", errors)\n\t}\n\twalkTree(tree, tree.name, func(path string, n *Node) {\n\t\tif n.mark != 1 {\n\t\t\tt.Errorf(\"node %s mark = %d; expected 1\", path, n.mark)\n\t\t}\n\t\tn.mark = 0\n\t})\n}\n\n\n// FS implementation that doesn't implement ReadDirFile on the sub-directories.\ntype fakeFS struct{}\n\nfunc (f fakeFS) Open(name string) (fs.File, error) {\n\treturn &fakeFile{}, nil\n}\nfunc (fakeFS) ReadDir(name string) ([]fs.DirEntry, error) {\n\tif name == \".\" { // root dir\n\t\treturn []fs.DirEntry{\n\t\t\t&fakeDirEntry{name: \"file1.txt\", isDir: false},\n\t\t\t&fakeDirEntry{name: \"dir\", isDir: true},\n\t\t}, nil\n\t} else if name == \"dir\" {\n\t\treturn []fs.DirEntry{&fakeDirEntry{name: \"file2.txt\", isDir: false}}, nil\n\t}\n\treturn nil, errors.New(\"file not found\")\n}\nfunc (fakeFS) Stat(name string) (fs.FileInfo, error) {\n\treturn &fakeDirEntry{name: name, isDir: name == \".\" || name == \"dir\"}, nil\n}\n\ntype fakeFile struct{}\n\nfunc (f *fakeFile) Stat() (fs.FileInfo, error)                { return nil, nil }\nfunc (f *fakeFile) Read(buffer []byte) (count int, err error) { return 0, io.EOF }\nfunc (*fakeFile) Close() error                                { return nil }\n\nvar fakeFSTree = &Node{\n\t\".\",\n\t[]*Node{\n\t\t{\"file1.txt\", nil, 0},\n\t\t{\n\t\t\t\"dir\",\n\t\t\t[]*Node{{\"file2.txt\", nil, 0}},\n\t\t\t0,\n\t\t},\n\t},\n\t0,\n}\n\ntype fakeDirEntry struct {\n\tname  string\n\tisDir bool\n}\n\nfunc (f *fakeDirEntry) Name() string               { return f.name }\nfunc (f *fakeDirEntry) Size() int64                { return 0 }\nfunc (f *fakeDirEntry) Mode() fs.FileMode          { return 0 }\nfunc (f *fakeDirEntry) ModTime() time.Time         { return time.Time{} }\nfunc (f *fakeDirEntry) IsDir() bool                { return f.isDir }\nfunc (f *fakeDirEntry) Type() fs.FileMode          { return 0 }\nfunc (f *fakeDirEntry) Info() (fs.FileInfo, error) { return nil, errors.New(\"not implemented\") }\nfunc (f *fakeDirEntry) Sys() any                   { return nil }\n"

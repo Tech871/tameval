@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jdholtz/auto-southwest-check-in"
+sha = "08010e2aaea522c42913addf8ffdc5485b06ddb7"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=southwest.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_southwest.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target southwest --unit-test tests.unit.test_southwest --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target southwest.py --unit-test tests/unit/test_southwest.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 3, 5, 7, 25, 26, 29, 30, 31, 34, 36, 37, 38, 39, 40, 41, 44, 45, 49, 51,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/unit/test_southwest.py"
+focal_file_path = "southwest.py"
+test_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/tests/unit/test_southwest.py"
+focal_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/southwest.py"
+first_commit_date = "2022-04-16"
+last_commit_date = "2025-03-10"
+test_file_content = "import pytest\nfrom pytest_mock import MockerFixture\n\nimport southwest\n\n\ndef test_print_version_prints_script_version(capsys: pytest.CaptureFixture[str]) -> None:\n    southwest.print_version()\n    assert southwest.__version__ in capsys.readouterr().out\n\n\ndef test_print_usage_prints_script_usage(capsys: pytest.CaptureFixture[str]) -> None:\n    southwest.print_usage()\n    output = capsys.readouterr().out\n    assert southwest.__version__ in output\n    assert southwest.__doc__ in output\n\n\n@pytest.mark.parametrize(\"flag\", [\"-V\", \"--version\"])\ndef test_check_flags_prints_version_when_version_flag_is_passed(\n    mocker: MockerFixture,\n    flag: str,\n) -> None:\n    mock_print_version = mocker.patch(\"southwest.print_version\")\n\n    with pytest.raises(SystemExit):\n        southwest.check_flags([flag])\n\n    mock_print_version.assert_called_once()\n\n\n@pytest.mark.parametrize(\"arguments\", [[\"-h\"], [\"--help\"]])\ndef test_check_flags_prints_usage_when_help_flag_is_passed(\n    mocker: MockerFixture,\n    arguments: list[str],\n) -> None:\n    mock_print_usage = mocker.patch(\"southwest.print_usage\")\n\n    with pytest.raises(SystemExit):\n        southwest.check_flags(arguments)\n\n    mock_print_usage.assert_called_once()\n\n\ndef test_check_flags_does_not_exit_when_flags_are_not_matched(\n    mocker: MockerFixture,\n) -> None:\n    mock_exit = mocker.patch(\"sys.exit\")\n    southwest.check_flags([\"--invalid-flag\"])\n    mock_exit.assert_not_called()\n\n\ndef test_init_sets_up_the_script(mocker: MockerFixture) -> None:\n    mock_check_flags = mocker.patch(\"southwest.check_flags\")\n    mock_main = mocker.patch(\"lib.main.main\")\n    arguments = [\"test\", \"arguments\", \"--verbose\", \"-v\"]\n\n    southwest.init(arguments)\n    mock_check_flags.assert_called_once_with(arguments)\n\n    mock_main.assert_called_once_with(arguments, southwest.__version__)\n\n\ndef test_version_output_verification(capsys: pytest.CaptureFixture[str]) -> None:\n    southwest.print_version()\n    captured = capsys.readouterr()\n    assert \"Auto-Southwest Check-In \" in captured.out\n    assert southwest.__version__ in captured.out\n\n\ndef test_verify_help_flag_behavior(mocker: MockerFixture) -> None:\n    mock_print_usage = mocker.patch(\"southwest.print_usage\")\n    mock_sys_exit = mocker.patch(\"sys.exit\")\n    \n    southwest.check_flags([\"--help\"])\n    \n    mock_print_usage.assert_called_once()\n    mock_sys_exit.assert_called_once()"

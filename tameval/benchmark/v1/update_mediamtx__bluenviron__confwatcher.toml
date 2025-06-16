@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "bluenviron/mediamtx"
+sha = "416ac1357ea1125768a6e874f695656f510bd524"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/confwatcher/confwatcher.go internal/confwatcher/confwatcher_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/confwatcher/confwatcher.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 84.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/confwatcher/confwatcher_test.go"
+focal_file_path = "internal/confwatcher/confwatcher.go"
+test_file_url = "https://github.com/bluenviron/mediamtx/blob/416ac1357ea1125768a6e874f695656f510bd524/internal/confwatcher/confwatcher_test.go"
+focal_file_url = "https://github.com/bluenviron/mediamtx/blob/416ac1357ea1125768a6e874f695656f510bd524/internal/confwatcher/confwatcher.go"
+first_commit_date = "2020-11-01"
+last_commit_date = "2025-03-16"
+test_file_content = "package confwatcher\n\nimport (\n\t\"os\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/bluenviron/mediamtx/internal/test\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestNoFile(t *testing.T) {\n\t_, err := New(\"/nonexistent\")\n\trequire.Error(t, err)\n}\n\nfunc TestWrite(t *testing.T) {\n\tfpath, err := test.CreateTempFile([]byte(\"{}\"))\n\trequire.NoError(t, err)\n\n\tw, err := New(fpath)\n\trequire.NoError(t, err)\n\tdefer w.Close()\n\n\tfunc() {\n\t\tf, err := os.Create(fpath)\n\t\trequire.NoError(t, err)\n\t\tdefer f.Close()\n\n\t\t_, err = f.Write([]byte(\"{}\"))\n\t\trequire.NoError(t, err)\n\t}()\n\n\tselect {\n\tcase <-w.Watch():\n\tcase <-time.After(500 * time.Millisecond):\n\t\tt.Errorf(\"timed out\")\n\t\treturn\n\t}\n}\n\nfunc TestWriteMultipleTimes(t *testing.T) {\n\tfpath, err := test.CreateTempFile([]byte(\"{}\"))\n\trequire.NoError(t, err)\n\n\tw, err := New(fpath)\n\trequire.NoError(t, err)\n\tdefer w.Close()\n\n\tfunc() {\n\t\tf, err := os.Create(fpath)\n\t\trequire.NoError(t, err)\n\t\tdefer f.Close()\n\n\t\t_, err = f.Write([]byte(\"{}\"))\n\t\trequire.NoError(t, err)\n\t}()\n\n\ttime.Sleep(10 * time.Millisecond)\n\n\tfunc() {\n\t\tf, err := os.Create(fpath)\n\t\trequire.NoError(t, err)\n\t\tdefer f.Close()\n\n\t\t_, err = f.Write([]byte(\"{}\"))\n\t\trequire.NoError(t, err)\n\t}()\n\n\tselect {\n\tcase <-w.Watch():\n\tcase <-time.After(500 * time.Millisecond):\n\t\tt.Errorf(\"timed out\")\n\t\treturn\n\t}\n\n\tselect {\n\tcase <-time.After(500 * time.Millisecond):\n\tcase <-w.Watch():\n\t\tt.Errorf(\"should not happen\")\n\t\treturn\n\t}\n}\n\nfunc TestDeleteCreate(t *testing.T) {\n\tfpath, err := test.CreateTempFile([]byte(\"{}\"))\n\trequire.NoError(t, err)\n\n\tw, err := New(fpath)\n\trequire.NoError(t, err)\n\tdefer w.Close()\n\n\tos.Remove(fpath)\n\ttime.Sleep(10 * time.Millisecond)\n\n\tfunc() {\n\t\tf, err := os.Create(fpath)\n\t\trequire.NoError(t, err)\n\t\tdefer f.Close()\n\n\t\t_, err = f.Write([]byte(\"{}\"))\n\t\trequire.NoError(t, err)\n\t}()\n\n\tselect {\n\tcase <-w.Watch():\n\tcase <-time.After(500 * time.Millisecond):\n\t\tt.Errorf(\"timed out\")\n\t\treturn\n\t}\n}\n\nfunc TestSymlinkDeleteCreate(t *testing.T) {\n\tfpath, err := test.CreateTempFile([]byte(\"{}\"))\n\trequire.NoError(t, err)\n\n\terr = os.Symlink(fpath, fpath+\"-sym\")\n\trequire.NoError(t, err)\n\n\tw, err := New(fpath + \"-sym\")\n\trequire.NoError(t, err)\n\tdefer w.Close()\n\n\tos.Remove(fpath)\n\n\tfunc() {\n\t\tf, err := os.Create(fpath)\n\t\trequire.NoError(t, err)\n\t\tdefer f.Close()\n\n\t\t_, err = f.Write([]byte(\"{}\"))\n\t\trequire.NoError(t, err)\n\t}()\n\n\tselect {\n\tcase <-w.Watch():\n\tcase <-time.After(500 * time.Millisecond):\n\t\tt.Errorf(\"timed out\")\n\t\treturn\n\t}\n}"

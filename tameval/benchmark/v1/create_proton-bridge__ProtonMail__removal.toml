@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "ProtonMail/proton-bridge"
+sha = "42605c1923d73f0989027dce4a36c3681206f436"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/files/removal.go pkg/files/removal_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/files/removal.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = 64.0
+original_mutation_kill_rate = 64.0
+covered_lines = [ 34, 35, 36, 38, 39, 40, 41, 43, 44, 45, 46, 52, 55, 56, 57, 58, 59, 60, 61, 62, 65, 66, 67, 72, 73, 74, 75, 81,]
+missed_lines = [ 47, 48, 49, 68, 69, 70, 76, 77, 78,]
+
+[input_info]
+test_file_path = "pkg/files/removal_test.go"
+focal_file_path = "pkg/files/removal.go"
+test_file_url = "https://github.com/ProtonMail/proton-bridge/blob/42605c1923d73f0989027dce4a36c3681206f436/pkg/files/removal_test.go"
+focal_file_url = "https://github.com/ProtonMail/proton-bridge/blob/42605c1923d73f0989027dce4a36c3681206f436/pkg/files/removal.go"
+first_commit_date = "2021-01-15"
+last_commit_date = "2025-01-02"
+test_file_content = "// Copyright (c) 2025 Proton AG\n//\n// This file is part of Proton Mail Bridge.\n//\n// Proton Mail Bridge is free software: you can redistribute it and/or modify\n// it under the terms of the GNU General Public License as published by\n// the Free Software Foundation, either version 3 of the License, or\n// (at your option) any later version.\n//\n// Proton Mail Bridge is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU General Public License for more details.\n//\n// You should have received a copy of the GNU General Public License\n// along with Proton Mail Bridge. If not, see <https://www.gnu.org/licenses/>.\n\npackage files\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\n\nfunc TestRemoveWithExceptions(t *testing.T) {\n\tdir := newTestDir(t,\n\t\t\"subdir1\",\n\t\t\"subdir2/subdir3\",\n\t\t\"subdir4\",\n\t)\n\tdefer delTestDir(t, dir)\n\n\tcreateTestFiles(t, dir,\n\t\t\"subdir1/file1\",\n\t\t\"subdir1/file2\",\n\t\t\"subdir2/file3\",\n\t\t\"subdir2/file4\",\n\t\t\"subdir2/subdir3/file5\",\n\t\t\"subdir2/subdir3/file6\",\n\t\t\"subdir4/file7\",\n\t\t\"subdir4/file8\",\n\t)\n\n\trequire.NoError(t, Remove(dir).Except(\n\t\tfilepath.Join(dir, \"subdir2\", \"file4\"),\n\t\tfilepath.Join(dir, \"subdir2\", \"subdir3\", \"file6\"),\n\t\tfilepath.Join(dir, \"subdir4\"),\n\t).Do())\n\n\tassert.NoFileExists(t, filepath.Join(dir, \"subdir1\", \"file1\"))\n\tassert.NoFileExists(t, filepath.Join(dir, \"subdir1\", \"file2\"))\n\tassert.NoFileExists(t, filepath.Join(dir, \"subdir2\", \"file3\"))\n\tassert.FileExists(t, filepath.Join(dir, \"subdir2\", \"file4\"))\n\tassert.NoFileExists(t, filepath.Join(dir, \"subdir2\", \"subdir3\", \"file5\"))\n\tassert.FileExists(t, filepath.Join(dir, \"subdir2\", \"subdir3\", \"file6\"))\n\tassert.FileExists(t, filepath.Join(dir, \"subdir4\", \"file7\"))\n\tassert.FileExists(t, filepath.Join(dir, \"subdir4\", \"file8\"))\n}\n\nfunc newTestDir(t *testing.T, subdirs ...string) string {\n\tdir := t.TempDir()\n\n\tfor _, target := range subdirs {\n\t\trequire.NoError(t, os.MkdirAll(filepath.Join(dir, target), 0o700))\n\t}\n\n\treturn dir\n}\n\nfunc createTestFiles(t *testing.T, dir string, files ...string) {\n\tfor _, target := range files {\n\t\tf, err := os.Create(filepath.Join(dir, target))\n\t\trequire.NoError(t, err)\n\t\trequire.NoError(t, f.Close())\n\t}\n}\n\nfunc delTestDir(t *testing.T, dir string) {\n\trequire.NoError(t, os.RemoveAll(dir))\n}\n"

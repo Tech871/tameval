@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.2"
+
+[repo_info]
+repository = "supabase/cli"
+sha = "418caee001449f782a775b0f13af09b25dd581da"
+
+[run_info]
+docker_image = "golang:1.23.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/migration/squash/squash.go internal/migration/squash/squash_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/migration/squash/squash.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 19.35
+original_coverage = 73.0
+mutation_kill_rate = 16.98
+original_mutation_kill_rate = nan
+covered_lines = [ 157, 158, 159, 160, 161, 167, 168, 169, 170, 171, 172, 176, 177, 178, 179, 181, 182, 183, 184, 185, 186, 187,]
+missed_lines = [ 27, 28, 29, 30, 31, 32, 33, 34, 37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 52, 53, 54, 55, 56, 57, 58, 59, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 76, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111, 112, 113, 114, 115, 116, 118, 119, 120, 121, 122, 123, 124, 125, 126, 128, 129, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 150, 151, 152, 154, 162, 163, 164, 165, 173, 174, 175,]
+
+[input_info]
+test_file_path = "internal/migration/squash/squash_test.go"
+focal_file_path = "internal/migration/squash/squash.go"
+test_file_url = "https://github.com/supabase/cli/blob/418caee001449f782a775b0f13af09b25dd581da/internal/migration/squash/squash_test.go"
+focal_file_url = "https://github.com/supabase/cli/blob/418caee001449f782a775b0f13af09b25dd581da/internal/migration/squash/squash.go"
+first_commit_date = "2023-06-20"
+last_commit_date = "2025-02-18"
+test_file_content = "package squash\n\nimport (\n\t\"context\"\n\t\"embed\"\n\t\"fmt\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/jackc/pgconn\"\n\t\"github.com/jackc/pgerrcode\"\n\t\"github.com/jackc/pgx/v4\"\n\t\"github.com/spf13/afero\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"github.com/supabase/cli/internal/testing/helper\"\n\t\"github.com/supabase/cli/internal/utils\"\n\t\"github.com/supabase/cli/pkg/pgtest\"\n)\n\nvar dbConfig = pgconn.Config{\n\tHost:     \"db.supabase.co\",\n\tPort:     5432,\n\tUser:     \"admin\",\n\tPassword: \"password\",\n\tDatabase: \"postgres\",\n}\n\n\n\n\nfunc TestBaselineMigration(t *testing.T) {\n\tt.Run(\"baselines earliest version\", func(t *testing.T) {\n\t\t// Setup in-memory fs\n\t\tfsys := afero.NewMemMapFs()\n\t\tpaths := []string{\n\t\t\tfilepath.Join(utils.MigrationsDir, \"0_init.sql\"),\n\t\t\tfilepath.Join(utils.MigrationsDir, \"1_target.sql\"),\n\t\t}\n\t\tsql := \"create schema test\"\n\t\trequire.NoError(t, afero.WriteFile(fsys, paths[0], []byte(sql), 0644))\n\t\trequire.NoError(t, afero.WriteFile(fsys, paths[1], []byte{}, 0644))\n\t\t// Setup mock postgres\n\t\tconn := pgtest.NewConn()\n\t\tdefer conn.Close(t)\n\t\thelper.MockMigrationHistory(conn).\n\t\t\tQuery(fmt.Sprintf(\"DELETE FROM supabase_migrations.schema_migrations WHERE version <=  '0' ;INSERT INTO supabase_migrations.schema_migrations(version, name, statements) VALUES( '0' ,  'init' ,  '{%s}' )\", sql)).\n\t\t\tReply(\"INSERT 0 1\")\n\t\t// Run test\n\t\terr := baselineMigrations(context.Background(), dbConfig, \"\", fsys, conn.Intercept, func(cc *pgx.ConnConfig) {\n\t\t\tcc.PreferSimpleProtocol = true\n\t\t})\n\t\t// Check error\n\t\tassert.NoError(t, err)\n\t})\n\n\tt.Run(\"throws error on connect failure\", func(t *testing.T) {\n\t\t// Setup in-memory fs\n\t\tfsys := afero.NewMemMapFs()\n\t\t// Run test\n\t\terr := baselineMigrations(context.Background(), pgconn.Config{}, \"0\", fsys)\n\t\t// Check error\n\t\tassert.ErrorContains(t, err, \"invalid port (outside range)\")\n\t})\n\n\tt.Run(\"throws error on query failure\", func(t *testing.T) {\n\t\t// Setup in-memory fs\n\t\tfsys := afero.NewMemMapFs()\n\t\tpath := filepath.Join(utils.MigrationsDir, \"0_init.sql\")\n\t\trequire.NoError(t, afero.WriteFile(fsys, path, []byte(\"\"), 0644))\n\t\t// Setup mock postgres\n\t\tconn := pgtest.NewConn()\n\t\tdefer conn.Close(t)\n\t\thelper.MockMigrationHistory(conn).\n\t\t\tQuery(fmt.Sprintf(\"DELETE FROM supabase_migrations.schema_migrations WHERE version <=  '%[1]s' ;INSERT INTO supabase_migrations.schema_migrations(version, name, statements) VALUES( '%[1]s' ,  'init' ,  null )\", \"0\")).\n\t\t\tReplyError(pgerrcode.InsufficientPrivilege, \"permission denied for relation supabase_migrations\")\n\t\t// Run test\n\t\terr := baselineMigrations(context.Background(), dbConfig, \"0\", fsys, conn.Intercept, func(cc *pgx.ConnConfig) {\n\t\t\tcc.PreferSimpleProtocol = true\n\t\t})\n\t\t// Check error\n\t\tassert.ErrorContains(t, err, `ERROR: permission denied for relation supabase_migrations (SQLSTATE 42501)`)\n\t})\n\n\tt.Run(\"throws error on missing file\", func(t *testing.T) {\n\t\t// Setup in-memory fs\n\t\tfsys := afero.NewMemMapFs()\n\t\t// Setup mock postgres\n\t\tconn := pgtest.NewConn()\n\t\tdefer conn.Close(t)\n\t\thelper.MockMigrationHistory(conn)\n\t\t// Run test\n\t\terr := baselineMigrations(context.Background(), dbConfig, \"0\", fsys, conn.Intercept)\n\t\t// Check error\n\t\tassert.ErrorIs(t, err, os.ErrNotExist)\n\t})\n}\n\n//go:embed testdata/*.sql\nvar testdata embed.FS\n"

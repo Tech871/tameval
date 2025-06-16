@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "flyteorg/flytekit"
+sha = "5503ee5e232fdbc633af39c7f4539a04906102fc"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r dev-requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=flytekit/models/security.py -m pytest -q --junit-xml=test_output.xml tests/flytekit/unit/models/core/test_security.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target flytekit.models.security --unit-test tests.flytekit.unit.models.core.test_security --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target flytekit/models/security.py --unit-test tests/flytekit/unit/models/core/test_security.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 80.0
+original_coverage = 84.0
+mutation_kill_rate = 57.0
+original_mutation_kill_rate = 62.0
+covered_lines = [ 0, 1, 2, 3, 5, 7, 10, 11, 25, 26, 27, 31, 32, 35, 36, 41, 42, 43, 44, 45, 47, 48, 49, 52, 53, 54, 55, 57, 62, 63, 71, 72, 73, 82, 83, 84, 85, 87, 93, 94, 101, 102, 103, 104, 105, 106, 108, 116, 117, 128, 129, 130, 131, 133, 134, 135, 136, 137, 139, 148, 149, 159, 160, 166, 167, 168, 170, 176, 185, 186,]
+missed_lines = [ 58, 59, 60, 88, 95, 109, 118, 140, 150, 171, 172, 173, 174, 177, 178, 179, 187,]
+
+[input_info]
+test_file_path = "tests/flytekit/unit/models/core/test_security.py"
+focal_file_path = "flytekit/models/security.py"
+test_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/tests/flytekit/unit/models/core/test_security.py"
+focal_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/flytekit/models/security.py"
+first_commit_date = "2021-03-23"
+last_commit_date = "2025-02-07"
+test_file_content = "from unittest.mock import Mock\n\nimport pytest\n\nimport flytekit.configuration.plugin\nfrom flytekit.models.security import Secret\n\n\ndef test_secret():\n    obj = Secret(\"grp\", \"key\")\n    obj2 = Secret.from_flyte_idl(obj.to_flyte_idl())\n    assert obj2.key == \"key\"\n    assert obj2.group_version is None\n\n    obj = Secret(\"grp\", group_version=\"v1\")\n    obj2 = Secret.from_flyte_idl(obj.to_flyte_idl())\n    assert obj2.key is None\n    assert obj2.group_version == \"v1\"\n\n\ndef test_secret_error(monkeypatch):\n    # Mock configuration to require groups for this test\n    plugin_mock = Mock()\n    plugin_mock.secret_requires_group.return_value = True\n    mock_global_plugin = {\"plugin\": plugin_mock}\n    monkeypatch.setattr(flytekit.configuration.plugin, \"_GLOBAL_CONFIG\", mock_global_plugin)\n\n    with pytest.raises(ValueError, match=\"Group is a required parameter\"):\n        Secret(key=\"my_key\")\n\n\ndef test_secret_no_group(monkeypatch):\n    plugin_mock = Mock()\n    plugin_mock.secret_requires_group.return_value = False\n    mock_global_plugin = {\"plugin\": plugin_mock}\n    monkeypatch.setattr(flytekit.configuration.plugin, \"_GLOBAL_CONFIG\", mock_global_plugin)\n\n    s = Secret(key=\"key\")\n    assert s.group is None"

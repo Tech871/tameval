@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "numaproj/numaflow"
+sha = "4a25fe0cf8500638f1ae7efb8aad5547619744eb"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/window/strategy/accumulate/accumulate.go pkg/window/strategy/accumulate/accumulate_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/window/strategy/accumulate/accumulate.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 80.0
+original_coverage = 83.0
+mutation_kill_rate = 65.0
+original_mutation_kill_rate = 71.0
+covered_lines = [ 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 47, 48, 49, 55, 56, 57, 59, 60, 61, 89, 90, 91, 92, 93, 94, 95, 98, 99, 100, 101, 102, 108, 109, 110, 111, 112, 115, 116, 117, 121, 122, 123, 124, 125, 126, 127, 128, 130, 131, 132, 135, 136, 137, 152, 153, 154, 155, 156, 157, 158, 159, 160, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228, 230, 231, 232, 233, 234, 235, 236, 237, 238, 241, 253, 254, 255, 256, 257, 258, 259, 260, 264, 265, 266, 267, 268, 269, 270, 271, 272, 274,]
+missed_lines = [ 43, 44, 45, 51, 52, 53, 63, 64, 65, 67, 68, 69, 71, 72, 73, 103, 104, 105, 133, 134, 164, 165, 166, 170, 171, 172, 208, 209, 210, 246, 247, 248, 249,]
+
+[input_info]
+test_file_path = "pkg/window/strategy/accumulate/accumulate_test.go"
+focal_file_path = "pkg/window/strategy/accumulate/accumulate.go"
+test_file_url = "https://github.com/numaproj/numaflow/blob/4a25fe0cf8500638f1ae7efb8aad5547619744eb/pkg/window/strategy/accumulate/accumulate_test.go"
+focal_file_url = "https://github.com/numaproj/numaflow/blob/4a25fe0cf8500638f1ae7efb8aad5547619744eb/pkg/window/strategy/accumulate/accumulate.go"
+first_commit_date = "2025-03-21"
+last_commit_date = "2025-03-24"
+test_file_content = "package accumulate\n\nimport (\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\n\tdfv1 \"github.com/numaproj/numaflow/pkg/apis/numaflow/v1alpha1\"\n\t\"github.com/numaproj/numaflow/pkg/isb\"\n\t\"github.com/numaproj/numaflow/pkg/window\"\n)\n\nfunc buildReadMessage(time time.Time, keys []string) *isb.ReadMessage {\n\treturn &isb.ReadMessage{\n\t\tMessage: isb.Message{\n\t\t\tHeader: isb.Header{\n\t\t\t\tMessageInfo: isb.MessageInfo{\n\t\t\t\t\tEventTime: time,\n\t\t\t\t},\n\t\t\t\tKeys: keys,\n\t\t\t},\n\t\t},\n\t}\n}\n\nfunc TestAccumulate_AssignWindow(t *testing.T) {\n\tbaseTime := time.Now()\n\twindower := NewWindower(&dfv1.VertexInstance{\n\t\tVertex: &dfv1.Vertex{\n\t\t\tSpec: dfv1.VertexSpec{\n\t\t\t\tPipelineName: \"test-pipeline\",\n\t\t\t\tAbstractVertex: dfv1.AbstractVertex{\n\t\t\t\t\tName: \"test-vertex\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}, time.Hour)\n\n\treadMsg := buildReadMessage(baseTime, []string{\"key1\"})\n\twindowRequests := windower.AssignWindows(readMsg)\n\n\tassert.Equal(t, 1, len(windowRequests))\n\tassert.Equal(t, baseTime, windowRequests[0].ReadMessage.EventTime)\n\tassert.Equal(t, window.Open, windowRequests[0].Operation)\n\tassert.Equal(t, \"key1\", windowRequests[0].Windows[0].Keys()[0])\n}\n\nfunc TestAccumulate_CloseWindows(t *testing.T) {\n\tbaseTime := time.Now()\n\twindower := NewWindower(&dfv1.VertexInstance{\n\t\tVertex: &dfv1.Vertex{\n\t\t\tSpec: dfv1.VertexSpec{\n\t\t\t\tPipelineName: \"test-pipeline\",\n\t\t\t\tAbstractVertex: dfv1.AbstractVertex{\n\t\t\t\t\tName: \"test-vertex\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}, time.Minute)\n\n\treadMsg := buildReadMessage(baseTime, []string{\"key1\"})\n\twindower.AssignWindows(readMsg)\n\n\twindowRequests := windower.CloseWindows(baseTime.Add(2 * time.Minute))\n\tassert.Equal(t, 1, len(windowRequests))\n\tassert.Equal(t, window.Close, windowRequests[0].Operation)\n\tassert.Equal(t, \"key1\", windowRequests[0].Windows[0].Keys()[0])\n}\n\nfunc TestAccumulate_DeleteClosedWindow(t *testing.T) {\n\tbaseTime := time.Now()\n\twindower := NewWindower(&dfv1.VertexInstance{\n\t\tVertex: &dfv1.Vertex{\n\t\t\tSpec: dfv1.VertexSpec{\n\t\t\t\tPipelineName: \"test-pipeline\",\n\t\t\t\tAbstractVertex: dfv1.AbstractVertex{\n\t\t\t\t\tName: \"test-vertex\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}, time.Minute)\n\n\treadMsgOne := buildReadMessage(baseTime, []string{\"key1\"})\n\twindower.AssignWindows(readMsgOne)\n\treadMsgTwo := buildReadMessage(baseTime.Add(time.Minute), []string{\"key2\"})\n\twindower.AssignWindows(readMsgTwo)\n\n\twindower.DeleteClosedWindow(&accumulatorWindow{endTime: baseTime.Add(time.Second), keys: []string{\"key1\"}})\n\toldestWindowEndTime := windower.OldestWindowEndTime()\n\tassert.Equal(t, baseTime.Add(time.Minute), oldestWindowEndTime)\n}\n\nfunc TestAccumulate_OldestWindowEndTime(t *testing.T) {\n\tbaseTime := time.Now()\n\twindower := NewWindower(&dfv1.VertexInstance{\n\t\tVertex: &dfv1.Vertex{\n\t\t\tSpec: dfv1.VertexSpec{\n\t\t\t\tPipelineName: \"test-pipeline\",\n\t\t\t\tAbstractVertex: dfv1.AbstractVertex{\n\t\t\t\t\tName: \"test-vertex\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}, time.Minute)\n\n\treadMsg1 := buildReadMessage(baseTime, []string{\"key1\"})\n\treadMsg2 := buildReadMessage(baseTime.Add(time.Minute), []string{\"key2\"})\n\twindower.AssignWindows(readMsg1)\n\twindower.AssignWindows(readMsg2)\n\n\tassert.Equal(t, baseTime, windower.OldestWindowEndTime())\n}"

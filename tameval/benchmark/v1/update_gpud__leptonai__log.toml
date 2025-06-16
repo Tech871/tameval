@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.7"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "1763d902486568b8db164ef3f832841ede2fd8de"
+
+[run_info]
+docker_image = "golang:1.23.7"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/log/log.go pkg/log/log_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/log/log.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 85.0
+mutation_kill_rate = 6.0
+original_mutation_kill_rate = 47.0
+covered_lines = [ 17, 18, 19, 21, 22, 23, 24, 25, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 71, 76, 81, 82, 83,]
+missed_lines = [ 49, 50, 51, 52, 53, 54, 55, 56, 58, 61, 62, 63, 64, 66, 67, 68, 72, 73, 74, 77, 78, 91, 92, 93, 94, 96, 97, 98, 99, 100, 104, 108, 109, 110,]
+
+[input_info]
+test_file_path = "pkg/log/log_test.go"
+focal_file_path = "pkg/log/log.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/log/log_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/log/log.go"
+first_commit_date = "2025-02-13"
+last_commit_date = "2025-02-19"
+test_file_content = "package log\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"go.uber.org/zap\"\n)\n\nfunc TestCreateLoggerWithLumberjackErrors(t *testing.T) {\n\t// Test with invalid directory\n\tlogger := CreateLoggerWithLumberjack(\"/nonexistent/directory/test.log\", 1, zap.InfoLevel)\n\trequire.NotNil(t, logger)\n\n\t// Writing to invalid path should not panic\n\tassert.NotPanics(t, func() {\n\t\tlogger.Info(\"test message\")\n\t})\n}\n\nfunc TestCreateLoggerWithLumberjackBasic(t *testing.T) {\n\ttmpDir, err := os.MkdirTemp(\"\", \"gpud-log-test-*\")\n\trequire.NoError(t, err)\n\tdefer os.RemoveAll(tmpDir)\n\n\tlogFile := filepath.Join(tmpDir, \"test.log\")\n\tmaxSize := 5 // 5MB\n\n\tlogger := CreateLoggerWithLumberjack(logFile, maxSize, zap.InfoLevel)\n\trequire.NotNil(t, logger)\n\n\t// Test basic logging functionality\n\ttestMsg := \"test message\"\n\tlogger.Info(testMsg)\n\n\t// Verify log file exists and contains the message\n\tcontent, err := os.ReadFile(logFile)\n\trequire.NoError(t, err)\n\tassert.Contains(t, string(content), testMsg)\n\n\t// Test error logging\n\terrorMsg := \"error message\"\n\tlogger.Error(errorMsg)\n\tcontent, err = os.ReadFile(logFile)\n\trequire.NoError(t, err)\n\tassert.Contains(t, string(content), errorMsg)\n\n\t// Test warning logging\n\twarnMsg := \"warning message\"\n\tlogger.Warn(warnMsg)\n\tcontent, err = os.ReadFile(logFile)\n\trequire.NoError(t, err)\n\tassert.Contains(t, string(content), warnMsg)\n}\n\nfunc TestLogRotation(t *testing.T) {\n\ttmpDir, err := os.MkdirTemp(\"\", \"gpud-log-rotation-*\")\n\trequire.NoError(t, err)\n\tdefer os.RemoveAll(tmpDir)\n\n\ttestCases := []struct {\n\t\tname          string\n\t\tmaxSize       int // in MB\n\t\tnumWrites     int // number of writes to perform\n\t\tbytesPerWrite int // bytes per write\n\t\texpectedFiles int // expected number of files (including current)\n\t}{\n\t\t{\n\t\t\tname:          \"single_file_no_rotation\",\n\t\t\tmaxSize:       1,\n\t\t\tnumWrites:     1,\n\t\t\tbytesPerWrite: 512 * 1024, // 512KB\n\t\t\texpectedFiles: 1,\n\t\t},\n\t\t{\n\t\t\tname:          \"multiple_rotations\",\n\t\t\tmaxSize:       1,\n\t\t\tnumWrites:     15,\n\t\t\tbytesPerWrite: 100 * 1024, // 100KB per write makes 1.5 MB\n\t\t\texpectedFiles: 2,\n\t\t},\n\t\t{\n\t\t\tname:          \"multiple_rotations_more\",\n\t\t\tmaxSize:       1,\n\t\t\tnumWrites:     30,\n\t\t\tbytesPerWrite: 100 * 1024, // 100KB per write makes 3 MB\n\t\t\texpectedFiles: 3,\n\t\t},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tlogFile := filepath.Join(tmpDir, tc.name)\n\t\t\tlogger := CreateLoggerWithLumberjack(logFile, tc.maxSize, zap.InfoLevel)\n\t\t\trequire.NotNil(t, logger)\n\n\t\t\tpadding := strings.Repeat(\"a\", tc.bytesPerWrite)\n\t\t\tfor i := 0; i < tc.numWrites; i++ {\n\t\t\t\tlogger.Infof(\"test message %d: %s\", i, padding)\n\t\t\t}\n\n\t\t\t// enough time for rotation to occur\n\t\t\ttime.Sleep(time.Second)\n\n\t\t\tpattern := logFile + \"*\"\n\t\t\tmatches, err := filepath.Glob(pattern)\n\t\t\trequire.NoError(t, err)\n\n\t\t\tassert.GreaterOrEqual(t, len(matches), tc.expectedFiles,\n\t\t\t\t\"expected >=%d files, got %d: %q\", tc.expectedFiles, len(matches), matches)\n\t\t})\n\t}\n}"

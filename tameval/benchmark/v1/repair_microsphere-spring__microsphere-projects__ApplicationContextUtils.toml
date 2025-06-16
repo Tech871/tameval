@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-spring"
+sha = "8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-spring-context -Dtest=ApplicationContextUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-spring-context -DtargetClasses=**.ApplicationContextUtils  -DtargetTests=**.ApplicationContextUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-spring-context/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-spring-context/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 70.0
+original_coverage = 70.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 44, 58, 61, 65, 75, 76, 86, 87, 88, 89, 90, 91, 94, 103,]
+missed_lines = [ 42, 93, 95, 96, 98, 100,]
+
+[input_info]
+test_file_path = "microsphere-spring-context/src/test/java/io/microsphere/spring/context/ApplicationContextUtilsTest.java"
+focal_file_path = "microsphere-spring-context/src/main/java/io/microsphere/spring/context/ApplicationContextUtils.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-spring/blob/8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc/microsphere-spring-context/src/test/java/io/microsphere/spring/context/ApplicationContextUtilsTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-spring/blob/8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc/microsphere-spring-context/src/main/java/io/microsphere/spring/context/ApplicationContextUtils.java"
+first_commit_date = "2024-12-25"
+last_commit_date = "2025-01-06"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.microsphere.spring.context;\n\nimport org.junit.jupiter.api.AfterEach;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.config.BeanPostProcessor;\nimport org.springframework.context.ApplicationContext;\nimport org.springframework.context.ConfigurableApplicationContext;\nimport org.springframework.context.support.GenericApplicationContext;\n\nimport static io.microsphere.spring.context.ApplicationContextUtils.APPLICATION_CONTEXT_AWARE_PROCESSOR_CLASS;\nimport static io.microsphere.spring.context.ApplicationContextUtils.asApplicationContext;\nimport static io.microsphere.spring.context.ApplicationContextUtils.asConfigurableApplicationContext;\nimport static io.microsphere.spring.context.ApplicationContextUtils.getApplicationContextAwareProcessor;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertSame;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\n/**\n * {@link ApplicationContextUtils} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see ApplicationContextUtils\n * @since 1.0.0\n */\npublic class ApplicationContextUtilsTest {\n\n    private GenericApplicationContext context;\n\n    @BeforeEach\n    public void init() {\n        context = new GenericApplicationContext();\n        context.refresh();\n    }\n\n    @AfterEach\n    public void destroy() {\n        context.close();\n    }\n\n    @Test\n    public void testAsConfigurableApplicationContext() {\n        ConfigurableApplicationContext applicationContext = asConfigurableApplicationContext(context);\n        assertSame(context, applicationContext);\n    }\n\n    @Test\n    public void testAsApplicationContext() {\n        ApplicationContext applicationContext = asApplicationContext(context);\n        assertSame(context, applicationContext);\n    }\n\n    @Test\n    public void testGetApplicationContextAwareProcessor() {\n        BeanPostProcessor beanPostProcessor = getApplicationContextAwareProcessor(context);\n        assertEquals(APPLICATION_CONTEXT_AWARE_PROCESSOR_CLASS, beanPostProcessor.getClass());\n    }\n    \n    @Test\n    public void testConvertToConfigurableApplicationContext() {\n        ConfigurableApplicationContext configContext = asConfigurableApplicationContext(context);\n        assertTrue(configContext instanceof ConfigurableApplicationContext);\n        assertEquals(context, configContext);\n    }\n    \n    @Test\n    public void testRetrieveApplicationContextAwareProcessor() {\n        BeanPostProcessor processor = getApplicationContextAwareProcessor(context);\n        assertNotNull(processor);\n        assertTrue(processor.getClass().equals(APPLICATION_CONTEXT_AWARE_PROCESSOR_CLASS));\n    }\n}"

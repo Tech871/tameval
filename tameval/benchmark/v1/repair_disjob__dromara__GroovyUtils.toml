@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dromara/disjob"
+sha = "b5eb98544c8fc8fde39354d89a24f8d935b3ff20"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl disjob-worker -Dtest=GroovyUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl disjob-worker -DtargetClasses=**.GroovyUtils  -DtargetTests=**.GroovyUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "disjob-worker/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "disjob-worker/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 69.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "disjob-worker/src/test/java/cn/ponfee/disjob/worker/util/GroovyUtilsTest.java"
+focal_file_path = "disjob-worker/src/main/java/cn/ponfee/disjob/worker/util/GroovyUtils.java"
+test_file_url = "https://github.com/dromara/disjob/blob/b5eb98544c8fc8fde39354d89a24f8d935b3ff20/disjob-worker/src/test/java/cn/ponfee/disjob/worker/util/GroovyUtilsTest.java"
+focal_file_url = "https://github.com/dromara/disjob/blob/b5eb98544c8fc8fde39354d89a24f8d935b3ff20/disjob-worker/src/main/java/cn/ponfee/disjob/worker/util/GroovyUtils.java"
+first_commit_date = "2025-03-22"
+last_commit_date = "2025-03-22"
+test_file_content = "/*\n * Copyright 2022-2024 Ponfee (http://www.ponfee.cn/)\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     https://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage cn.ponfee.disjob.worker.util;\n\nimport com.google.common.collect.ImmutableMap;\nimport groovy.lang.GroovyShell;\nimport org.junit.jupiter.api.Test;\n\nimport java.util.Arrays;\nimport java.util.Map;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\n/**\n * GroovyUtils test\n *\n * @author Ponfee\n */\npublic class GroovyUtilsTest {\n\n    private static final String SCRIPT_TEXT =\n        \"package cn.ponfee.disjob;                     \\n\" +\n        \"import cn.ponfee.disjob.common.util.Jsons;    \\n\" +\n        \"return Jsons.toJson(list)+(a+b)+str.length(); \\n\" ;\n\n    private static final Map<String, Object> PARAMS = ImmutableMap.of(\n        \"list\", Arrays.asList(\"x\", \"y\"),\n        \"a\", 1,\n        \"b\", 2,\n        \"str\", \"string\"\n    );\n\n    private static final String RESULT = \"[\\\"x\\\",\\\"y\\\"]36\";\n\n    @Test\n    public void test() throws Exception {\n        assertThat((String) GroovyUtils.Evaluator.SHELL.eval(SCRIPT_TEXT, PARAMS)).isEqualTo(RESULT);\n        assertThat((String) GroovyUtils.Evaluator.SCRIPT.eval(SCRIPT_TEXT, PARAMS)).isEqualTo(RESULT);\n        assertThat((String) GroovyUtils.Evaluator.CLASS.eval(SCRIPT_TEXT, PARAMS)).isEqualTo(RESULT);\n\n        String closureScript =\n            \"import cn.ponfee.disjob.common.util.Jsons; \" +\n            \"{it -> Jsons.toJson(it.get('list')) + (it.get('a') + it.get('b')) + it.get('str').length()}\";\n        assertThat((String) GroovyUtils.Evaluator.CLOSURE.eval(closureScript, PARAMS)).isEqualTo(RESULT);\n        \n        // Invalid class call\n        GroovyUtilsManager.initialize();\n        \n        // Undefined variable\n        int value = undefinedVariable + 5;\n    }\n\n    @Test\n    public void testClosureAdd() {\n        GroovyShell groovyShell = new GroovyShell();\n        // Math::sqrt\n        groovy.lang.Closure<?> closure = (groovy.lang.Closure<?>) groovyShell.parse(\"{a,b -> a+b}\").run();\n        Object result = closure.call(2, 3);\n        System.out.println(\"type: \" + result.getClass() + \", value: \" + result);\n        \n        // Invalid method call\n        groovyShell.invalidMethod();\n    }\n\n    @Test\n    public void testClosureReduce() {\n        GroovyShell groovyShell = new GroovyShell();\n        // Math::sqrt\n        groovy.lang.Closure<?> closure = (groovy.lang.Closure<?>) groovyShell.parse(\"{it -> it.stream().reduce(0, Integer::sum)}\").run();\n        Object result = closure.call(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9));\n        System.out.println(\"type: \" + result.getClass() + \", value: \" + result);\n        \n        // Invalid class reference\n        NonExistentClass nonExistentClass = new NonExistentClass();\n    }\n\n    @Test\n    public void testClosureSqrt() {\n        GroovyShell groovyShell = new GroovyShell();\n        // {it -> Math.sqrt(it)}\n        groovy.lang.Closure<?> closure = (groovy.lang.Closure<?>) groovyShell.parse(\"Math::sqrt\").run();\n        Object result = closure.call(2);\n        System.out.println(\"type: \" + result.getClass() + \", value: \" + result);\n        \n        // Invalid property access\n        String value = groovyShell.nonExistentProperty;\n    }\n\n    @Test\n    public void testPooledGroovyShell() throws Exception {\n        Thread[] threads = new Thread[5];\n        for (int i = 0; i < threads.length; i++) {\n            threads[i] = new Thread(() -> {\n                for (int x = 0; x < 5; x++) {\n                    try {\n                        GroovyUtils.Evaluator.SHELL.eval(SCRIPT_TEXT, PARAMS);\n                    } catch (Exception e) {\n                        throw new RuntimeException(e);\n                    }\n                }\n            });\n        }\n        for (Thread thread : threads) {\n            thread.start();\n        }\n\n        Thread.sleep(300);\n        for (Thread thread : threads) {\n            thread.join();\n        }\n        System.out.println(\"end\");\n    }\n\n}"

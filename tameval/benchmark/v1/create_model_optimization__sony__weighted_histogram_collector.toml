@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "sony/model_optimization"
+sha = "0c4bc5984cea42c5cde2b05d4f3032596b054a4c"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=model_compression_toolkit/core/common/collectors/weighted_histogram_collector.py -m pytest -q --junit-xml=test_output.xml tests_pytest/common_tests/unit_tests/core/collectors/test_weighted_histogram_collector.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target model_compression_toolkit.core.common.collectors.weighted_histogram_collector --unit-test tests_pytest.common_tests.unit_tests.core.collectors.test_weighted_histogram_collector --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target model_compression_toolkit/core/common/collectors/weighted_histogram_collector.py --unit-test tests_pytest/common_tests/unit_tests/core/collectors/test_weighted_histogram_collector.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 12.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests_pytest/common_tests/unit_tests/core/collectors/test_weighted_histogram_collector.py"
+focal_file_path = "model_compression_toolkit/core/common/collectors/weighted_histogram_collector.py"
+test_file_url = "https://github.com/sony/model_optimization/blob/0c4bc5984cea42c5cde2b05d4f3032596b054a4c/tests_pytest/common_tests/unit_tests/core/collectors/test_weighted_histogram_collector.py"
+focal_file_url = "https://github.com/sony/model_optimization/blob/0c4bc5984cea42c5cde2b05d4f3032596b054a4c/model_compression_toolkit/core/common/collectors/weighted_histogram_collector.py"
+first_commit_date = "2025-02-24"
+last_commit_date = "2025-02-24"
+test_file_content = ""

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "funilrys/PyFunceble"
+sha = "6fc0974a65e0987945afdfaed9e7a21dc6ad9894"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.test.txt && pip install -r requirements.win.txt && pip install -r requirements.dev.txt && pip install -r requirements.txt && pip install -r requirements.docs.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=PyFunceble/checker/syntax/domain_base.py -m pytest -q --junit-xml=test_output.xml tests/checker/syntax/test_domain_base.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target PyFunceble.checker.syntax.domain_base --unit-test tests.checker.syntax.test_domain_base --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target PyFunceble/checker/syntax/domain_base.py --unit-test tests/checker/syntax/test_domain_base.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 74.55
+original_coverage = 87.0
+original_mutation_kill_rate = 81.0
+covered_lines = [ 52, 53, 55, 56, 57, 60, 69, 70, 86, 87, 91, 92, 100, 105, 106, 107, 109, 111, 113, 119, 120, 121, 123, 125, 127, 129, 130, 131, 132, 146, 148, 149, 154, 155, 158, 159, 160, 162, 183, 184, 200,]
+missed_lines = [ 156, 174, 175, 176, 177, 178, 179, 181, 189, 190, 193, 195, 196, 198,]
+
+[input_info]
+test_file_path = "tests/checker/syntax/test_domain_base.py"
+focal_file_path = "PyFunceble/checker/syntax/domain_base.py"
+test_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/tests/checker/syntax/test_domain_base.py"
+focal_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/PyFunceble/checker/syntax/domain_base.py"
+first_commit_date = "2020-12-19"
+last_commit_date = "2025-02-23"
+test_file_content = "\"\"\"\nThe tool to check the availability or syntax of domain, IP or URL.\n\n::\n\n\n    ██████╗ ██╗   ██╗███████╗██╗   ██╗███╗   ██╗ ██████╗███████╗██████╗ ██╗     ███████╗\n    ██╔══██╗╚██╗ ██╔╝██╔════╝██║   ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██║     ██╔════╝\n    ██████╔╝ ╚████╔╝ █████╗  ██║   ██║██╔██╗ ██║██║     █████╗  ██████╔╝██║     █████╗\n    ██╔═══╝   ╚██╔╝  ██╔══╝  ██║   ██║██║╚██╗██║██║     ██╔══╝  ██╔══██╗██║     ██╔══╝\n    ██║        ██║   ██║     ╚██████╔╝██║ ╚████║╚██████╗███████╗██████╔╝███████╗███████╗\n    ╚═╝        ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚══════╝╚═════╝ ╚══════╝╚══════╝\n\nTests of our domain checker base.\n\nAuthor:\n    Nissar Chababy, @funilrys, contactTATAfunilrysTODTODcom\n\nSpecial thanks:\n    https://pyfunceble.github.io/special-thanks.html\n\nContributors:\n    https://pyfunceble.github.io/contributors.html\n\nProject link:\n    https://github.com/funilrys/PyFunceble\n\nProject documentation:\n    https://docs.pyfunceble.com\n\nProject homepage:\n    https://pyfunceble.github.io/\n\nLicense:\n::\n\n\n    Copyright 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025 Nissar Chababy\n\n    Licensed under the Apache License, Version 2.0 (the \"License\");\n    you may not use this file except in compliance with the License.\n    You may obtain a copy of the License at\n\n        https://www.apache.org/licenses/LICENSE-2.0\n\n    Unless required by applicable law or agreed to in writing, software\n    distributed under the License is distributed on an \"AS IS\" BASIS,\n    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n    See the License for the specific language governing permissions and\n    limitations under the License.\n\"\"\"\n\nimport unittest\n\nfrom PyFunceble.checker.syntax.domain_base import DomainSyntaxCheckerBase\n\n\nclass TestSDomainSyntaxCheckerBase(unittest.TestCase):\n    \"\"\"\n    Tests of the base of all our domain syntax checker.\n    \"\"\"\n\n    def setUp(self) -> None:\n        \"\"\"\n        Setups everything we need.\n        \"\"\"\n\n        self.checker = DomainSyntaxCheckerBase()\n\n    def tearDown(self) -> None:\n        \"\"\"\n        Destroyes everything we don't need.\n        \"\"\"\n\n        del self.checker\n\n\n\n    def test_get_last_point_index_no_point(self) -> None:\n        \"\"\"\n        Tests the method which let us get the position of the last point\n        of a given subject.\n\n        In this test, we test for an INVALID subject (no point at all).\n        \"\"\"\n\n        given = \"example\"\n\n        # Just initizalize the whole this as usual.\n        self.checker.subject = given\n\n        expected = None\n        actual = self.checker.get_last_point_index(given)\n\n        self.assertEqual(expected, actual)\n\n\n\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

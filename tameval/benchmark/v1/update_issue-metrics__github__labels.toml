@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "github/issue-metrics"
+sha = "23689ee936e1c52ad48581667f483140c24224f1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements-test.txt && pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=labels.py -m pytest -q --junit-xml=test_output.xml test_labels.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target labels --unit-test test_labels --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target labels.py --unit-test test_labels.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 83.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 89.0
+covered_lines = [ 2, 3, 5, 6, 7, 8, 11, 24, 25, 26, 27, 29, 32, 43, 44, 45, 47, 48, 51, 52, 53, 57, 59, 62, 64, 65, 66, 67, 68, 69, 72, 73, 74, 75, 76, 78, 81, 83, 84, 86, 87, 92, 96, 100, 103, 108, 109, 110, 121, 122, 123, 124, 135, 136, 137, 138, 139, 141, 146,]
+missed_lines = [ 54, 77, 93, 111, 112, 113, 114, 115, 117, 125, 128, 131,]
+
+[input_info]
+test_file_path = "test_labels.py"
+focal_file_path = "labels.py"
+test_file_url = "https://github.com/github/issue-metrics/blob/23689ee936e1c52ad48581667f483140c24224f1/test_labels.py"
+focal_file_url = "https://github.com/github/issue-metrics/blob/23689ee936e1c52ad48581667f483140c24224f1/labels.py"
+first_commit_date = "2023-07-13"
+last_commit_date = "2025-03-03"
+test_file_content = "\"\"\" Unit tests for labels.py \"\"\"\n\nimport unittest\nfrom datetime import datetime, timedelta\nfrom unittest.mock import MagicMock\n\nimport github3\nimport pytz\nfrom classes import IssueWithMetrics\nfrom labels import get_label_events, get_label_metrics, get_stats_time_in_labels\n\n\nclass TestLabels(unittest.TestCase):\n    \"\"\"Unit tests for labels.py\"\"\"\n\n    def setUp(self):\n        self.issue = MagicMock()  # type: ignore\n        self.issue.issue = MagicMock(spec=github3.issues.Issue)  # type: ignore\n        self.issue.created_at = \"2021-01-01T00:00:00Z\"\n        self.issue.closed_at = \"2021-01-05T00:00:00Z\"\n        self.issue.state = \"closed\"\n        self.issue.issue.events.return_value = [\n            MagicMock(\n                event=\"labeled\",\n                label={\"name\": \"bug\"},\n                created_at=datetime(2021, 1, 1, tzinfo=pytz.UTC),\n            ),\n            MagicMock(\n                event=\"labeled\",\n                label={\"name\": \"feature\"},\n                created_at=datetime(2021, 1, 2, tzinfo=pytz.UTC),\n            ),\n            MagicMock(\n                event=\"unlabeled\",\n                label={\"name\": \"bug\"},\n                created_at=datetime(2021, 1, 3, tzinfo=pytz.UTC),\n            ),\n            MagicMock(\n                event=\"labeled\",\n                label={\"name\": \"bug\"},\n                created_at=datetime(2021, 1, 4, tzinfo=pytz.UTC),\n            ),\n            # Label labeled after issue close date\n            MagicMock(\n                event=\"labeled\",\n                label={\"name\": \"foo\"},\n                created_at=datetime(2021, 1, 20, tzinfo=pytz.UTC),\n            ),\n        ]\n\n    def test_get_label_events(self):\n        \"\"\"Test get_label_events\"\"\"\n        labels = [\"bug\"]\n        events = get_label_events(self.issue, labels)\n        self.assertEqual(len(events), 3)\n        self.assertEqual(events[0].label[\"name\"], \"bug\")\n        self.assertEqual(events[1].label[\"name\"], \"bug\")\n        self.assertEqual(events[2].label[\"name\"], \"bug\")\n\n    def test_get_label_metrics_closed_issue(self):\n        \"\"\"Test get_label_metrics using a closed issue\"\"\"\n        labels = [\"bug\", \"feature\"]\n        metrics = get_label_metrics(self.issue, labels)\n        self.assertEqual(metrics[\"bug\"], timedelta(days=3))\n        self.assertEqual(metrics[\"feature\"], timedelta(days=3))\n\n    def test_get_label_metrics_open_issue(self):\n        \"\"\"Test get_label_metrics using an open issue\"\"\"\n        self.issue.state = \"open\"\n        labels = [\"bug\", \"feature\"]\n        metrics = get_label_metrics(self.issue, labels)\n        self.assertLessEqual(\n            metrics[\"bug\"],\n            datetime.now(pytz.utc) - datetime(2021, 1, 2, tzinfo=pytz.UTC),\n        )\n        self.assertGreater(\n            metrics[\"bug\"],\n            datetime.now(pytz.utc) - datetime(2021, 1, 3, tzinfo=pytz.UTC),\n        )\n        self.assertLessEqual(\n            metrics[\"feature\"],\n            datetime.now(pytz.utc) - datetime(2021, 1, 2, tzinfo=pytz.UTC),\n        )\n        self.assertGreater(\n            metrics[\"feature\"],\n            datetime.now(pytz.utc) - datetime(2021, 1, 4, tzinfo=pytz.UTC),\n        )\n\n    def test_get_label_metrics_closed_issue_labeled_past_closed_at(self):\n        \"\"\"Test get_label_metrics using a closed issue that was labeled past issue closed_at\"\"\"\n        self.issue.state = \"closed\"\n        labels = [\"foo\"]\n        metrics = get_label_metrics(self.issue, labels)\n        self.assertEqual(metrics[\"foo\"], None)\n\n\nclass TestGetAverageTimeInLabels(unittest.TestCase):\n    \"\"\"Unit tests for get_stats_time_in_labels\"\"\"\n\n    def setUp(self):\n        self.issues_with_metrics = MagicMock()\n        self.issues_with_metrics = [\n            IssueWithMetrics(\n                \"issue1\", \"url1\", \"alice\", None, None, None, {\"bug\": timedelta(days=2)}\n            ),\n        ]\n\n    def test_get_stats_time_in_labels(self):\n        \"\"\"Test get_stats_time_in_labels\"\"\"\n        labels = [\"bug\", \"feature\"]\n        metrics = get_stats_time_in_labels(self.issues_with_metrics, labels)\n        print(metrics)\n        self.assertEqual(len(metrics[\"avg\"]), 2)\n        self.assertEqual(metrics[\"avg\"][\"bug\"], timedelta(days=2))\n        self.assertIsNone(metrics[\"avg\"].get(\"feature\"))\n\n\nif __name__ == \"__main__\":\n    unittest.main()"

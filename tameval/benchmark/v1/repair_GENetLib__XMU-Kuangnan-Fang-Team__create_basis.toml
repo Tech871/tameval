@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "XMU-Kuangnan-Fang-Team/GENetLib"
+sha = "4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=GENetLib/create_basis.py -m pytest -q --junit-xml=test_output.xml pytest/test_create_basis.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target GENetLib.create_basis --unit-test pytest.test_create_basis --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target GENetLib/create_basis.py --unit-test pytest/test_create_basis.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 78.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 62.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pytest/test_create_basis.py"
+focal_file_path = "GENetLib/create_basis.py"
+test_file_url = "https://github.com/XMU-Kuangnan-Fang-Team/GENetLib/blob/4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7/pytest/test_create_basis.py"
+focal_file_url = "https://github.com/XMU-Kuangnan-Fang-Team/GENetLib/blob/4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7/GENetLib/create_basis.py"
+first_commit_date = "2024-09-26"
+last_commit_date = "2025-01-22"
+test_file_content = "import pytest\nimport numpy as np\nimport math\n\nfrom GENetLib.create_basis import (\n    create_bspline_basis,\n    create_expon_basis,\n    create_fourier_basis,\n    create_monomial_basis,\n    create_power_basis,\n    create_constant_basis,\n)\n\n# Test B-spline basis\ndef test_create_bspline_basis():\n    basis = create_bspline_basis(rangeval=[0, 1], nbasis=5, breaks=[0, 0.5, 1])\n    assert 'names' in basis\n    assert basis['btype'] == 'bspline'\n\ndef test_create_bspline_basis_errors():\n    with pytest.raises(ValueError):\n        create_bspline_basis(breaks=[1 0])  # Decreasing breaks\n    with pytest.raises(ValueError):\n        create_bspline_basis(breaks=[0, 0])  # Non-unique breaks\n    with pytest.raises(ValueError):\n        create_bspline_basis(rangeval=[1,1])  # Invalid rangeval\n\n# Test Exponential basis\ndef test_create_expon_basis():\n    basis = create_expon_basis(rangeval=[0, 1], nbasis=2, ratevec=[0.5, 1.5])\n    assert 'names' in basis\n    assert basis['btype'] == 'expon'\n\n# Test Fourier basis\ndef test_create_fourier_basis():\n    basis = create_fourier_basis(rangeval=[0, 1], nbasis=3)\n    assert 'names' in basis\n    assert basis['btype'] == 'fourier'\n\ndef test_create_fourier_basis_errors():\n    with pytest.raises(ValueError):\n        create_fourier_basis(period=-1)  # Negative period\n\n# Test Monomial basis\ndef test_create_monomial_basis():\n    basis = create_monomial_basis(rangeval=[0, 1], nbasis=3, exponents=[0, 1, 2])\n    assert 'names' in basis\n    assert basis['btype'] == 'monom'\n\ndef test_create_monomial_basis_errors():\n    with pytest.raises(ValueError):\n        create_monomial_basis(exponents=[0, 1, 2, 2])  # Duplicate exponents\n\n# Test Power basis\ndef test_create_power_basis():\n    basis = create_power_basis(rangeval=[0, 1], nbasis=3, exponents=[0, 1, 2])\n    assert 'names' in basis\n    assert basis['btype'] == 'power'\n\ndef test_create_power_basis_errors():\n    with pytest.raises(ValueError):\n        create_power_basis(exponents=[0, 1, 2, 2])  # Duplicate exponents\n\n# Test Constant basis\ndef test_create_constant_basis():\n    basis = create_constant_basis()\n    assert 'names' in basis\n    assert basis['btype'] == 'const'\n\n# Additional tests for edge cases and specific conditions\ndef test_create_bspline_basis_edge_cases():\n    basis = create_bspline_basis(rangeval=[0, 1], nbasis=4)\n    assert basis['nbasis'] == 4\n\ndef test_create_expon_basis_edge_cases():\n    basis = create_expon_basis(rangeval=[0, 1], nbasis=1)\n    assert basis['nbasis'] == 1\n\ndef test_create_fourier_basis_edge_cases():\n    basis = create_fourier_basis(rangeval=[0, 1], nbasis=1)\n    assert basis['nbasis'] == 1\n\ndef test_create_monomial_basis_edge_cases():\n    basis = create_monomial_basis(rangeval=[0, 1], nbasis=1)\n    assert basis['nbasis'] == 1\n\ndef test_create_power_basis_edge_cases():\n    basis = create_power_basis(rangeval=[0, 1], nbasis=1)\n    assert basis['nbasis'] == 1\n\ndef test_create_constant_basis_edge_cases():\n    basis = create_constant_basis()\n    assert basis['nbasis'] == 1\n"

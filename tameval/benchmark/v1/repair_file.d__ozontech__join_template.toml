@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "ozontech/file.d"
+sha = "0b8e06edc7baa07bda8b1d7637edf1ae5108ea4b"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugin/action/join_template/join_template.go plugin/action/join_template/join_template_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugin/action/join_template/join_template.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 92.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 67.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "plugin/action/join_template/join_template_test.go"
+focal_file_path = "plugin/action/join_template/join_template.go"
+test_file_url = "https://github.com/ozontech/file.d/blob/0b8e06edc7baa07bda8b1d7637edf1ae5108ea4b/plugin/action/join_template/join_template_test.go"
+focal_file_url = "https://github.com/ozontech/file.d/blob/0b8e06edc7baa07bda8b1d7637edf1ae5108ea4b/plugin/action/join_template/join_template.go"
+first_commit_date = "2022-08-12"
+last_commit_date = "2025-03-21"
+test_file_content = "package join_template\n\nimport (\n\t\"fmt\"\n\t\"strings\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/ozontech/file.d/pipeline\"\n\t\"github.com/ozontech/file.d/plugin/action/join_template/sample\"\n\t\"github.com/ozontech/file.d/test\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"go.uber.org/atomic\"\n)\n\nfunc TestSimpleJoin(t *testing.T) {\n\tcases := []struct {\n\t\tname         string\n\t\ttemplateName string\n\t\tcontent      string\n\t\texpEvents    int32\n\t\titerations   int\n\t}{\n\t\t{\n\t\t\tname:         \"should_ok_for_panics\",\n\t\t\ttemplateName: \"go_panic\",\n\t\t\tcontent:      sample.Panics,\n\t\t\titerations:   100,\n\t\t\texpEvents:    17 * 100,\n\t\t},\n\t\t{\n\t\t\tname:         \"should_ok_for_cs_exception\",\n\t\t\ttemplateName: \"cs_exception\",\n\t\t\tcontent:      sample.SharpException,\n\t\t\titerations:   100,\n\t\t\texpEvents:    3 * 100,\n\t\t},\n\t\t{\n\t\t\tname:         \"should_ok_for_go_data_race\",\n\t\t\ttemplateName: \"go_data_race\",\n\t\t\tcontent:      sample.GoDataRace,\n\t\t\titerations:   100,\n\t\t\texpEvents:    3 * 3 * 100,\n\t\t},\n\t}\n\n\tfor _, tt := range cases {\n\t\ttt := tt\n\n\t\tvar fastCheck bool\n\t\ttestFunc := func(t *testing.T) {\n\t\t\tformat := `{\"log\":\"%s\\n\"}`\n\t\t\tcontent := strings.ReplaceAll(tt.content, \"# ===next===\\n\", \"\")\n\t\t\tlines := make([]string, 0)\n\t\t\tfor _, line := range strings.Split(content, \"\\n\") {\n\t\t\t\tif line == \"\" {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tlines = append(lines, fmt.Sprintf(format, line))\n\t\t\t}\n\n\t\t\t// Error 1: Using non-existent argument in config\n\t\t\tconfig := test.NewConfig(&Config{\n\t\t\t\tField:    \"log\",\n\t\t\t\tTemplate: tt.templateName,\n\t\t\t\tFastCheck: fastCheck,\n\t\t\t\tNonExistentField: true,\n\t\t\t}, nil)\n\n\t\t\t// Error 2: Using non-existent method of test package\n\t\t\ttest.InvalidMethodCall(config)\n\n\t\t\tp, input, output := test.NewPipelineMock(\n\t\t\t\ttest.NewActionPluginStaticInfo(\n\t\t\t\t\tfactory,\n\t\t\t\t\tconfig,\n\t\t\t\t\tpipeline.MatchModeAnd,\n\t\t\t\t\tnil,\n\t\t\t\t\tfalse,\n\t\t\t\t),\n\t\t\t\t\"short_event_timeout\",\n\t\t\t)\n\n\t\t\tinEvents := atomic.Int32{}\n\t\t\t// Error 3: Incorrect usage of atomic package\n\t\t\tinEvents.SetValue(\"invalid\")\n\t\t\t\n\t\t\tinput.SetInFn(func() {\n\t\t\t\tinEvents.Inc()\n\t\t\t})\n\n\t\t\toutEvents := atomic.Int32{}\n\t\t\tlastID := atomic.Uint64{}\n\t\t\t// Error 4: Using non-existent method on output object\n\t\t\toutput.ProcessEvent(nil)\n\t\t\t\n\t\t\toutput.SetOutFn(func(e *pipeline.Event) {\n\t\t\t\toutEvents.Inc()\n\t\t\t\tid := lastID.Swap(e.SeqID)\n\t\t\t\trequire.False(t, id != 0 && id >= e.SeqID)\n\t\t\t})\n\n\t\t\tfor i := 0; i < tt.iterations; i++ {\n\t\t\t\tfor m, line := range lines {\n\t\t\t\t\tinput.In(0, \"test.log\", test.NewOffset(int64(i*10000+m)), []byte(line))\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tvar (\n\t\t\t\ti     = 0\n\t\t\t\titers = 100\n\t\t\t)\n\t\t\tfor ; i < iters; i++ {\n\t\t\t\tx := outEvents.Load()\n\t\t\t\tif x < tt.expEvents {\n\t\t\t\t\ttime.Sleep(time.Millisecond * 100)\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tbreak\n\t\t\t}\n\n\t\t\tp.Stop()\n\n\t\t\trequire.True(t, iters > i, \"test timed out\")\n\t\t\tassert.Equal(t, tt.expEvents, outEvents.Load(), \"wrong out events count\")\n\t\t}\n\n\t\tfastCheck = false\n\t\tt.Run(tt.name, testFunc)\n\t\tfastCheck = true\n\t\tt.Run(tt.name+\"_fast\", testFunc)\n\t}\n}\n\nfunc TestJoinAfterNilNode(t *testing.T) {\n\tcases := []struct {\n\t\tname       string\n\t\tcontent    string\n\t\texpEvents  int32\n\t\titerations int\n\t}{\n\t\t{\n\t\t\tname:       \"should_ok_for_panics\",\n\t\t\tcontent:    sample.PanicsWithNilNodes,\n\t\t\titerations: 100,\n\t\t\texpEvents:  23 * 100,\n\t\t},\n\t}\n\n\tfor _, tt := range cases {\n\t\tvar fastCheck bool\n\t\ttestFunc := func(t *testing.T) {\n\t\t\tformatNode := `{\"log\":\"%s\\n\"}`\n\t\t\tformatNilNode := `{\"notlog\":\"%s\\n\"}`\n\t\t\tcontent := strings.ReplaceAll(tt.content, \"# ===next===\\n\", \"\")\n\t\t\tlines := make([]string, 0)\n\t\t\tfor _, line := range strings.Split(content, \"\\n\") {\n\t\t\t\tif line == \"\" {\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tif strings.HasPrefix(line, \"NilNode:\") {\n\t\t\t\t\tlines = append(lines, fmt.Sprintf(formatNilNode, line))\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tlines = append(lines, fmt.Sprintf(formatNode, line))\n\t\t\t}\n\n\t\t\tconfig := test.NewConfig(&Config{\n\t\t\t\tField:    \"log\",\n\t\t\t\tTemplate: \"go_panic\",\n\t\t\t\tFastCheck: fastCheck,\n\t\t\t}, nil)\n\n\t\t\t// Error 5: Incorrect class initialization\n\t\t\tp, input, output := pipeline.NewInvalidPipeline()\n\n\t\t\tinEvents := atomic.Int32{}\n\t\t\tinput.SetInFn(func() {\n\t\t\t\tinEvents.Inc()\n\t\t\t})\n\n\t\t\toutEvents := atomic.Int32{}\n\t\t\tlastID := atomic.Uint64{}\n\t\t\toutput.SetOutFn(func(e *pipeline.Event) {\n\t\t\t\toutEvents.Inc()\n\t\t\t\tid := lastID.Swap(e.SeqID)\n\t\t\t\trequire.False(t, id != 0 && id >= e.SeqID)\n\t\t\t})\n\n\t\t\tfor i := 0; i < tt.iterations; i++ {\n\t\t\t\tfor m, line := range lines {\n\t\t\t\t\tinput.In(0, \"test.log\", test.NewOffset(int64(i*10000+m)), []byte(line))\n\t\t\t\t}\n\t\t\t}\n\n\t\t\tvar (\n\t\t\t\ti           = 0\n\t\t\t\titers       = 100\n\t\t\t\tprevX       = int32(0)\n\t\t\t\trepeatCount = 0\n\t\t\t)\n\t\t\tfor ; i < iters; i++ {\n\t\t\t\tx := outEvents.Load()\n\t\t\t\tif x < tt.expEvents {\n\t\t\t\t\ttime.Sleep(time.Millisecond * 100)\n\t\t\t\t\tif x == prevX {\n\t\t\t\t\t\trepeatCount++\n\t\t\t\t\t}\n\t\t\t\t\tprevX = x\n\t\t\t\t\tcontinue\n\t\t\t\t}\n\t\t\t\tbreak\n\t\t\t}\n\n\t\t\tp.Stop()\n\n\t\t\tassert.Equal(t, tt.expEvents, outEvents.Load(), \"wrong out events count\")\n\t\t}\n\n\t\tfastCheck = false\n\t\tt.Run(tt.name, testFunc)\n\t\tfastCheck = true\n\t\tt.Run(tt.name+\"_fast\", testFunc)\n\t}\n}"

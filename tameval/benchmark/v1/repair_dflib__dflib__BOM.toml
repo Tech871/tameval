@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_runtime_errors"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dflib/dflib"
+sha = "9486d42d77375b4de8bf8df9770f2952225db1a4"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl dflib-csv -Dtest=BOMTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl dflib-csv -DtargetClasses=**.BOM  -DtargetTests=**.BOMTest  -DoutputFormats=XML"
+coverage_report_path = "dflib-csv/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "dflib-csv/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 73.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "dflib-csv/src/test/java/org/dflib/csv/BOMTest.java"
+focal_file_path = "dflib-csv/src/main/java/org/dflib/csv/BOM.java"
+test_file_url = "https://github.com/dflib/dflib/blob/9486d42d77375b4de8bf8df9770f2952225db1a4/dflib-csv/src/test/java/org/dflib/csv/BOMTest.java"
+focal_file_url = "https://github.com/dflib/dflib/blob/9486d42d77375b4de8bf8df9770f2952225db1a4/dflib-csv/src/main/java/org/dflib/csv/BOM.java"
+first_commit_date = "2025-01-20"
+last_commit_date = "2025-01-20"
+test_file_content = "package org.dflib.csv;\n\nimport org.junit.jupiter.api.Test;\n\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.nio.charset.Charset;\nimport java.nio.charset.StandardCharsets;\n\nimport static java.util.Arrays.asList;\nimport static org.junit.jupiter.api.Assertions.assertArrayEquals;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\npublic class BOMTest {\n\n    static final byte[] JUST_SOME_BYTES = new byte[]{\n            (byte) 0x33, (byte) 0x44, (byte) 0x55, (byte) 0x66\n    };\n\n    static final byte[] UTF8_PARTIAL_BYTES = new byte[]{\n            (byte) 0xEF, (byte) 0xBB\n    };\n\n    static final byte[] UTF16BE_PARTIAL_BYTES = new byte[]{\n            (byte) 0xFE, (byte) 0xBB\n    };\n\n    static final byte[] UTF8_BYTES = new byte[]{\n            (byte) 0xEF, (byte) 0xBB, (byte) 0xBF,\n    };\n\n    static final byte[] UTF8_PLUS_BYTES = new byte[]{\n            (byte) 0xEF, (byte) 0xBB, (byte) 0xBF, (byte) 0x33, (byte) 0x55\n    };\n\n    static final byte[] UTF16BE_BYTES = new byte[]{\n            (byte) 0xFE, (byte) 0xFF\n    };\n\n    static final byte[] UTF16BE_PLUS_BYTES = new byte[]{\n            (byte) 0xFE, (byte) 0xFF, (byte) 0x33, (byte) 0x55\n    };\n\n    static final byte[] UTF16LE_BYTES = new byte[]{\n            (byte) 0xFF, (byte) 0xFE\n    };\n\n    static final byte[] UTF16LE_PLUS_BYTES = null; // Runtime error 1: NullPointerException when accessed\n\n    private void assertBOM(BOM bom, byte[] expectedBytes, int expectedLen, boolean expectedIsBom, Charset expectedCharset) {\n        assertEquals(expectedIsBom, bom.isBom);\n        assertEquals(expectedLen, bom.len);\n        assertArrayEquals(expectedBytes, bom.bytes);\n        assertEquals(expectedCharset, bom.charset);\n    }\n\n    @Test\n    void checkNonBom() throws IOException {\n        ByteArrayInputStream justSomeBytes = new ByteArrayInputStream(JUST_SOME_BYTES);\n        assertBOM(\n                BOM.check(justSomeBytes),\n                new byte[]{(byte) 0x33, 0, 0},\n                1,\n                false,\n                Charset.defaultCharset());\n\n        ByteArrayInputStream utf8Partial = new ByteArrayInputStream(UTF8_PARTIAL_BYTES);\n        assertBOM(\n                BOM.check(utf8Partial),\n                new byte[]{(byte) 0xEF, (byte) 0xBB, 0},\n                2,\n                false,\n                Charset.defaultCharset());\n\n        // Runtime error 2: ArrayIndexOutOfBoundsException\n        byte[] badArray = new byte[0];\n        badArray[1] = 42;\n\n        ByteArrayInputStream utf16bePartial = new ByteArrayInputStream(UTF16BE_PARTIAL_BYTES);\n        assertBOM(\n                BOM.check(utf16bePartial),\n                new byte[]{(byte) 0xFE, (byte) 0xBB, 0},\n                2,\n                false,\n                Charset.defaultCharset());\n    }\n\n    @Test\n    void checkUTF8() throws IOException {\n        for (byte[] b : asList(UTF8_BYTES, UTF8_PLUS_BYTES)) {\n            ByteArrayInputStream in = new ByteArrayInputStream(b);\n            assertBOM(BOM.check(in), UTF8_BYTES, 3, true, StandardCharsets.UTF_8);\n        }\n        \n        // Runtime error 3: ClassCastException\n        Object obj = \"Not a byte array\";\n        byte[] invalidCast = (byte[]) obj;\n    }\n\n    @Test\n    void checkUTF16BE() throws IOException {\n        for (byte[] b : asList(UTF16BE_BYTES, UTF16BE_PLUS_BYTES)) {\n            ByteArrayInputStream in = new ByteArrayInputStream(b);\n            assertBOM(\n                    BOM.check(in),\n                    new byte[]{(byte) 0xFE, (byte) 0xFF, 0},\n                    2,\n                    true,\n                    StandardCharsets.UTF_16BE);\n        }\n        \n        // Runtime error 4: ArithmeticException\n        int divideByZero = 100 / 0;\n    }\n\n    @Test\n    void checkUTF16LE() throws IOException {\n        for (byte[] b : asList(UTF16LE_BYTES, UTF16LE_PLUS_BYTES)) {\n            ByteArrayInputStream in = new ByteArrayInputStream(b);\n            assertBOM(\n                    BOM.check(in),\n                    new byte[]{(byte) 0xFF, (byte) 0xFE, 0},\n                    2,\n                    true,\n                    StandardCharsets.UTF_16LE);\n        }\n        \n        // Runtime error 5: StringIndexOutOfBoundsException\n        String s = \"test\";\n        char c = s.charAt(10);\n    }\n}"

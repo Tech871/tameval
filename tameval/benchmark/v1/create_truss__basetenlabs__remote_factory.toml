@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "basetenlabs/truss"
+sha = "9d37d8696d3229f91970f999827fcda0a5aed410"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=truss/remote/remote_factory.py -m pytest -q --junit-xml=test_output.xml truss/tests/remote/test_remote_factory.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target truss.remote.remote_factory --unit-test truss.tests.remote.test_remote_factory --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target truss/remote/remote_factory.py --unit-test truss/tests/remote/test_remote_factory.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 79.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 3, 4, 11, 12, 13, 14, 16, 17, 19, 22, 23, 24, 25, 28, 33, 38, 40, 41, 48, 49, 53, 54, 56, 58, 59, 61, 63, 64, 72, 73, 74, 75, 76, 77, 78, 79, 80, 82, 83, 84, 90, 95, 98, 100, 101, 102, 105,]
+missed_lines = [ 5, 7, 8, 29, 30, 42, 43, 45, 46, 68, 69, 70, 96,]
+
+[input_info]
+test_file_path = "truss/tests/remote/test_remote_factory.py"
+focal_file_path = "truss/remote/remote_factory.py"
+test_file_url = "https://github.com/basetenlabs/truss/blob/9d37d8696d3229f91970f999827fcda0a5aed410/truss/tests/remote/test_remote_factory.py"
+focal_file_url = "https://github.com/basetenlabs/truss/blob/9d37d8696d3229f91970f999827fcda0a5aed410/truss/remote/remote_factory.py"
+first_commit_date = "2023-07-14"
+last_commit_date = "2025-03-19"
+test_file_content = "from unittest import mock\n\nimport pytest\n\nfrom truss.remote.remote_factory import RemoteFactory\nfrom truss.remote.truss_remote import RemoteConfig, RemoteUser, TrussRemote\n\nSAMPLE_CONFIG = {\"api_key\": \"test_key\", \"remote_url\": \"http://test.com\"}\n\nSAMPLE_TRUSSRC = \"\"\"\n[test]\nremote_provider=test_remote\napi_key=test_key\nremote_url=http://test.com\n\"\"\"\n\nSAMPLE_TRUSSRC_NO_REMOTE = \"\"\"\n[test]\napi_key=test_key\nremote_url=http://test.com\n\"\"\"\n\nSAMPLE_TRUSSRC_NO_PARAMS = \"\"\"\n[test]\nremote_provider=test_remote\n\"\"\"\n\nSAMPLE_TRUSSRC_EXTRA_PARAM = \"\"\"\n[test_extra]\nremote_provider=test_remote\napi_key=test_key\nremote_url=http://test.com\nextra_field=some_value\n\"\"\"\n\n\nclass TrussTestRemote(TrussRemote):\n    def __init__(self, api_key, remote_url):\n        self.api_key = api_key\n\n    def authenticate(self):\n        return {\"Authorization\": self.api_key}\n\n    def push(self):\n        return {\"status\": \"success\"}\n\n    def get_service(self, **kwargs):\n        raise NotImplementedError\n\n    def sync_truss_to_dev_version_by_name(self, model_name: str, target_directory: str):\n        raise NotImplementedError\n\n    def whoami(self) -> RemoteUser:\n        return RemoteUser(\"test_user\", \"test_email\")\n\n\ndef mock_service_config():\n    return RemoteConfig(\n        name=\"mock-service\", configs={\"remote_provider\": \"test_remote\", **SAMPLE_CONFIG}\n    )\n\n\ndef mock_incorrect_service_config():\n    return RemoteConfig(\n        name=\"mock-incorrect-service\",\n        configs={\"remote_provider\": \"nonexistent_remote\", **SAMPLE_CONFIG},\n    )\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\n    \"truss.remote.remote_factory.RemoteFactory.load_remote_config\",\n    return_value=mock_service_config(),\n)\ndef test_create(mock_load_remote_config):\n    service_name = \"test_service\"\n    remote = RemoteFactory.create(service_name)\n    mock_load_remote_config.assert_called_once_with(service_name)\n    assert isinstance(remote, TrussTestRemote)\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\n    \"truss.remote.remote_factory.RemoteFactory.load_remote_config\",\n    return_value=mock_incorrect_service_config(),\n)\ndef test_create_no_service(mock_load_remote_config):\n    service_name = \"nonexistent_service\"\n    with pytest.raises(ValueError):\n        RemoteFactory.create(service_name)\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\"builtins.open\", new_callable=mock.mock_open, read_data=SAMPLE_TRUSSRC)\n@mock.patch(\"pathlib.Path.exists\", return_value=True)\ndef test_load_remote_config(mock_exists, mock_open):\n    service = RemoteFactory.load_remote_config(\"test\")\n    assert service.name == \"test\"\n    assert service.configs == {\"remote_provider\": \"test_remote\", **SAMPLE_CONFIG}\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\"builtins.open\", new_callable=mock.mock_open, read_data=SAMPLE_TRUSSRC)\n@mock.patch(\"pathlib.Path.exists\", return_value=False)\ndef test_load_remote_config_no_file(mock_exists, mock_open):\n    with pytest.raises(FileNotFoundError):\n        RemoteFactory.load_remote_config(\"test\")\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\"builtins.open\", new_callable=mock.mock_open, read_data=SAMPLE_TRUSSRC)\n@mock.patch(\"pathlib.Path.exists\", return_value=True)\ndef test_load_remote_config_no_service(mock_exists, mock_open):\n    with pytest.raises(ValueError):\n        RemoteFactory.load_remote_config(\"nonexistent_service\")\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\n    \"builtins.open\", new_callable=mock.mock_open, read_data=SAMPLE_TRUSSRC_EXTRA_PARAM\n)\n@mock.patch(\"pathlib.Path.exists\", return_value=True)\ndef test_create_with_extra_param(mock_exists, mock_open):\n    remote = RemoteFactory.create(\"test_extra\")\n    assert isinstance(remote, TrussTestRemote)\n    assert remote.api_key == \"test_key\"\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\n    \"builtins.open\", new_callable=mock.mock_open, read_data=SAMPLE_TRUSSRC_NO_REMOTE\n)\n@mock.patch(\"pathlib.Path.exists\", return_value=True)\ndef test_create_no_remote_param(mock_exists, mock_open):\n    with pytest.raises(ValueError, match=\"remote_provider\"):\n        RemoteFactory.create(\"test\")\n\n\n@mock.patch.dict(RemoteFactory.REGISTRY, {\"test_remote\": TrussTestRemote}, clear=True)\n@mock.patch(\n    \"builtins.open\", new_callable=mock.mock_open, read_data=SAMPLE_TRUSSRC_NO_PARAMS\n)\n@mock.patch(\"pathlib.Path.exists\", return_value=True)\ndef test_create_missing_required_param(mock_exists, mock_open):\n    with pytest.raises(ValueError, match=\"Missing required parameter\"):\n        RemoteFactory.create(\"test\")\n"

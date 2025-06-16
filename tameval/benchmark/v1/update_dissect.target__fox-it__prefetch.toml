@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "fox-it/dissect.target"
+sha = "12306a3a840971af7da3dbd338527eb3360dbbd9"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=dissect/target/plugins/os/windows/prefetch.py -m pytest -q --junit-xml=test_output.xml tests/plugins/os/windows/test_prefetch.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target dissect.target.plugins.os.windows.prefetch --unit-test tests.plugins.os.windows.test_prefetch --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target dissect/target/plugins/os/windows/prefetch.py --unit-test tests/plugins/os/windows/test_prefetch.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 33.0
+original_coverage = 73.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 31.0
+covered_lines = [ 0, 2, 3, 5, 6, 7, 9, 10, 11, 13, 18, 30, 43, 168, 170, 178, 179, 194, 203, 212, 226, 233, 234, 238, 239, 249, 252, 256, 260, 261, 262,]
+missed_lines = [ 14, 16, 180, 181, 182, 184, 185, 186, 187, 188, 189, 190, 192, 195, 196, 198, 199, 201, 204, 205, 206, 207, 208, 209, 210, 215, 216, 217, 218, 219, 223, 224, 227, 228, 229, 230, 231, 236, 241, 243, 244, 246, 253, 254, 257, 258, 299, 300, 301, 303, 304, 305, 306, 307, 309, 310, 312, 313, 323, 324, 325, 326,]
+
+[input_info]
+test_file_path = "tests/plugins/os/windows/test_prefetch.py"
+focal_file_path = "dissect/target/plugins/os/windows/prefetch.py"
+test_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/tests/plugins/os/windows/test_prefetch.py"
+focal_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/dissect/target/plugins/os/windows/prefetch.py"
+first_commit_date = "2022-07-20"
+last_commit_date = "2025-01-27"
+test_file_content = "from unittest.mock import Mock, patch\n\nimport pytest\n\nimport dissect.target.plugins.os.windows.prefetch as prefetch\n\n\n@pytest.fixture()\ndef mocked_cstruct(version):\n    with patch.object(prefetch, \"prefetch\") as mocked_cstruct:\n        mocked_cstruct.PREFETCH_HEADER.return_value.version = version\n        yield mocked_cstruct\n\n\n@pytest.fixture()\ndef mocked_prefetch():\n    with patch.object(prefetch, \"prefetch\"):\n        with patch.multiple(prefetch.Prefetch, identify=Mock(), parse=Mock()):\n            return prefetch.Prefetch(Mock())\n\n\n@pytest.mark.parametrize(\n    \"version, dict_output\",\n    [\n        (17, (\"FILE_INFORMATION_17\", \"FILE_METRICS_ARRAY_ENTRY_17\")),\n        (23, (\"FILE_INFORMATION_23\", \"FILE_METRICS_ARRAY_ENTRY_23\")),\n        (30, (\"FILE_INFORMATION_26\", \"FILE_METRICS_ARRAY_ENTRY_23\")),\n    ],\n)\ndef test_prefetch_valid_versions(mocked_cstruct, version, dict_output):\n    with patch.object(prefetch, \"prefetch_version_structs\") as prefetch_diffs:\n        file_info = getattr(mocked_cstruct, dict_output[0])\n        metric_array = getattr(mocked_cstruct, dict_output[1])\n        prefetch_diffs.get.return_value = (file_info, metric_array)\n        prefetch_diffs.keys.return_value = [version]\n        with patch.object(prefetch.Prefetch, \"parse_metrics\") as mocked_metric:\n            prefetch_obj = prefetch.Prefetch(Mock())\n            assert prefetch_obj.fn == file_info.return_value\n            mocked_metric.assert_called_with(metric_array_struct=metric_array)\n\n\n@pytest.mark.parametrize(\"version\", [0xDEADBEEF])\ndef test_prefetch_invalid_version(mocked_cstruct):\n    with pytest.raises(NotImplementedError):\n        prefetch.Prefetch(Mock())\n\n\ndef test_prefetch_datetime(mocked_prefetch):\n    mocked_prefetch.fn = Mock()\n    mocked_prefetch.fn.last_run_time = 0xDEADBEEF\n\n    with patch(\"dissect.target.plugins.os.windows.prefetch.wintimestamp\") as wintimestamp:\n        assert mocked_prefetch.latest_timestamp == wintimestamp.return_value\n\n\ndef test_prefetch_unknown_attribute(mocked_prefetch):\n    mocked_prefetch.fn = Mock(spec=[])\n    assert len(mocked_prefetch.previous_timestamps) == 0\n\n\n@pytest.mark.parametrize(\n    \"dates,expected_length\",\n    [\n        ([0x0] * 12, 0),\n        ([0x1] * 8, 8),\n        ([0x1, 0x2, 0x0, 0x1], 3),\n        ([0x1, 0x0, 0x0, 0x20, 0x0], 2),\n    ],\n)\ndef test_prefetch_last_run_dates(mocked_prefetch, dates, expected_length):\n    mocked_prefetch.fn = Mock()\n    mocked_prefetch.fn.last_run_remains = dates\n\n    assert len(mocked_prefetch.previous_timestamps) == expected_length\n\n\ndef test_prefetch_parse_metrics(mocked_prefetch):\n    mocked_prefetch.fh = Mock()\n    mocked_prefetch.fn = Mock()\n    mocked_prefetch.fn.number_of_file_metrics_entries = 10\n    with patch.object(prefetch.Prefetch, \"read_filename\") as filename:\n        filename.return_value.decode.return_value = \"\"\n        metric_struct = Mock()\n        mocked_prefetch.fn.filename_strings_offset = \"\"\n        metric_struct.return_value.filename_string_offset = \"\"\n        test = mocked_prefetch.parse_metrics(metric_array_struct=metric_struct)\n        assert len(test) == 10\n\n\ndef test_prefetch_read_filename(mocked_prefetch):\n    mocked_fileheader = Mock()\n    mocked_fileheader.read.return_value = b\"\"\n\n    mocked_prefetch.fh = mocked_fileheader\n    filename = mocked_prefetch.read_filename(0x10, 0x10)\n\n    mocked_fileheader.read.assert_called_with(0x10 * 2)\n    assert isinstance(filename, bytes)\n    assert mocked_fileheader.seek.call_count == 2"

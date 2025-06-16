@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "098fadc5ab3152e2c85008a592ac975328a9fca8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/writers/ruff_formatter.py -m pytest -q --junit-xml=test_output.xml tests/writers/test_ruff_formatter.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.writers.ruff_formatter --unit-test tests.writers.test_ruff_formatter --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/writers/ruff_formatter.py --unit-test tests/writers/test_ruff_formatter.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 78.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 52.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/writers/test_ruff_formatter.py"
+focal_file_path = "mypy_boto3_builder/writers/ruff_formatter.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/098fadc5ab3152e2c85008a592ac975328a9fca8/tests/writers/test_ruff_formatter.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/098fadc5ab3152e2c85008a592ac975328a9fca8/mypy_boto3_builder/writers/ruff_formatter.py"
+first_commit_date = "2024-08-25"
+last_commit_date = "2025-02-27"
+test_file_content = "import tempfile\nfrom pathlib import Path\n\nfrom mypy_boto3_builder.writers.ruff_formatter import RuffFormatter\n\n\nclass TestRuffFormatter:\n    def test_format(self) -> None:\n        formatter = RuffFormatter(\n            known_first_party=[\"local\"],\n            known_third_party=[\"extra\", \"local\"],\n        )\n        with tempfile.NamedTemporaryFile(\"+w\", encoding=\"utf-8\") as f:\n            f.write(\"import os\\n\")\n            f.write(\"import datetime\\n\")\n            f.write(\"import black\\n\")\n            f.write(\"import local\\n\")\n            f.write(\"import extra.new\\n\")\n            f.write(\"a   =datetime.datetime.now()\\n\")\n            .flush()\n            formatter.format_python([Path(f.name)])\n            assert Path(f.name).read_text(encoding=\"utf-8\") == (\n                \"import datetime\\n\"\n                \"import os\\n\"\n                \"\\n\"\n                \"import black\\n\"\n                \"import extra.new\\n\"\n                \"\\n\"\n                \"import local\\n\"\n                \"\\n\"\n                \"a = datetime.datetime.now()\\n\"\n            )\n\n    def test_format_markdown(self) -> None:\n        formatter = RuffFormatter()\n        assert not formatter.format_markdown(\"\")\n        assert (\n            formatter.format_markdown(\"# a\\ntest\\n## b\\n## c\\ntest2\")\n            == \"# a\\ntest\\n## b\\n## c\\ntest2\"\n        )\n        assert formatter.format_markdown(\"# a\\n```python\\na=5\\n```\") == \"# a\\n```python\\na = 5\\n```\"\n        assert formatter.format_markdown(\"# a\\n```bash\\na=5\\n```\") == \"# a\\n```bash\\na=5\\n```\"\n"

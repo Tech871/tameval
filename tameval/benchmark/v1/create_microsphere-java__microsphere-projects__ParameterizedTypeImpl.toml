@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-java"
+sha = "b4576dbd7bad0fe918d235617d466ccd5434cc66"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-java-core -Dtest=ParameterizedTypeImplTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-java-core -DtargetClasses=**.ParameterizedTypeImpl  -DtargetTests=**.ParameterizedTypeImplTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-java-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-java-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 71.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 43, 44, 45, 46, 47, 48, 51, 53, 56, 59, 86, 115, 147, 200, 201, 202, 206, 208, 209, 210, 212, 214, 216, 219, 221, 223, 225, 226, 227, 228, 229, 230, 231, 232, 234, 237,]
+missed_lines = [ 54, 136, 167, 179, 181, 183, 184, 186, 187, 189, 190, 191, 192, 193, 195,]
+
+[input_info]
+test_file_path = "microsphere-java-core/src/test/java/io/microsphere/reflect/generics/ParameterizedTypeImplTest.java"
+focal_file_path = "microsphere-java-core/src/main/java/io/microsphere/reflect/generics/ParameterizedTypeImpl.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/b4576dbd7bad0fe918d235617d466ccd5434cc66/microsphere-java-core/src/test/java/io/microsphere/reflect/generics/ParameterizedTypeImplTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/b4576dbd7bad0fe918d235617d466ccd5434cc66/microsphere-java-core/src/main/java/io/microsphere/reflect/generics/ParameterizedTypeImpl.java"
+first_commit_date = "2024-04-08"
+last_commit_date = "2025-03-15"
+test_file_content = "package io.microsphere.reflect.generics;\n\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport java.lang.reflect.MalformedParameterizedTypeException;\nimport java.lang.reflect.ParameterizedType;\nimport java.lang.reflect.Type;\nimport java.util.Map;\n\nimport static io.microsphere.reflect.generics.ParameterizedTypeImpl.of;\nimport static org.junit.jupiter.api.Assertions.assertArrayEquals;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\n/**\n * {@link ParameterizedTypeImpl} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see ParameterizedType\n * @see ParameterizedTypeImpl\n * @since 1.0.0\n */\npublic class ParameterizedTypeImplTest {\n\n    private static Type[] actualTypeArguments = new Type[]{String.class, Integer.class};\n\n    /**\n     * The top-level type : Map&lt;String,Integer&gt;\n     */\n    private ParameterizedTypeImpl topLevelType;\n\n    /**\n     * The nested type : Map.Entry&lt;String,Integer&gt;\n     */\n    private ParameterizedTypeImpl nestedType;\n\n    /**\n     * The complex type\n     */\n    private ParameterizedTypeImpl complexType;\n\n    @BeforeEach\n    public void init() {\n        topLevelType = of(Map.class, actualTypeArguments);\n        nestedType = of(Map.Entry.class, actualTypeArguments, Map.class);\n        complexType = of(Map.Entry.class, actualTypeArguments, topLevelType);\n    }\n\n\n\n    @Test\n    public void testGetRawType() {\n        assertEquals(Map.class, topLevelType.getRawType());\n        assertEquals(Map.Entry.class, nestedType.getRawType());\n        assertEquals(Map.Entry.class, complexType.getRawType());\n    }\n\n\n\n\n\n    @Test\n    public void testHashCodeOnSame() {\n        assertEquals(topLevelType.hashCode(), topLevelType.hashCode());\n        assertEquals(nestedType.hashCode(), nestedType.hashCode());\n        assertEquals(complexType.hashCode(), complexType.hashCode());\n    }\n\n\n\n\n    @Test\n    public void testToStringOnSameType() {\n        assertEquals(topLevelType.toString(), of(Map.class, actualTypeArguments, null).toString());\n        assertEquals(nestedType.toString(), of(Map.Entry.class, actualTypeArguments, Map.class).toString());\n        assertEquals(complexType.toString(), of(Map.Entry.class, actualTypeArguments, topLevelType).toString());\n    }\n\n}\n"

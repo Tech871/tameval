@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "flyteorg/flytekit"
+sha = "5503ee5e232fdbc633af39c7f4539a04906102fc"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r dev-requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=flytekit/interaction/string_literals.py -m pytest -q --junit-xml=test_output.xml tests/flytekit/unit/interaction/test_string_literals.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target flytekit.interaction.string_literals --unit-test tests.flytekit.unit.interaction.test_string_literals --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target flytekit/interaction/string_literals.py --unit-test tests/flytekit/unit/interaction/test_string_literals.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 93.0
+original_coverage = 93.0
+mutation_kill_rate = 95.0
+original_mutation_kill_rate = 95.0
+covered_lines = [ 0, 1, 2, 4, 5, 7, 10, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 29, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 56, 61, 62, 63, 64, 65, 66, 73, 77, 78, 79, 80,]
+missed_lines = [ 53, 67, 69, 70,]
+
+[input_info]
+test_file_path = "tests/flytekit/unit/interaction/test_string_literals.py"
+focal_file_path = "flytekit/interaction/string_literals.py"
+test_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/tests/flytekit/unit/interaction/test_string_literals.py"
+focal_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/flytekit/interaction/string_literals.py"
+first_commit_date = "2023-10-24"
+last_commit_date = "2025-02-14"
+test_file_content = "import datetime\nimport json\n\nimport pytest\nfrom google.protobuf.json_format import Parse\nfrom google.protobuf.struct_pb2 import Struct\n\nfrom flytekit import BlobType\nfrom flytekit.interaction.string_literals import (\n    literal_map_string_repr,\n    literal_string_repr,\n    primitive_to_string,\n    scalar_to_string,\n)\nfrom flytekit.models.literals import (\n    Binary,\n    Blob,\n    BlobMetadata,\n    Literal,\n    LiteralCollection,\n    LiteralMap,\n    Primitive,\n    Scalar,\n    StructuredDataset,\n    Schema,\n    Union,\n    Void,\n)\nfrom flytekit.models.types import Error, LiteralType, SimpleType, SchemaType\n\n\ndef test_primitive_to_string():\n    primitive = Primitive(integer=1)\n    assert primitive_to_string(primitive) == 1\n\n    primitive = Primitive(float_value=1.0)\n    assert primitive_to_string(primitive) == 1.0\n\n    primitive = Primitive(boolean=True)\n    assert primitive_to_string(primitive) is True\n\n    primitive = Primitive(string_value=\"hello\")\n    assert primitive_to_string(primitive) == \"hello\"\n\n    primitive = Primitive(datetime=datetime.datetime(2021, 1, 1))\n    assert primitive_to_string(primitive) == \"2021-01-01T00:00:00+00:00\"\n\n    primitive = Primitive(duration=datetime.timedelta(seconds=1))\n    assert primitive_to_string(primitive) == 1.0\n\n    with pytest.raises(ValueError):\n        primitive_to_string(Primitive())\n\n\ndef test_scalar_to_string():\n    scalar = Scalar(primitive=Primitive(integer=1))\n    assert scalar_to_string(scalar) == 1\n\n    scalar = Scalar(none_type=Void())\n    assert scalar_to_string(scalar) is None\n\n    scalar = Scalar(error=Error(\"n1\", \"error\"))\n    assert scalar_to_string(scalar) == \"error\"\n\n    scalar = Scalar(structured_dataset=StructuredDataset(uri=\"uri\"))\n    assert scalar_to_string(scalar) == \"uri\"\n\n    scalar = Scalar(schema=Schema(uri=\"schema_uri\", type=SchemaType(columns=[])))\n    assert scalar_to_string(scalar) == \"schema_uri\"\n\n    scalar = Scalar(\n        blob=Blob(\n            metadata=BlobMetadata(BlobType(format=\"\", dimensionality=BlobType.BlobDimensionality.SINGLE)), uri=\"uri\"\n        )\n    )\n    assert scalar_to_string(scalar) == \"uri\"\n\n    scalar = Scalar(binary=Binary(bytes(\"hello\", \"utf-8\"), \"text/plain\"))\n    assert scalar_to_string(scalar) == b\"aGVsbG8=\"\n\n    scalar = Scalar(generic=Parse(json.dumps({\"a\": \"b\"}), Struct()))\n    assert scalar_to_string(scalar) == {\"a\": \"b\"}\n\n    scalar = Scalar(\n        union=Union(Literal(scalar=Scalar(primitive=Primitive(integer=1))), LiteralType(simple=SimpleType.INTEGER))\n    )\n    assert scalar_to_string(scalar) == 1\n\n    scalar = Scalar(binary=Binary(b'\\x82\\xa7compact\\xc3\\xa6schema\\x00', \"msgpack\"))\n    assert scalar_to_string(scalar) == '{\"compact\": true, \"schema\": 0}'\n\n\ndef test_literal_string_repr():\n    lit = Literal(scalar=Scalar(primitive=Primitive(integer=1)))\n    assert literal_string_repr(lit) == 1\n\n    lit = Literal(collection=LiteralCollection(literals=[Literal(scalar=Scalar(primitive=Primitive(integer=1)))]))\n    assert literal_string_repr(lit) == [1]\n\n    lit = Literal(map=LiteralMap(literals={\"a\": Literal(scalar=Scalar(primitive=Primitive(integer=1)))}))\n    assert literal_string_repr(lit) == {\"a\": 1}\n\n\ndef test_literal_map_string_repr():\n    lit = LiteralMap(literals={\"a\": Literal(scalar=Scalar(primitive=Primitive(integer=1)))})\n    assert literal_map_string_repr(lit) == {\"a\": 1}\n\n    lit = LiteralMap(\n        literals={\n            \"a\": Literal(scalar=Scalar(primitive=Primitive(integer=1))),\n            \"b\": Literal(scalar=Scalar(primitive=Primitive(integer=2))),\n        }\n    )\n    assert literal_map_string_repr(lit) == {\"a\": 1, \"b\": 2}\n\n    assert literal_map_string_repr(\n        {\n            \"a\": Literal(scalar=Scalar(primitive=Primitive(integer=1))),\n            \"b\": Literal(scalar=Scalar(primitive=Primitive(integer=2))),\n        }\n    ) == {\"a\": 1, \"b\": 2}\n"

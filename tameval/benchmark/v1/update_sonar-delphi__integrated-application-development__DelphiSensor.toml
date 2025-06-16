@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "integrated-application-development/sonar-delphi"
+sha = "ae21dc4c487d8572ed20419cbdda4789f5ae289c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl sonar-delphi-plugin -Dtest=DelphiSensorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl sonar-delphi-plugin -DtargetClasses=**.DelphiSensor  -DtargetTests=**.DelphiSensorTest  -DoutputFormats=XML"
+coverage_report_path = "sonar-delphi-plugin/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "sonar-delphi-plugin/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 97.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "sonar-delphi-plugin/src/test/java/au/com/integradev/delphi/DelphiSensorTest.java"
+focal_file_path = "sonar-delphi-plugin/src/main/java/au/com/integradev/delphi/DelphiSensor.java"
+test_file_url = "https://github.com/integrated-application-development/sonar-delphi/blob/ae21dc4c487d8572ed20419cbdda4789f5ae289c/sonar-delphi-plugin/src/test/java/au/com/integradev/delphi/DelphiSensorTest.java"
+focal_file_url = "https://github.com/integrated-application-development/sonar-delphi/blob/ae21dc4c487d8572ed20419cbdda4789f5ae289c/sonar-delphi-plugin/src/main/java/au/com/integradev/delphi/DelphiSensor.java"
+first_commit_date = "2023-01-17"
+last_commit_date = "2025-01-20"
+test_file_content = "/*\n * SonarQube PMD Plugin\n * Copyright (C) 2012-2019 SonarSource SA\n * mailto:info AT sonarsource DOT com\n *\n * This program is free software; you can redistribute it and/or\n * modify it under the terms of the GNU Lesser General Public\n * License as published by the Free Software Foundation; either\n * version 3 of the License, or (at your option) any later version.\n *\n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n * Lesser General Public License for more details.\n *\n * You should have received a copy of the GNU Lesser General Public License\n * along with this program; if not, write to the Free Software Foundation,\n * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.\n */\npackage au.com.integradev.delphi;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.assertj.core.api.Assertions.assertThatThrownBy;\nimport static org.mockito.ArgumentMatchers.any;\nimport static org.mockito.ArgumentMatchers.anyString;\nimport static org.mockito.BDDMockito.willThrow;\nimport static org.mockito.Mockito.mock;\nimport static org.mockito.Mockito.never;\nimport static org.mockito.Mockito.times;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\nimport au.com.integradev.delphi.core.DelphiLanguage;\nimport au.com.integradev.delphi.executor.DelphiMasterExecutor;\nimport au.com.integradev.delphi.msbuild.DelphiProjectHelper;\nimport java.io.IOException;\nimport java.nio.file.Files;\nimport java.nio.file.Path;\nimport java.util.List;\nimport org.apache.commons.io.FileUtils;\nimport org.junit.jupiter.api.AfterEach;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.sonar.api.batch.fs.InputFile;\nimport org.sonar.api.batch.sensor.SensorDescriptor;\n\nclass DelphiSensorTest {\n  private final DelphiMasterExecutor executor = mock(DelphiMasterExecutor.class);\n  private final DelphiProjectHelper delphiProjectHelper = mock(DelphiProjectHelper.class);\n  private Path baseDir;\n\n  private DelphiSensor sensor;\n\n  @BeforeEach\n  void setup() throws IOException {\n    baseDir = Files.createTempDirectory(\"baseDir\");\n\n    sensor = new DelphiSensor(delphiProjectHelper, executor);\n    when(delphiProjectHelper.shouldExecuteOnProject()).thenReturn(true);\n    when(delphiProjectHelper.getToolchain())\n        .thenReturn(DelphiProperties.COMPILER_TOOLCHAIN_DEFAULT);\n    when(delphiProjectHelper.getCompilerVersion())\n        .thenReturn(DelphiProperties.COMPILER_VERSION_DEFAULT);\n\n    Path standardLibraryPath = Files.createDirectories(baseDir.resolve(\"bds/source\"));\n\n    Files.writeString(\n        standardLibraryPath.resolve(\"SysInit.pas\"),\n        \"unit SysInit;\\ninterface\\nimplementation\\nend.\");\n\n    Files.writeString(\n        standardLibraryPath.resolve(\"System.pas\"),\n        \"unit System;\\n\"\n            + \"interface\\n\"\n            + \"type\\n\"\n            + \"  TObject = class\\n\"\n            + \"  end;\\n\"\n            + \"  IInterface = interface\\n\"\n            + \"  end;\\n\"\n            + \"  TClassHelperBase = class\\n\"\n            + \"  end;\\n\"\n            + \"  TVarRec = record\\n\"\n            + \"  end;\\n\"\n            + \"implementation\\n\"\n            + \"end.\");\n\n    Path sourceFilePath = baseDir.resolve(\"SourceFile.pas\");\n    Files.writeString(sourceFilePath, \"unit SourceFile;\\ninterface\\nimplementation\\nend.\");\n\n    InputFile inputFile = mock(InputFile.class);\n    when(inputFile.uri()).thenReturn(sourceFilePath.toUri());\n\n    when(delphiProjectHelper.mainFiles()).thenReturn(List.of(inputFile));\n    when(delphiProjectHelper.getFile(anyString())).thenReturn(inputFile);\n    when(delphiProjectHelper.standardLibraryPath()).thenReturn(standardLibraryPath);\n  }\n\n  @AfterEach\n  void teardown() {\n    FileUtils.deleteQuietly(baseDir.toFile());\n  }\n\n  @Test\n  void testToString() {\n    final String toString = sensor.toString();\n    assertThat(toString).isEqualTo(\"DelphiSensor\");\n  }\n\n  @Test\n  void testDescribe() {\n    final SensorDescriptor mockDescriptor = mock(SensorDescriptor.class);\n    when(mockDescriptor.onlyOnLanguage(anyString())).thenReturn(mockDescriptor);\n\n    sensor.describe(mockDescriptor);\n\n    verify(mockDescriptor).onlyOnLanguage(DelphiLanguage.KEY);\n    verify(mockDescriptor).name(\"DelphiSensor\");\n  }\n\n  @Test\n  void testSensorShouldAllowExceptionsToPropagate() {\n    final RuntimeException expectedException = new RuntimeException();\n\n    willThrow(expectedException).given(executor).setup();\n\n    assertThatThrownBy(() -> sensor.execute(mock())).isEqualTo(expectedException);\n  }\n\n  @Test\n  void testWhenShouldExecuteOnProjectReturnsFalseThenExecutorIsNotCalled() {\n    when(delphiProjectHelper.shouldExecuteOnProject()).thenReturn(false);\n\n    sensor.execute(mock());\n\n    verify(executor, never()).execute(any(), any());\n  }\n\n  @Test\n  void testWhenShouldExecuteOnProjectReturnsTrueThenExecutorIsCalled() {\n    when(delphiProjectHelper.shouldExecuteOnProject()).thenReturn(true);\n\n    sensor.execute(mock());\n\n    verify(executor, times(1)).execute(any(), any());\n  }\n}"

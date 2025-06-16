@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "Softcatala/open-dubbing"
+sha = "373607ed4c1e567bfa50c431bc1147d7c62574aa"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=open_dubbing/translation_nllb.py -m pytest -q --junit-xml=test_output.xml tests/translation_nllb_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target open_dubbing.translation_nllb --unit-test tests.translation_nllb_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target open_dubbing/translation_nllb.py --unit-test tests/translation_nllb_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 40.0
+original_coverage = 62.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 14, 16, 17, 20, 22, 23, 24, 25, 27, 31, 50, 53, 67, 84, 85, 86, 87, 88, 89,]
+missed_lines = [ 28, 29, 34, 35, 36, 37, 45, 47, 48, 51, 54, 55, 58, 59, 60, 63, 65, 68, 70, 72, 73, 74, 75, 76, 77, 79, 80, 82, 91,]
+
+[input_info]
+test_file_path = "tests/translation_nllb_test.py"
+focal_file_path = "open_dubbing/translation_nllb.py"
+test_file_url = "https://github.com/Softcatala/open-dubbing/blob/373607ed4c1e567bfa50c431bc1147d7c62574aa/tests/translation_nllb_test.py"
+focal_file_url = "https://github.com/Softcatala/open-dubbing/blob/373607ed4c1e567bfa50c431bc1147d7c62574aa/open_dubbing/translation_nllb.py"
+first_commit_date = "2024-09-30"
+last_commit_date = "2025-01-10"
+test_file_content = "# Copyright 2024 Jordi Mas i Hernàndez <jmas@softcatala.org>\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#    https://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\nfrom unittest.mock import MagicMock, patch\n\nfrom open_dubbing.translation_nllb import TranslationNLLB\n\n\nclass TestTranslationNLLB:\n\n    def test_get_nllb_language(self):\n        with patch(\n            \"open_dubbing.translation_nllb.TranslationNLLB._get_tokenizer_nllb\"\n        ) as mock_get_tokenizer_nllb:\n            mock_tokenizer = MagicMock()\n            mock_tokenizer.additional_special_tokens = [\n                \"cat_Latn\",\n                \"ukr_Cyrl\",\n                \"eng_Latn\",\n            ]\n            mock_get_tokenizer_nllb.return_value = mock_tokenizer\n\n            translation = TranslationNLLB()\n            translation.tokenizer = mock_tokenizer\n\n            assert translation._get_nllb_language(\"eng\") == \"eng_Latn\"\n            assert translation._get_nllb_language(\"ukr\") == \"ukr_Cyrl\"\n            assert translation._get_nllb_language(\"cat\") == \"cat_Latn\"\n"

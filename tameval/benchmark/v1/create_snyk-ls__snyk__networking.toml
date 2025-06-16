@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "37ef5edff63f9b37597e8df6c0b25dadb7068ba1"
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/mcp/networking.go internal/mcp/networking_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/mcp/networking.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 85.0
+original_coverage = 85.0
+mutation_kill_rate = 27.0
+original_mutation_kill_rate = 27.0
+covered_lines = [ 29, 30, 31, 32, 33, 34, 35, 36, 39, 40, 41, 42, 47, 48, 49, 51, 53,]
+missed_lines = [ 43, 44, 45,]
+
+[input_info]
+test_file_path = "internal/mcp/networking_test.go"
+focal_file_path = "internal/mcp/networking.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/internal/mcp/networking_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/internal/mcp/networking.go"
+first_commit_date = "2025-02-21"
+last_commit_date = "2025-02-28"
+test_file_content = "/*\n * © 2025 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage mcp\n\nimport (\n\t\"fmt\"\n\t\"net\"\n\t\"net/url\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc Test_isPortInUse(t *testing.T) {\n\t// Create a listener on a port to simulate it being in use.\n\tlistener, err := net.Listen(\"tcp\", fmt.Sprintf(\"127.0.0.1:%d\", 0))\n\trequire.NoError(t, err)\n\tdefer listener.Close() // we don't care if this fails, it is just a catch-all\n\n\tu, err := url.Parse(fmt.Sprintf(\"http://%s\", listener.Addr()))\n\trequire.NoError(t, err)\n\tinUse := isPortInUse(u)\n\tassert.True(t, inUse, \"should be in listening on: %s\", listener.Addr())\n\n\t// close listener, to have isPortInUse() return false\n\tlistener.Close()\n\tinUse = isPortInUse(u)\n\tassert.False(t, inUse, \"should be in listening on: %s\", listener.Addr())\n\n\t// Test with an invalid address format. This should return true, indicating the port is effectively unavailable.\n\tu, err = url.Parse(\"http://invalid-address\")\n\trequire.NoError(t, err)\n\tinUse = isPortInUse(u)\n\trequire.True(t, inUse)\n}\n\nfunc Test_determineFreePort(t *testing.T) {\n\tport := determineFreePort()\n\tif port < DefaultPort {\n\t\tt.Errorf(\"Expected port to be greater than %d, but got %d\", DefaultPort, port)\n\t}\n\n\t// Try to listen on the determined port.  If it fails, the port isn't actually free.\n\tlistener, err := net.Listen(\"tcp\", fmt.Sprintf(\"127.0.0.1:%d\", port))\n\trequire.NoError(t, err)\n\tdefer listener.Close()\n\n\t// Simulate all ports being taken (unlikely, but tests the loop limit)\n\tportsInUse := make([]net.Listener, 1000)\n\tfor i := 0; i < 1000; i++ {\n\t\tl, err := net.Listen(\"tcp\", fmt.Sprintf(\"127.0.0.1:%d\", DefaultPort+i))\n\t\tif err != nil {\n\t\t\t// This could legitimately happen if we run out of ephemeral ports, so just skip in this case\n\t\t\tcontinue\n\t\t}\n\t\tportsInUse[i] = l\n\t}\n\n\tdefer func() {\n\t\tfor _, l := range portsInUse {\n\t\t\tif l != nil {\n\t\t\t\tl.Close()\n\t\t\t}\n\t\t}\n\t}()\n\n\t// This test now relies on the limited range defined in determineFreePort\n\t// If it manages to find a free port it is considered a success otherwise a failure is expected\n\tport = determineFreePort()\n\tif port > DefaultPort && port < DefaultPort+1000 {\n\t\tt.Errorf(\"Expected to fail to find a free port. Port %d found instead \", port)\n\t}\n}\n"

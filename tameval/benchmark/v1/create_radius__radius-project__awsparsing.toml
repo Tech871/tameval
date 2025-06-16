@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "radius-project/radius"
+sha = "202e099e4d5cb300b34a39d5e9cc5aa2c04bda1d"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/ucp/frontend/controller/awsproxy/awsparsing.go pkg/ucp/frontend/controller/awsproxy/awsparsing_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/ucp/frontend/controller/awsproxy/awsparsing.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 27.0
+original_coverage = 58.0
+mutation_kill_rate = 50.0
+original_mutation_kill_rate = 75.0
+covered_lines = [ 34, 35, 36, 41, 46, 51, 52, 53, 54, 56, 61, 62, 67, 68, 69, 70, 75, 76, 77, 78, 79, 80, 81, 82,]
+missed_lines = [ 37, 38, 39, 42, 43, 44, 47, 48, 49, 63, 64, 65, 71, 72, 73, 85, 86, 89, 90, 91, 92, 93, 94, 95, 96, 97, 99, 100, 101, 102, 103, 104, 105, 107, 110, 111, 112, 113, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,]
+
+[input_info]
+test_file_path = "pkg/ucp/frontend/controller/awsproxy/awsparsing_test.go"
+focal_file_path = "pkg/ucp/frontend/controller/awsproxy/awsparsing.go"
+test_file_url = "https://github.com/radius-project/radius/blob/202e099e4d5cb300b34a39d5e9cc5aa2c04bda1d/pkg/ucp/frontend/controller/awsproxy/awsparsing_test.go"
+focal_file_url = "https://github.com/radius-project/radius/blob/202e099e4d5cb300b34a39d5e9cc5aa2c04bda1d/pkg/ucp/frontend/controller/awsproxy/awsparsing.go"
+first_commit_date = "2022-10-21"
+last_commit_date = "2025-01-30"
+test_file_content = "/*\nCopyright 2023 The Radius Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage awsproxy\n\nimport (\n\t\"encoding/json\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\n\nfunc TestGetPrimaryIdentifierFromMultiIdentifiers_MissingMandatoryParameters(t *testing.T) {\n\tschemaObject := map[string]any{\n\t\t\"primaryIdentifier\": []any{\n\t\t\t\"/properties/GlobalNetworkId\",\n\t\t\t\"/properties/DeviceId\",\n\t\t},\n\t}\n\n\tschemaBytes, err := json.Marshal(schemaObject)\n\trequire.NoError(t, err)\n\n\tschema := string(schemaBytes)\n\n\tproperties := map[string]any{\n\t\t\"GlobalNetworkId\": \"global-network-id\",\n\t}\n\n\tresourceID, err := getPrimaryIdentifierFromMultiIdentifiers(properties, schema)\n\trequire.Equal(t, resourceID, \"\")\n\trequire.Error(t, err)\n\trequire.EqualError(t, err, \"mandatory property DeviceId is missing\")\n}\n\n\nfunc TestGetPrimaryIdentifiersFromSchema(t *testing.T) {\n\tschemaObject := map[string]any{\n\t\t\"primaryIdentifier\": []any{\n\t\t\t\"/properties/GlobalNetworkId\",\n\t\t\t\"/properties/DeviceId\",\n\t\t},\n\t}\n\n\tschemaBytes, err := json.Marshal(schemaObject)\n\trequire.NoError(t, err)\n\n\tschema := string(schemaBytes)\n\n\tprimaryIdentifiers, err := getPrimaryIdentifiersFromSchema(schema)\n\trequire.NoError(t, err)\n\trequire.Equal(t, []string{\"/properties/GlobalNetworkId\", \"/properties/DeviceId\"}, primaryIdentifiers)\n}\n\n\n"

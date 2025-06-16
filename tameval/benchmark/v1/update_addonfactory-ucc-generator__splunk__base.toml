@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "splunk/addonfactory-ucc-generator"
+sha = "0ceda52ad4ba2548071b64914a75aae987787a86"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=splunk_add_on_ucc_framework/commands/rest_builder/endpoint/base.py -m pytest -q --junit-xml=test_output.xml tests/unit/commands/rest_builder/endpoint/test_base.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target splunk_add_on_ucc_framework.commands.rest_builder.endpoint.base --unit-test tests.unit.commands.rest_builder.endpoint.test_base --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target splunk_add_on_ucc_framework/commands/rest_builder/endpoint/base.py --unit-test tests/unit/commands/rest_builder/endpoint/test_base.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 48.0
+original_coverage = 63.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 15, 17, 24, 32, 33, 34, 40, 47, 53, 68, 69, 72, 73, 76, 77, 80, 86, 92, 124, 125, 148, 149, 152, 153, 156, 157, 160, 161, 164, 165, 168, 169, 172, 173, 176, 177, 180, 183, 186, 190, 196, 200, 213, 222, 223, 224, 225, 226, 227, 228, 229, 230,]
+missed_lines = [ 60, 61, 62, 63, 66, 70, 81, 82, 83, 84, 87, 88, 89, 90, 93, 94, 98, 99, 104, 105, 106, 107, 108, 109, 116, 126, 127, 128, 129, 130, 131, 133, 134, 138, 139, 140, 141, 143, 144, 145, 146, 150, 154, 158, 162, 166, 170, 174, 178, 181, 187, 188, 191, 194, 207, 208, 210,]
+
+[input_info]
+test_file_path = "tests/unit/commands/rest_builder/endpoint/test_base.py"
+focal_file_path = "splunk_add_on_ucc_framework/commands/rest_builder/endpoint/base.py"
+test_file_url = "https://github.com/splunk/addonfactory-ucc-generator/blob/0ceda52ad4ba2548071b64914a75aae987787a86/tests/unit/commands/rest_builder/endpoint/test_base.py"
+focal_file_url = "https://github.com/splunk/addonfactory-ucc-generator/blob/0ceda52ad4ba2548071b64914a75aae987787a86/splunk_add_on_ucc_framework/commands/rest_builder/endpoint/base.py"
+first_commit_date = "2022-12-12"
+last_commit_date = "2025-02-04"
+test_file_content = "import pytest\n\nfrom splunk_add_on_ucc_framework.commands.rest_builder.endpoint import base\n\n\n@pytest.mark.parametrize(\n    \"lines,expected\",\n    [\n        (None, \"    None\"),\n        (\n            \"\\nmax_len=4096,\\nmin_len=0,\\n\",\n            \"\\n    max_len=4096,\\n    min_len=0,\\n\",\n        ),\n        (\n            \"validator.String(\\n    max_len=4096,\\n    min_len=0,\\n)\",\n            \"    validator.String(\\n        max_len=4096,\\n        min_len=0,\\n    )\",\n        ),\n    ],\n)\ndef test_indent(lines, expected):\n    assert base.indent(lines) == expected"

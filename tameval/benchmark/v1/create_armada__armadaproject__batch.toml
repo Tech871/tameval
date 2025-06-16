@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "armadaproject/armada"
+sha = "5765dcb8fc87b811dfe3cdf254e04c6587afa142"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/common/ingest/batch.go internal/common/ingest/batch_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/common/ingest/batch.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 67.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 80, 81, 82, 83, 84,]
+missed_lines = [ 53, 54, 55, 56, 57, 58,]
+
+[input_info]
+test_file_path = "internal/common/ingest/batch_test.go"
+focal_file_path = "internal/common/ingest/batch.go"
+test_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/common/ingest/batch_test.go"
+focal_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/common/ingest/batch.go"
+first_commit_date = "2022-11-11"
+last_commit_date = "2025-01-20"
+test_file_content = "package ingest\n\nimport (\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\tclock \"k8s.io/utils/clock/testing\"\n\n\t\"github.com/armadaproject/armada/internal/common/armadacontext\"\n)\n\nconst (\n\tdefaultMaxItems   = 3\n\tdefaultMaxTimeOut = 5 * time.Second\n)\n\nvar defaultItemCounterFunc = func(i int) int { return 1 }\n\ntype resultHolder struct {\n\tresult [][]int\n\tmutex  sync.Mutex\n}\n\nfunc addToResult(result *resultHolder, publishChan chan []int) {\n\tfor {\n\t\tselect {\n\t\tcase value, ok := <-publishChan:\n\t\t\tif !ok {\n\t\t\t\treturn\n\t\t\t}\n\t\t\tresult.add(value)\n\t\t}\n\t}\n}\n\nfunc newResultHolder() *resultHolder {\n\treturn &resultHolder{\n\t\tresult: make([][]int, 0),\n\t\tmutex:  sync.Mutex{},\n\t}\n}\n\nfunc (r *resultHolder) add(a []int) {\n\tr.mutex.Lock()\n\tr.result = append(r.result, a)\n\tr.mutex.Unlock()\n}\n\nfunc (r *resultHolder) resultLength() int {\n\tr.mutex.Lock()\n\tdefer r.mutex.Unlock()\n\treturn len(r.result)\n}\n\nfunc TestBatch_MaxItems(t *testing.T) {\n\tctx, cancel := armadacontext.WithTimeout(armadacontext.Background(), 5*time.Second)\n\ttestClock := clock.NewFakeClock(time.Now())\n\tinputChan := make(chan int)\n\tpublishChan := make(chan []int)\n\tresult := newResultHolder()\n\tbatcher := NewBatcher[int](inputChan, defaultMaxItems, defaultMaxTimeOut, defaultItemCounterFunc, publishChan)\n\tbatcher.clock = testClock\n\n\tgo addToResult(result, publishChan)\n\n\tgo func() {\n\t\tbatcher.Run(ctx)\n\t\tclose(inputChan)\n\t\tclose(publishChan)\n\t}()\n\n\t// Post 6 items on the input channel without advancing the clock\n\t// And we should get a 2 updates on the output channel\n\tinputChan <- 1\n\tinputChan <- 2\n\tinputChan <- 3\n\tinputChan <- 4\n\tinputChan <- 5\n\tinputChan <- 6\n\twaitForExpectedEvents(ctx, result, 2)\n\tassert.Equal(t, [][]int{{1, 2, 3}, {4, 5, 6}}, result.result)\n\tcancel()\n}\n\nfunc TestBatch_MaxItems_CustomItemCountFunction(t *testing.T) {\n\tctx, cancel := armadacontext.WithTimeout(armadacontext.Background(), 5*time.Second)\n\ttestClock := clock.NewFakeClock(time.Now())\n\tinputChan := make(chan int)\n\tpublishChan := make(chan []int)\n\tresult := newResultHolder()\n\t// This function will mean each item on the input channel will count as 2 items\n\tdoubleItemCounterFunc := func(i int) int { return 2 }\n\tbatcher := NewBatcher[int](inputChan, defaultMaxItems, defaultMaxTimeOut, doubleItemCounterFunc, publishChan)\n\tbatcher.clock = testClock\n\n\tgo addToResult(result, publishChan)\n\n\tgo func() {\n\t\tbatcher.Run(ctx)\n\t\tclose(inputChan)\n\t\tclose(publishChan)\n\t}()\n\n\t// Post 6 items on the input channel without advancing the clock\n\t// And we should get a 3 updates on the output channel\n\tinputChan <- 1\n\tinputChan <- 2\n\tinputChan <- 3\n\tinputChan <- 4\n\tinputChan <- 5\n\tinputChan <- 6\n\twaitForExpectedEvents(ctx, result, 3)\n\tassert.Equal(t, [][]int{{1, 2}, {3, 4}, {5, 6}}, result.result)\n\tcancel()\n}\n\nfunc TestBatch_Time(t *testing.T) {\n\tctx, cancel := armadacontext.WithTimeout(armadacontext.Background(), 5*time.Second)\n\ttestClock := clock.NewFakeClock(time.Now())\n\tinputChan := make(chan int)\n\tpublishChan := make(chan []int)\n\tresult := newResultHolder()\n\tbatcher := NewBatcher[int](inputChan, defaultMaxItems, defaultMaxTimeOut, defaultItemCounterFunc, publishChan)\n\tbatcher.clock = testClock\n\n\tgo addToResult(result, publishChan)\n\n\tgo func() {\n\t\tbatcher.Run(ctx)\n\t\tclose(inputChan)\n\t\tclose(publishChan)\n\t}()\n\n\tinputChan <- 1\n\tinputChan <- 2\n\terr := waitForBufferLength(ctx, batcher, 2)\n\trequire.NoError(t, err)\n\ttestClock.Step(5 * time.Second)\n\twaitForExpectedEvents(ctx, result, 1)\n\tassert.Equal(t, [][]int{{1, 2}}, result.result)\n\tcancel()\n}\n\nfunc TestBatch_Time_WithIntialQuiet(t *testing.T) {\n\tctx, cancel := armadacontext.WithTimeout(armadacontext.Background(), 5*time.Second)\n\ttestClock := clock.NewFakeClock(time.Now())\n\tinputChan := make(chan int)\n\tpublishChan := make(chan []int)\n\tresult := newResultHolder()\n\tbatcher := NewBatcher[int](inputChan, defaultMaxItems, defaultMaxTimeOut, defaultItemCounterFunc, publishChan)\n\tbatcher.clock = testClock\n\n\tgo addToResult(result, publishChan)\n\n\tgo func() {\n\t\tbatcher.Run(ctx)\n\t\tclose(inputChan)\n\t\tclose(publishChan)\n\t}()\n\n\t// initial quiet period\n\ttestClock.Step(5 * time.Second)\n\n\tinputChan <- 1\n\tinputChan <- 2\n\terr := waitForBufferLength(ctx, batcher, 2)\n\trequire.NoError(t, err)\n\ttestClock.Step(5 * time.Second)\n\twaitForExpectedEvents(ctx, result, 1)\n\tinputChan <- 3\n\tinputChan <- 4\n\terr = waitForBufferLength(ctx, batcher, 2)\n\trequire.NoError(t, err)\n\n\ttestClock.Step(5 * time.Second)\n\twaitForExpectedEvents(ctx, result, 2)\n\tassert.Equal(t, [][]int{{1, 2}, {3, 4}}, result.result)\n\tcancel()\n}\n\nfunc waitForBufferLength(ctx *armadacontext.Context, batcher *Batcher[int], numEvents int) error {\n\tticker := time.NewTicker(5 * time.Millisecond)\n\tfor {\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\treturn ctx.Err()\n\t\tcase <-ticker.C:\n\t\t\tif batcher.BufferLen() >= numEvents {\n\t\t\t\treturn nil\n\t\t\t}\n\t\t}\n\t}\n}\n\nfunc waitForExpectedEvents(ctx *armadacontext.Context, rh *resultHolder, numEvents int) {\n\tdone := false\n\tticker := time.NewTicker(5 * time.Millisecond)\n\tfor !done {\n\t\tselect {\n\t\tcase <-ctx.Done():\n\t\t\tdone = true\n\t\tcase <-ticker.C:\n\t\t\tif rh.resultLength() >= numEvents {\n\t\t\t\tdone = true\n\t\t\t}\n\t\t}\n\t}\n}\n"

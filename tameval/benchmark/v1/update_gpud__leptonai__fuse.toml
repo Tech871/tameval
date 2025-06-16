@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.7"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "1763d902486568b8db164ef3f832841ede2fd8de"
+
+[run_info]
+docker_image = "golang:1.23.7"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/fuse/fuse.go pkg/fuse/fuse_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/fuse/fuse.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 30.0
+original_coverage = 56.0
+mutation_kill_rate = 26.0
+original_mutation_kill_rate = 39.0
+covered_lines = [ 103, 104, 105, 110, 111, 115, 116, 117, 122, 126, 131, 135, 140, 144, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 162,]
+missed_lines = [ 54, 55, 56, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 80, 84, 85, 86, 87, 88, 90, 91, 92, 93, 94, 96, 97, 100, 106, 107, 108, 112, 113, 118, 119, 120, 123, 124, 125, 127, 128, 129, 132, 133, 134, 136, 137, 138, 141, 142, 143, 145, 146, 147,]
+
+[input_info]
+test_file_path = "pkg/fuse/fuse_test.go"
+focal_file_path = "pkg/fuse/fuse.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/fuse/fuse_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/fuse/fuse.go"
+first_commit_date = "2025-01-02"
+last_commit_date = "2025-02-13"
+test_file_content = "package fuse\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc Test_listConnections(t *testing.T) {\n\texpectedConnections := map[int]ConnectionInfo{\n\t\t44: {\n\t\t\tDevice:               44,\n\t\t\tCongestionThreshold:  9,\n\t\t\tCongestedPercent:     0,\n\t\t\tMaxBackground:        12,\n\t\t\tMaxBackgroundPercent: 0,\n\t\t\tWaiting:              0,\n\t\t},\n\t\t53: {\n\t\t\tDevice:               53,\n\t\t\tCongestionThreshold:  150,\n\t\t\tCongestedPercent:     0,\n\t\t\tMaxBackground:        200,\n\t\t\tMaxBackgroundPercent: 0,\n\t\t\tWaiting:              0,\n\t\t},\n\t\t82: {\n\t\t\tDevice:               82,\n\t\t\tCongestionThreshold:  150,\n\t\t\tCongestedPercent:     0.6666666666666667,\n\t\t\tMaxBackground:        200,\n\t\t\tMaxBackgroundPercent: 0.5,\n\t\t\tWaiting:              1,\n\t\t},\n\t\t550: {\n\t\t\tDevice:               550,\n\t\t\tCongestionThreshold:  150,\n\t\t\tCongestedPercent:     0,\n\t\t\tMaxBackground:        200,\n\t\t\tMaxBackgroundPercent: 0,\n\t\t\tWaiting:              0,\n\t\t},\n\t}\n\n\tinfos, err := listConnections(\"./test/connections\")\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\n\tfor _, info := range infos {\n\t\tif expected, ok := expectedConnections[info.Device]; !ok {\n\t\t\tt.Errorf(\"unexpected connection: %+v\", info)\n\t\t} else if !reflect.DeepEqual(info, expected) {\n\t\t\tt.Errorf(\"unexpected connection: %+v (expected: %+v)\", info, expected)\n\t\t}\n\t}\n}"

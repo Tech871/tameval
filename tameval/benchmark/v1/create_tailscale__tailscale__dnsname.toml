@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "tailscale/tailscale"
+sha = "6bbf98bef457b4403f27da79eb1861e6197ab539"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out util/dnsname/dnsname.go util/dnsname/dnsname_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting util/dnsname/dnsname.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 89.0
+mutation_kill_rate = 35.53
+original_mutation_kill_rate = 70.0
+covered_lines = [ 22, 23, 24, 25, 30, 31, 34, 35, 36, 41, 42, 43, 44, 46, 47, 48, 49, 50, 51, 52, 53, 54, 58, 61, 62, 63, 64, 68, 69, 70, 85, 86, 87, 88, 89, 90, 91, 92, 93, 124, 125, 126, 127, 128, 129, 130, 131, 132, 135, 136, 137, 142, 143, 144, 145, 149, 150, 151, 152, 153, 154, 155, 156, 157, 160, 239, 240, 241, 243, 244, 245, 247, 248, 249, 251, 252, 253, 255, 256, 257, 259, 260, 261, 262, 263, 264,]
+missed_lines = [ 27, 28, 29, 32, 33, 37, 38, 39, 55, 56, 57, 74, 75, 76, 78, 79, 80, 81, 82, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 119, 167, 168, 169, 170, 171, 172, 173, 178, 179, 180, 181, 182, 183, 184, 188, 189, 190, 191, 192, 193, 197, 198, 199, 200, 204, 205, 206, 207, 208, 212, 213, 214, 215, 218, 219, 220, 221, 222, 224, 225, 226, 227, 229,]
+
+[input_info]
+test_file_path = "util/dnsname/dnsname_test.go"
+focal_file_path = "util/dnsname/dnsname.go"
+test_file_url = "https://github.com/tailscale/tailscale/blob/6bbf98bef457b4403f27da79eb1861e6197ab539/util/dnsname/dnsname_test.go"
+focal_file_url = "https://github.com/tailscale/tailscale/blob/6bbf98bef457b4403f27da79eb1861e6197ab539/util/dnsname/dnsname.go"
+first_commit_date = "2021-01-10"
+last_commit_date = "2025-01-24"
+test_file_content = "// Copyright (c) Tailscale Inc & AUTHORS\n// SPDX-License-Identifier: BSD-3-Clause\n\npackage dnsname\n\nimport (\n\t\"strings\"\n\t\"testing\"\n)\n\n\nfunc TestFQDNContains(t *testing.T) {\n\ttests := []struct {\n\t\ta, b string\n\t\twant bool\n\t}{\n\t\t{\"\", \"\", true},\n\t\t{\"\", \"foo.com\", true},\n\t\t{\"foo.com\", \"\", false},\n\t\t{\"tailscale.com\", \"www.tailscale.com\", true},\n\t\t{\"www.tailscale.com\", \"tailscale.com\", false},\n\t\t{\"scale.com\", \"tailscale.com\", false},\n\t\t{\"foo.com\", \"foo.com\", true},\n\t}\n\n\tfor _, test := range tests {\n\t\tt.Run(test.a+\"_\"+test.b, func(t *testing.T) {\n\t\t\ta, err := ToFQDN(test.a)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatalf(\"ToFQDN(%q): %v\", test.a, err)\n\t\t\t}\n\t\t\tb, err := ToFQDN(test.b)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatalf(\"ToFQDN(%q): %v\", test.b, err)\n\t\t\t}\n\n\t\t\tif got := a.Contains(b); got != test.want {\n\t\t\t\tt.Errorf(\"ToFQDN(%q).Contains(%q) got %v, want %v\", a, b, got, test.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestSanitizeLabel(t *testing.T) {\n\ttests := []struct {\n\t\tname string\n\t\tin   string\n\t\twant string\n\t}{\n\t\t{\"empty\", \"\", \"\"},\n\t\t{\"space\", \" \", \"\"},\n\t\t{\"upper\", \"OBERON\", \"oberon\"},\n\t\t{\"mixed\", \"Avery's iPhone 4(SE)\", \"averys-iphone-4se\"},\n\t\t{\"dotted\", \"mon.ipn.dev\", \"mon-ipn-dev\"},\n\t\t{\"email\", \"admin@example.com\", \"admin-example-com\"},\n\t\t{\"boundary\", \".bound.ary.\", \"bound-ary\"},\n\t\t{\"bad_trailing\", \"a-\", \"a\"},\n\t\t{\"bad_leading\", \"-a\", \"a\"},\n\t\t{\"bad_both\", \"-a-\", \"a\"},\n\t\t{\n\t\t\t\"overlong\",\n\t\t\tstrings.Repeat(\"test.\", 20),\n\t\t\t\"test-test-test-test-test-test-test-test-test-test-test-test-tes\",\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgot := SanitizeLabel(tt.in)\n\t\t\tif got != tt.want {\n\t\t\t\tt.Errorf(\"want %q; got %q\", tt.want, got)\n\t\t\t}\n\t\t})\n\t}\n}\n\n\n\n\n\nvar sinkFQDN FQDN\n\nfunc BenchmarkToFQDN(b *testing.B) {\n\ttests := []string{\n\t\t\"www.tailscale.com.\",\n\t\t\"www.tailscale.com\",\n\t\t\".www.tailscale.com\",\n\t\t\"_ssh._tcp.www.tailscale.com.\",\n\t\t\"_ssh._tcp.www.tailscale.com\",\n\t}\n\n\tfor _, test := range tests {\n\t\tb.Run(test, func(b *testing.B) {\n\t\t\tb.ReportAllocs()\n\t\t\tfor range b.N {\n\t\t\t\tsinkFQDN, _ = ToFQDN(test)\n\t\t\t}\n\t\t})\n\t}\n}\n"

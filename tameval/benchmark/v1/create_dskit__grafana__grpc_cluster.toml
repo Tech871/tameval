@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "grafana/dskit"
+sha = "22a660c7415734a00f68fde15a1e0fcf3b7a830d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out middleware/grpc_cluster.go middleware/grpc_cluster_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting middleware/grpc_cluster.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 33.0
+original_coverage = 93.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = 87.0
+covered_lines = [ 30, 31, 32, 33, 34, 35, 38, 39, 40, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 63,]
+missed_lines = [ 24, 42, 43, 71, 72, 73, 74, 75, 76, 77, 79, 80, 81, 82, 83, 84, 85, 86, 87, 91, 92, 93, 95, 96, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 113, 114, 115, 116, 117, 118, 120, 121, 122, 123, 124,]
+
+[input_info]
+test_file_path = "middleware/grpc_cluster_test.go"
+focal_file_path = "middleware/grpc_cluster.go"
+test_file_url = "https://github.com/grafana/dskit/blob/22a660c7415734a00f68fde15a1e0fcf3b7a830d/middleware/grpc_cluster_test.go"
+focal_file_url = "https://github.com/grafana/dskit/blob/22a660c7415734a00f68fde15a1e0fcf3b7a830d/middleware/grpc_cluster.go"
+first_commit_date = "2025-01-28"
+last_commit_date = "2025-03-12"
+test_file_content = "package middleware\n\nimport (\n\t\"bytes\"\n\t\"context\"\n\t\"errors\"\n\t\"net/http\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/go-kit/log\"\n\t\"github.com/go-kit/log/level\"\n\t\"github.com/prometheus/client_golang/prometheus\"\n\t\"github.com/prometheus/client_golang/prometheus/promauto\"\n\t\"github.com/prometheus/client_golang/prometheus/testutil\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"google.golang.org/grpc\"\n\t\"google.golang.org/grpc/codes\"\n\t\"google.golang.org/grpc/metadata\"\n\n\t\"github.com/grafana/dskit/clusterutil\"\n\t\"github.com/grafana/dskit/grpcutil\"\n\t\"github.com/grafana/dskit/httpgrpc\"\n\tdskitlog \"github.com/grafana/dskit/log\"\n)\n\nfunc TestClusterUnaryClientInterceptor(t *testing.T) {\n\tgenericErr := errors.New(\"generic error\")\n\ttestCases := map[string]struct {\n\t\tincomingContext context.Context\n\t\tinvokerError    error\n\t\tcluster         string\n\t\texpectedErr     error\n\t\texpectedMetrics string\n\t\texpectedLogs    string\n\t\tshouldPanic     bool\n\t}{\n\t\t\"if no cluster label is set ClusterUnaryClientInterceptor panics\": {\n\t\t\tincomingContext: context.Background(),\n\t\t\tcluster:         \"\",\n\t\t\tshouldPanic:     true,\n\t\t},\n\t\t\"if cluster label is set it should be propagated to invoker\": {\n\t\t\tincomingContext: context.Background(),\n\t\t\tcluster:         \"cluster\",\n\t\t},\n\t\t\"if invoker returns a wrong cluster error it is handled by the interceptor\": {\n\t\t\tincomingContext: context.Background(),\n\t\t\tcluster:         \"cluster\",\n\t\t\tinvokerError:    grpcutil.Status(codes.FailedPrecondition, `request intended for cluster \"cluster\" - this is cluster \"another-cluster\"`, &grpcutil.ErrorDetails{Cause: grpcutil.WRONG_CLUSTER_VALIDATION_LABEL}).Err(),\n\t\t\texpectedErr:     grpcutil.Status(codes.Internal, `request rejected by the server: request intended for cluster \"cluster\" - this is cluster \"another-cluster\"`).Err(),\n\t\t\texpectedMetrics: `\n\t\t\t\t# HELP test_request_invalid_cluster_validation_labels_total Number of requests with invalid cluster validation label.\n\t\t\t\t# TYPE test_request_invalid_cluster_validation_labels_total counter\n\t\t\t\ttest_request_invalid_cluster_validation_labels_total{method=\"GET\"} 1\n\t\t\t`,\n\t\t\texpectedLogs: `level=warn msg=\"request rejected by the server: request intended for cluster \\\"cluster\\\" - this is cluster \\\"another-cluster\\\"\" method=GET clusterValidationLabel=cluster`,\n\t\t},\n\t\t\"if invoker returns a generic error the error is propagated\": {\n\t\t\tincomingContext: context.Background(),\n\t\t\tcluster:         \"cluster\",\n\t\t\tinvokerError:    genericErr,\n\t\t\texpectedErr:     genericErr,\n\t\t},\n\t}\n\tverifyClusterPropagation := func(ctx context.Context, expectedCluster string) {\n\t\tmd, ok := metadata.FromOutgoingContext(ctx)\n\t\trequire.True(t, ok)\n\t\tclusterIDs, ok := md[clusterutil.MetadataClusterValidationLabelKey]\n\t\trequire.True(t, ok)\n\t\trequire.Len(t, clusterIDs, 1)\n\t\trequire.Equal(t, expectedCluster, clusterIDs[0])\n\t}\n\tinvalidClusterValidationReporter := func(cluster string, logger log.Logger, invalidClusterValidations *prometheus.CounterVec) InvalidClusterValidationReporter {\n\t\treturn func(msg string, method string) {\n\t\t\tlevel.Warn(logger).Log(\"msg\", msg, \"method\", method, \"clusterValidationLabel\", cluster)\n\t\t\tinvalidClusterValidations.WithLabelValues(method).Inc()\n\t\t}\n\t}\n\tfor testName, testCase := range testCases {\n\t\tt.Run(testName, func(t *testing.T) {\n\t\t\tdefer func() {\n\t\t\t\tr := recover()\n\t\t\t\trequire.Equal(t, testCase.shouldPanic, r != nil)\n\t\t\t}()\n\t\t\tbuf := bytes.NewBuffer(nil)\n\t\t\tlogger := createLogger(t, buf)\n\t\t\treg := prometheus.NewRegistry()\n\t\t\tinterceptor := ClusterUnaryClientInterceptor(testCase.cluster, invalidClusterValidationReporter(testCase.cluster, logger, newRequestInvalidClusterValidationLabelsTotalCounter(reg)))\n\t\t\tinvoker := func(ctx context.Context, _ string, _, _ any, _ *grpc.ClientConn, _ ...grpc.CallOption) error {\n\t\t\t\tverifyClusterPropagation(ctx, testCase.cluster)\n\t\t\t\treturn testCase.invokerError\n\t\t\t}\n\n\t\t\terr := interceptor(testCase.incomingContext, \"GET\", createRequest(t), nil, nil, invoker)\n\t\t\tif testCase.expectedErr == nil {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t} else {\n\t\t\t\trequire.Equal(t, testCase.expectedErr, err)\n\t\t\t}\n\t\t\t// Check tracked Prometheus metrics\n\t\t\terr = testutil.GatherAndCompare(reg, strings.NewReader(testCase.expectedMetrics), \"test_request_invalid_cluster_validation_labels_total\")\n\t\t\tassert.NoError(t, err)\n\t\t\tif testCase.expectedLogs == \"\" {\n\t\t\t\trequire.Empty(t, buf.Bytes())\n\t\t\t} else {\n\t\t\t\trequire.True(t, bytes.Contains(buf.Bytes(), []byte(testCase.expectedLogs)))\n\t\t\t}\n\t\t})\n\t}\n}\n\n\n\nfunc createLogger(t *testing.T, buf *bytes.Buffer) log.Logger {\n\tvar lvl dskitlog.Level\n\trequire.NoError(t, lvl.Set(\"warn\"))\n\treturn dskitlog.NewGoKitWithWriter(dskitlog.LogfmtFormat, buf)\n}\n\nfunc createRequest(t *testing.T) *httpgrpc.HTTPRequest {\n\tr, err := http.NewRequest(\"POST\", \"/i/am/calling/you\", strings.NewReader(\"some body\"))\n\trequire.NoError(t, err)\n\treq, err := httpgrpc.FromHTTPRequest(r)\n\trequire.NoError(t, err)\n\treturn req\n}\n\nfunc newRequestInvalidClusterValidationLabelsTotalCounter(reg prometheus.Registerer) *prometheus.CounterVec {\n\treturn promauto.With(reg).NewCounterVec(prometheus.CounterOpts{\n\t\tName:        \"test_request_invalid_cluster_validation_labels_total\",\n\t\tHelp:        \"Number of requests with invalid cluster validation label.\",\n\t\tConstLabels: nil,\n\t}, []string{\"method\"})\n}\n\nfunc newIncomingContext(containsRequestCluster bool, requestCluster string) context.Context {\n\tctx := context.Background()\n\tif !containsRequestCluster {\n\t\treturn ctx\n\t}\n\tmd := map[string][]string{\n\t\tclusterutil.MetadataClusterValidationLabelKey: {requestCluster},\n\t}\n\treturn metadata.NewIncomingContext(ctx, md)\n}\n"

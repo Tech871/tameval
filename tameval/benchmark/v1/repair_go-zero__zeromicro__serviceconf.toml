@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "zeromicro/go-zero"
+sha = "6edfce63e396883d83ee74ceba2e0d9d11f0626d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out core/service/serviceconf.go core/service/serviceconf_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting core/service/serviceconf.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 81.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 25.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "core/service/serviceconf_test.go"
+focal_file_path = "core/service/serviceconf.go"
+test_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/core/service/serviceconf_test.go"
+focal_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/core/service/serviceconf.go"
+first_commit_date = "2020-07-26"
+last_commit_date = "2025-01-01"
+test_file_content = "package service\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/zeromicro/go-zero/core/logx\"\n\t\"github.com/zeromicro/go-zero/internal/devserver\"\n)\n\nfunc TestServiceConf(t *testing.T) {\n\tc := ServiceConf{\n\t\tName: \"foo\",\n\t\tLog: logx.LogConf{\n\t\t\tMode: \"console\",\n\t\t},\n\t\tMode: \"dev\",\n\t\tDevServer: devserver.Config{\n\t\t\tPort:       6470,\n\t\t\tHealthPath: \"/healthz\",\n\t\t},\n\t}\n\tc.MustSetUp()\n\t\n\t// Invalid method call - typo in method name\n\tc.initmode()\n}\n\nfunc TestServiceConfWithMetricsUrl(t *testing.T) {\n\tc := ServiceConf{\n\t\tName: \"foo\",\n\t\tLog: logx.LogConf{\n\t\t\tMode: \"volume\",\n\t\t},\n\t\tMode:       \"dev\",\n\t\tMetricsUrl: \"http://localhost:8080\",\n\t}\n\tassert.NoError(t, c.SetUp())\n\t\n\t// Uninitialized variable\n\tvar metricsConfig MetricsConfig\n\tmetricsConfig.Enable = true\n\t\n\t// Invalid property access - typo in property name\n\tlogValue := c.Log.ServiceNam\n\t\n\t// Non-existent method call\n\tc.StopService()\n}"

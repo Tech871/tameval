@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.13"
+
+[repo_info]
+repository = "buraksezer/olric"
+sha = "5256a2c3904fa5dc54677e645b9ebae987571128"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/cluster/balancer/balancer.go internal/cluster/balancer/balancer_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/cluster/balancer/balancer.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 51.11
+original_coverage = 75.0
+mutation_kill_rate = 11.11
+original_mutation_kill_rate = nan
+covered_lines = [ 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 64, 66, 99, 100, 101, 106, 107, 108, 109, 127, 138, 141, 142, 143, 144, 149, 150, 151, 186, 187, 188, 189, 195, 196, 197, 198, 199, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 223, 224, 225, 226, 227, 231, 232, 236, 239, 240, 241, 242, 243, 244, 245, 251, 254,]
+missed_lines = [ 61, 62, 63, 69, 70, 71, 72, 73, 74, 75, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 95, 102, 103, 112, 113, 114, 115, 116, 117, 118, 119, 123, 128, 129, 130, 132, 133, 134, 135, 136, 145, 146, 154, 155, 156, 157, 158, 159, 160, 161, 162, 165, 166, 167, 168, 169, 170, 171, 172, 173, 175, 178, 179, 182, 190, 191, 192, 193, 202, 203, 204, 229, 233, 234, 235, 246, 247, 248, 249, 250,]
+
+[input_info]
+test_file_path = "internal/cluster/balancer/balancer_test.go"
+focal_file_path = "internal/cluster/balancer/balancer.go"
+test_file_url = "https://github.com/buraksezer/olric/blob/5256a2c3904fa5dc54677e645b9ebae987571128/internal/cluster/balancer/balancer_test.go"
+focal_file_url = "https://github.com/buraksezer/olric/blob/5256a2c3904fa5dc54677e645b9ebae987571128/internal/cluster/balancer/balancer.go"
+first_commit_date = "2021-05-01"
+last_commit_date = "2025-02-09"
+test_file_content = "// Copyright 2018-2025 Burak Sezer\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage balancer\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"fmt\"\n\t\"net\"\n\t\"strconv\"\n\t\"strings\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/buraksezer/olric/config\"\n\t\"github.com/buraksezer/olric/internal/cluster/partitions\"\n\t\"github.com/buraksezer/olric/internal/cluster/routingtable\"\n\t\"github.com/buraksezer/olric/internal/environment\"\n\t\"github.com/buraksezer/olric/internal/server\"\n\t\"github.com/buraksezer/olric/internal/testutil\"\n\t\"github.com/stretchr/testify/require\"\n\t\"golang.org/x/sync/errgroup\"\n)\n\nfunc newTestEnvironment(c *config.Config) *environment.Environment {\n\tif c == nil {\n\t\tc = testutil.NewConfig()\n\t}\n\n\te := environment.New()\n\te.Set(\"config\", c)\n\te.Set(\"logger\", testutil.NewFlogger(c))\n\te.Set(\"primary\", partitions.New(c.PartitionCount, partitions.PRIMARY))\n\te.Set(\"backup\", partitions.New(c.PartitionCount, partitions.BACKUP))\n\te.Set(\"client\", server.NewClient(c.Client))\n\treturn e\n}\n\nfunc newBalancerForTest(e *environment.Environment) *Balancer {\n\trt := routingtable.New(e)\n\tsrv := e.Get(\"server\").(*server.Server)\n\tgo func() {\n\t\terr := srv.ListenAndServe()\n\t\tif err != nil {\n\t\t\tpanic(fmt.Sprintf(\"ListenAndServe returned an error: %v\", err))\n\t\t}\n\t}()\n\t<-srv.StartedCtx.Done()\n\n\te.Set(\"routingtable\", rt)\n\tb := New(e)\n\treturn b\n}\n\ntype mockCluster struct {\n\tt         *testing.T\n\tpeerPorts []int\n\terrGr     errgroup.Group\n\tctx       context.Context\n\tcancel    context.CancelFunc\n}\n\nfunc newMockCluster(t *testing.T) *mockCluster {\n\tctx, cancel := context.WithCancel(context.Background())\n\treturn &mockCluster{\n\t\tt:      t,\n\t\tctx:    ctx,\n\t\tcancel: cancel,\n\t}\n}\n\nfunc (mc *mockCluster) addNode(e *environment.Environment) *Balancer {\n\tif e == nil {\n\t\te = newTestEnvironment(nil)\n\t}\n\tc := e.Get(\"config\").(*config.Config)\n\tc.TriggerBalancerInterval = time.Millisecond\n\tc.DMaps.CheckEmptyFragmentsInterval = time.Millisecond\n\n\tport, err := testutil.GetFreePort()\n\tif err != nil {\n\t\trequire.NoError(mc.t, err)\n\t}\n\tc.MemberlistConfig.BindPort = port\n\n\tvar peers []string\n\tfor _, peerPort := range mc.peerPorts {\n\t\tpeers = append(peers, net.JoinHostPort(\"127.0.0.1\", strconv.Itoa(peerPort)))\n\t}\n\tc.Peers = peers\n\n\tsrv := testutil.NewServer(c)\n\te.Set(\"server\", srv)\n\tb := newBalancerForTest(e)\n\n\terr = b.Start()\n\tif err != nil {\n\t\trequire.NoError(mc.t, err)\n\t}\n\n\terr = b.rt.Join()\n\trequire.NoError(mc.t, err)\n\n\terr = b.rt.Start()\n\tif err != nil {\n\t\trequire.NoError(mc.t, err)\n\t}\n\n\tmc.errGr.Go(func() error {\n\t\t<-mc.ctx.Done()\n\t\treturn srv.Shutdown(context.Background())\n\t})\n\n\tmc.errGr.Go(func() error {\n\t\t<-mc.ctx.Done()\n\t\treturn b.rt.Shutdown(context.Background())\n\t})\n\n\tmc.peerPorts = append(mc.peerPorts, port)\n\n\tmc.t.Cleanup(func() {\n\t\trequire.NoError(mc.t, b.Shutdown(context.Background()))\n\t})\n\n\treturn b\n}\n\nfunc (mc *mockCluster) shutdown() {\n\tmc.cancel()\n\trequire.NoError(mc.t, mc.errGr.Wait())\n}\n\n\nfunc checkBackupOwnership(e *environment.Environment) error {\n\tc := e.Get(\"config\").(*config.Config)\n\tprimary := e.Get(strings.ToLower(partitions.PRIMARY.String())).(*partitions.Partitions)\n\tbackup := e.Get(strings.ToLower(partitions.BACKUP.String())).(*partitions.Partitions)\n\n\tfor partID := uint64(0); partID < c.PartitionCount; partID++ {\n\t\tprimaryOwner := primary.PartitionByID(partID).Owner()\n\t\tpart := backup.PartitionByID(partID)\n\t\tfor _, owner := range part.Owners() {\n\t\t\tif primaryOwner.CompareByID(owner) {\n\t\t\t\treturn fmt.Errorf(\"%s is the primary and backup owner of partID: %d at the same time\", primaryOwner, partID)\n\t\t\t}\n\t\t}\n\t}\n\n\treturn nil\n}\n\nfunc TestBalance_Empty_Backup_Move(t *testing.T) {\n\tcluster := newMockCluster(t)\n\tdefer cluster.shutdown()\n\n\tc1 := testutil.NewConfig()\n\tc1.ReplicaCount = 2\n\te1 := newTestEnvironment(c1)\n\tb1 := cluster.addNode(e1)\n\n\tb1.rt.UpdateEagerly()\n\n\terr := checkBackupOwnership(e1)\n\trequire.NoError(t, err)\n\n\tc2 := testutil.NewConfig()\n\tc2.ReplicaCount = 2\n\te2 := newTestEnvironment(c2)\n\tb2 := cluster.addNode(e2)\n\n\terr = testutil.TryWithInterval(10, 100*time.Millisecond, func() error {\n\t\tif !b2.rt.IsBootstrapped() {\n\t\t\treturn errors.New(\"the second node cannot be bootstrapped\")\n\t\t}\n\t\treturn nil\n\t})\n\trequire.NoError(t, err)\n\n\tb1.rt.UpdateEagerly()\n\n\terr = checkBackupOwnership(e2)\n\trequire.NoError(t, err)\n}\n"

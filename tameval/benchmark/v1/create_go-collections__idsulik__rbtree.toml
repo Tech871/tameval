@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.18"
+
+[repo_info]
+repository = "idsulik/go-collections"
+sha = "342ac8198d246e7a75007891c071f5116ffd3408"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out rbtree/rbtree.go rbtree/rbtree_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting rbtree/rbtree.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 40.0
+original_coverage = 97.0
+mutation_kill_rate = 29.0
+original_mutation_kill_rate = 84.0
+covered_lines = [ 28, 29, 30, 31, 32, 35, 36, 37, 40, 41, 42, 51, 52, 53, 54, 55, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 70, 71, 72, 73, 74, 77, 78, 79, 80, 81, 84, 85, 86, 87, 88, 89, 91, 92, 96, 97, 98, 99, 100, 102, 103, 104, 105, 106, 107, 108, 109, 110, 114, 115, 116, 117, 119, 120, 121, 122, 123, 124, 125, 126, 130, 131, 132, 133, 136, 137, 140, 144, 145, 146, 149, 150, 151, 152, 155, 156, 157, 158, 159, 163, 164, 165, 168, 169, 170, 171, 174, 175, 176, 177, 178, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 194,]
+missed_lines = [ 45, 46, 47, 48, 75, 76, 111, 112, 113, 127, 128, 129, 147, 148, 153, 154, 166, 167, 172, 173, 198, 199, 200, 201, 202, 203, 204, 205, 206, 208, 212, 213, 214, 215, 216, 218, 219, 220, 224, 225, 226, 227, 228, 229, 230, 231, 232, 233, 234, 236, 240, 241, 242, 243, 244, 245, 246, 247, 249, 250, 251, 252, 253, 255, 256, 257, 259, 260, 261, 262, 263, 264, 265, 267, 268, 269, 271, 272, 273, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 290, 291, 292, 293, 294, 295, 299, 300, 301, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 323, 324, 325, 326, 327, 328, 329, 330, 332, 333, 334, 335, 336, 337, 338, 339, 340, 341, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 352, 354, 355, 356, 357, 358, 359, 360, 361, 365, 366, 367, 371, 372, 373, 374, 375, 376, 377, 378, 379, 380, 381, 382, 384,]
+
+[input_info]
+test_file_path = "rbtree/rbtree_test.go"
+focal_file_path = "rbtree/rbtree.go"
+test_file_url = "https://github.com/idsulik/go-collections/blob/342ac8198d246e7a75007891c071f5116ffd3408/rbtree/rbtree_test.go"
+focal_file_url = "https://github.com/idsulik/go-collections/blob/342ac8198d246e7a75007891c071f5116ffd3408/rbtree/rbtree.go"
+first_commit_date = "2024-11-10"
+last_commit_date = "2025-02-22"
+test_file_content = "package rbtree\n\nimport (\n\t\"fmt\"\n\t\"math/rand\"\n\t\"testing\"\n\n\t\"github.com/idsulik/go-collections/v3/internal/cmp\"\n)\n\n// verifyRedBlackProperties checks if the tree maintains Red-Black properties\nfunc verifyRedBlackProperties[T any](t *RedBlackTree[T]) bool {\n\tif t.root == nil {\n\t\treturn true\n\t}\n\n\t// Property 1: Root must be black\n\tif t.root.color != Black {\n\t\treturn false\n\t}\n\n\t// Check other properties recursively\n\tblackHeight, valid := verifyNodeProperties(t.root, nil)\n\treturn valid && blackHeight >= 0\n}\n\n// verifyNodeProperties checks Red-Black properties for a node and its subtrees\nfunc verifyNodeProperties[T any](n *node[T], parent *node[T]) (int, bool) {\n\tif n == nil {\n\t\treturn 0, true // Nil nodes are considered black\n\t}\n\n\t// Check parent pointer\n\tif n.parent != parent {\n\t\treturn -1, false\n\t}\n\n\t// Property 2: No red node has a red child\n\tif n.color == Red && parent != nil && parent.color == Red {\n\t\treturn -1, false\n\t}\n\n\t// Check left subtree\n\tleftBlackHeight, leftValid := verifyNodeProperties(n.left, n)\n\tif !leftValid {\n\t\treturn -1, false\n\t}\n\n\t// Check right subtree\n\trightBlackHeight, rightValid := verifyNodeProperties(n.right, n)\n\tif !rightValid {\n\t\treturn -1, false\n\t}\n\n\t// Property 5: All paths must have same number of black nodes\n\tif leftBlackHeight != rightBlackHeight {\n\t\treturn -1, false\n\t}\n\n\t// Calculate black height\n\tblackHeight := leftBlackHeight\n\tif n.color == Black {\n\t\tblackHeight++\n\t}\n\n\treturn blackHeight, true\n}\n\nfunc TestNewRedBlackTree(t *testing.T) {\n\ttree := New[int](cmp.CompareInts)\n\tif tree == nil {\n\t\tt.Error(\"Expected non-nil tree\")\n\t}\n\tif !tree.IsEmpty() {\n\t\tt.Error(\"Expected empty tree\")\n\t}\n\tif tree.Len() != 0 {\n\t\tt.Errorf(\"Expected size 0, got %d\", tree.Len())\n\t}\n}\n\nfunc TestRedBlackTree_Insert(t *testing.T) {\n\ttests := []struct {\n\t\tname   string\n\t\tvalues []int\n\t}{\n\t\t{\"Empty\", []int{}},\n\t\t{\"Single Value\", []int{1}},\n\t\t{\"Ascending Order\", []int{1, 2, 3, 4, 5}},\n\t\t{\"Descending Order\", []int{5, 4, 3, 2, 1}},\n\t\t{\"Random Order\", []int{3, 1, 4, 5, 2}},\n\t\t{\"Duplicates\", []int{1, 2, 2, 3, 1}},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(\n\t\t\ttt.name, func(t *testing.T) {\n\t\t\t\ttree := New[int](cmp.CompareInts)\n\t\t\t\tuniqueValues := make(map[int]bool)\n\n\t\t\t\tfor _, v := range tt.values {\n\t\t\t\t\ttree.Insert(v)\n\t\t\t\t\tuniqueValues[v] = true\n\n\t\t\t\t\t// Verify Red-Black properties after each insertion\n\t\t\t\t\tif !verifyRedBlackProperties(tree) {\n\t\t\t\t\t\tt.Error(\"Red-Black properties violated after insertion\")\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\t// Check size\n\t\t\t\texpectedSize := len(uniqueValues)\n\t\t\t\tif tree.Len() != expectedSize {\n\t\t\t\t\tt.Errorf(\"Expected size %d, got %d\", expectedSize, tree.Len())\n\t\t\t\t}\n\n\t\t\t\t// Verify all values are present\n\t\t\t\tfor v := range uniqueValues {\n\t\t\t\t\tif !tree.Search(v) {\n\t\t\t\t\t\tt.Errorf(\"Value %d not found after insertion\", v)\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t)\n\t}\n}\n\n\n\n\n\n\nfunc BenchmarkRedBlackTree(b *testing.B) {\n\tbenchmarks := []struct {\n\t\tname string\n\t\tsize int\n\t}{\n\t\t{\"Small\", 100},\n\t\t{\"Medium\", 1000},\n\t\t{\"Large\", 10000},\n\t}\n\n\tfor _, bm := range benchmarks {\n\t\tb.Run(\n\t\t\tfmt.Sprintf(\"Insert_%s\", bm.name), func(b *testing.B) {\n\t\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\t\ttree := New[int](cmp.CompareInts)\n\t\t\t\t\tfor j := 0; j < bm.size; j++ {\n\t\t\t\t\t\ttree.Insert(j)\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t)\n\n\t\tb.Run(\n\t\t\tfmt.Sprintf(\"Search_%s\", bm.name), func(b *testing.B) {\n\t\t\t\ttree := New[int](cmp.CompareInts)\n\t\t\t\tfor i := 0; i < bm.size; i++ {\n\t\t\t\t\ttree.Insert(i)\n\t\t\t\t}\n\t\t\t\tb.ResetTimer()\n\t\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\t\ttree.Search(rand.Intn(bm.size))\n\t\t\t\t}\n\t\t\t},\n\t\t)\n\n\t\tb.Run(\n\t\t\tfmt.Sprintf(\"Delete_%s\", bm.name), func(b *testing.B) {\n\t\t\t\tvalues := make([]int, bm.size)\n\t\t\t\tfor i := range values {\n\t\t\t\t\tvalues[i] = i\n\t\t\t\t}\n\t\t\t\tb.ResetTimer()\n\t\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\t\tb.StopTimer()\n\t\t\t\t\ttree := New[int](cmp.CompareInts)\n\t\t\t\t\tfor _, v := range values {\n\t\t\t\t\t\ttree.Insert(v)\n\t\t\t\t\t}\n\t\t\t\t\tb.StartTimer()\n\t\t\t\t\tfor _, v := range values {\n\t\t\t\t\t\ttree.Delete(v)\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t},\n\t\t)\n\t}\n}\n"

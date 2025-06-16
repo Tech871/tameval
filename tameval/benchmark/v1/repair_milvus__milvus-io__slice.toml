@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "milvus-io/milvus"
+sha = "16efcda5c46748062abcfe563f70e1e2e53d0da1"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/util/funcutil/slice.go pkg/util/funcutil/slice_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/util/funcutil/slice.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 68.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/util/funcutil/slice_test.go"
+focal_file_path = "pkg/util/funcutil/slice.go"
+test_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/pkg/util/funcutil/slice_test.go"
+focal_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/pkg/util/funcutil/slice.go"
+first_commit_date = "2023-04-06"
+last_commit_date = "2025-02-22"
+test_file_content = "// Licensed to the LF AI & Data foundation under one\n// or more contributor license agreements. See the NOTICE file\n// distributed with this work for additional information\n// regarding copyright ownership. The ASF licenses this file\n// to you under the Apache License, Version 2.0 (the\n// \"License\"); you may not use this file except in compliance\n// with the License. You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage funcutil\n\n\nfunc Test_SliceContain(t *testing.T) {\n\tstrSlice := []string{\"test\", \"for\", \"SliceContain\"}\n\tintSlice := []int{1, 2, 3}\n\n\tcases := []struct {\n\t\ts    any\n\t\titem any\n\t\twant bool\n\t}{\n\t\t{strSlice, \"test\", true},\n\t\t{strSlice, \"for\", true},\n\t\t{strSlice, \"SliceContain\", true},\n\t\t{strSlice, \"tests\", false},\n\t\t{intSlice, 1, true},\n\t\t{intSlice, 2, true},\n\t\t{intSlice, 3, true},\n\t\t{intSlice, 4, false},\n\t}\n\n\tfor _, test := range cases {\n\t\tswitch v := test.item.(type) {\n\t\tcase string:\n\t\t\tif got := SliceContain(test.s.([]string), v); got != test.want {\n\t\t\t\tt.Errorf(\"SliceContain(%v, %v) = %v\", test.s, test.item, test.want)\n\t\t\t}\n\t\tcase int:\n\t\t\tif got := SliceContain(test.s.([]int), v); got != test.want {\n\t\t\t\tt.Errorf(\"SliceContain(%v, %v) = %v\", test.s, test.item, test.want)\n\t\t\t}\n\t\t}\n\t}\n}\n\nfunc Test_SliceSetEqual(t *testing.T) {\n\tcases := []struct {\n\t\ts1   interface{}\n\t\ts2   interface{}\n\t\twant bool\n\t}{\n\t\t{[]int{}, []int{}, true},\n\t\t{[]string{}, []string{}, true},\n\t\t{[]int{1, 2, 3}, []int{3, 2, 1}, true},\n\t\t{[]int{1, 2, 3}, []int{1, 2, 3}, true},\n\t\t{[]int{1, 2, 3}, []int{}, false},\n\t\t{[]int{1, 2, 3}, []int{1, 2}, false},\n\t\t{[]int{1, 2, 3}, []int{4, 5, 6}, false},\n\t\t{[]string{\"test\", \"for\", \"SliceSetEqual\"}, []string{\"SliceSetEqual\", \"test\", \"for\"}, true},\n\t\t{[]string{\"test\", \"for\", \"SliceSetEqual\"}, []string{\"test\", \"for\", \"SliceSetEqual\"}, true},\n\t\t{[]string{\"test\", \"for\", \"SliceSetEqual\"}, []string{\"test\", \"for\"}, false},\n\t\t{[]string{\"test\", \"for\", \"SliceSetEqual\"}, []string{}, false},\n\t\t{[]string{\"test\", \"for\", \"SliceSetEqual\"}, []string{\"test\", \"for\", \"SliceContain\"}, false},\n\t}\n\n\tfor _, test := range cases {\n\t\tswitch test.s1.(type) {\n\t\tcase string:\n\t\t\tif got := SliceSetEqual(test.s1.([]string), test.s2.([]string)); got != test.want {\n\t\t\t\tt.Errorf(\"SliceSetEqual(%v, %v) = %v\", test.s1, test.s2, test.want)\n\t\t\t}\n\t\tcase int:\n\t\t\tif got := SliceSetEqual(test.s1.([]int), test.s2.([]int)); got != test.want {\n\t\t\t\tt.Errorf(\"SliceSetEqual(%v, %v) = %v\", test.s1, test.s2, test.want)\n\t\t\t}\n\t\t}\n\t}\n}\n\nfunc Test_SortedSliceEqual(t *testing.T) {\n\tinvalid := \"invalid\"\n\tassert.Panics(t, func() { SortedSliceEqual(invalid, 1) })\n\ttemp := []int{1, 2, 3}\n\tassert.Panics(t, func() { SortedSliceEqual(temp, invalid) })\n\n\tsortSlice := func(slice interface{}, less func(i, j int) bool) {\n\t\tsort.Slice(slice, less)\n\t}\n\tintSliceAfterSort := func(slice []int) []int {\n\t\tsortSlice(slice, func(i, j int) bool {\n\t\t\treturn slice[i] <= slice[j]\n\t\t})\n\t\treturn slice\n\t}\n\tstringSliceAfterSort := func(slice []string) []string {\n\t\tsortSlice(slice, func(i, j int) bool {\n\t\t\treturn slice[i] <= slice[j]\n\t\t})\n\t\treturn slice\n\t}\n\n\tcases := []struct {\n\t\ts1   interface{}\n\t\ts2   interface{}\n\t\twant bool\n\t}{\n\t\t{intSliceAfterSort([]int{}), intSliceAfterSort([]int{}), true},\n\t\t{stringSliceAfterSort([]string{}), stringSliceAfterSort([]string{}), true},\n\t\t{intSliceAfterSort([]int{1, 2, 3}), intSliceAfterSort([]int{3, 2, 1}), true},\n\t\t{intSliceAfterSort([]int{1, 2, 3}), intSliceAfterSort([]int{1, 2, 3}), true},\n\t\t{intSliceAfterSort([]int{1, 2, 3}), intSliceAfterSort([]int{}), false},\n\t\t{intSliceAfterSort([]int{1, 2, 3}), intSliceAfterSort([]int{1, 2}), false},\n\t\t{intSliceAfterSort([]int{1, 2, 3}), intSliceAfterSort([]int{4, 5, 6}), false},\n\t\t{stringSliceAfterSort([]string{\"test\", \"for\", \"SliceSetEqual\"}), stringSliceAfterSort([]string{\"SliceSetEqual\", \"test\", \"for\"}), true},\n\t\t{stringSliceAfterSort([]string{\"test\", \"for\", \"SliceSetEqual\"}), stringSliceAfterSort([]string{\"test\", \"for\", \"SliceSetEqual\"}), true},\n\t\t{stringSliceAfterSort([]string{\"test\", \"for\", \"SliceSetEqual\"}), stringSliceAfterSort([]string{\"test\", \"for\"}), false},\n\t\t{stringSliceAfterSort([]string{\"test\", \"for\", \"SliceSetEqual\"}), stringSliceAfterSort([]string{}), false},\n\t\t{stringSliceAfterSort([]string{\"test\", \"for\", \"SliceSetEqual\"}), stringSliceAfterSort([]string{\"test\", \"for\", \"SliceContain\"}), false},\n\t}\n\n\tfor _, test := range cases {\n\t\tif got := SortedSliceEqual(test.s1, test.s2); got != test.want {\n\t\t\tt.Errorf(\"SliceSetEqual(%v, %v) = %v\", test.s1, test.s2, test.want)\n\t\t}\n\t}\n}\n"

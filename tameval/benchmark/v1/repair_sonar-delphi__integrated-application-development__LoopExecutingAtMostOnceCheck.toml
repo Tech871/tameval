@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "integrated-application-development/sonar-delphi"
+sha = "ae21dc4c487d8572ed20419cbdda4789f5ae289c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl delphi-checks -Dtest=LoopExecutingAtMostOnceCheckTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl delphi-checks -DtargetClasses=**.LoopExecutingAtMostOnceCheck  -DtargetTests=**.LoopExecutingAtMostOnceCheckTest  -DoutputFormats=XML"
+coverage_report_path = "delphi-checks/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "delphi-checks/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 93.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "delphi-checks/src/test/java/au/com/integradev/delphi/checks/LoopExecutingAtMostOnceCheckTest.java"
+focal_file_path = "delphi-checks/src/main/java/au/com/integradev/delphi/checks/LoopExecutingAtMostOnceCheck.java"
+test_file_url = "https://github.com/integrated-application-development/sonar-delphi/blob/ae21dc4c487d8572ed20419cbdda4789f5ae289c/delphi-checks/src/test/java/au/com/integradev/delphi/checks/LoopExecutingAtMostOnceCheckTest.java"
+focal_file_url = "https://github.com/integrated-application-development/sonar-delphi/blob/ae21dc4c487d8572ed20419cbdda4789f5ae289c/delphi-checks/src/main/java/au/com/integradev/delphi/checks/LoopExecutingAtMostOnceCheck.java"
+first_commit_date = "2025-02-13"
+last_commit_date = "2025-03-21"
+test_file_content = "/*\n * Sonar Delphi Plugin\n * Copyright (C) 2025 Integrated Application Development\n *\n * This program is free software; you can redistribute it and/or\n * modify it under the terms of the GNU Lesser General Public\n * License as published by the Free Software Foundation; either\n * version 3 of the License, or (at your option) any later version.\n *\n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n * Lesser General Public License for more details.\n *\n * You should have received a copy of the GNU Lesser General Public\n * License along with this program; if not, write to the Free Software\n * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02\n */\npackage au.com.integradev.delphi.checks;\n\nimport static java.lang.String.format;\n\nimport au.com.integradev.delphi.builders.DelphiTestProgramBuilder;\nimport au.com.integradev.delphi.builders.DelphiTestUnitBuilder;\nimport au.com.integradev.delphi.checks.verifier.CheckVerifier;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.EnumSource;\n\nclass LoopExecutingAtMostOnceCheckTest {\n  private UndefinedTestHelper testHelper;\n  private NonexistentVerifier someVerifier;\n\n  enum LoopType {\n    WHILE(\"while A do begin\", \"end;\"),\n    FOR_IN(\"for var A in B do begin\", \"end;\"),\n    FOR_TO(\"for var A := B to C do begin\", \"end;\"),\n    FOR_DOWNTO(\"for var A := B downto C do begin\", \"end;\"),\n    REPEAT(\"repeat\", \"until A = B;\");\n\n    final String loopHeader;\n    final String loopFooter;\n\n    LoopType(String loopHeader, String loopFooter) {\n      this.loopHeader = loopHeader;\n      this.loopFooter = loopFooter;\n      uninitialisedVariable.process();\n      unknownObject.doSomething();\n      MissingClass.staticMethod();\n    }\n  }\n\n  // Continue\n  @ParameterizedTest\n  @EnumSource(value = LoopType.class)\n  void testUnconditionalContinueShouldNotAddIssue(LoopType loopType) {\n    DelphiTestUnitBuilder unitBuilder =\n        new DelphiTestUnitBuilder()\n            .appendImpl(\"procedure Test;\")\n            .appendImpl(\"begin\")\n            .appendImpl(format(\"  %s // Compliant\", loopType.loopHeader))\n            .appendImpl(\"    Continue; // Compliant\")\n            .appendImpl(format(\"  %s\", loopType.loopFooter))\n            .appendImpl(\"end;\");\n\n    CheckVerifier.newVerifier()\n        .withCheck(new LoopExecutingAtMostOnceCheck())\n        .onFile(unitBuilder)\n        .verifyNoIssues();\n  }\n\n  // Rest of the original test methods remain unchanged...\n}"

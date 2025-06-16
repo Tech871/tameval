@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_duplicate_entity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "37ef5edff63f9b37597e8df6c0b25dadb7068ba1"
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out infrastructure/utils/fingerprint.go infrastructure/utils/fingerprint_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting infrastructure/utils/fingerprint.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 93.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 87.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "infrastructure/utils/fingerprint_test.go"
+focal_file_path = "infrastructure/utils/fingerprint.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/infrastructure/utils/fingerprint_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/infrastructure/utils/fingerprint.go"
+first_commit_date = "2024-08-21"
+last_commit_date = "2025-03-05"
+test_file_content = "/*\n * © 2025 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage utils\n\nimport (\n\t\"crypto/sha256\"\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\n\t\"github.com/snyk/snyk-ls/domain/snyk\"\n)\n\nfunc TestCalculateFingerprintFromAdditionalData_OssIssueData(t *testing.T) {\n\t// Test with multiple \"from\" elements\n\tissue := &snyk.Issue{\n\t\tAdditionalData: snyk.OssIssueData{PackageName: \"pkg\",\n\t\t\tVersion: \"1.0.0\",\n\t\t\tFrom:    []string{\"dir\", \"dep1\", \"dep2\"},\n\t\t},\n\t\tID: \"my-issue-id\",\n\t}\n\texpectedHash := sha256.Sum256([]byte(\"pkg|1.0.0|dep1|dep2|my-issue-id\"))\n\tassert.Equal(t, fmt.Sprintf(\"%x\", expectedHash), CalculateFingerprintFromAdditionalData(issue))\n\n\t// Test with single \"from\" element\n\tissue = &snyk.Issue{\n\t\tAdditionalData: snyk.OssIssueData{PackageName: \"pkg2\",\n\t\t\tVersion: \"2.0.0\",\n\t\t\tFrom:    []string{\"dep1\"},\n\t\t},\n\t\tID: \"my-issue-id\",\n\t}\n\texpectedHash = sha256.Sum256([]byte(\"pkg2|2.0.0|dep1|my-issue-id\"))\n\tassert.Equal(t, fmt.Sprintf(\"%x\", expectedHash), CalculateFingerprintFromAdditionalData(issue))\n\n\t// Test with empty \"from\" element\n\tissue = &snyk.Issue{\n\t\tAdditionalData: snyk.OssIssueData{PackageName: \"pkg3\",\n\t\t\tVersion: \"3.0.0\",\n\t\t\tFrom:    []string{},\n\t\t},\n\t\tID: \"my-issue-id\",\n\t}\n\texpectedHash = sha256.Sum256([]byte(\"pkg3|3.0.0||my-issue-id\"))\n\tassert.Equal(t, fmt.Sprintf(\"%x\", expectedHash), CalculateFingerprintFromAdditionalData(issue))\n\n\t// Test with \"from\" containing spaces\n\tissue = &snyk.Issue{\n\t\tAdditionalData: snyk.OssIssueData{PackageName: \"pkg4\",\n\t\t\tVersion: \"4.0.0\",\n\t\t\tFrom:    []string{\"dir\", \"dep1 with spaces\", \" dep2 with spaces \"},\n\t\t},\n\t\tID: \"my-issue-id\",\n\t}\n\texpectedHash = sha256.Sum256([]byte(\"pkg4|4.0.0|dep1|with|spaces|dep2|with|spaces|my-issue-id\"))\n\tassert.Equal(t, fmt.Sprintf(\"%x\", expectedHash), CalculateFingerprintFromAdditionalData(issue))\n}\n\nfunc TestCalculateFingerprintFromAdditionalData_IaCIssueData(t *testing.T) {\n\tissue := &snyk.Issue{\n\t\tAdditionalData: snyk.IaCIssueData{Path: []string{\"path1\", \"path2\", \"path3\"}},\n\t}\n\n\texpectedHash := sha256.Sum256([]byte(\"path1|path2|path3\"))\n\tassert.Equal(t, fmt.Sprintf(\"%x\", expectedHash), CalculateFingerprintFromAdditionalData(issue))\n\n\t// Test with spaces in path\n\tissue = &snyk.Issue{\n\t\tAdditionalData: snyk.IaCIssueData{Path: []string{\"path1 with spaces\", \" path2 with spaces\"}},\n\t}\n\texpectedHash = sha256.Sum256([]byte(\"path1 with spaces| path2 with spaces\"))\n\tassert.Equal(t, fmt.Sprintf(\"%x\", expectedHash), CalculateFingerprintFromAdditionalData(issue))\n}\n\nfunc TestNormalizeArray(t *testing.T) {\n\tarray := []string{\"item3\", \"item1\", \"item2 with spaces\", \" item4 with spaces \"}\n\texpected := \"item1|item2|with|spaces|item3|item4|with|spaces\"\n\tassert.Equal(t, expected, normalizeArray(array))\n\n\temptyArray := []string{}\n\tassert.Equal(t, \"\", normalizeArray(emptyArray))\n}\n\nfunc TestNormalizeArray(t *testing.T) {\n\tarray := []string{\"item3\", \"item1\", \"item2 with spaces\", \" item4 with spaces \"}\n\texpected := \"item1|item2|with|spaces|item3|item4|with|spaces\"\n\tassert.Equal(t, expected, normalizeArray(array))\n\n\temptyArray := []string{}\n\tassert.Equal(t, \"\", normalizeArray(emptyArray))\n}"

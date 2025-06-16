@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "synfinatic/aws-sso-cli"
+sha = "7bd3daa96362d3ec107ffa9f1714f4808e089051"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/storage/storage.go internal/storage/storage_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/storage/storage.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 93.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 35, 36, 37, 50, 51, 52, 53, 74, 75, 76, 77, 89, 90, 91, 94, 95, 96, 99, 100, 101, 102, 105, 106, 107, 110, 111, 115, 119, 120, 121, 122, 124, 125, 126, 128, 129, 130, 132, 133, 134, 136, 137, 138, 140, 141, 142, 143, 156, 157, 158, 159, 162, 163, 164, 167, 168, 169, 170, 171, 172, 176, 177, 178, 179, 180, 181, 182, 186, 187, 191, 192, 193, 194, 195, 196,]
+missed_lines = [ 112, 113, 114, 188, 189, 190,]
+
+[input_info]
+test_file_path = "internal/storage/storage_test.go"
+focal_file_path = "internal/storage/storage.go"
+test_file_url = "https://github.com/synfinatic/aws-sso-cli/blob/7bd3daa96362d3ec107ffa9f1714f4808e089051/internal/storage/storage_test.go"
+focal_file_url = "https://github.com/synfinatic/aws-sso-cli/blob/7bd3daa96362d3ec107ffa9f1714f4808e089051/internal/storage/storage.go"
+first_commit_date = "2022-05-29"
+last_commit_date = "2025-01-23"
+test_file_content = "package storage\n\n/*\n * AWS SSO CLI\n * Copyright (c) 2021-2025 Aaron Turner  <synfinatic at gmail dot com>\n *\n * This program is free software: you can redistribute it\n * and/or modify it under the terms of the GNU General Public License as\n * published by the Free Software Foundation, either version 3 of the\n * License, or with the authors permission any later version.\n *\n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Public License for more details.\n *\n * You should have received a copy of the GNU General Public License\n * along with this program.  If not, see <http://www.gnu.org/licenses/>.\n */\n\nimport (\n\t\"os\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/synfinatic/flexlog\"\n\ttestlogger \"github.com/synfinatic/flexlog/test\"\n)\n\nfunc TestCreateTokenResponseExpired(t *testing.T) {\n\ttr := &CreateTokenResponse{\n\t\tExpiresAt: 0,\n\t}\n\tassert.True(t, tr.Expired())\n\n\ttr.ExpiresAt = time.Now().Unix()\n\tassert.True(t, tr.Expired())\n\n\t// one minute buffer\n\ttr.ExpiresAt = time.Now().Unix() - 61\n\tassert.True(t, tr.Expired())\n\n\ttr.ExpiresAt = time.Now().Unix() + 65\n\tassert.False(t, tr.Expired())\n}\n\nfunc TestRegisterClientDataExpired(t *testing.T) {\n\ttr := &RegisterClientData{\n\t\tClientSecretExpiresAt: 0,\n\t}\n\tassert.True(t, tr.Expired())\n\n\ttr.ClientSecretExpiresAt = time.Now().Unix()\n\tassert.True(t, tr.Expired())\n\n\t// one hour buffer\n\ttr.ClientSecretExpiresAt = time.Now().Unix() - 60*60 + 1\n\tassert.True(t, tr.Expired())\n\n\ttr.ClientSecretExpiresAt = time.Now().Unix() + 60*60 + 1\n\tassert.False(t, tr.Expired())\n}\n\nfunc TestRoleCredentialsExpired(t *testing.T) {\n\tx := RoleCredentials{\n\t\tExpiration: 0,\n\t}\n\tassert.True(t, x.Expired())\n\n\tx.Expiration = time.Now().UnixMilli()\n\tassert.True(t, x.Expired())\n\n\t// one minute buffer, in millisec\n\tx.Expiration = time.Now().UnixMilli() - 60*1000 + 1\n\tassert.True(t, x.Expired())\n\n\tx.Expiration = time.Now().UnixMilli() + 60*1000 + 1\n\tassert.False(t, x.Expired())\n}\n\nfunc TestRoleArn(t *testing.T) {\n\tx := &RoleCredentials{\n\t\tAccountId: 12344553243,\n\t\tRoleName:  \"foobar\",\n\t}\n\tassert.Equal(t, \"arn:aws:iam::012344553243:role/foobar\", x.RoleArn())\n\tassert.Equal(t, \"012344553243\", x.AccountIdStr())\n}\n\nfunc TestExpireEpoch(t *testing.T) {\n\tx := RoleCredentials{\n\t\tExpiration: 0,\n\t}\n\tassert.Equal(t, int64(0), x.ExpireEpoch())\n\n\tx.Expiration = time.Now().UnixMilli()\n\tassert.Equal(t, time.UnixMilli(x.Expiration).Unix(), x.ExpireEpoch())\n}\n\nfunc TestExpireString(t *testing.T) {\n\tx := RoleCredentials{\n\t\tExpiration: 0,\n\t}\n\tassert.Equal(t, time.Unix(0, 0).Format(time.RFC3339), x.ExpireString())\n\n\tx.Expiration = time.Now().Unix()\n\tassert.Equal(t, time.UnixMilli(x.Expiration).Format(time.RFC3339), x.ExpireString())\n}\n\nfunc TestGetArn(t *testing.T) {\n\tx := StaticCredentials{\n\t\tUserName:  \"foobar\",\n\t\tAccountId: 123456789012,\n\t}\n\tassert.Equal(t, \"arn:aws:iam::123456789012:user/foobar\", x.UserArn())\n}\n\nfunc TestGetAccountIdStr(t *testing.T) {\n\t// setup logger for testing\n\toldLogger := log.Copy()\n\ttLogger := testlogger.NewTestLogger(\"DEBUG\")\n\tdefer tLogger.Close()\n\n\tlog = tLogger\n\tdefer func() { log = oldLogger }()\n\n\tx := StaticCredentials{\n\t\tUserName:  \"foobar\",\n\t\tAccountId: 23456789012,\n\t}\n\tassert.Equal(t, \"023456789012\", x.AccountIdStr())\n\n\tx = StaticCredentials{\n\t\tUserName:  \"foobar\",\n\t\tAccountId: -1,\n\t}\n\t_ = x.AccountIdStr()\n\tmsg := testlogger.LogMessage{}\n\tassert.NoError(t, tLogger.GetNext(&msg))\n\tassert.Contains(t, msg.Message, \"Invalid AccountId\")\n\tassert.Equal(t, flexlog.LevelFatal, msg.Level)\n}\n\nfunc TestGetHeader(t *testing.T) {\n\tx := StaticCredentials{}\n\th, err := x.GetHeader(\"Profile\")\n\tassert.NoError(t, err)\n\tassert.Equal(t, \"Profile\", h)\n}\n\nfunc TestRoleCredentialsValidate(t *testing.T) {\n\tr := RoleCredentials{\n\t\tRoleName:        \"RoleName\",\n\t\tAccessKeyId:     \"AccessKeyId\",\n\t\tSecretAccessKey: \"SecretAccessKey\",\n\t\tAccountId:       1,\n\t\tSessionToken:    \"SessionToken\",\n\t\tExpiration:      1,\n\t}\n\tassert.NoError(t, (&r).Validate())\n\n\tk := r\n\tk.RoleName = \"\"\n\tassert.ErrorContains(t, (&k).Validate(), \"roleName\")\n\n\tk = r\n\tk.AccessKeyId = \"\"\n\tassert.ErrorContains(t, (&k).Validate(), \"accessKeyId\")\n\n\tk = r\n\tk.SecretAccessKey = \"\"\n\tassert.ErrorContains(t, (&k).Validate(), \"secretAccessKey\")\n\n\tk = r\n\tk.SessionToken = \"\"\n\tassert.ErrorContains(t, (&k).Validate(), \"sessionToken\")\n\n\tk = r\n\tk.AccountId = 0\n\tassert.ErrorContains(t, (&k).Validate(), \"accountId\")\n\n\tk = r\n\tk.Expiration = 0\n\tassert.ErrorContains(t, (&k).Validate(), \"expiration\")\n}\n\nfunc TestValidateSSLCertificate(t *testing.T) {\n\tt.Parallel()\n\tcert, err := os.ReadFile(\"../ecs/server/testdata/localhost.crt\")\n\tassert.NoError(t, err)\n\n\terr = ValidateSSLCertificate(cert)\n\tassert.NoError(t, err)\n\n\tcert, err = os.ReadFile(\"../ecs/server/testdata/localhost.key\")\n\tassert.NoError(t, err)\n\n\terr = ValidateSSLCertificate(cert)\n\tassert.Error(t, err)\n}\n\nfunc TestValidateSSLPrivateKey(t *testing.T) {\n\tt.Parallel()\n\tkey, err := os.ReadFile(\"../ecs/server/testdata/localhost.key\")\n\tassert.NoError(t, err)\n\n\terr = ValidateSSLPrivateKey(key)\n\tassert.NoError(t, err)\n\n\tkey, err = os.ReadFile(\"../ecs/server/testdata/localhost.crt\")\n\tassert.NoError(t, err)\n\n\terr = ValidateSSLPrivateKey(key)\n\tassert.Error(t, err)\n}\n"

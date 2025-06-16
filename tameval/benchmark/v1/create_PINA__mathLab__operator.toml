@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "mathLab/PINA"
+sha = "03ef90c358d3f5802db96b0092d5c874bd7c0636"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=pina/operator.py -m pytest -q --junit-xml=test_output.xml tests/test_operator.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target pina.operator --unit-test tests.test_operator --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target pina/operator.py --unit-test tests/test_operator.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 81.0
+original_coverage = 81.0
+mutation_kill_rate = 6.0
+original_mutation_kill_rate = 6.0
+covered_lines = [ 14, 15, 18, 44, 61, 63, 66, 67, 77, 78, 79, 80, 82, 85, 86, 88, 89, 91, 93, 95, 97, 100, 101, 102, 103, 104, 108, 111, 135, 138, 139, 141, 142, 144, 147, 150, 151, 152, 153, 154, 155, 156, 157, 158, 161, 185, 203, 204, 206, 207, 208, 210, 212, 213, 215, 216, 218, 221, 222, 223, 224, 227, 230, 231, 232, 233, 235, 236, 238, 241,]
+missed_lines = [ 62, 64, 83, 94, 106, 136, 145, 148, 219, 262, 263, 265, 266, 268, 274, 275,]
+
+[input_info]
+test_file_path = "tests/test_operator.py"
+focal_file_path = "pina/operator.py"
+test_file_url = "https://github.com/mathLab/PINA/blob/03ef90c358d3f5802db96b0092d5c874bd7c0636/tests/test_operator.py"
+focal_file_url = "https://github.com/mathLab/PINA/blob/03ef90c358d3f5802db96b0092d5c874bd7c0636/pina/operator.py"
+first_commit_date = "2025-03-19"
+last_commit_date = "2025-03-19"
+test_file_content = "import torch\nimport pytest\n\nfrom pina import LabelTensor\nfrom pina.operator import grad, div, laplacian\n\n\ndef func_vector(x):\n    return x**2\n\n\ndef func_scalar(x):\n    x_ = x.extract([\"x\"])\n    y_ = x.extract([\"y\"])\n    z_ = x.extract([\"z\"])\n    return x_**2 + y_**2 + z_**2\n\n\ndata = torch.rand((20, 3))\ninp = LabelTensor(data, [\"x\", \"y\", \"z\"]).requires_grad_(True)\nlabels = [\"a\", \"b\", \"c\"]\ntensor_v = LabelTensor(func_vector(inp), labels)\ntensor_s = LabelTensor(func_scalar(inp).reshape(-1, 1), labels[0])\n\n\ndef test_grad_scalar_output():\n    grad_tensor_s = grad(tensor_s, inp)\n    true_val = 2 * inp\n    true_val.labels = inp.labels\n    assert grad_tensor_s.shape == inp.shape\n    assert grad_tensor_s.labels == [\n        f\"d{tensor_s.labels[0]}d{i}\" for i in inp.labels\n    ]\n    assert torch.allclose(grad_tensor_s, true_val)\n\n    grad_tensor_s = grad(tensor_s, inp, d=[\"x\", \"y\"])\n    assert grad_tensor_s.shape == (20, 2)\n    assert grad_tensor_s.labels == [\n        f\"d{tensor_s.labels[0]}d{i}\" for i in [\"x\", \"y\"]\n    ]\n    assert torch.allclose(grad_tensor_s, true_val.extract([\"x\", \"y\"]))\n\n\ndef test_grad_vector_output():\n    grad_tensor_v = grad(tensor_v, inp)\n    true_val = torch.cat(\n        (\n            2 * inp.extract([\"x\"]),\n            torch.zeros_like(inp.extract([\"y\"])),\n            torch.zeros_like(inp.extract([\"z\"])),\n            torch.zeros_like(inp.extract([\"x\"])),\n            2 * inp.extract([\"y\"]),\n            torch.zeros_like(inp.extract([\"z\"])),\n            torch.zeros_like(inp.extract([\"x\"])),\n            torch.zeros_like(inp.extract([\"y\"])),\n            2 * inp.extract([\"z\"]),\n        ),\n        dim=1,\n    )\n    assert grad_tensor_v.shape == (20, 9)\n    assert grad_tensor_v.labels == [\n        f\"d{j}d{i}\" for j in tensor_v.labels for i in inp.labels\n    ]\n    assert torch.allclose(grad_tensor_v, true_val)\n\n    grad_tensor_v = grad(tensor_v, inp, d=[\"x\", \"y\"])\n    true_val = torch.cat(\n        (\n            2 * inp.extract([\"x\"]),\n            torch.zeros_like(inp.extract([\"y\"])),\n            torch.zeros_like(inp.extract([\"x\"])),\n            2 * inp.extract([\"y\"]),\n            torch.zeros_like(inp.extract([\"x\"])),\n            torch.zeros_like(inp.extract([\"y\"])),\n        ),\n        dim=1,\n    )\n    assert grad_tensor_v.shape == (inp.shape[0], 6)\n    assert grad_tensor_v.labels == [\n        f\"d{j}d{i}\" for j in tensor_v.labels for i in [\"x\", \"y\"]\n    ]\n    assert torch.allclose(grad_tensor_v, true_val)\n\n\ndef test_div_vector_output():\n    div_tensor_v = div(tensor_v, inp)\n    true_val = 2 * torch.sum(inp, dim=1).reshape(-1, 1)\n    assert div_tensor_v.shape == (20, 1)\n    assert div_tensor_v.labels == [f\"dadx+dbdy+dcdz\"]\n    assert torch.allclose(div_tensor_v, true_val)\n\n    div_tensor_v = div(tensor_v, inp, components=[\"a\", \"b\"], d=[\"x\", \"y\"])\n    true_val = 2 * torch.sum(inp.extract([\"x\", \"y\"]), dim=1).reshape(-1, 1)\n    assert div_tensor_v.shape == (inp.shape[0], 1)\n    assert div_tensor_v.labels == [f\"dadx+dbdy\"]\n    assert torch.allclose(div_tensor_v, true_val)\n\n\ndef test_laplacian_scalar_output():\n    laplace_tensor_s = laplacian(tensor_s, inp)\n    true_val = 6 * torch.ones_like(laplace_tensor_s)\n    assert laplace_tensor_s.shape == tensor_s.shape\n    assert laplace_tensor_s.labels == [f\"dd{tensor_s.labels[0]}\"]\n    assert torch.allclose(laplace_tensor_s, true_val)\n\n    laplace_tensor_s = laplacian(tensor_s, inp, components=[\"a\"], d=[\"x\", \"y\"])\n    true_val = 4 * torch.ones_like(laplace_tensor_s)\n    assert laplace_tensor_s.shape == tensor_s.shape\n    assert laplace_tensor_s.labels == [f\"dd{tensor_s.labels[0]}\"]\n    assert torch.allclose(laplace_tensor_s, true_val)\n\n\ndef test_laplacian_vector_output():\n    laplace_tensor_v = laplacian(tensor_v, inp)\n    print(laplace_tensor_v.labels)\n    print(tensor_v.labels)\n    true_val = 2 * torch.ones_like(tensor_v)\n    assert laplace_tensor_v.shape == tensor_v.shape\n    assert laplace_tensor_v.labels == [f\"dd{i}\" for i in tensor_v.labels]\n    assert torch.allclose(laplace_tensor_v, true_val)\n\n    laplace_tensor_v = laplacian(\n        tensor_v, inp, components=[\"a\", \"b\"], d=[\"x\", \"y\"]\n    )\n    true_val = 2 * torch.ones_like(tensor_v.extract([\"a\", \"b\"]))\n    assert laplace_tensor_v.shape == tensor_v.extract([\"a\", \"b\"]).shape\n    assert laplace_tensor_v.labels == [f\"dd{i}\" for i in [\"a\", \"b\"]]\n    assert torch.allclose(laplace_tensor_v, true_val)\n\n\ndef test_laplacian_vector_output2():\n    x = LabelTensor(\n        torch.linspace(0, 1, 10, requires_grad=True).reshape(-1, 1),\n        labels=[\"x\"],\n    )\n    y = LabelTensor(\n        torch.linspace(3, 4, 10, requires_grad=True).reshape(-1, 1),\n        labels=[\"y\"],\n    )\n    input_ = LabelTensor(torch.cat((x, y), dim=1), labels=[\"x\", \"y\"])\n\n    # Construct two scalar functions:\n    # u = x**2 + y**2\n    # v = x**2 - y**2\n    u = LabelTensor(\n        input_.extract(\"x\") ** 2 + input_.extract(\"y\") ** 2, labels=\"u\"\n    )\n    v = LabelTensor(\n        input_.extract(\"x\") ** 2 - input_.extract(\"y\") ** 2, labels=\"v\"\n    )\n\n    # Define a vector-valued function, whose components are u and v.\n    f = LabelTensor(torch.cat((u, v), dim=1), labels=[\"u\", \"v\"])\n\n    # Compute the scalar laplacian of both u and v:\n    # Lap(u) = [4, 4, 4, ..., 4]\n    # Lap(v) = [0, 0, 0, ..., 0]\n    lap_u = laplacian(u, input_, components=[\"u\"])\n    lap_v = laplacian(v, input_, components=[\"v\"])\n\n    # Compute the laplacian of f: the two columns should correspond\n    # to the laplacians of u and v, respectively...\n    lap_f = laplacian(f, input_, components=[\"u\", \"v\"])\n\n    assert torch.allclose(lap_f.extract(\"ddu\"), lap_u)\n    assert torch.allclose(lap_f.extract(\"ddv\"), lap_v)\n"

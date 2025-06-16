@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "ProtonMail/proton-bridge"
+sha = "42605c1923d73f0989027dce4a36c3681206f436"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/avito-tech/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/ports/ports.go pkg/ports/ports_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/ports/ports.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 68.0
+original_coverage = 68.0
+mutation_kill_rate = 24.0
+original_mutation_kill_rate = 24.0
+covered_lines = [ 32, 37, 38, 39, 41, 44, 45, 46, 47, 48, 49, 50, 51, 55, 56, 57, 58, 59, 69,]
+missed_lines = [ 33, 34, 35, 60, 61, 62, 63, 64, 66,]
+
+[input_info]
+test_file_path = "pkg/ports/ports_test.go"
+focal_file_path = "pkg/ports/ports.go"
+test_file_url = "https://github.com/ProtonMail/proton-bridge/blob/42605c1923d73f0989027dce4a36c3681206f436/pkg/ports/ports_test.go"
+focal_file_url = "https://github.com/ProtonMail/proton-bridge/blob/42605c1923d73f0989027dce4a36c3681206f436/pkg/ports/ports.go"
+first_commit_date = "2020-04-08"
+last_commit_date = "2025-01-02"
+test_file_content = "// Copyright (c) 2025 Proton AG\n//\n// This file is part of Proton Mail Bridge.\n//\n// Proton Mail Bridge is free software: you can redistribute it and/or modify\n// it under the terms of the GNU General Public License as published by\n// the Free Software Foundation, either version 3 of the License, or\n// (at your option) any later version.\n//\n// Proton Mail Bridge is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU General Public License for more details.\n//\n// You should have received a copy of the GNU General Public License\n// along with Proton Mail Bridge. If not, see <https://www.gnu.org/licenses/>.\n\npackage ports\n\nimport (\n\t\"net\"\n\t\"strconv\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\nconst testPort = 18080\n\nfunc TestFreePort(t *testing.T) {\n\trequire.True(t, IsPortFree(testPort), \"port should be empty\")\n}\n\nfunc TestOccupiedPort(t *testing.T) {\n\tdummyServer, err := net.Listen(\"tcp\", \":\"+strconv.Itoa(testPort))\n\trequire.NoError(t, err)\n\n\trequire.True(t, !IsPortFree(testPort), \"port should be occupied\")\n\n\t_ = dummyServer.Close()\n}\n\nfunc TestFindFreePortFromDirectly(t *testing.T) {\n\tfoundPort := FindFreePortFrom(testPort)\n\trequire.Equal(t, testPort, foundPort)\n}\n\nfunc TestFindFreePortFromNextOne(t *testing.T) {\n\tdummyServer, err := net.Listen(\"tcp\", \":\"+strconv.Itoa(testPort))\n\trequire.NoError(t, err)\n\n\tfoundPort := FindFreePortFrom(testPort)\n\trequire.Equal(t, testPort+1, foundPort)\n\n\t_ = dummyServer.Close()\n}\n\nfunc TestFindFreePortExcluding(t *testing.T) {\n\tdummyServer, err := net.Listen(\"tcp\", \":\"+strconv.Itoa(testPort))\n\trequire.NoError(t, err)\n\n\tfoundPort := FindFreePortFrom(testPort, testPort+1, testPort+2)\n\trequire.Equal(t, testPort+3, foundPort)\n\n\t_ = dummyServer.Close()\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "operator-framework/java-operator-sdk"
+sha = "b793702bcc41140a2ee9c40f3a542833a41bff03"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl operator-framework-core -Dtest=TransformingItemStoreTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl operator-framework-core -DtargetClasses=**.TransformingItemStore  -DtargetTests=**.TransformingItemStoreTest  -DoutputFormats=XML"
+coverage_report_path = "operator-framework-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "operator-framework-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 73.0
+original_coverage = 73.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 15, 18, 19, 22, 23, 24, 25, 34, 35, 36, 38, 40, 41, 42, 43, 63,]
+missed_lines = [ 29, 48, 53, 58, 68, 73,]
+
+[input_info]
+test_file_path = "operator-framework-core/src/test/java/io/javaoperatorsdk/operator/processing/event/source/informer/TransformingItemStoreTest.java"
+focal_file_path = "operator-framework-core/src/main/java/io/javaoperatorsdk/operator/processing/event/source/informer/TransformingItemStore.java"
+test_file_url = "https://github.com/operator-framework/java-operator-sdk/blob/b793702bcc41140a2ee9c40f3a542833a41bff03/operator-framework-core/src/test/java/io/javaoperatorsdk/operator/processing/event/source/informer/TransformingItemStoreTest.java"
+focal_file_url = "https://github.com/operator-framework/java-operator-sdk/blob/b793702bcc41140a2ee9c40f3a542833a41bff03/operator-framework-core/src/main/java/io/javaoperatorsdk/operator/processing/event/source/informer/TransformingItemStore.java"
+first_commit_date = "2022-12-14"
+last_commit_date = "2025-03-03"
+test_file_content = "package io.javaoperatorsdk.operator.processing.event.source.informer;\n\nimport java.util.Map;\n\nimport org.junit.jupiter.api.Test;\n\nimport io.fabric8.kubernetes.api.model.ConfigMap;\nimport io.fabric8.kubernetes.api.model.ObjectMetaBuilder;\n\nimport static io.fabric8.kubernetes.client.informers.cache.Cache.metaNamespaceKeyFunc;\nimport static org.assertj.core.api.Assertions.assertThat;\n\nclass TransformingItemStoreTest {\n\n  @Test\n  void cachedObjectTransformed() {\n    TransformingItemStore<ConfigMap> transformingItemStore =\n        new TransformingItemStore<>(\n            r -> {\n              r.getMetadata().setLabels(null);\n              return r;\n            });\n\n    var cm = configMap();\n    cm.getMetadata().setLabels(Map.of(\"k\", \"v\"));\n    transformingItemStore.put(metaNamespaceKeyFunc(cm), cm);\n\n    assertThat(transformingItemStore.get(metaNamespaceKeyFunc(cm)).getMetadata().getLabels())\n        .isNull();\n  }\n\n  @Test\n  void preservesSelectedAttributes() {\n    TransformingItemStore<ConfigMap> transformingItemStore =\n        new TransformingItemStore<>(\n            r -> {\n              r.getMetadata().setName(null);\n              r.getMetadata().setNamespace(null);\n              r.getMetadata().setResourceVersion(null);\n              return r;\n            });\n    var cm = configMap();\n    transformingItemStore.put(metaNamespaceKeyFunc(cm), cm);\n\n    assertThat(transformingItemStore.get(metaNamespaceKeyFunc(cm)).getMetadata().getName())\n        .isNotNull();\n    assertThat(transformingItemStore.get(metaNamespaceKeyFunc(cm)).getMetadata().getNamespace())\n        .isNotNull();\n    assertThat(\n            transformingItemStore.get(metaNamespaceKeyFunc(cm)).getMetadata().getResourceVersion())\n        .isNotNull();\n  }\n\n  ConfigMap configMap() {\n    var cm = new ConfigMap();\n    cm.setMetadata(\n        new ObjectMetaBuilder()\n            .withName(\"test1\")\n            .withNamespace(\"default\")\n            .withResourceVersion(\"1\")\n            .build());\n    return cm;\n  }\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "numaproj/numaflow"
+sha = "4a25fe0cf8500638f1ae7efb8aad5547619744eb"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/watermark/wmb/wmb.go pkg/watermark/wmb/wmb_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/watermark/wmb/wmb.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 70.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 44, 45, 46, 47, 48, 49, 50, 51, 52, 55, 56, 57, 58, 59,]
+missed_lines = [ 61, 62, 63, 64, 65, 66,]
+
+[input_info]
+test_file_path = "pkg/watermark/wmb/wmb_test.go"
+focal_file_path = "pkg/watermark/wmb/wmb.go"
+test_file_url = "https://github.com/numaproj/numaflow/blob/4a25fe0cf8500638f1ae7efb8aad5547619744eb/pkg/watermark/wmb/wmb_test.go"
+focal_file_url = "https://github.com/numaproj/numaflow/blob/4a25fe0cf8500638f1ae7efb8aad5547619744eb/pkg/watermark/wmb/wmb.go"
+first_commit_date = "2023-03-03"
+last_commit_date = "2025-01-31"
+test_file_content = "/*\nCopyright 2022 The Numaproj Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage wmb\n\nimport (\n\t\"bytes\"\n\t\"encoding/binary\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestDecodeToWMB(t *testing.T) {\n\ttype args struct {\n\t\tb []byte\n\t}\n\ttests := []struct {\n\t\tname    string\n\t\targs    args\n\t\twant    WMB\n\t\twantErr bool\n\t}{\n\t\t{\n\t\t\tname: \"decode_success_using_ot_value\",\n\t\t\targs: args{\n\t\t\t\tb: func() []byte {\n\t\t\t\t\tv := WMB{\n\t\t\t\t\t\tOffset:    100,\n\t\t\t\t\t\tWatermark: 1667495100000,\n\t\t\t\t\t\tIdle:      false,\n\t\t\t\t\t}\n\t\t\t\t\tbuf := new(bytes.Buffer)\n\t\t\t\t\t_ = binary.Write(buf, binary.LittleEndian, v)\n\t\t\t\t\treturn buf.Bytes()\n\t\t\t\t}(),\n\t\t\t},\n\t\t\twant: WMB{\n\t\t\t\tOffset:    100,\n\t\t\t\tWatermark: 1667495100000,\n\t\t\t\tIdle:      false,\n\t\t\t},\n\t\t\twantErr: false,\n\t\t},\n\t\t{\n\t\t\tname: \"decode_failure_using_1_field_struct\",\n\t\t\targs: args{\n\t\t\t\tb: func() []byte {\n\t\t\t\t\tv := struct {\n\t\t\t\t\t\tTest int64\n\t\t\t\t\t}{\n\t\t\t\t\t\tTest: 100,\n\t\t\t\t\t}\n\t\t\t\t\tbuf := new(bytes.Buffer)\n\t\t\t\t\t_ = binary.Write(buf, binary.LittleEndian, v)\n\t\t\t\t\treturn buf.Bytes()\n\t\t\t\t}(),\n\t\t\t},\n\t\t\twant:    WMB{},\n\t\t\twantErr: true,\n\t\t},\n\t\t{\n\t\t\tname: \"decode_failure_using_2_field_struct\",\n\t\t\targs: args{\n\t\t\t\tb: func() []byte {\n\t\t\t\t\tv := struct {\n\t\t\t\t\t\tTest0 int64\n\t\t\t\t\t\tTest1 int64\n\t\t\t\t\t}{\n\t\t\t\t\t\tTest0: 100,\n\t\t\t\t\t\tTest1: 1667495100000,\n\t\t\t\t\t}\n\t\t\t\t\tbuf := new(bytes.Buffer)\n\t\t\t\t\t_ = binary.Write(buf, binary.LittleEndian, v)\n\t\t\t\t\treturn buf.Bytes()\n\t\t\t\t}(),\n\t\t\t},\n\t\t\twant:    WMB{},\n\t\t\twantErr: true,\n\t\t},\n\t\t{\n\t\t\tname: \"decode_success_using_4_field_struct\",\n\t\t\targs: args{\n\t\t\t\tb: func() []byte {\n\t\t\t\t\tv := struct {\n\t\t\t\t\t\tTest0 bool\n\t\t\t\t\t\tTest1 int64\n\t\t\t\t\t\tTest2 int64\n\t\t\t\t\t\tTest3 int32\n\t\t\t\t\t}{\n\t\t\t\t\t\tTest0: true,\n\t\t\t\t\t\tTest1: 0,\n\t\t\t\t\t\tTest2: 0,\n\t\t\t\t\t\tTest3: 0,\n\t\t\t\t\t}\n\t\t\t\t\tbuf := new(bytes.Buffer)\n\t\t\t\t\t_ = binary.Write(buf, binary.LittleEndian, v)\n\t\t\t\t\treturn buf.Bytes()\n\t\t\t\t}(),\n\t\t\t},\n\t\t\twant: WMB{\n\t\t\t\tOffset:    0,\n\t\t\t\tWatermark: 0,\n\t\t\t\tIdle:      true,\n\t\t\t\tPartition: 0,\n\t\t\t},\n\t\t\twantErr: false,\n\t\t},\n\t\t{\n\t\t\tname: \"decode_success_using_5_field_struct\",\n\t\t\targs: args{\n\t\t\t\tb: func() []byte {\n\t\t\t\t\tv := struct {\n\t\t\t\t\t\tTest0 bool\n\t\t\t\t\t\tTest1 int64\n\t\t\t\t\t\tTest2 int64\n\t\t\t\t\t\tTest3 int32\n\t\t\t\t\t\tTest4 int32 // should be ignored\n\t\t\t\t\t}{\n\t\t\t\t\t\tTest0: false,\n\t\t\t\t\t\tTest1: 100,\n\t\t\t\t\t\tTest2: 1667495100000,\n\t\t\t\t\t\tTest3: 3,\n\t\t\t\t\t\tTest4: 20,\n\t\t\t\t\t}\n\t\t\t\t\tbuf := new(bytes.Buffer)\n\t\t\t\t\t_ = binary.Write(buf, binary.LittleEndian, v)\n\t\t\t\t\treturn buf.Bytes()\n\t\t\t\t}(),\n\t\t\t},\n\t\t\twant: WMB{\n\t\t\t\tOffset:    100,\n\t\t\t\tWatermark: 1667495100000,\n\t\t\t\tIdle:      false,\n\t\t\t\tPartition: 3,\n\t\t\t},\n\t\t\twantErr: false,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgot, err := DecodeToWMB(tt.args.b)\n\t\t\tif (err != nil) != tt.wantErr {\n\t\t\t\tt.Errorf(\"DecodeToWMB() error = %v, wantErr %v\", err, tt.wantErr)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"DecodeToWMB() got = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestWMB_EncodeToBytes(t *testing.T) {\n\t// bytes.Buffer Write doesn't return err, so err is always nil\n\ttype fields struct {\n\t\tOffset    int64\n\t\tWatermark int64\n\t\tIdle      bool\n\t\tPartition int32\n\t}\n\ttests := []struct {\n\t\tname    string\n\t\tfields  fields\n\t\twant    []byte\n\t\twantErr bool\n\t}{\n\t\t{\n\t\t\tname: \"encode_success\",\n\t\t\tfields: fields{\n\t\t\t\tIdle:      false,\n\t\t\t\tOffset:    100,\n\t\t\t\tWatermark: 1667495100000,\n\t\t\t\tPartition: 3,\n\t\t\t},\n\t\t\twant:    []byte{0, 100, 0, 0, 0, 0, 0, 0, 0, 96, 254, 115, 62, 132, 1, 0, 0, 3, 0, 0, 0},\n\t\t\twantErr: false,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tv := WMB{\n\t\t\t\tOffset:    tt.fields.Offset,\n\t\t\t\tWatermark: tt.fields.Watermark,\n\t\t\t\tPartition: tt.fields.Partition,\n\t\t\t}\n\t\t\tgot, err := v.EncodeToBytes()\n\t\t\tif (err != nil) != tt.wantErr {\n\t\t\t\tt.Errorf(\"EncodeToBytes() error = %v, wantErr %v\", err, tt.wantErr)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"EncodeToBytes() got = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}"

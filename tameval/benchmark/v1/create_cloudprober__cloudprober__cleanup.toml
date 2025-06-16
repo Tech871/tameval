@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "cloudprober/cloudprober"
+sha = "01736e0103a53b703064edec034c30ef5e25681d"
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out probes/browser/artifacts/cleanup.go probes/browser/artifacts/cleanup_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting probes/browser/artifacts/cleanup.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 29.0
+original_coverage = 67.0
+mutation_kill_rate = 19.0
+original_mutation_kill_rate = 62.0
+covered_lines = [ 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 75, 82,]
+missed_lines = [ 34, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 56, 72, 73, 74, 77, 78, 79, 80, 86, 87, 88, 89, 90, 91, 92, 93, 96, 97,]
+
+[input_info]
+test_file_path = "probes/browser/artifacts/cleanup_test.go"
+focal_file_path = "probes/browser/artifacts/cleanup.go"
+test_file_url = "https://github.com/cloudprober/cloudprober/blob/01736e0103a53b703064edec034c30ef5e25681d/probes/browser/artifacts/cleanup_test.go"
+focal_file_url = "https://github.com/cloudprober/cloudprober/blob/01736e0103a53b703064edec034c30ef5e25681d/probes/browser/artifacts/cleanup.go"
+first_commit_date = "2025-03-18"
+last_commit_date = "2025-03-18"
+test_file_content = "// Copyright 2024 The Cloudprober Authors.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage artifacts\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\t\"time\"\n\n)\n\n\nfunc TestCleanupHandlerCleanupCycle(t *testing.T) {\n\tdir, err := os.MkdirTemp(\"\", \"cleanup_test\")\n\tif err != nil {\n\t\tt.Fatalf(\"failed to create temp dir: %v\", err)\n\t}\n\tdefer os.RemoveAll(dir)\n\n\tsubDirs := []string{\"dt1\", \"dt2\", \"dt3\"}\n\tfor i, subDir := range subDirs {\n\t\tpath := filepath.Join(dir, subDir)\n\t\tif err := os.Mkdir(path, 0755); err != nil {\n\t\t\tt.Fatalf(\"failed to create subdir: %v\", err)\n\t\t}\n\t\tfile, err := os.Create(filepath.Join(path, fmt.Sprintf(\"ft%d\", i+1)))\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"failed to create file: %v\", err)\n\t\t}\n\t\tfile.Close()\n\t\ttime.Sleep(100 * time.Millisecond)\n\t}\n\n\tmaxAge := 150 * time.Millisecond\n\tch := &CleanupHandler{\n\t\tdir:    dir,\n\t\tmaxAge: maxAge,\n\t}\n\tch.cleanupCycle()\n\n\tremainingDirs, err := os.ReadDir(dir)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to read directory: %v\", err)\n\t}\n\n\texpectedDirs := map[string]bool{\"dt3\": true}\n\tfor _, d := range remainingDirs {\n\t\tif !expectedDirs[d.Name()] {\n\t\t\tt.Errorf(\"unexpected directory: %s\", d.Name())\n\t\t}\n\t\tdelete(expectedDirs, d.Name())\n\t}\n\n\tfor d := range expectedDirs {\n\t\tt.Errorf(\"expected directory not found: %s\", d)\n\t}\n}\n"

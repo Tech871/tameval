@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "armadaproject/armada"
+sha = "5765dcb8fc87b811dfe3cdf254e04c6587afa142"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/common/requestid/interceptors.go internal/common/requestid/interceptors_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/common/requestid/interceptors.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 77.0
+original_coverage = 77.0
+mutation_kill_rate = 71.0
+original_mutation_kill_rate = 71.0
+covered_lines = [ 17, 18, 23, 24, 25, 26, 28, 43, 44, 45, 46, 47, 48, 55, 56, 57, 58, 59, 60, 61, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77,]
+missed_lines = [ 19, 20, 21, 33, 34, 35, 36, 37, 49,]
+
+[input_info]
+test_file_path = "internal/common/requestid/interceptors_test.go"
+focal_file_path = "internal/common/requestid/interceptors.go"
+test_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/common/requestid/interceptors_test.go"
+focal_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/common/requestid/interceptors.go"
+first_commit_date = "2022-01-07"
+last_commit_date = "2025-01-06"
+test_file_content = "package requestid\n\nimport (\n\t\"context\"\n\t\"testing\"\n\n\tgrpc_middleware \"github.com/grpc-ecosystem/go-grpc-middleware/v2\"\n\t\"github.com/renstrom/shortuuid\"\n\t\"github.com/stretchr/testify/require\"\n\t\"google.golang.org/grpc\"\n\t\"google.golang.org/grpc/metadata\"\n)\n\nfunc TestAddGet(t *testing.T) {\n\tctx := context.Background()\n\tctx = metadata.NewIncomingContext(ctx, metadata.New(map[string]string{}))\n\n\t// Test adding and getting an id\n\tid := shortuuid.New()\n\tctx, ok := AddToIncomingContext(ctx, id)\n\trequire.True(t, ok, \"adding id to context\")\n\n\treadId, ok := FromContext(ctx)\n\trequire.True(t, ok, \"getting id from context\")\n\trequire.True(t, readId == id, \"expected %q but got %q\", id, readId)\n\n\t// Test overwriting the id\n\tid = shortuuid.New()\n\tctx, ok = AddToIncomingContext(ctx, id)\n\trequire.True(t, ok, \"overwriting id\")\n\treadId, ok = FromContext(ctx)\n\n\trequire.True(t, ok, \"getting overwritten id from context\")\n\trequire.True(t, readId == id, \"expected new id to be %q but got %q\", id, readId)\n}\n\nfunc TestUnaryServerInterceptor(t *testing.T) {\n\tctx := context.Background()\n\tctx = metadata.NewIncomingContext(ctx, metadata.New(map[string]string{}))\n\thandler := func(ctx context.Context, req interface{}) (interface{}, error) {\n\t\tid, ok := FromContext(ctx)\n\t\tif !ok {\n\t\t\tt.Fatal(\"error getting id from context\")\n\t\t}\n\t\tif id == \"\" {\n\t\t\tt.Fatalf(\"got the empty string as id\")\n\t\t}\n\t\treturn nil, nil\n\t}\n\n\treplace := false\n\tf := UnaryServerInterceptor(replace)\n\t_, err := f(ctx, nil, nil, handler)\n\trequire.NoError(t, err)\n\n\treplace = true\n\tf = UnaryServerInterceptor(replace)\n\t_, err = f(ctx, nil, nil, handler)\n\trequire.NoError(t, err)\n}\n\nfunc TestUnaryServerInterceptorWithExisting(t *testing.T) {\n\tvar replace bool\n\tid := shortuuid.New()\n\tctx := context.Background()\n\tctx = metadata.NewIncomingContext(ctx, metadata.New(map[string]string{}))\n\tctx, ok := AddToIncomingContext(ctx, id)\n\tif !ok {\n\t\tt.Fatal(\"error adding id to context\")\n\t}\n\n\thandler := func(ctx context.Context, req interface{}) (interface{}, error) {\n\t\treadId, ok := FromContext(ctx)\n\t\tif !ok {\n\t\t\tt.Fatal(\"error getting id from context\")\n\t\t}\n\t\tif id == \"\" {\n\t\t\tt.Fatal(\"got the empty string as id\")\n\t\t}\n\t\tif replace && readId == id {\n\t\t\tt.Fatal(\"existing id was not replaced\")\n\t\t}\n\t\tif !replace && readId != id {\n\t\t\tt.Fatal(\"existing id was replaced\")\n\t\t}\n\t\treturn nil, nil\n\t}\n\n\treplace = false\n\tf := UnaryServerInterceptor(replace)\n\t_, err := f(ctx, nil, nil, handler)\n\trequire.NoError(t, err)\n\n\treplace = true\n\tf = UnaryServerInterceptor(replace)\n\t_, err = f(ctx, nil, nil, handler)\n\trequire.NoError(t, err)\n}\n\nfunc TestStreamServerInterceptor(t *testing.T) {\n\tctx := context.Background()\n\tctx = metadata.NewIncomingContext(ctx, metadata.New(map[string]string{}))\n\tstream := &grpc_middleware.WrappedServerStream{}\n\tstream.WrappedContext = ctx\n\thandler := func(srv interface{}, stream grpc.ServerStream) error {\n\t\tctx := stream.Context()\n\t\tid, ok := FromContext(ctx)\n\t\tif !ok {\n\t\t\tt.Fatal(\"error getting id from context\")\n\t\t}\n\t\tif id == \"\" {\n\t\t\tt.Fatalf(\"got the empty string as id\")\n\t\t}\n\t\treturn nil\n\t}\n\n\treplace := false\n\tf := StreamServerInterceptor(replace)\n\terr := f(nil, stream, nil, handler)\n\trequire.NoError(t, err)\n\n\treplace = true\n\tf = StreamServerInterceptor(replace)\n\terr = f(nil, stream, nil, handler)\n\trequire.NoError(t, err)\n}\n\nfunc TestStreamServerInterceptorWithExisting(t *testing.T) {\n\tvar replace bool\n\tid := shortuuid.New()\n\tctx := context.Background()\n\tctx = metadata.NewIncomingContext(ctx, metadata.New(map[string]string{}))\n\tctx, ok := AddToIncomingContext(ctx, id)\n\tif !ok {\n\t\tt.Fatal(\"error adding id to context\")\n\t}\n\tstream := &grpc_middleware.WrappedServerStream{}\n\tstream.WrappedContext = ctx\n\thandler := func(srv interface{}, stream grpc.ServerStream) error {\n\t\tctx := stream.Context()\n\t\treadId, ok := FromContext(ctx)\n\t\tif !ok {\n\t\t\tt.Fatal(\"error getting id from context\")\n\t\t}\n\t\tif id == \"\" {\n\t\t\tt.Fatal(\"got the empty string as id\")\n\t\t}\n\t\tif replace && readId == id {\n\t\t\tt.Fatal(\"existing id was not replaced\")\n\t\t}\n\t\tif !replace && readId != id {\n\t\t\tt.Fatal(\"existing id was replaced\")\n\t\t}\n\t\treturn nil\n\t}\n\n\treplace = false\n\tf := StreamServerInterceptor(replace)\n\terr := f(nil, stream, nil, handler)\n\trequire.NoError(t, err)\n\n\treplace = true\n\tf = StreamServerInterceptor(replace)\n\terr = f(nil, stream, nil, handler)\n\trequire.NoError(t, err)\n}\n"

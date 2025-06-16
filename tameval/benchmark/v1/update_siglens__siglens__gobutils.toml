@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "siglens/siglens"
+sha = "0d73ce202db68becfdae29c730eb0852b7241fc4"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/utils/gobutils.go pkg/utils/gobutils_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/utils/gobutils.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 31.0
+original_coverage = 59.0
+mutation_kill_rate = 29.0
+original_mutation_kill_rate = 43.0
+covered_lines = [ 34, 35, 36, 42, 43, 44, 45, 46, 47, 49, 50, 51, 52, 56, 57, 58, 61, 62, 63, 64, 65, 66, 67, 69,]
+missed_lines = [ 38, 39, 40, 77, 78, 79, 80, 81, 82, 83, 84, 86, 87, 88, 89, 91, 95, 96, 97, 98, 99, 100, 101, 102, 104, 105, 106, 107, 109, 116, 117, 118, 119, 120, 121, 122, 123, 124, 126, 129, 130, 131, 132, 133, 134, 135, 136, 137, 139, 140, 141, 142, 143, 145,]
+
+[input_info]
+test_file_path = "pkg/utils/gobutils_test.go"
+focal_file_path = "pkg/utils/gobutils.go"
+test_file_url = "https://github.com/siglens/siglens/blob/0d73ce202db68becfdae29c730eb0852b7241fc4/pkg/utils/gobutils_test.go"
+focal_file_url = "https://github.com/siglens/siglens/blob/0d73ce202db68becfdae29c730eb0852b7241fc4/pkg/utils/gobutils.go"
+first_commit_date = "2024-07-17"
+last_commit_date = "2025-02-17"
+test_file_content = "// Copyright (c) 2021-2024 SigScalr, Inc.\n//\n// This file is part of SigLens Observability Solution\n//\n// This program is free software: you can redistribute it and/or modify\n// it under the terms of the GNU Affero General Public License as published by\n// the Free Software Foundation, either version 3 of the License, or\n// (at your option) any later version.\n//\n// This program is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU Affero General Public License for more details.\n//\n// You should have received a copy of the GNU Affero General Public License\n// along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\npackage utils\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc Test_GetNilRegex(t *testing.T) {\n\tregex := GobbableRegex{}\n\tassert.Nil(t, regex.GetCompiledRegex())\n}\n\nfunc TestGetNonNilRegex(t *testing.T) {\n\tregex := GobbableRegex{}\n\terr := regex.SetRegex(\".*\")\n\tassert.NoError(t, err)\n\tassert.NotNil(t, regex.GetCompiledRegex())\n}\n\nfunc Test_SetInvalidRegex(t *testing.T) {\n\tregex := GobbableRegex{}\n\terr := regex.SetRegex(\"a(\")\n\tassert.Error(t, err)\n}\n\nfunc Test_SetValidRegex(t *testing.T) {\n\tregex := GobbableRegex{}\n\terr := regex.SetRegex(\"a.*z\")\n\tassert.NoError(t, err)\n\n\tcompiledRegex := regex.GetCompiledRegex()\n\tassert.NotNil(t, compiledRegex)\n\tassert.Equal(t, \"a.*z\", compiledRegex.String())\n}\n\nfunc Test_SetInvalidRegexKeepsLastValidRegex(t *testing.T) {\n\tregex := GobbableRegex{}\n\terr := regex.SetRegex(\"a.*z\")\n\tassert.NoError(t, err)\n\n\terr = regex.SetRegex(\"a(\")\n\tassert.Error(t, err)\n\n\tcompiledRegex := regex.GetCompiledRegex()\n\tassert.NotNil(t, compiledRegex)\n\tassert.Equal(t, \"a.*z\", compiledRegex.String())\n}\n\nfunc Test_GobEncode(t *testing.T) {\n\tregex := GobbableRegex{}\n\tencoded, err := regex.GobEncode()\n\tassert.NoError(t, err)\n\tassert.Equal(t, []byte(\"\"), encoded)\n\n\terr = regex.SetRegex(\"a.*z\")\n\tassert.NoError(t, err)\n\n\tencoded, err = regex.GobEncode()\n\tassert.NoError(t, err)\n\tassert.Equal(t, []byte(\"a.*z\"), encoded)\n}\n\nfunc Test_GobEncodeDecode(t *testing.T) {\n\toriginalRegex := GobbableRegex{}\n\tencoded, err := originalRegex.GobEncode()\n\tassert.NoError(t, err)\n\n\tdecodedRegex := GobbableRegex{}\n\terr = decodedRegex.GobDecode(encoded)\n\tassert.NoError(t, err)\n\tassert.Nil(t, decodedRegex.GetCompiledRegex())\n\n\terr = originalRegex.SetRegex(\"a.*z\")\n\tassert.NoError(t, err)\n\n\tencoded, err = originalRegex.GobEncode()\n\tassert.NoError(t, err)\n\n\terr = decodedRegex.GobDecode(encoded)\n\tassert.NoError(t, err)\n\n\tcompiledRegex := decodedRegex.GetCompiledRegex()\n\tassert.NotNil(t, compiledRegex)\n\tassert.Equal(t, \"a.*z\", compiledRegex.String())\n}\n\nfunc Test_GobDecodeEmpty(t *testing.T) {\n\tregex := GobbableRegex{}\n\terr := regex.SetRegex(\"a.*z\")\n\tassert.NoError(t, err)\n\tassert.NotNil(t, regex.GetCompiledRegex())\n\tassert.Equal(t, \"a.*z\", regex.GetCompiledRegex().String())\n\n\terr = regex.GobDecode([]byte{})\n\tassert.NoError(t, err)\n\tassert.Nil(t, regex.GetCompiledRegex())\n}"

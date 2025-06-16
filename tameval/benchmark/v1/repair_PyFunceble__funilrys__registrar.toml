@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "funilrys/PyFunceble"
+sha = "6fc0974a65e0987945afdfaed9e7a21dc6ad9894"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.test.txt && pip install -r requirements.win.txt && pip install -r requirements.dev.txt && pip install -r requirements.txt && pip install -r requirements.docs.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=PyFunceble/query/whois/converter/registrar.py -m pytest -q --junit-xml=test_output.xml tests/query/whois/converter/test_registrar.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target PyFunceble.query.whois.converter.registrar --unit-test tests.query.whois.converter.test_registrar --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target PyFunceble/query/whois/converter/registrar.py --unit-test tests/query/whois/converter/test_registrar.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 94.0
+original_mutation_kill_rate = 94.0
+covered_lines = [ 52, 54, 55, 58, 63, 75, 76, 89, 90, 92, 93, 96, 98, 103, 104, 108, 109, 111, 112, 114, 115, 120, 122, 123, 124, 125, 126, 128,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/query/whois/converter/test_registrar.py"
+focal_file_path = "PyFunceble/query/whois/converter/registrar.py"
+test_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/tests/query/whois/converter/test_registrar.py"
+focal_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/PyFunceble/query/whois/converter/registrar.py"
+first_commit_date = "2021-12-05"
+last_commit_date = "2025-02-23"
+test_file_content = "import unittest\nfrom typing import List\n\nfrom PyFunceble.query.whois.converter.registrar import RegistarExtractor\n\n\nclass TestRegistrarExtractor(unittest.TestCase):\n    \"\"\"\n    Tests the interface for the extration of expiration date.\n    \"\"\"\n\n    REGISTRAR_SAMPLES: List[str] = [\n        \"Hello, Inc.\",\n        \"Alphabet, Inc.\",\n        \"Example, Inc.\",\n        \"Google, Inc.\",\n    ]\n\n    REGISTRAR_MARKERS: List[str] = [\n        \"Authorized Agency    :\",\n        \"Domain Support:\",\n        \"Registrar:\",\n        \"Registrar       :\",\n        \"Registrar...........:\",\n        \"Registration Service Provider      :\",\n        \"Sponsoring Registrar :\",\n        \"Sponsoring Registrar Organization :\",\n    ]\n\n    def setUp(self) -> None:\n        \"\"\"\n        Setups everything needed for the tests.\n        \"\"\"\n\n        self.converter = RegistarExtractor()\n\n    def tearDown(self) -> None:\n        \"\"\"\n        Destroys everything needed for the tests.\n        \"\"\"\n\n        del self.converter\n\n    def test_set_data_to_convert_not_str(self) -> None:\n        \"\"\"\n        Tests the method which let us set the data to work with for the case\n        that it's not a string.\n        \"\"\"\n\n        given = [\"Hello\", \"World\"]\n\n        self.assertRaises(TypeError, lambda: self.converter.set_data_to_convert(given))\n\n    def test_set_data_to_convert_empty_str(self) -> None:\n        \"\"\"\n        Tests the method which let us set the data to work with for the case\n        that it's an empty string.\n        \"\"\"\n\n        given = \"\"\n\n        self.assertRaises(ValueError, lambda: self.converter.set_data_to_convert(given))\n\n    def test_get_converted(self) -> None:\n        \"\"\"\n        Tests the method that let us get the registrar part.\n        \"\"\"\n\n        for marker in self.REGISTRAR_MARKERS:\n            for sample in self.REGISTRAR_SAMPLES:\n                expected = sample\n\n                test_line = f\"{marker} {sample}\"\n\n                self.converter.data_to_convert = test_line\n                actual = self.converter.get_converted()\n\n                self.assertEqual(expected, actual, test_line)\n\n    def validate_registrar_extraction(self) -> None:\n        for marker in self.REGISTRAR_MARKERS[:4]:\n            for sample in self.REGISTRAR_SAMPLES[1:3]:\n                expected = sample\n                test_input = f\"{marker} {sample}\"\n                \n                self.converter.data_to_convert = test_input\n                result = self.converter.get_converted()\n                \n                self.assertEqual(expected, result)\n\n    def check_registrar_parsing(self) -> None:\n        test_markers = [\"Registrar:\", \"Domain Support:\"]\n        test_samples = [\"Example, Inc.\", \"Google, Inc.\"]\n        \n        for marker in test_markers:\n            for sample in test_samples:\n                expected = sample\n                test_data = f\"{marker}{sample}\"\n                \n                self.converter.data_to_convert = test_data\n                parsed_result = self.converter.get_converted()\n                \n                self.assertEqual(expected, parsed_result)\n\n    def test_get_converted_no_pattern(self) -> None:\n        \"\"\"\n        Tests the method that let us get the registrar part.\n        \"\"\"\n\n        given = \"Hello, World!\"\n        expected = None\n\n        self.converter.data_to_convert = given\n\n        actual = self.converter.get_converted()\n\n        self.assertEqual(expected, actual)\n\n    def test_get_converted_empty_registrar(self) -> None:\n        \"\"\"\n        Tests the method that let us get the registrar part for the case that\n        the registrar is empty.\n        \"\"\"\n\n        expected = None\n\n        for marker in self.REGISTRAR_MARKERS:\n            test_line = f\"{marker}     \"\n\n            self.converter.data_to_convert = test_line\n            actual = self.converter.get_converted()\n\n            self.assertEqual(expected, actual, test_line)\n\n\nif __name__ == \"__main__\":\n    unittest.main()"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "cadence-workflow/cadence"
+sha = "6d4ff3b9586899afadea49387fa6cfe75b0d00aa"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out common/task/weighted_channel_pool.go common/task/weighted_channel_pool_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting common/task/weighted_channel_pool.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 95.0
+original_coverage = 92.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = nan
+covered_lines = [ 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 92, 97, 98, 99, 100, 103, 108, 109, 110, 111, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 129, 130, 131, 132, 133, 134, 135, 136, 137, 140, 141, 142, 144, 145, 146, 147, 150, 151, 152, 153, 154, 155, 156, 157, 158, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 176, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 189, 190, 191, 192, 193, 194, 195, 196, 199, 200, 201, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 218, 219, 220, 221, 222, 224, 227, 228, 229, 231, 232, 233, 235, 236, 237,]
+missed_lines = [ 93, 94, 95, 104, 105, 106, 213, 214, 215, 216,]
+
+[input_info]
+test_file_path = "common/task/weighted_channel_pool_test.go"
+focal_file_path = "common/task/weighted_channel_pool.go"
+test_file_url = "https://github.com/cadence-workflow/cadence/blob/6d4ff3b9586899afadea49387fa6cfe75b0d00aa/common/task/weighted_channel_pool_test.go"
+focal_file_url = "https://github.com/cadence-workflow/cadence/blob/6d4ff3b9586899afadea49387fa6cfe75b0d00aa/common/task/weighted_channel_pool.go"
+first_commit_date = "2025-02-13"
+last_commit_date = "2025-02-13"
+test_file_content = "// The MIT License (MIT)\n\n// Copyright (c) 2017-2020 Uber Technologies Inc.\n\n// Permission is hereby granted, free of charge, to any person obtaining a copy\n// of this software and associated documentation files (the \"Software\"), to deal\n// in the Software without restriction, including without limitation the rights\n// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n// copies of the Software, and to permit persons to whom the Software is\n// furnished to do so, subject to the following conditions:\n//\n// The above copyright notice and this permission notice shall be included in all\n// copies or substantial portions of the Software.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE\n// SOFTWARE.\n\npackage task\n\nimport (\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\n\t\"github.com/uber/cadence/common/clock\"\n\t\"github.com/uber/cadence/common/log/testlogger\"\n)\n\nfunc TestGetOrCreateChannel(t *testing.T) {\n\ttimeSource := clock.NewMockedTimeSource()\n\tpool := NewWeightedRoundRobinChannelPool[string, int](\n\t\ttestlogger.New(t),\n\t\ttimeSource,\n\t\tWeightedRoundRobinChannelPoolOptions{\n\t\t\tBufferSize:              1000,\n\t\t\tIdleChannelTTLInSeconds: 10,\n\t\t},\n\t)\n\n\t// First, verify that the method returns the same channel if the key and weight are the same\n\tc1, releaseFn1 := pool.GetOrCreateChannel(\"k1\", 1)\n\tdefer releaseFn1()\n\tc2, releaseFn2 := pool.GetOrCreateChannel(\"k1\", 1)\n\tdefer releaseFn2()\n\tassert.Equal(t, c1, c2)\n\n\t// Next, verify that the methods returns the same channel if the key is the same but weight is different\n\tc3, releaseFn3 := pool.GetOrCreateChannel(\"k1\", 2)\n\tdefer releaseFn3()\n\tassert.Equal(t, c1, c3)\n}\n\nfunc TestGetOrCreateChannelConcurrent(t *testing.T) {\n\ttimeSource := clock.NewMockedTimeSource()\n\tpool := NewWeightedRoundRobinChannelPool[string, int](\n\t\ttestlogger.New(t),\n\t\ttimeSource,\n\t\tWeightedRoundRobinChannelPoolOptions{\n\t\t\tBufferSize:              1000,\n\t\t\tIdleChannelTTLInSeconds: 10,\n\t\t},\n\t)\n\n\tvar wg sync.WaitGroup\n\tvar chMap sync.Map\n\twg.Add(15)\n\n\tfor i := 0; i < 5; i++ {\n\t\tgo func(i int) {\n\t\t\tdefer wg.Done()\n\t\t\tc, releaseFn := pool.GetOrCreateChannel(\"k1\", i+1)\n\t\t\tdefer releaseFn()\n\t\t\tchMap.Store(\"k1\", c)\n\t\t}(i)\n\t\tgo func(i int) {\n\t\t\tdefer wg.Done()\n\t\t\tc, releaseFn := pool.GetOrCreateChannel(\"k2\", i+1)\n\t\t\tdefer releaseFn()\n\t\t\tchMap.Store(\"k2\", c)\n\t\t}(i)\n\t\tgo func(i int) {\n\t\t\tdefer wg.Done()\n\t\t\tc, releaseFn := pool.GetOrCreateChannel(\"k3\", i+1)\n\t\t\tdefer releaseFn()\n\t\t\tchMap.Store(\"k3\", c)\n\t\t}(i)\n\t}\n\twg.Wait()\n\n\tchs := pool.GetAllChannels()\n\tassert.Len(t, chs, 3)\n\tch1, _ := chMap.Load(\"k1\")\n\tch2, _ := chMap.Load(\"k2\")\n\tch3, _ := chMap.Load(\"k3\")\n\texpectedChs := []chan int{ch1.(chan int), ch2.(chan int), ch3.(chan int)}\n\tassert.ElementsMatch(t, expectedChs, chs)\n}\n\nfunc TestGetSchedule(t *testing.T) {\n\ttimeSource := clock.NewMockedTimeSource()\n\tpool := NewWeightedRoundRobinChannelPool[string, int](\n\t\ttestlogger.New(t),\n\t\ttimeSource,\n\t\tWeightedRoundRobinChannelPoolOptions{\n\t\t\tBufferSize:              1000,\n\t\t\tIdleChannelTTLInSeconds: 10,\n\t\t},\n\t)\n\n\tc1, releaseFn1 := pool.GetOrCreateChannel(\"k1\", 1)\n\tdefer releaseFn1()\n\tc2, releaseFn2 := pool.GetOrCreateChannel(\"k2\", 2)\n\tdefer releaseFn2()\n\tc3, releaseFn3 := pool.GetOrCreateChannel(\"k3\", 3)\n\tdefer releaseFn3()\n\n\tschedule := pool.GetSchedule()\n\tassert.Len(t, schedule, 6)\n\n\tassert.Equal(t, c3, schedule[0])\n\tassert.Equal(t, c3, schedule[1])\n\tassert.Equal(t, c2, schedule[2])\n\tassert.Equal(t, c3, schedule[3])\n\tassert.Equal(t, c2, schedule[4])\n\tassert.Equal(t, c1, schedule[5])\n\n\tc4, releaseFn4 := pool.GetOrCreateChannel(\"k2\", 4)\n\tdefer releaseFn4()\n\tassert.Equal(t, c2, c4)\n\tschedule = pool.GetSchedule()\n\tassert.Len(t, schedule, 8)\n\n\tassert.Equal(t, c2, schedule[0])\n\tassert.Equal(t, c2, schedule[1])\n\tassert.Equal(t, c3, schedule[2])\n\tassert.Equal(t, c2, schedule[3])\n\tassert.Equal(t, c3, schedule[4])\n\tassert.Equal(t, c2, schedule[5])\n\tassert.Equal(t, c3, schedule[6])\n\tassert.Equal(t, c1, schedule[7])\n}\n\nfunc TestCleanup(t *testing.T) {\n\ttimeSource := clock.NewRealTimeSource()\n\tpool := NewWeightedRoundRobinChannelPool[string, int](\n\t\ttestlogger.New(t),\n\t\ttimeSource,\n\t\tWeightedRoundRobinChannelPoolOptions{\n\t\t\tBufferSize:              1000,\n\t\t\tIdleChannelTTLInSeconds: 2,\n\t\t},\n\t)\n\tpool.Start()\n\tdefer pool.Stop()\n\n\t// First, verify that the method returns the same channel if the key and weight are the same\n\t_, releaseFn1 := pool.GetOrCreateChannel(\"k1\", 1)\n\tch2, releaseFn2 := pool.GetOrCreateChannel(\"k2\", 1)\n\tch3, releaseFn3 := pool.GetOrCreateChannel(\"k3\", 1)\n\tch3 <- 1\n\n\tassert.Len(t, pool.GetAllChannels(), 3)\n\treleaseFn1()\n\treleaseFn3()\n\ttime.Sleep(time.Second * 4)\n\t// only c1 is deleted\n\tchs := pool.GetAllChannels()\n\tassert.ElementsMatch(t, chs, []chan int{ch2, ch3})\n\n\treleaseFn2()\n}\n"

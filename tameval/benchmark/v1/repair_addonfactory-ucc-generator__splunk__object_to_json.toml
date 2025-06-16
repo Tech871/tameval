@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "splunk/addonfactory-ucc-generator"
+sha = "0ceda52ad4ba2548071b64914a75aae987787a86"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=splunk_add_on_ucc_framework/commands/openapi_generator/object_to_json.py -m pytest -q --junit-xml=test_output.xml tests/unit/commands/openapi_generator/test_object_to_json.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target splunk_add_on_ucc_framework.commands.openapi_generator.object_to_json --unit-test tests.unit.commands.openapi_generator.test_object_to_json --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target splunk_add_on_ucc_framework/commands/openapi_generator/object_to_json.py --unit-test tests/unit/commands/openapi_generator/test_object_to_json.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 93.0
+original_coverage = 93.0
+mutation_kill_rate = 55.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 15, 16, 17, 20, 21, 22, 23, 27, 28, 29, 30, 31, 33, 35, 36, 38, 39, 41, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 54, 55, 57, 58, 59, 60, 61, 63, 64, 65,]
+missed_lines = [ 24, 32, 34,]
+
+[input_info]
+test_file_path = "tests/unit/commands/openapi_generator/test_object_to_json.py"
+focal_file_path = "splunk_add_on_ucc_framework/commands/openapi_generator/object_to_json.py"
+test_file_url = "https://github.com/splunk/addonfactory-ucc-generator/blob/0ceda52ad4ba2548071b64914a75aae987787a86/tests/unit/commands/openapi_generator/test_object_to_json.py"
+focal_file_url = "https://github.com/splunk/addonfactory-ucc-generator/blob/0ceda52ad4ba2548071b64914a75aae987787a86/splunk_add_on_ucc_framework/commands/openapi_generator/object_to_json.py"
+first_commit_date = "2023-02-22"
+last_commit_date = "2025-01-03"
+test_file_content = "from dataclasses import dataclass\nfrom typing import List, Optional\nfrom splunk_add_on_ucc_framework.commands.openapi_generator.object_to_json import Init\n\n\nclass TestObjectToJson:\n    def test_single_level(self):\n        @dataclass\n        class DC1(Init):\n            v1: str\n\n        dc1 = DC1(v1=\"str1\")\n\n    def test_class_encapsulation(self):\n        @dataclass\n        class In(Init):\n            v_in: str\n\n        @dataclass\n        class Out(Init):\n            v_out: str\n            in_out: In\n\n        in_obj = In(v_in=\"internal\")\n        out = Out(v_out=\"external\", in_out=in_obj)\n\n        j = out.json\n\n    def test_list_element(self):\n        @dataclass\n        class In(Init):\n            v_in: str\n\n        @dataclass\n        class Out(Init):\n            v_out: List[str]\n            in_out: List[In]\n\n        in1 = In(v_in=\"in1v\")\n        in2 = In(v_in=\"in2v\")\n        out = Out(v_out=[\"out1v\", \"out2v\"], in_out=[in1, in2])\n\n        j = out.json\n\n\n\n    def test_optional_fields(self):\n        @dataclass\n        class In(Init):\n            v_in: str\n            o_in: Optional[str] = None\n\n        in1 = In(v_in=\"in1v\")\n        j = in1.get_json()\n\n\n    def test_ignore_optional_fields(self):\n        @dataclass\n        class In(Init):\n            v_in: str\n            o_in: Optional[str] = None\n\n        in1 = In(v_in=\"in1v\")\n        j = in1.json\n"

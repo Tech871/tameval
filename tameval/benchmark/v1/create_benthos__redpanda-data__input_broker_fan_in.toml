@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "redpanda-data/benthos"
+sha = "7da18c5fb096a3607f9f70c06614742b24ae938e"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/impl/pure/input_broker_fan_in.go internal/impl/pure/input_broker_fan_in_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/impl/pure/input_broker_fan_in.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 45.0
+original_coverage = 84.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 27, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 54, 55, 56, 57, 58, 65, 66, 74, 75, 78, 79, 80, 97, 104, 105, 106, 107, 108, 109, 110, 111,]
+missed_lines = [ 28, 29, 30, 50, 51, 52, 53, 59, 60, 61, 62, 63, 67, 68, 82, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93, 94, 98, 99, 100, 101, 102, 112, 113, 114, 118, 119, 120, 121, 124, 125, 126, 127, 128, 131, 132, 133, 134, 135, 137,]
+
+[input_info]
+test_file_path = "internal/impl/pure/input_broker_fan_in_test.go"
+focal_file_path = "internal/impl/pure/input_broker_fan_in.go"
+test_file_url = "https://github.com/redpanda-data/benthos/blob/7da18c5fb096a3607f9f70c06614742b24ae938e/internal/impl/pure/input_broker_fan_in_test.go"
+focal_file_url = "https://github.com/redpanda-data/benthos/blob/7da18c5fb096a3607f9f70c06614742b24ae938e/internal/impl/pure/input_broker_fan_in.go"
+first_commit_date = "2022-04-22"
+last_commit_date = "2025-01-09"
+test_file_content = "// Copyright 2025 Redpanda Data, Inc.\n\npackage pure\n\nimport (\n\t\"bytes\"\n\t\"context\"\n\t\"errors\"\n\t\"fmt\"\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/redpanda-data/benthos/v4/internal/component/input\"\n\t\"github.com/redpanda-data/benthos/v4/internal/manager/mock\"\n\t\"github.com/redpanda-data/benthos/v4/internal/message\"\n)\n\nvar _ input.Streamed = &fanInInputBroker{}\n\n\n\n\nfunc TestFanInAsync(t *testing.T) {\n\tctx, done := context.WithTimeout(context.Background(), time.Second*5)\n\tdefer done()\n\n\tnInputs, nMsgs := 10, 1000\n\n\tInputs := []input.Streamed{}\n\tmockInputs := []*mock.Input{}\n\n\tfor i := 0; i < nInputs; i++ {\n\t\tmockInputs = append(mockInputs, &mock.Input{\n\t\t\tTChan: make(chan message.Transaction),\n\t\t})\n\t\tInputs = append(Inputs, mockInputs[i])\n\t}\n\n\tfanIn, err := newFanInInputBroker(Inputs)\n\tif err != nil {\n\t\tt.Error(err)\n\t\treturn\n\t}\n\n\twg := sync.WaitGroup{}\n\twg.Add(nInputs)\n\n\tfor j := 0; j < nInputs; j++ {\n\t\tgo func(index int) {\n\t\t\trChan := make(chan error)\n\t\t\tfor i := 0; i < nMsgs; i++ {\n\t\t\t\tcontent := [][]byte{[]byte(fmt.Sprintf(\"hello world %v %v\", i, index))}\n\t\t\t\tselect {\n\t\t\t\tcase mockInputs[index].TChan <- message.NewTransaction(message.QuickBatch(content), rChan):\n\t\t\t\tcase <-time.After(time.Second * 5):\n\t\t\t\t\tt.Errorf(\"Timed out waiting for broker send: %v, %v\", i, index)\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\tselect {\n\t\t\t\tcase res := <-rChan:\n\t\t\t\t\tif expected, actual := string(content[0]), res.Error(); expected != actual {\n\t\t\t\t\t\tt.Errorf(\"Wrong response: %v != %v\", expected, actual)\n\t\t\t\t\t}\n\t\t\t\tcase <-time.After(time.Second * 5):\n\t\t\t\t\tt.Errorf(\"Timed out waiting for response to input: %v, %v\", i, index)\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t}\n\t\t\twg.Done()\n\t\t}(j)\n\t}\n\n\tfor i := 0; i < nMsgs*nInputs; i++ {\n\t\tvar ts message.Transaction\n\t\tselect {\n\t\tcase ts = <-fanIn.TransactionChan():\n\t\tcase <-time.After(time.Second * 5):\n\t\t\tt.Errorf(\"Timed out waiting for broker propagate: %v\", i)\n\t\t\treturn\n\t\t}\n\t\trequire.NoError(t, ts.Ack(ctx, errors.New(string(ts.Payload.Get(0).AsBytes()))))\n\t}\n\n\twg.Wait()\n}\n\nfunc BenchmarkBasicFanIn(b *testing.B) {\n\tctx, done := context.WithTimeout(context.Background(), time.Second*5)\n\tdefer done()\n\n\tnInputs := 10\n\n\tInputs := []input.Streamed{}\n\tmockInputs := []*mock.Input{}\n\tresChan := make(chan error)\n\n\tfor i := 0; i < nInputs; i++ {\n\t\tmockInputs = append(mockInputs, &mock.Input{\n\t\t\tTChan: make(chan message.Transaction),\n\t\t})\n\t\tInputs = append(Inputs, mockInputs[i])\n\t}\n\n\tfanIn, err := newFanInInputBroker(Inputs)\n\tif err != nil {\n\t\tb.Error(err)\n\t\treturn\n\t}\n\n\tdefer func() {\n\t\tfanIn.TriggerStopConsuming()\n\t\tfanIn.WaitForClose(ctx)\n\t}()\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tfor j := 0; j < nInputs; j++ {\n\t\t\tcontent := [][]byte{[]byte(fmt.Sprintf(\"hello world %v\", i))}\n\t\t\tselect {\n\t\t\tcase mockInputs[j].TChan <- message.NewTransaction(message.QuickBatch(content), resChan):\n\t\t\tcase <-time.After(time.Second * 5):\n\t\t\t\tb.Errorf(\"Timed out waiting for broker send: %v, %v\", i, j)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tvar ts message.Transaction\n\t\t\tselect {\n\t\t\tcase ts = <-fanIn.TransactionChan():\n\t\t\t\tif !bytes.Equal(ts.Payload.Get(0).AsBytes(), content[0]) {\n\t\t\t\t\tb.Errorf(\"Wrong content returned %s != %s\", ts.Payload.Get(0).AsBytes(), content[0])\n\t\t\t\t}\n\t\t\tcase <-time.After(time.Second * 5):\n\t\t\t\tb.Errorf(\"Timed out waiting for broker propagate: %v, %v\", i, j)\n\t\t\t\treturn\n\t\t\t}\n\t\t\trequire.NoError(b, ts.Ack(ctx, nil))\n\t\t\tselect {\n\t\t\tcase <-resChan:\n\t\t\tcase <-time.After(time.Second * 5):\n\t\t\t\tb.Errorf(\"Timed out waiting for response to input: %v, %v\", i, j)\n\t\t\t\treturn\n\t\t\t}\n\t\t}\n\t}\n\n\tb.StopTimer()\n}\n"

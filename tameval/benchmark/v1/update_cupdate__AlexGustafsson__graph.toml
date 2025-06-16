@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "AlexGustafsson/cupdate"
+sha = "1d16570b6ddcce6fef954443916636cfcc74cae2"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/graph/graph.go internal/graph/graph_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/graph/graph.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 65.0
+original_coverage = 84.0
+mutation_kill_rate = 77.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 29, 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 67, 68, 69, 70, 71, 75, 76, 77, 78, 79, 82, 83, 84, 85, 86, 87, 89, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 103, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 124, 125, 126, 127, 128, 129, 130, 131, 134, 135, 136, 139, 140, 141, 142, 145, 148, 149, 150, 151, 152, 153, 155, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 183, 203, 204, 205, 206, 207, 209, 210, 211, 212, 213, 214, 217,]
+missed_lines = [ 51, 52, 53, 54, 55, 56, 57, 58, 61, 62, 63, 132, 133, 187, 188, 189, 192, 193, 194, 195, 196, 197, 198, 199, 200, 223, 224, 225, 226, 227, 228, 229, 230, 231, 235, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 252, 253, 254, 255, 256, 257, 258, 259, 260, 263, 264, 265, 270,]
+
+[input_info]
+test_file_path = "internal/graph/graph_test.go"
+focal_file_path = "internal/graph/graph.go"
+test_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/graph/graph_test.go"
+focal_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/graph/graph.go"
+first_commit_date = "2024-09-28"
+last_commit_date = "2025-02-25"
+test_file_content = "package graph\n\nimport (\n\t\"strconv\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\ntype testNode struct {\n\tid string\n}\n\nfunc (n testNode) ID() string {\n\treturn n.id\n}\n\nfunc (n testNode) MarshalJSON() ([]byte, error) {\n\treturn []byte(strconv.Quote(n.id)), nil\n}\n\nfunc TestGraphRoots(t *testing.T) {\n\tg := New[testNode]()\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container a\"},\n\t\ttestNode{id: \"pod a\"},\n\t\ttestNode{id: \"deployment a\"},\n\t\ttestNode{id: \"namespace a\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container b\"},\n\t\ttestNode{id: \"pod a\"},\n\t\ttestNode{id: \"deployment a\"},\n\t\ttestNode{id: \"namespace a\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container c\"},\n\t\ttestNode{id: \"pod b\"},\n\t\ttestNode{id: \"deployment b\"},\n\t\ttestNode{id: \"namespace b\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image b\"},\n\t\ttestNode{id: \"container d\"},\n\t\ttestNode{id: \"pod c\"},\n\t\ttestNode{id: \"deployment c\"},\n\t\ttestNode{id: \"namespace c\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image c\"},\n\t)\n\n\texpectedRoots := []Node{\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"image b\"},\n\t\ttestNode{id: \"image c\"},\n\t}\n\n\tassert.ElementsMatch(t, expectedRoots, g.Roots())\n}\n\nfunc TestGraphString(t *testing.T) {\n\tg := New[testNode]()\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container a\"},\n\t\ttestNode{id: \"pod a\"},\n\t\ttestNode{id: \"deployment a\"},\n\t\ttestNode{id: \"namespace a\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container b\"},\n\t\ttestNode{id: \"pod a\"},\n\t\ttestNode{id: \"deployment a\"},\n\t\ttestNode{id: \"namespace a\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container c\"},\n\t\ttestNode{id: \"pod b\"},\n\t\ttestNode{id: \"deployment b\"},\n\t\ttestNode{id: \"namespace b\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image b\"},\n\t\ttestNode{id: \"container d\"},\n\t\ttestNode{id: \"pod c\"},\n\t\ttestNode{id: \"deployment c\"},\n\t\ttestNode{id: \"namespace c\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image c\"},\n\t)\n\n\texpectedString := `image a->container a->pod a->deployment a->namespace a\nimage a->container b->pod a->deployment a->namespace a\nimage a->container c->pod b->deployment b->namespace b\nimage b->container d->pod c->deployment c->namespace c\nimage c`\n\n\tactualString := g.String()\n\n\t// Ignore order when matching\n\texpected := strings.Split(expectedString, \"\\n\")\n\tactual := strings.Split(actualString, \"\\n\")\n\n\tassert.ElementsMatch(t, expected, actual)\n}\n\nfunc TestGraphSubgraph(t *testing.T) {\n\tg := New[testNode]()\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container a\"},\n\t\ttestNode{id: \"pod a\"},\n\t\ttestNode{id: \"deployment a\"},\n\t\ttestNode{id: \"namespace a\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container b\"},\n\t\ttestNode{id: \"pod a\"},\n\t\ttestNode{id: \"deployment a\"},\n\t\ttestNode{id: \"namespace a\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image a\"},\n\t\ttestNode{id: \"container c\"},\n\t\ttestNode{id: \"pod b\"},\n\t\ttestNode{id: \"deployment b\"},\n\t\ttestNode{id: \"namespace b\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image b\"},\n\t\ttestNode{id: \"container d\"},\n\t\ttestNode{id: \"pod c\"},\n\t\ttestNode{id: \"deployment c\"},\n\t\ttestNode{id: \"namespace c\"},\n\t)\n\n\tg.InsertTree(\n\t\ttestNode{id: \"image c\"},\n\t)\n\n\ts := g.Subgraph(\"image a\")\n\n\texpectedString := `image a->container a->pod a->deployment a->namespace a\nimage a->container b->pod a->deployment a->namespace a\nimage a->container c->pod b->deployment b->namespace b`\n\n\tactualString := s.String()\n\n\t// Ignore order when matching\n\texpected := strings.Split(expectedString, \"\\n\")\n\tactual := strings.Split(actualString, \"\\n\")\n\n\tassert.ElementsMatch(t, expected, actual)\n}"

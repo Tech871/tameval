@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "google/langfun"
+sha = "11d646e44baaea09bb792c3428a8f71ba742363b"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=langfun/core/modalities/mime.py -m pytest -q --junit-xml=test_output.xml langfun/core/modalities/mime_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target langfun.core.modalities.mime --unit-test langfun.core.modalities.mime_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target langfun/core/modalities/mime.py --unit-test langfun/core/modalities/mime_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 77.0
+original_coverage = 92.0
+mutation_kill_rate = 99.0
+original_mutation_kill_rate = 99.0
+covered_lines = [ 15, 16, 17, 18, 20, 21, 24, 25, 26, 34, 39, 41, 43, 47, 48, 63, 64, 65, 81, 82, 84, 86, 88, 92, 94, 98, 99, 100, 102, 103, 105, 110, 111, 112, 113, 117, 119, 124, 125, 127, 128, 129, 130, 132, 133, 134, 136, 137, 139, 140, 142, 143, 145, 146, 152, 153, 154, 158, 162, 164, 165, 181, 182, 183, 184, 185, 188, 189, 191, 192, 195, 197, 198, 200, 201, 203, 204, 205, 207, 210, 212, 218, 219, 220, 223, 224, 225, 226, 230, 234, 241, 242, 243, 244, 245, 247, 248, 255, 256, 259, 260, 262, 263, 266, 267, 270, 274, 275, 276,]
+missed_lines = [ 27, 28, 29, 50, 51, 58, 61, 89, 148, 149, 150, 155, 156, 159, 160, 161, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 186, 194, 257,]
+
+[input_info]
+test_file_path = "langfun/core/modalities/mime_test.py"
+focal_file_path = "langfun/core/modalities/mime.py"
+test_file_url = "https://github.com/google/langfun/blob/11d646e44baaea09bb792c3428a8f71ba742363b/langfun/core/modalities/mime_test.py"
+focal_file_url = "https://github.com/google/langfun/blob/11d646e44baaea09bb792c3428a8f71ba742363b/langfun/core/modalities/mime.py"
+first_commit_date = "2024-03-09"
+last_commit_date = "2025-03-23"
+test_file_content = "# Copyright 2023 The Langfun Authors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\"\"\"MIME tests.\"\"\"\nimport inspect\nimport unittest\nfrom unittest import mock\n\nimport langfun.core as lf\nfrom langfun.core.modalities import mime\nimport pyglove as pg\n\n\ndef mock_request(*args, **kwargs):\n  del args, kwargs\n  return pg.Dict(content='foo')\n\n\ndef mock_readfile(*args, **kwargs):\n  del args, kwargs\n  return 'bar'\n\n\nclass CustomMimeTest(unittest.TestCase):\n\n  def test_is_text(self):\n    self.assertTrue(mime.Custom('text/plain', b'foo').is_text)\n    self.assertTrue(mime.Custom('text/xml', b'foo').is_text)\n    self.assertTrue(mime.Custom('application/json', b'foo').is_text)\n    self.assertTrue(mime.Custom('application/x-python-code', b'foo').is_text)\n    self.assertFalse(mime.Custom('application/pdf', b'foo').is_text)\n    self.assertFalse(mime.Custom('application/octet-stream', b'foo').is_text)\n\n  def test_from_byes(self):\n    content = mime.Mime.from_bytes(b'hello')\n    self.assertIs(content.__class__, mime.Mime)\n\n    content = mime.Custom('text/plain', b'foo')\n    self.assertEqual(content.to_bytes(), b'foo')\n    self.assertEqual(content.mime_type, 'text/plain')\n    self.assertTrue(content.is_text)\n    self.assertFalse(content.is_binary)\n    self.assertEqual(content.to_text(), 'foo')\n    self.assertTrue(content.is_compatible('text/plain'))\n    self.assertFalse(content.is_compatible('text/xml'))\n    self.assertIs(content.make_compatible('text/plain'), content)\n\n    with self.assertRaisesRegex(\n        lf.ModalityError, '.* cannot be converted to supported types'\n    ):\n      content.make_compatible('application/pdf')\n\n    with self.assertRaisesRegex(\n        ValueError, 'Either uri or content must be provided.'\n    ):\n      mime.Custom('text/plain')\n\n  def test_from_uri(self):\n    content = mime.Custom.from_uri('http://mock/web/a.txt', mime='text/plain')\n    with mock.patch('requests.get') as mock_requests_stub:\n      mock_requests_stub.side_effect = mock_request\n      self.assertEqual(content.to_bytes(), 'foo')\n      self.assertEqual(content.mime_type, 'text/plain')\n\n    content = mime.Custom.from_uri('a.txt', mime='text/plain')\n    with mock.patch('pyglove.io.readfile') as mock_readfile_stub:\n      mock_readfile_stub.side_effect = mock_readfile\n      self.assertEqual(content.to_bytes(), 'bar')\n      self.assertEqual(content.mime_type, 'text/plain')\n\n  def assert_html_content(self, html, expected):\n    expected = inspect.cleandoc(expected).strip()\n    actual = html.content.strip()\n    if actual != expected:\n      print(actual)\n    self.assertEqual(actual, expected)\n\n  def test_html(self):\n    self.assert_html_content(\n        mime.Custom('text/plain', b'foo').to_html(\n            enable_summary_tooltip=False,\n            enable_key_tooltip=False,\n        ),\n        \"\"\"\n        <details open class=\"pyglove custom\"><summary><div class=\"summary-title\">Custom(...)</div></summary><embed type=\"text/plain\" src=\"data:text/plain;base64,Zm9v\"/></details>\n        \"\"\"\n    )\n    self.assert_html_content(\n        mime.Custom('text/plain', b'foo').to_html(\n            enable_summary_tooltip=False,\n            enable_key_tooltip=False,\n            extra_flags=dict(\n                raw_mime_content=True,\n            )\n        ),\n        \"\"\"\n        <embed type=\"text/plain\" src=\"data:text/plain;base64,Zm9v\"/>\n        \"\"\"\n    )\n    self.assert_html_content(\n        mime.Custom('text/plain', b'foo').to_html(\n            enable_summary_tooltip=False,\n            enable_key_tooltip=False,\n            extra_flags=dict(\n                display_modality_when_hover=True,\n            )\n        ),\n        \"\"\"\n        <details open class=\"pyglove custom\"><summary><div class=\"summary-title\">Custom(...)</div><span class=\"tooltip\"><embed type=\"text/plain\" src=\"data:text/plain;base64,Zm9v\"/></span></summary><embed type=\"text/plain\" src=\"data:text/plain;base64,Zm9v\"/></details>\n        \"\"\"\n    )\n\n\nif __name__ == '__main__':\n  unittest.main()"

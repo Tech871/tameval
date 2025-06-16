@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.0"
+
+[repo_info]
+repository = "google/skia-buildbot"
+sha = "68746095168840b4c51e113d3ff32e3d2e37fc8d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out perf/go/anomalygroup/notifier/anomalygroupnotifier.go perf/go/anomalygroup/notifier/anomalygroupnotifier_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting perf/go/anomalygroup/notifier/anomalygroupnotifier.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 67.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "perf/go/anomalygroup/notifier/anomalygroupnotifier_test.go"
+focal_file_path = "perf/go/anomalygroup/notifier/anomalygroupnotifier.go"
+test_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/perf/go/anomalygroup/notifier/anomalygroupnotifier_test.go"
+focal_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/perf/go/anomalygroup/notifier/anomalygroupnotifier.go"
+first_commit_date = "2024-04-18"
+last_commit_date = "2025-03-20"
+test_file_content = "package notifier\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"go.skia.org/infra/go/query\"\n\t\"go.skia.org/infra/perf/go/alerts\"\n\tag_mock \"go.skia.org/infra/perf/go/anomalygroup/utils/mocks\"\n\t\"go.skia.org/infra/perf/go/clustering2\"\n\t\"go.skia.org/infra/perf/go/dataframe\"\n\t\"go.skia.org/infra/perf/go/git/provider\"\n\t\"go.skia.org/infra/perf/go/stepfit\"\n\t\"go.skia.org/infra/perf/go/types\"\n\t\"go.skia.org/infra/perf/go/ui/frame\"\n)\n\nfunc Setup(paramset map[string]string) (context.Context, *alerts.Alert, frame.FrameResponse, clustering2.ClusterSummary) {\n\tctx := context.Background()\n\talert := alerts.NewConfig()\n\tframe := &frame.FrameResponse{}\n\tkey, _ := query.MakeKey(paramset)\n\tframe.DataFrame = &dataframe.DataFrame{\n\t\tTraceSet: types.TraceSet{\n\t\t\tkey: []float32{1.0, 2.0},\n\t\t},\n\t}\n\tcl := &clustering2.ClusterSummary{\n\t\tCentroid: []float32{1.0, 2.0},\n\t\tStepFit:  &stepfit.StepFit{TurningPoint: 1},\n\t}\n\n\treturn ctx, alert, *frame, *cl\n}\n\nfunc TestSuccess(t *testing.T) {\n\tparamset := map[string]string{\n\t\t\"master\":    \"m\",\n\t\t\"bot\":       \"b\",\n\t\t\"benchmark\": \"be\",\n\t\t\"test\":      \"me\",\n\t\t\"subtest_1\": \"t\",\n\t}\n\tctx, alert, frame, cl := Setup(paramset)\n\tmockAnomalyGrouper := ag_mock.NewAnomalyGrouper(t)\n\tag_notifier := NewAnomalyGroupNotifier(ctx, mockAnomalyGrouper)\n\tregression_id := \"550c78a3-ff99-4f28-8a46-106f81a34840\"\n\tmockAnomalyGrouper.On(\"ProcessRegressionInGroup\",\n\t\tctx, alert, regression_id, int64(100), int64(200), \"m/b/be/me/t\", paramset).Return(\"\", nil)\n\n\t_, err := ag_notifier.RegressionFound(ctx, provider.Commit{CommitNumber: 200}, provider.Commit{CommitNumber: 100}, alert, &cl, &frame, regression_id)\n\tassert.NoError(t, err)\n}\n\nfunc TestInvalidParamSet(t *testing.T) {\n\tparamset := map[string]string{\n\t\t\"master\": \"mAsTeR\",\n\t\t\"bot\":    \"bOt\",\n\t\t\"test\":   \"tEsT\",\n\t}\n\tctx, alert, frame, cl := Setup(paramset)\n\tmockAnomalyGrouper := ag_mock.NewAnomalyGrouper(t)\n\tag_notifier := NewAnomalyGroupNotifier(ctx, mockAnomalyGrouper)\n\n\t_, err := ag_notifier.RegressionFound(ctx, provider.Commit{}, provider.Commit{}, alert, &cl, &frame, \"\")\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"Invalid paramset\")\n}\n\nfunc TestFailedProcess(t *testing.T) {\n\tparamset := map[string]string{\n\t\t\"master\":    \"m\",\n\t\t\"bot\":       \"b\",\n\t\t\"benchmark\": \"be\",\n\t\t\"test\":      \"me\",\n\t\t\"subtest_1\": \"t\",\n\t}\n\tctx, alert, frame, cl := Setup(paramset)\n\tmockAnomalyGrouper := ag_mock.NewAnomalyGrouper(t)\n\tag_notifier := NewAnomalyGroupNotifier(ctx, mockAnomalyGrouper)\n\tregression_id := \"550c78a3-ff99-4f28-8a46-106f81a34840\"\n\tmockAnomalyGrouper.On(\"ProcessRegressionInGroup\",\n\t\tctx, alert, regression_id, int64(100), int64(200), \"m/b/be/me/t\", paramset).Return(\"\", errors.New((\"oops\")))\n\n\t_, err := ag_notifier.RegressionFound(ctx, provider.Commit{CommitNumber: 200}, provider.Commit{CommitNumber: 100}, alert, &cl, &frame, regression_id)\n\tassert.Error(t, err)\n\tassert.Contains(t, err.Error(), \"error processing regression\")\n}"

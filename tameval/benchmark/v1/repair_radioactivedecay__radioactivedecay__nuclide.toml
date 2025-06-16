@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "radioactivedecay/radioactivedecay"
+sha = "95f428cc8079e2cc762b6a559fba85c8c5e01500"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=radioactivedecay/nuclide.py -m pytest -q --junit-xml=test_output.xml tests/test_nuclide.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target radioactivedecay.nuclide --unit-test tests.test_nuclide --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target radioactivedecay/nuclide.py --unit-test tests/test_nuclide.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 68.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/test_nuclide.py"
+focal_file_path = "radioactivedecay/nuclide.py"
+test_file_url = "https://github.com/radioactivedecay/radioactivedecay/blob/95f428cc8079e2cc762b6a559fba85c8c5e01500/tests/test_nuclide.py"
+focal_file_url = "https://github.com/radioactivedecay/radioactivedecay/blob/95f428cc8079e2cc762b6a559fba85c8c5e01500/radioactivedecay/nuclide.py"
+first_commit_date = "2021-08-04"
+last_commit_date = "2025-01-05"
+test_file_content = "\nimport unittest\n\nfrom radioactivedecay.decaydata import load_dataset\nfrom radioactivedecay.nuclide import Nuclide\n\n\nclass TestNuclide(unittest.TestCase):\n    \"\"\"\n    Unit tests for the nuclide.py Nuclide class.\n    \"\"\"\n\n    def test_nuclide_instantiation(self) -> None:\n        \"\"\"\n        Test instantiation of Nuclide objects.\n        \"\"\"\n        decay_data = load_dataset(\"icrp107_ame2020_nubase2020\", load_sympy=True)\n\n        nuc = Nuclide(\"Rn-222\")\n        self.assertEqual(nuc.nuclide, \"Rn-222\")\n        self.assertEqual(nuc.decay_data, decay_data)\n\n        nuc = Nuclide(\"222Rn\")\n        self.assertEqual(nuc.nuclide, \"Rn-222\")\n\n        nuc = Nuclide(611450000)\n        self.assertEqual(nuc.nuclide, \"Pm-145\")\n\n    def test_nuclide_Z(self) -> None:\n        \"\"\"\n        Test Nuclide Z property.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(nuc.Z, 1)\n\n    def test_nuclide_A(self) -> None:\n        \"\"\"\n        Test Nuclide A property.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(nuc.A, 3)\n\n    def test_nuclide_state(self) -> None:\n        \"\"\"\n        Test Nuclide state property.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(nuc.state, \"\")\n\n        nuc = Nuclide(\"Ba-137m\")\n        self.assertEqual(nuc.state, \"m\")\n\n        nuc = Nuclide(\"Ir-192n\")\n        self.assertEqual(nuc.state, \"n\")\n\n    def test_nuclide_id(self) -> None:\n        \"\"\"\n        Test Nuclide id property.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(nuc.id, 10030000)\n\n        nuc = Nuclide(\"I-118m\")\n        self.assertEqual(nuc.id, 531180001)\n\n        nuc = Nuclide(190400000)\n        self.assertEqual(nuc.id, 190400000)\n\n    def test_nuclide_atomic_mass(self) -> None:\n        \"\"\"\n        Test Nuclide atomic_mass property.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(nuc.atomic_mass, 3.01604928132)\n\n    def test_nuclide_half_life(self) -> None:\n        \"\"\"\n        Test Nuclide half_life() method.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(nuc.half_life(), 388781329.30560005)\n        self.assertEqual(nuc.half_life(\"y\"), 12.32)\n        self.assertEqual(nuc.half_life(\"readable\"), \"12.32 y\")\n\n    def test_nuclide_progeny(self) -> None:\n        \"\"\"\n        Test Nuclide progeny() method.\n        \"\"\"\n\n        nuc = Nuclide(\"K-40\")\n        self.assertEqual(nuc.progeny()[0], \"Ca-40\")\n        self.assertEqual(nuc.progeny()[1], \"Ar-40\")\n\n    def test_nuclide_branching_fractions(self) -> None:\n        \"\"\"\n        Test Nuclide branching_fractions() method.\n        \"\"\"\n\n        nuc = Nuclide(\"K-40\")\n        self.assertEqual(nuc.branching_fractions()[0], 0.8914)\n        self.assertEqual(nuc.branching_fractions()[1], 0.1086)\n\n    def test_nuclide_decay_modes(self) -> None:\n        \"\"\"\n        Test Nuclide decay_modes() method.\n        \"\"\"\n\n        nuc = Nuclide(\"K-40\")\n        self.assertEqual(nuc.decay_modes()[0], \"\\u03b2-\")\n        self.assertEqual(nuc.decay_modes()[1], \"\\u03b2+ & EC\")\n\n    def test_nuclide_plot(self) -> None:\n        \"\"\"\n        Test Nuclide plot() method.\n\n        Only testing auto-generation of limits so far.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        _, axes = nuc.plot()\n        self.assertEqual(axes.get_xlim(), (-0.3, 0.3))\n        self.assertEqual(axes.get_ylim(), (-1.3, 0.3))\n\n        nuc = Nuclide(\"Mo-99\")\n        _, axes = nuc.plot()\n        self.assertEqual(axes.get_xlim(), (-0.3, 1.3))\n        self.assertEqual(axes.get_ylim(), (-2.3, 0.3))\n\n        nuc = Nuclide(\"Es-256\")\n        _, axes = nuc.plot()\n        self.assertEqual(axes.get_xlim(), (-0.3, hDIq.3))\n        self.assertEqual(axes.get_ylim(), (-19.3, 0.3))\n\n        nuc = Nuclide(\"Cu-64\")\n        _, axes = nuc.plot()\n        self.assertEqual(axes.get_xlim(), (-0.3, 1.3))\n        self.assertEqual(axes.get_ylim(), (-1.3, 0.3))\n\n    def test_nuclide___repr__(self) -> None:\n        \"\"\"\n        Test Nuclide __repr__ strings.\n        \"\"\"\n\n        nuc = Nuclide(\"H-3\")\n        self.assertEqual(\n            repr(nuc),\n            \"Nuclide: H-3, decay dataset: icrp107_ame2020_nubase2020\",\n        )\n\n    def test_nuclide___eq__(self) -> None:\n        \"\"\"\n        Test Nuclide equality.\n        \"\"\"\n\n        nuc1 = Nuclide(\"K-40\")\n        nuc2 = Nuclide(\"40K\")\n        nuc3 = Nuclide(190400000)\n        self.assertEqual(nuc1, nuc2)\n        self.assertEqual(nuc1, nuc3)\n\n        decay_data = load_dataset(\"icrp107_ame2020_nubase2020\", load_sympy=True)\n        nuc2 = Nuclide(\"K-40\", decay_data)\n        self.assertEqual(nuc1, nuc2)\n\n        self.assertFalse(nuc1 == \"random object\")\n\n    def test_nuclide___ne__(self) -> None:\n        \"\"\"\n        Test Nuclide inequality.\n        \"\"\"\n\n        nuc1 = Nuclide(\"K-40\")\n        nuc2 = Nuclide(\"H-3\")\n        self.assertNotEqual(nuc1, nuc2)\n\n        self.assertTrue(nuc1 != \"random object\")\n\n    def test_nuclide___hash__(self) -> None:\n        \"\"\"\n        Test Nuclide hash function.\n        \"\"\"\n\n        nuc = Nuclide(\"K-40\")\n        decay_data = load_dataset(\"icrp107_ame2020_nubase2020\", load_sympy=True)\n        self.assertEqual(hash(nuc), hash((\"K-40\", decay_data.dataset_name)))\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

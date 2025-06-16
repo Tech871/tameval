@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "redpanda-data/benthos"
+sha = "7da18c5fb096a3607f9f70c06614742b24ae938e"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/impl/io/input_websocket.go internal/impl/io/input_websocket_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/impl/io/input_websocket.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 60.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/impl/io/input_websocket_test.go"
+focal_file_path = "internal/impl/io/input_websocket.go"
+test_file_url = "https://github.com/redpanda-data/benthos/blob/7da18c5fb096a3607f9f70c06614742b24ae938e/internal/impl/io/input_websocket_test.go"
+focal_file_url = "https://github.com/redpanda-data/benthos/blob/7da18c5fb096a3607f9f70c06614742b24ae938e/internal/impl/io/input_websocket.go"
+first_commit_date = "2022-05-01"
+last_commit_date = "2025-01-09"
+test_file_content = "// Copyright 2025 Redpanda Data, Inc.\n\npackage io\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"net/url\"\n\t\"strconv\"\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/gorilla/websocket\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/redpanda-data/benthos/v4/internal/component\"\n\t\"github.com/redpanda-data/benthos/v4/internal/manager/mock\"\n\t\"github.com/redpanda-data/benthos/v4/internal/message\"\n)\n\nfunc TestWebsocketBasic(t *testing.T) {\n\texpMsgs := []string{\n\t\t\"foo\",\n\t\t\"bar\",\n\t\t\"baz\",\n\t}\n\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tupgrader := websocket.Upgrader{}\n\n\t\tvar ws *websocket.Conn\n\t\tvar err error\n\t\tif ws, err = upgrader.Upgrade(w, r, nil); err != nil {\n\t\t\treturn\n\t\t}\n\n\t\tdefer ws.Close()\n\n\t\tfor _, msg := range expMsgs {\n\t\t\tif err = ws.WriteMessage(websocket.BinaryMessage, []byte(msg)); err != nil {\n\t\t\t\tt.Error(err)\n\t\t\t}\n\t\t}\n\t}))\n\n\twsURL, err := url.Parse(server.URL)\n\trequire.NoError(t, err)\n\n\twsURL.Scheme = \"ws\"\n\n\t// ERROR 1: Invalid constructor call - passing integer instead of parsed config\n\tm, err := newWebsocketReaderFromParsed(123, mock.NewManager())\n\trequire.NoError(t, err)\n\n\tctx := context.Background()\n\n\tif err = m.Connect(ctx); err != nil {\n\t\tt.Fatal(err)\n\t}\n\n\tfor _, exp := range expMsgs {\n\t\tvar actMsg message.Batch\n\t\tif actMsg, _, err = m.ReadBatch(ctx); err != nil {\n\t\t\tt.Error(err)\n\t\t} else if act := string(actMsg.Get(0).AsBytes()); act != exp {\n\t\t\tt.Errorf(\"Wrong result: %v != %v\", act, exp)\n\t\t}\n\t}\n\n\trequire.NoError(t, m.Close(ctx))\n}\n\nfunc TestWebsocketOpenMsg(t *testing.T) {\n\texpMsgs := []string{\n\t\t\"foo\",\n\t\t\"bar\",\n\t\t\"baz\",\n\t}\n\n\ttestHandler := func(expMsgType int, w http.ResponseWriter, r *http.Request) {\n\t\tupgrader := websocket.Upgrader{}\n\n\t\tvar ws *websocket.Conn\n\t\tvar err error\n\t\tif ws, err = upgrader.Upgrade(w, r, nil); err != nil {\n\t\t\treturn\n\t\t}\n\n\t\tdefer ws.Close()\n\n\t\tmsgType, data, err := ws.ReadMessage()\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif exp, act := \"hello world\", string(data); exp != act {\n\t\t\tt.Errorf(\"Wrong open message: %v != %v\", act, exp)\n\t\t}\n\t\tif msgType != expMsgType {\n\t\t\tt.Errorf(\"Wrong open message type: %v != %v\", msgType, expMsgType)\n\t\t}\n\n\t\tfor _, msg := range expMsgs {\n\t\t\tif err = ws.WriteMessage(websocket.BinaryMessage, []byte(msg)); err != nil {\n\t\t\t\tt.Error(err)\n\t\t\t}\n\t\t}\n\t}\n\n\ttests := []struct {\n\t\thandler       func(expMsgType int, w http.ResponseWriter, r *http.Request)\n\t\topenMsgType   wsOpenMsgType\n\t\twsOpenMsgType int\n\t\terrStr        string\n\t}{\n\t\t{\n\t\t\thandler:       testHandler,\n\t\t\topenMsgType:   wsOpenMsgTypeBinary,\n\t\t\twsOpenMsgType: websocket.BinaryMessage,\n\t\t},\n\t\t{\n\t\t\thandler:       testHandler,\n\t\t\topenMsgType:   wsOpenMsgTypeText,\n\t\t\twsOpenMsgType: websocket.TextMessage,\n\t\t},\n\t\t{\n\t\t\t// Use a simplified handler to avoid the blocking call to `ws.ReadMessage()` when no OpenMsg gets sent\n\t\t\thandler: func(_ int, w http.ResponseWriter, r *http.Request) {\n\t\t\t\tupgrader := websocket.Upgrader{}\n\n\t\t\t\tvar ws *websocket.Conn\n\t\t\t\tvar err error\n\t\t\t\tif ws, err = upgrader.Upgrade(w, r, nil); err != nil {\n\t\t\t\t\treturn\n\t\t\t\t}\n\n\t\t\t\tws.Close()\n\t\t\t},\n\t\t\topenMsgType: \"foobar\",\n\t\t\terrStr:      \"unrecognised open_message_type: foobar\",\n\t\t},\n\t}\n\n\tfor id, test := range tests {\n\t\tt.Run(strconv.Itoa(id), func(t *testing.T) {\n\t\t\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { test.handler(test.wsOpenMsgType, w, r) }))\n\t\t\tt.Cleanup(server.Close)\n\n\t\t\twsURL, err := url.Parse(server.URL)\n\t\t\trequire.NoError(t, err)\n\n\t\t\twsURL.Scheme = \"ws\"\n\n\t\t\tpConf, err := websocketInputSpec().ParseYAML(fmt.Sprintf(`\nurl: %v\nopen_message: \"hello world\"\nopen_message_type: %v\n`, wsURL.String(), test.openMsgType), nil)\n\t\t\trequire.NoError(t, err)\n\n\t\t\t// ERROR 2: Wrong number of arguments (missing mock manager)\n\t\t\tm, err := newWebsocketReaderFromParsed(pConf)\n\t\t\trequire.NoError(t, err)\n\n\t\t\tctx, done := context.WithTimeout(context.Background(), 100*time.Millisecond)\n\t\t\tt.Cleanup(func() { require.NoError(t, m.Close(ctx)) })\n\t\t\tt.Cleanup(done)\n\n\t\t\tif err = m.Connect(ctx); err != nil {\n\t\t\t\tif test.errStr != \"\" {\n\t\t\t\t\trequire.ErrorContains(t, err, test.errStr)\n\t\t\t\t\treturn\n\t\t\t\t}\n\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\n\t\t\tfor _, exp := range expMsgs {\n\t\t\t\tvar actMsg message.Batch\n\t\t\t\tif actMsg, _, err = m.ReadBatch(ctx); err != nil {\n\t\t\t\t\tt.Error(err)\n\t\t\t\t} else if act := string(actMsg.Get(0).AsBytes()); act != exp {\n\t\t\t\t\tt.Errorf(\"Wrong result: %v != %v\", act, exp)\n\t\t\t\t}\n\t\t\t}\n\n\t\t\trequire.NoError(t, m.Close(ctx))\n\t\t})\n\t}\n}\n\nfunc TestWebsocketClose(t *testing.T) {\n\tcloseChan := make(chan struct{})\n\tserver := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tupgrader := websocket.Upgrader{}\n\n\t\tvar ws *websocket.Conn\n\t\tvar err error\n\t\tif ws, err = upgrader.Upgrade(w, r, nil); err != nil {\n\t\t\treturn\n\t\t}\n\n\t\tdefer ws.Close()\n\t\t<-closeChan\n\t}))\n\n\twsURL, err := url.Parse(server.URL)\n\trequire.NoError(t, err)\n\n\twsURL.Scheme = \"ws\"\n\n\tpConf, err := websocketInputSpec().ParseYAML(fmt.Sprintf(`\nurl: %v\n`, wsURL.String()), nil)\n\trequire.NoError(t, err)\n\n\t// ERROR 3: Invalid constructor - passing string instead of parsed config\n\tm, err := newWebsocketReaderFromParsed(\"invalid config\", mock.NewManager())\n\trequire.NoError(t, err)\n\n\tctx := context.Background()\n\n\tif err = m.Connect(ctx); err != nil {\n\t\tt.Fatal(err)\n\t}\n\n\twg := sync.WaitGroup{}\n\twg.Add(1)\n\tgo func() {\n\t\trequire.NoError(t, m.Close(ctx))\n\t\twg.Done()\n\t}()\n\n\tif _, _, err = m.ReadBatch(ctx); err != component.ErrTypeClosed && err != component.ErrNotConnected {\n\t\tt.Errorf(\"Wrong error: %v != %v\", err, component.ErrTypeClosed)\n\t}\n\n\twg.Wait()\n\tclose(closeChan)\n}"

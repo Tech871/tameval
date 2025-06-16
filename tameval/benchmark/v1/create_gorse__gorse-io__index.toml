@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "gorse-io/gorse"
+sha = "260d55d158caa8c3bbbcbec93e574370e5be477e"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out base/index.go base/index_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting base/index.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 58.23
+original_coverage = 80.0
+mutation_kill_rate = 40.82
+original_mutation_kill_rate = 69.0
+covered_lines = [ 42, 43, 44, 45, 46, 47, 53, 58, 62, 63, 64, 65, 69, 70, 71, 72, 79, 83, 98, 99, 100, 101, 102, 103, 106, 107, 108, 109, 110, 114, 115, 116, 117, 118, 122, 123, 124, 125, 126, 130, 131, 132, 135, 136, 137, 140, 141, 142, 147, 148, 153, 157, 158, 159, 160, 165, 166, 167, 168, 172, 174,]
+missed_lines = [ 48, 49, 50, 51, 54, 55, 56, 66, 67, 68, 73, 74, 75, 76, 80, 81, 82, 143, 144, 145, 149, 150, 151, 161, 162, 163, 169, 170, 171, 184, 185, 186, 189, 190, 191, 194, 195, 196, 197, 199, 200, 201, 205, 206, 207, 208, 210, 211, 212, 213, 217, 218, 219, 221, 225, 226, 227, 228, 229, 230, 234, 235, 236, 239, 240, 241,]
+
+[input_info]
+test_file_path = "base/index_test.go"
+focal_file_path = "base/index.go"
+test_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/base/index_test.go"
+focal_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/base/index.go"
+first_commit_date = "2021-03-02"
+last_commit_date = "2025-01-25"
+test_file_content = "package base\n\nimport (\n\t\"bytes\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestMapIndex(t *testing.T) {\n\t// Null indexer\n\tvar index *MapIndex\n\tassert.Zero(t, index.Len())\n\t// Create a indexer\n\tindex = NewMapIndex()\n\tassert.Zero(t, index.Len())\n\t// Add Names\n\tindex.Add(\"1\")\n\tindex.Add(\"2\")\n\tindex.Add(\"4\")\n\tindex.Add(\"8\")\n\tassert.Equal(t, int32(4), index.Len())\n\tassert.Equal(t, int32(0), index.ToNumber(\"1\"))\n\tassert.Equal(t, int32(1), index.ToNumber(\"2\"))\n\tassert.Equal(t, int32(2), index.ToNumber(\"4\"))\n\tassert.Equal(t, int32(3), index.ToNumber(\"8\"))\n\tassert.Equal(t, NotId, index.ToNumber(\"1000\"))\n\tassert.Equal(t, \"1\", index.ToName(0))\n\tassert.Equal(t, \"2\", index.ToName(1))\n\tassert.Equal(t, \"4\", index.ToName(2))\n\tassert.Equal(t, \"8\", index.ToName(3))\n\t// Get names\n\tassert.Equal(t, []string{\"1\", \"2\", \"4\", \"8\"}, index.GetNames())\n\t// Encode and decode\n\tbuf := bytes.NewBuffer(nil)\n\terr := MarshalIndex(buf, index)\n\tassert.NoError(t, err)\n\tindexCopy, err := UnmarshalIndex(buf)\n\tassert.NoError(t, err)\n\tassert.Equal(t, index, indexCopy)\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "go-kratos/kratos"
+sha = "025c2dc2b0ffabe45620f6be2b6de6f6505760bc"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out middleware/circuitbreaker/circuitbreaker.go middleware/circuitbreaker/circuitbreaker_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting middleware/circuitbreaker/circuitbreaker.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 86.0
+original_coverage = 86.0
+mutation_kill_rate = 7.0
+original_mutation_kill_rate = 7.0
+covered_lines = [ 22, 23, 24, 25, 43, 44, 45, 46, 47, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 64, 65, 66, 67, 68, 69, 70,]
+missed_lines = [ 29, 30, 31, 32, 33,]
+
+[input_info]
+test_file_path = "middleware/circuitbreaker/circuitbreaker_test.go"
+focal_file_path = "middleware/circuitbreaker/circuitbreaker.go"
+test_file_url = "https://github.com/go-kratos/kratos/blob/025c2dc2b0ffabe45620f6be2b6de6f6505760bc/middleware/circuitbreaker/circuitbreaker_test.go"
+focal_file_url = "https://github.com/go-kratos/kratos/blob/025c2dc2b0ffabe45620f6be2b6de6f6505760bc/middleware/circuitbreaker/circuitbreaker.go"
+first_commit_date = "2021-09-05"
+last_commit_date = "2025-03-07"
+test_file_content = "package circuitbreaker\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"testing\"\n\n\tkratoserrors \"github.com/go-kratos/kratos/v2/errors\"\n\t\"github.com/go-kratos/kratos/v2/internal/group\"\n\t\"github.com/go-kratos/kratos/v2/transport\"\n)\n\ntype transportMock struct {\n\tkind      transport.Kind\n\tendpoint  string\n\toperation string\n}\n\ntype circuitBreakerMock struct {\n\terr error\n}\n\nfunc (tr *transportMock) Kind() transport.Kind {\n\treturn tr.kind\n}\n\nfunc (tr *transportMock) Endpoint() string {\n\treturn tr.endpoint\n}\n\nfunc (tr *transportMock) Operation() string {\n\treturn tr.operation\n}\n\nfunc (tr *transportMock) RequestHeader() transport.Header {\n\treturn nil\n}\n\nfunc (tr *transportMock) ReplyHeader() transport.Header {\n\treturn nil\n}\n\nfunc (c *circuitBreakerMock) Allow() error { return c.err }\nfunc (c *circuitBreakerMock) MarkSuccess() {}\nfunc (c *circuitBreakerMock) MarkFailed()  {}\n\nfunc Test_WithGroup(t *testing.T) {\n\to := options{\n\t\tgroup: group.NewGroup(func() any {\n\t\t\treturn \"\"\n\t\t}),\n\t}\n\n\tWithGroup(nil)(&o)\n\tif o.group != nil {\n\t\tt.Error(\"The group property must be updated to nil.\")\n\t}\n}\n\nfunc TestServer(_ *testing.T) {\n\tnextValid := func(context.Context, any) (any, error) {\n\t\treturn \"Hello valid\", nil\n\t}\n\tnextInvalid := func(context.Context, any) (any, error) {\n\t\treturn nil, kratoserrors.InternalServer(\"\", \"\")\n\t}\n\n\tctx := transport.NewClientContext(context.Background(), &transportMock{})\n\n\t_, _ = Client(func(o *options) {\n\t\to.group = group.NewGroup(func() any {\n\t\t\treturn &circuitBreakerMock{err: errors.New(\"circuitbreaker error\")}\n\t\t})\n\t})(nextValid)(ctx, nil)\n\n\t_, _ = Client(func(_ *options) {})(nextValid)(ctx, nil)\n\n\t_, _ = Client(func(_ *options) {})(nextInvalid)(ctx, nil)\n}\n\nfunc Test_ClientCircuitBreaker(_ *testing.T) {\n\tvalidHandler := func(context.Context, any) (any, error) {\n\t\treturn \"Success response\", nil\n\t}\n\tfailingHandler := func(context.Context, any) (any, error) {\n\t\treturn nil, kratoserrors.ServiceUnavailable(\"\", \"service unavailable\")\n\t}\n\n\tctx := transport.NewClientContext(context.Background(), &transportMock{operation: \"test\"})\n\n\t_, _ = Client(func(o *options) {\n\t\to.group = group.NewGroup(func() any {\n\t\t\treturn &circuitBreakerMock{err: errors.New(\"breaker triggered\")}\n\t\t})\n\t})(validHandler)(ctx, nil)\n\n\t_, _ = Client()(validHandler)(ctx, \"test request\")\n\t\n\t_, _ = Client()(failingHandler)(ctx, nil)\n}\n\nfunc TestCircuitBreakerMiddleware(t *testing.T) {\n\tmockTransport := &transportMock{operation: \"test_operation\"}\n\tctx := transport.NewClientContext(context.Background(), mockTransport)\n\t\n\tsuccessHandler := func(context.Context, any) (any, error) {\n\t\treturn \"success\", nil\n\t}\n\t\n\terrorHandler := func(context.Context, any) (any, error) {\n\t\treturn nil, kratoserrors.GatewayTimeout(\"\", \"timeout\")\n\t}\n\t\n\t// Test with a breaker that allows requests\n\t_, _ = Client(func(o *options) {\n\t\to.group = group.NewGroup(func() any {\n\t\t\treturn &circuitBreakerMock{err: nil}\n\t\t})\n\t})(successHandler)(ctx, nil)\n\t\n\t// Test with a breaker that rejects requests\n\t_, _ = Client(func(o *options) {\n\t\to.group = group.NewGroup(func() any {\n\t\t\treturn &circuitBreakerMock{err: errors.New(\"circuit open\")}\n\t\t})\n\t})(errorHandler)(ctx, nil)\n}"

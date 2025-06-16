@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "fox-it/dissect.target"
+sha = "12306a3a840971af7da3dbd338527eb3360dbbd9"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=dissect/target/containers/fortifw.py -m pytest -q --junit-xml=test_output.xml tests/containers/test_fortifw.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target dissect.target.containers.fortifw --unit-test tests.containers.test_fortifw --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target dissect/target/containers/fortifw.py --unit-test tests/containers/test_fortifw.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 77.0
+original_mutation_kill_rate = 77.0
+covered_lines = [ 0, 2, 3, 4, 5, 6, 7, 8, 10, 12, 13, 15, 18, 29, 31, 32, 33, 35, 36, 38, 39, 41, 42, 43, 44, 47, 48, 49, 52, 55, 56, 57, 58, 59, 60, 62, 65, 66, 67, 68, 72, 73, 74, 75, 76, 77, 78, 79, 80, 83, 84, 85, 86, 87, 89, 90, 93, 94, 95, 96, 97, 98, 99, 104, 105, 107, 108, 109, 110, 113, 115, 116, 117, 119, 122, 123, 124, 125, 126, 127, 128, 129, 131, 134, 135, 137, 148, 149, 152, 153, 157, 160, 163, 166, 170, 171, 172, 173, 174, 176, 177, 178, 179, 181, 184, 185, 188,]
+missed_lines = [ 101, 120, 138, 139, 142, 145, 146, 150, 155, 158, 161, 164, 167, 182, 189,]
+
+[input_info]
+test_file_path = "tests/containers/test_fortifw.py"
+focal_file_path = "dissect/target/containers/fortifw.py"
+test_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/tests/containers/test_fortifw.py"
+focal_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/dissect/target/containers/fortifw.py"
+first_commit_date = "2024-03-28"
+last_commit_date = "2025-02-11"
+test_file_content = "import gzip\nimport io\nfrom pathlib import Path\n\nimport pytest\n\nfrom dissect.target.containers.fortifw import FortiFirmwareFile, find_xor_key, main\n\n# decompressed header of FGT_VM64-v7.4.3.F-build2573-FORTINET.out\nFIRMWARE_HEADER = bytes.fromhex(\n    \"\"\"\n9ede e4a5 f69f c9aa 92de 92ff b7eb 060a\n6475 5c76 7173 6a68 4347 4a4c 774c 7dac\nb893 c5e0 81d7 aef0 f58b f3ae d3bf d581\na9f1 a2fb a2fc b0eb 9eca 93c6 83d1 b5fa\n9bdb e1a0 f39a d8bb 83cf 83ee a1fd a6c1\ne9b1 e2bb e2bc f0ab de8a d386 c391 f5ba\ndb9b a1e0 b3da 98fb c38f c3ae e1bd e681\na9f1 a2fb a2fc b0eb 9eca 93c6 83d1 b5fa\n\"\"\"\n)\n\n\ndef test_find_xor_key() -> None:\n    fh = io.BytesIO(FIRMWARE_HEADER)\n    for offset in (0x30, 0x40, 0x31, 0x35):\n        fh.seek(offset)\n        key = find_xor_key(fh)\n        assert key.isalnum()\n        assert key == b\"aA8BWlDd0EFfCQUh8IAJMKZLmMCNYOzP\"\n\n    # incorrect key as at offset 0 it does not decode to zero bytes\n    fh.seek(0)\n    key = find_xor_key(fh)\n    assert not key.isalnum()\n\n\n@pytest.mark.parametrize(\n    \"header,is_gzipped\",\n    [\n        pytest.param(FIRMWARE_HEADER, False, id=\"uncompressed\"),\n        pytest.param(gzip.compress(FIRMWARE_HEADER), True, id=\"compressed\"),\n    ],\n)\ndef test_deobfuscate_firmware_file(header: bytes, is_gzipped: bool) -> None:\n    ff = FortiFirmwareFile(io.BytesIO(header))\n\n    # magic bytes\n    ff.seek(12)\n    assert ff.read(4) == b\"\\xff\\x00\\xaa\\x55\"\n\n    # firmware name\n    ff.seek(16)\n    assert ff.read(32) == b\"FGVM64-7.04-FW-build2573-240201-\"\n\n    # test metadata\n    assert ff.is_gzipped == is_gzipped\n    assert ff.size == len(FIRMWARE_HEADER)\n\n\ndef test_gzip_trailer() -> None:\n    trailer_data = b\"TRAILER DATA\"\n\n    gzip_data = gzip.compress(FIRMWARE_HEADER)\n    fh = io.BytesIO(gzip_data + trailer_data)\n    ff = FortiFirmwareFile(fh)\n\n    assert ff.is_gzipped\n    assert ff.size == len(FIRMWARE_HEADER)\n    assert ff.trailer_offset == len(gzip_data)\n    assert ff.trailer_data == trailer_data\n\n\ndef test_fortifw_main(tmp_path: Path, capsysbinary: pytest.CaptureFixture[bytes]) -> None:\n    fw_path = tmp_path / \"fw.bin\"\n    fw_path.write_bytes(FIRMWARE_HEADER)\n\n    main([str(fw_path)])\n    stdout, _ = capsysbinary.readouterr()\n    assert b\"\\xff\\x00\\xaa\\x55FGVM64-7.04-FW-build2573-240201-\" in stdout\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-spring"
+sha = "8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-spring-context -Dtest=EnvironmentUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-spring-context -DtargetClasses=**.EnvironmentUtils  -DtargetTests=**.EnvironmentUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-spring-context/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-spring-context/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 7.0
+original_coverage = 72.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 56, 66, 69,]
+missed_lines = [ 54, 81, 82, 83, 84, 85, 86, 88, 100, 101, 102, 103, 115, 116, 117, 118, 119, 130, 131, 132, 133, 134, 135, 136, 139, 151, 152, 166, 181, 182, 184, 185, 186, 189, 190, 191, 192, 196, 197, 200,]
+
+[input_info]
+test_file_path = "microsphere-spring-context/src/test/java/io/microsphere/spring/core/env/EnvironmentUtilsTest.java"
+focal_file_path = "microsphere-spring-context/src/main/java/io/microsphere/spring/core/env/EnvironmentUtils.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-spring/blob/8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc/microsphere-spring-context/src/test/java/io/microsphere/spring/core/env/EnvironmentUtilsTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-spring/blob/8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc/microsphere-spring-context/src/main/java/io/microsphere/spring/core/env/EnvironmentUtils.java"
+first_commit_date = "2024-12-25"
+last_commit_date = "2025-01-06"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.microsphere.spring.core.env;\n\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.springframework.core.env.ConfigurableEnvironment;\nimport org.springframework.mock.env.MockEnvironment;\n\nimport java.util.List;\nimport java.util.Map;\n\nimport static io.microsphere.spring.core.env.EnvironmentUtils.asConfigurableEnvironment;\nimport static io.microsphere.spring.core.env.EnvironmentUtils.getConversionService;\nimport static io.microsphere.spring.core.env.EnvironmentUtils.getProperties;\nimport static io.microsphere.spring.core.env.EnvironmentUtils.resolveCommaDelimitedValueToList;\nimport static io.microsphere.spring.core.env.EnvironmentUtils.resolvePlaceholders;\nimport static java.util.Collections.emptyMap;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\nimport static org.junit.jupiter.api.Assertions.assertSame;\n\n/**\n * {@link EnvironmentUtils} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see EnvironmentUtils\n * @since 1.0.0\n */\npublic class EnvironmentUtilsTest {\n\n    private ConfigurableEnvironment environment;\n\n    @BeforeEach\n    public void init() throws Exception {\n        MockEnvironment mockEnvironment = new MockEnvironment();\n        mockEnvironment.setProperty(\"a\", \"1\");\n        mockEnvironment.setProperty(\"b\", \"2\");\n        mockEnvironment.setProperty(\"c\", \"3\");\n        this.environment = mockEnvironment;\n    }\n\n\n\n\n\n    @Test\n    public void testAsConfigurableEnvironment() {\n        ConfigurableEnvironment configurableEnvironment = asConfigurableEnvironment(environment);\n        assertSame(environment, configurableEnvironment);\n    }\n}\n\n"

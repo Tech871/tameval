@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "XMU-Kuangnan-Fang-Team/GENetLib"
+sha = "4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=GENetLib/eval_basis_fd.py -m pytest -q --junit-xml=test_output.xml pytest/test_eval_basis_fd.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target GENetLib.eval_basis_fd --unit-test pytest.test_eval_basis_fd --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target GENetLib/eval_basis_fd.py --unit-test pytest/test_eval_basis_fd.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 93.75
+original_coverage = 94.0
+mutation_kill_rate = 32.65
+original_mutation_kill_rate = 33.0
+covered_lines = [ 0, 2, 5, 8, 10, 11, 12, 13, 14, 16, 19, 20, 21, 23, 24, 25, 26, 27, 28, 31, 32, 34, 35, 36, 37, 38, 39, 41, 42, 43, 45, 46, 47, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 61,]
+missed_lines = [ 22, 29, 30,]
+
+[input_info]
+test_file_path = "pytest/test_eval_basis_fd.py"
+focal_file_path = "GENetLib/eval_basis_fd.py"
+test_file_url = "https://github.com/XMU-Kuangnan-Fang-Team/GENetLib/blob/4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7/pytest/test_eval_basis_fd.py"
+focal_file_url = "https://github.com/XMU-Kuangnan-Fang-Team/GENetLib/blob/4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7/GENetLib/eval_basis_fd.py"
+first_commit_date = "2024-05-26"
+last_commit_date = "2025-01-22"
+test_file_content = "import pytest\nimport numpy as np\nfrom GENetLib.eval_basis_fd import eval_basis, eval_fd\nfrom GENetLib.create_basis import create_bspline_basis\n\n# Test eval_basis function\ndef test_eval_basis():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    evalarg = np.linspace(0, 1, 10)\n    basis_values = eval_basis(evalarg, basisobj)\n    assert basis_values.shape == (10, 4)\n\ndef test_eval_basis_derivative():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    evalarg = np.linspace(0, 1, 10)\n    basis_values = eval_basis(evalarg, basisobj, Lfdobj=1)\n    assert basis_values.shape == (10, 4)\n\ndef test_eval_basis_return_matrix():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    evalarg = np.linspace(0, 1, 10)\n    basis_values = eval_basis(evalarg, basisobj, returnMatrix=True)\n    assert isinstance(basis_values, np.matrix)\n\n# Test eval_fd function\ndef test_eval_fd():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    coef = np.random.rand(4)\n    fdobj = {'coefs': coef, 'basis': basisobj}\n    evalarg = np.linspace(0, 1, 10)\n    function_values = eval_fd(evalarg, fdobj)\n    assert function_values.shape == (10,1)\n\ndef test_eval_fd_derivative():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    coef = np.random.rand(4)\n    fdobj = {'coefs': coef, 'basis': basisobj}\n    evalarg = np.linspace(0, 1, 10)\n    function_values = eval_fd(evalarg, fdobj, Lfdobj=1)\n    assert function_values.shape == (10,1)\n\ndef test_eval_fd_return_matrix():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    coef = np.random.rand(4)\n    fdobj = {'coefs': coef, 'basis': basisobj}\n    evalarg = np.linspace(0, 1, 10)\n    function_values = eval_fd(evalarg, fdobj, returnMatrix=True)\n    assert function_values is not None\n\n\n# Test eval_fd with multidimensional coefficients\ndef test_eval_fd_multidimensional():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    coef = np.random.rand(4, 2, 3)  # Multidimensional coefficients\n    fdobj = {'coefs': coef, 'basis': basisobj}\n    evalarg = np.linspace(0, 1, 10)\n    function_values = eval_fd(evalarg, fdobj)\n    assert function_values.shape == (10, 2, 3)\n\n# Test eval_fd with list input\ndef test_eval_fd_list_input():\n    basisobj = create_bspline_basis(rangeval=[0, 1], nbasis=4, norder=4)\n    coef = np.random.rand(4)\n    fdobj = {'coefs': coef, 'basis': basisobj}\n    evalarg = list(np.linspace(0, 1, 10))\n    function_values = eval_fd(evalarg, fdobj)\n    assert function_values.shape == (1,10)\n"

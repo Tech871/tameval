@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "flyteorg/flytekit"
+sha = "5503ee5e232fdbc633af39c7f4539a04906102fc"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r dev-requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=flytekit/core/type_match_checking.py -m pytest -q --junit-xml=test_output.xml tests/flytekit/unit/core/test_type_match_checking.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target flytekit.core.type_match_checking --unit-test tests.flytekit.unit.core.test_type_match_checking --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target flytekit/core/type_match_checking.py --unit-test tests/flytekit/unit/core/test_type_match_checking.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 66.67
+original_coverage = 83.0
+mutation_kill_rate = 58.82
+original_mutation_kill_rate = 65.0
+covered_lines = [ 0, 2, 3, 6, 13, 14, 16, 21, 27, 31, 32, 35, 38, 42, 43, 46, 47, 49, 50, 53,]
+missed_lines = [ 17, 18, 19, 22, 23, 24, 28, 39, 44, 51,]
+
+[input_info]
+test_file_path = "tests/flytekit/unit/core/test_type_match_checking.py"
+focal_file_path = "flytekit/core/type_match_checking.py"
+test_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/tests/flytekit/unit/core/test_type_match_checking.py"
+focal_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/flytekit/core/type_match_checking.py"
+first_commit_date = "2025-02-11"
+last_commit_date = "2025-02-11"
+test_file_content = "from flytekit.models.core.types import BlobType, EnumType\nfrom flytekit.models.types import LiteralType, StructuredDatasetType, UnionType, SimpleType\nfrom flytekit.core.type_match_checking import literal_types_match\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\ndef test_structured_dataset_match():\n    col1 = StructuredDatasetType.DatasetColumn(name=\"col1\", literal_type=LiteralType(simple=SimpleType.STRING))\n    col2 = StructuredDatasetType.DatasetColumn(name=\"col2\", literal_type=LiteralType(simple=SimpleType.STRUCT))\n\n    dataset1 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[]))\n    dataset2 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[]))\n    assert literal_types_match(dataset1, dataset2) is True\n\n    dataset1 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[col1, col2]))\n    dataset2 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[]))\n    assert literal_types_match(dataset1, dataset2) is False\n\n    dataset1 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[col1, col2]))\n    dataset2 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[col1, col2]))\n    assert literal_types_match(dataset1, dataset2) is True\n\n\ndef test_structured_dataset_mismatch():\n    dataset1 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"parquet\", columns=[]))\n    dataset2 = LiteralType(structured_dataset_type=StructuredDatasetType(format=\"csv\", columns=[]))\n    assert literal_types_match(dataset1, dataset2) is False\n\n\ndef test_union_type_match():\n    union1 = LiteralType(union_type=UnionType(variants=[LiteralType(SimpleType.STRING), LiteralType(SimpleType.INTEGER)]))\n    union2 = LiteralType(union_type=UnionType(variants=[LiteralType(SimpleType.INTEGER), LiteralType(SimpleType.STRING)]))\n    assert literal_types_match(union1, union2) is True\n"

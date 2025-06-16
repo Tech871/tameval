@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "github/issue-metrics"
+sha = "23689ee936e1c52ad48581667f483140c24224f1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements-test.txt && pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=auth.py -m pytest -q --junit-xml=test_output.xml test_auth.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target auth --unit-test test_auth --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target auth.py --unit-test test_auth.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 86.0
+original_coverage = 100.0
+mutation_kill_rate = 79.0
+original_mutation_kill_rate = 86.0
+covered_lines = [ 2, 3, 6, 29, 30, 31, 33, 34, 37, 38, 39, 40, 41, 43, 48, 50, 53, 72, 73, 74, 76, 77, 78, 82,]
+missed_lines = [ 49, 79, 80, 81,]
+
+[input_info]
+test_file_path = "test_auth.py"
+focal_file_path = "auth.py"
+test_file_url = "https://github.com/github/issue-metrics/blob/23689ee936e1c52ad48581667f483140c24224f1/test_auth.py"
+focal_file_url = "https://github.com/github/issue-metrics/blob/23689ee936e1c52ad48581667f483140c24224f1/auth.py"
+first_commit_date = "2024-04-29"
+last_commit_date = "2025-01-26"
+test_file_content = "\"\"\"A module containing unit tests for the auth module.\n\nThis module contains unit tests for the functions in the auth module\nthat authenticate to github.\n\nClasses:\n    TestAuthToGithub: A class to test the auth_to_github function.\n\n\"\"\"\n\nimport unittest\nfrom unittest.mock import MagicMock, patch\n\nimport github3\nfrom auth import auth_to_github, get_github_app_installation_token\n\n\nclass TestAuthToGithub(unittest.TestCase):\n    \"\"\"Test the auth_to_github function.\"\"\"\n\n    @patch(\"github3.github.GitHub.login_as_app_installation\")\n    def test_auth_to_github_with_github_app(self, mock_login):\n        \"\"\"\n        Test the auth_to_github function when GitHub app\n        parameters provided.\n        \"\"\"\n        mock_login.return_value = MagicMock()\n        result = auth_to_github(\"\", 12345, 678910, b\"hello\", \"\", False)\n\n        self.assertIsInstance(result, github3.github.GitHub, False)\n\n    def test_auth_to_github_with_token(self):\n        \"\"\"\n        Test the auth_to_github function when the token is provided.\n        \"\"\"\n        result = auth_to_github(\"token\", None, None, b\"\", \"\", False)\n\n        self.assertIsInstance(result, github3.github.GitHub, False)\n\n    def test_auth_to_github_without_authentication_information(self):\n        \"\"\"\n        Test the auth_to_github function when authentication information is not provided.\n        Expect a ValueError to be raised.\n        \"\"\"\n        with self.assertRaises(ValueError):\n            auth_to_github(\"\", None, None, b\"\", \"\", False)\n\n    def test_auth_to_github_with_ghe(self):\n        \"\"\"\n        Test the auth_to_github function when the GitHub Enterprise URL is provided.\n        \"\"\"\n        result = auth_to_github(\n            \"token\", None, None, b\"\", \"https://github.example.com\", False\n        )\n\n        self.assertIsInstance(result, github3.github.GitHubEnterprise, False)\n\n    @patch(\"github3.github.GitHubEnterprise\")\n    def test_auth_to_github_with_ghe_and_ghe_app(self, mock_ghe):\n        \"\"\"\n        Test the auth_to_github function when the GitHub Enterprise URL \\\n            is provided and the app was created in GitHub Enterprise URL.\n        \"\"\"\n        mock = mock_ghe.return_value\n        mock.login_as_app_installation = MagicMock(return_value=True)\n        result = auth_to_github(\n            \"\", \"123\", \"123\", b\"123\", \"https://github.example.com\", True\n        )\n        mock.login_as_app_installation.assert_called_once()\n        self.assertEqual(result, mock)\n\n    @patch(\"github3.apps.create_jwt_headers\", MagicMock(return_value=\"gh_token\"))\n    @patch(\"requests.post\")\n    def test_get_github_app_installation_token(self, mock_post):\n        \"\"\"\n        Test the get_github_app_installation_token function.\n        \"\"\"\n        dummy_token = \"dummytoken\"\n        mock_response = MagicMock()\n        mock_response.raise_for_status.return_value = None\n        mock_response.json.return_value = {\"token\": dummy_token}\n        mock_post.return_value = mock_response\n        mock_ghe = \"\"\n\n        result = get_github_app_installation_token(\n            mock_ghe, b\"gh_private_token\", \"gh_app_id\", \"gh_installation_id\"\n        )\n\n        self.assertEqual(result, dummy_token)"

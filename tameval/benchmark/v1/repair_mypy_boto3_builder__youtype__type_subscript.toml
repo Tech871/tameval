@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "098fadc5ab3152e2c85008a592ac975328a9fca8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/type_annotations/type_subscript.py -m pytest -q --junit-xml=test_output.xml tests/type_annotations/test_type_subscript.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.type_annotations.type_subscript --unit-test tests.type_annotations.test_type_subscript --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/type_annotations/type_subscript.py --unit-test tests/type_annotations/test_type_subscript.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 84.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/type_annotations/test_type_subscript.py"
+focal_file_path = "mypy_boto3_builder/type_annotations/type_subscript.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/098fadc5ab3152e2c85008a592ac975328a9fca8/tests/type_annotations/test_type_subscript.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/098fadc5ab3152e2c85008a592ac975328a9fca8/mypy_boto3_builder/type_annotations/type_subscript.py"
+first_commit_date = "2020-01-23"
+last_commit_date = "2025-01-06"
+test_file_content = "import pytest\n\nfrom mypy_boto3_builder.exceptions import TypeAnnotationError\nfrom mypy_boto3_builder.type_annotations.type import Type\nfrom mypy_boto3_builder.type_annotations.type_subscript import TypeSubscript\n\n\nclass TestTypeSubscript:\n    result: TypeSubscript\n\n    def setup_method(self) -> None:\n        self.result = TypeSubscript(Type.Dict, [Type.str, Type.int, Type.Any])\n\n    def test_init(self) -> None:\n\n    def test_render(self) -> None:\n\n    def test_get_import_records(self) -> None:\n        records = sorted(self.result.get_import_records())\n\n    def test_get_types(self) -> None:\n\n    def test_add_child(self) -> None:\n        clone = self.result.copy()\n        clone.add_child(Type.bool)\n\n    def test_is_dict(self) -> None:\n\n    def test_is_list(self) -> None:\n\n    def test_copy(self) -> None:\n\n    def test_find_type_annotation_parents(self) -> None:\n        inner = TypeSubscript(Type.List, [Type.int])\n        outer = TypeSubscript(Type.Dict, [Type.str, inner])\n\n    def test_find_type_annotation_parent_map(self) -> None:\n        inner = TypeSubscript(Type.List, [Type.int])\n        outer = TypeSubscript(Type.Dict, [Type.str, inner])\n\n    def test_replace_child(self) -> None:\n        inner = TypeSubscript(Type.List, [Type.int])\n        outer = TypeSubscript(Type.Dict, [Type.str, inner])\n        with pytest.raises(TypeAnnotationError):\n            outer.copy().replace_child(Type.int, Type.bool)\n\n    def test_iterate_types(self) -> None:\n\n    def test_iterate_direct_type_annotations(self) -> None:\n"

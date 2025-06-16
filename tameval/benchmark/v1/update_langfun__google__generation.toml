@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "google/langfun"
+sha = "11d646e44baaea09bb792c3428a8f71ba742363b"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=langfun/core/coding/python/generation.py -m pytest -q --junit-xml=test_output.xml langfun/core/coding/python/generation_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target langfun.core.coding.python.generation --unit-test langfun.core.coding.python.generation_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target langfun/core/coding/python/generation.py --unit-test langfun/core/coding/python/generation_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 61.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 96.0
+covered_lines = [ 15, 16, 17, 18, 19, 20, 23, 29, 34, 36, 37, 72, 84, 140, 183, 190, 191, 192, 193, 195, 199, 200, 204,]
+missed_lines = [ 66, 73, 74, 78, 79, 80, 82, 126, 137, 138, 173, 196, 197, 202, 229,]
+
+[input_info]
+test_file_path = "langfun/core/coding/python/generation_test.py"
+focal_file_path = "langfun/core/coding/python/generation.py"
+test_file_url = "https://github.com/google/langfun/blob/11d646e44baaea09bb792c3428a8f71ba742363b/langfun/core/coding/python/generation_test.py"
+focal_file_url = "https://github.com/google/langfun/blob/11d646e44baaea09bb792c3428a8f71ba742363b/langfun/core/coding/python/generation.py"
+first_commit_date = "2023-10-24"
+last_commit_date = "2025-01-13"
+test_file_content = "# Copyright 2023 The Langfun Authors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\"\"\"Tests for structures for Python code generation.\"\"\"\n\nimport inspect\nimport unittest\nfrom langfun.core.coding.python import generation\nfrom langfun.core.coding.python import permissions\n\n\nclass PythonCodeTest(unittest.TestCase):\n\n  def test_auto_run(self):\n    with generation.PythonCode.auto_run():\n      self.assertEqual(\n          generation.PythonCode(\n              \"\"\"\n              x = 1\n              y = x + 1\n              z = x + y\n              \"\"\",\n          ),\n          3,\n      )\n      with generation.PythonCode.auto_run(False):\n        self.assertIsInstance(generation.PythonCode('1'), generation.PythonCode)\n\n  def test_eval(self):\n    self.assertEqual(\n        generation.PythonCode(\"\"\"\n            x = 1\n            y = x + 1\n            z = x + y\n            \"\"\").eval(),\n        dict(x=1, y=2, z=3, __result__=3),\n    )\n\n  def test_call(self):\n    self.assertEqual(\n        generation.PythonCode(\"\"\"\n        x = 1\n        y = x + 1\n        z = x + y\n        \"\"\")(),\n        3,\n    )\n\n  def test_call_class_def(self):\n    with permissions.permission(permissions.CodePermission.CLASS_DEFINITION):\n      v = generation.PythonCode(\"\"\"\n          class A:\n            pass\n          \"\"\")(sandbox=False)\n      self.assertTrue(inspect.isclass(v))\n\n\nclass PythonFunctionTest(unittest.TestCase):\n\n  def test_basic(self):\n    f = generation.PythonFunction(\n        name='sum',\n        args=dict(x='int', y='int'),\n        returns='int',\n        source=(\"\"\"\n            def sum(x: int, y: int):\n              return x + y\n            \"\"\"),\n    )\n    self.assertEqual(f(1, y=2), 3)\n    self.assertEqual(f(1, y=2, sandbox=False), 3)\n\n  def test_bad_code(self):\n    f = generation.PythonFunction(\n        name='sum',\n        args=dict(x='int', y='int'),\n        returns='int',\n        source=(\"\"\"\n            def sum(x: int, y: int):\n              s = 0\n              for _ in range(x):\n                s += 1\n              for _ in range(y):\n                s += 1\n              return s\n            \"\"\"),\n    )\n    with self.assertRaises(TimeoutError):\n      f(100000000, y=10000000, timeout=1)\n\n\nif __name__ == '__main__':\n  unittest.main()"

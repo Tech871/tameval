@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "AlexGustafsson/cupdate"
+sha = "1d16570b6ddcce6fef954443916636cfcc74cae2"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/workflow/imageworkflow/data.go internal/workflow/imageworkflow/data_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/workflow/imageworkflow/data.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 100.0
+mutation_kill_rate = 60.0
+original_mutation_kill_rate = 80.0
+covered_lines = [ 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 52, 53, 54, 58, 59, 60,]
+missed_lines = [ 30, 31, 32, 33, 34, 35, 36, 62, 63, 64, 65, 66, 67, 69, 70, 71,]
+
+[input_info]
+test_file_path = "internal/workflow/imageworkflow/data_test.go"
+focal_file_path = "internal/workflow/imageworkflow/data.go"
+test_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/workflow/imageworkflow/data_test.go"
+focal_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/workflow/imageworkflow/data.go"
+first_commit_date = "2024-10-02"
+last_commit_date = "2025-02-23"
+test_file_content = "package imageworkflow\n\nimport (\n\t\"testing\"\n\n\t\"github.com/AlexGustafsson/cupdate/internal/models\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\nfunc TestDataInsertLink(t *testing.T) {\n\tdata := Data{\n\t\tLinks: make([]models.ImageLink, 0),\n\t}\n\n\tdata.InsertLink(models.ImageLink{\n\t\tType: \"generic\",\n\t\tURL:  \"https://example.com\",\n\t})\n\tdata.InsertLink(models.ImageLink{\n\t\tType: \"svc\",\n\t\tURL:  \"https://example.com/git\",\n\t})\n\tassert.Equal(t, []models.ImageLink{\n\t\t{\n\t\t\tType: \"generic\",\n\t\t\tURL:  \"https://example.com\",\n\t\t},\n\t\t{\n\t\t\tType: \"svc\",\n\t\t\tURL:  \"https://example.com/git\",\n\t\t},\n\t}, data.Links)\n\n\t// No duplicates\n\tdata.InsertLink(models.ImageLink{\n\t\tType: \"generic\",\n\t\tURL:  \"https://example.com\",\n\t})\n\tassert.Equal(t, []models.ImageLink{\n\t\t{\n\t\t\tType: \"generic\",\n\t\t\tURL:  \"https://example.com\",\n\t\t},\n\t\t{\n\t\t\tType: \"svc\",\n\t\t\tURL:  \"https://example.com/git\",\n\t\t},\n\t}, data.Links)\n}\n"

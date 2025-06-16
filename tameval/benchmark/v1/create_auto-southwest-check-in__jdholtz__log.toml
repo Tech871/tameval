@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jdholtz/auto-southwest-check-in"
+sha = "08010e2aaea522c42913addf8ffdc5485b06ddb7"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=lib/log.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_log.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target lib.log --unit-test tests.unit.test_log --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target lib/log.py --unit-test tests/unit/test_log.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 41.0
+original_coverage = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 2, 3, 4, 6, 7, 8, 11, 25, 61, 67, 72, 78,]
+missed_lines = [ 18, 19, 21, 22, 28, 30, 32, 37, 38, 41, 42, 44, 50, 51, 52, 53, 55, 57, 58, 76,]
+
+[input_info]
+test_file_path = "tests/unit/test_log.py"
+focal_file_path = "lib/log.py"
+test_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/tests/unit/test_log.py"
+focal_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/lib/log.py"
+first_commit_date = "2023-03-11"
+last_commit_date = "2025-03-07"
+test_file_content = "import logging\nimport multiprocessing\nimport sys\nfrom collections.abc import Iterator\n\nimport pytest\nfrom pytest_mock import MockerFixture\n\nfrom lib import log\n\n\n@pytest.fixture(autouse=True)\ndef logger(mocker: MockerFixture) -> Iterator[logging.Logger]:\n    logger = logging.getLogger(\"lib\")\n    # Make sure no file system changes are done\n    mocker.patch(\"pathlib.Path.mkdir\")\n    # Make sure logs aren't written to a file\n    mock_file_handler = mocker.patch(\"logging.handlers.RotatingFileHandler\")\n    mock_file_handler.return_value.level = logging.DEBUG\n\n    yield logger\n\n    logger.handlers = []  # Clean up after test\n\n\n\n\n\n\ndef test_get_logger_does_not_initialize_logger_with_fork_start_method(\n    mocker: MockerFixture,\n) -> None:\n    mocker.patch(\"multiprocessing.get_start_method\", return_value=\"fork\")\n    mock_init_logging = mocker.patch(\"lib.log.init_logging\")\n\n    multiprocessing.current_process().name = \"Process-1\"\n    log.get_logger(\"lib\")\n    mock_init_logging.assert_not_called()\n\n\n"

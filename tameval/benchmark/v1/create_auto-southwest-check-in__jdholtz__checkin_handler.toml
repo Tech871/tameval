@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jdholtz/auto-southwest-check-in"
+sha = "08010e2aaea522c42913addf8ffdc5485b06ddb7"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=lib/checkin_handler.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_checkin_handler.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target lib.checkin_handler --unit-test tests.unit.test_checkin_handler --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target lib/checkin_handler.py --unit-test tests/unit/test_checkin_handler.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 56.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 2, 3, 4, 5, 6, 7, 9, 10, 23, 25, 26, 29, 31, 34, 41, 42, 43, 44, 45, 47, 48, 49, 51, 52, 53, 54, 55, 57, 78, 80, 82, 83, 84, 89, 90, 91, 96, 99, 117, 118, 119, 121, 133, 137, 142, 143, 144, 148, 149, 150, 151, 157, 193, 198, 199, 205, 207, 209, 211, 212, 214, 215, 216,]
+missed_lines = [ 63, 65, 66, 67, 70, 71, 72, 74, 76, 85, 87, 92, 93, 100, 101, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 127, 128, 129, 130, 131, 145, 146, 147, 153, 168, 170, 171, 172, 173, 175, 176, 177, 179, 180, 181, 182, 183, 185, 188, 190, 191,]
+
+[input_info]
+test_file_path = "tests/unit/test_checkin_handler.py"
+focal_file_path = "lib/checkin_handler.py"
+test_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/tests/unit/test_checkin_handler.py"
+focal_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/lib/checkin_handler.py"
+first_commit_date = "2022-12-10"
+last_commit_date = "2025-02-28"
+test_file_content = "import signal\nfrom datetime import datetime\nfrom unittest import mock\n\nimport pytest\nfrom pytest_mock import MockerFixture\n\nfrom lib.checkin_handler import MAX_CHECK_IN_ATTEMPTS, CheckInHandler\nfrom lib.utils import AirportCheckInError, DriverTimeoutError, RequestError\n\n\nclass TestCheckInHandler:\n    \"\"\"Contains common tests between the CheckInHandler and the SameDayCheckInHandler\"\"\"\n\n    @pytest.fixture(autouse=True)\n    def _set_up_handler(self, mocker: MockerFixture) -> None:\n        test_flight = mocker.patch(\"lib.flight.Flight\")\n        mock_checkin_scheduler = mocker.patch(\"lib.checkin_scheduler.CheckInScheduler\")\n        mock_lock = mocker.patch(\"multiprocessing.Lock\")\n\n        self.handler = CheckInHandler(mock_checkin_scheduler, test_flight, mock_lock)\n        # This would usually be set in schedule_check_in, but that won't be run for every test\n        self.handler.pid = 0\n\n    def test_schedule_check_in_starts_a_process(self, mocker: MockerFixture) -> None:\n        mock_process = mocker.patch(\"lib.checkin_handler.Process\")\n\n        self.handler.schedule_check_in()\n\n        mock_process.return_value.start.assert_called_once()\n        assert self.handler.pid is not None, \"PID was not set while scheduling a check-in\"\n\n\n\n\n    def test_set_check_in_correctly_sets_up_check_in_process(self, mocker: MockerFixture) -> None:\n        self.handler.flight.departure_time = datetime(1999, 12, 31, 18, 29)\n        mock_wait_for_check_in = mocker.patch.object(CheckInHandler, \"_wait_for_check_in\")\n        mock_check_in = mocker.patch.object(CheckInHandler, \"_check_in\")\n\n        self.handler._set_check_in()\n\n        mock_wait_for_check_in.assert_called_once_with(datetime(1999, 12, 30, 18, 29))\n        mock_check_in.assert_called_once()\n\n\n\n    def test_wait_for_check_in_sleeps_once_when_check_in_is_less_than_or_equal_to_thirty_mins_away(\n        self, mocker: MockerFixture\n    ) -> None:\n        mock_sleep = mocker.patch(\"time.sleep\")\n        mocker.patch(\n            \"lib.checkin_handler.get_current_time\", return_value=datetime(1999, 12, 31, 18, 29, 59)\n        )\n\n        self.handler._wait_for_check_in(datetime(1999, 12, 31, 18, 59, 59))\n\n        mock_sleep.assert_called_once_with(1800)\n\n\n\n\n    def test_check_in_sends_error_notification_when_check_in_fails(\n        self, mocker: MockerFixture\n    ) -> None:\n        mocker.patch.object(CheckInHandler, \"_attempt_check_in\", side_effect=RequestError(\"\"))\n        mock_notification_handler = mocker.patch(\"lib.notification_handler.NotificationHandler\")\n\n        self.handler.notification_handler = mock_notification_handler\n        self.handler._check_in()\n\n        mock_notification_handler.failed_checkin.assert_called_once()\n        mock_notification_handler.successful_checkin.assert_not_called()\n\n\n\n\n\n\n    def test_check_in_to_flight_sends_get_then_post_request(self, mocker: MockerFixture) -> None:\n        get_response = {\n            \"checkInViewReservationPage\": {\"_links\": {\"checkIn\": {\"href\": \"\", \"body\": \"\"}}}\n        }\n        post_response = {\"checkInConfirmationPage\": \"Checked In!\"}\n        mocker.patch(\"lib.checkin_handler.make_request\", side_effect=[get_response, post_response])\n\n        assert self.handler._check_in_to_flight() == post_response\n"

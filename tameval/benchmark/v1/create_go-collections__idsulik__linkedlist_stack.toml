@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.18"
+
+[repo_info]
+repository = "idsulik/go-collections"
+sha = "342ac8198d246e7a75007891c071f5116ffd3408"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out stack/linkedliststack/linkedlist_stack.go stack/linkedliststack/linkedlist_stack_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting stack/linkedliststack/linkedlist_stack.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 71.43
+original_coverage = 100.0
+mutation_kill_rate = 50.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 10, 11, 12, 13, 14, 17, 18, 19, 23, 24, 25, 34, 35, 36, 39, 40, 41,]
+missed_lines = [ 29, 30, 31, 44, 45, 46,]
+
+[input_info]
+test_file_path = "stack/linkedliststack/linkedlist_stack_test.go"
+focal_file_path = "stack/linkedliststack/linkedlist_stack.go"
+test_file_url = "https://github.com/idsulik/go-collections/blob/342ac8198d246e7a75007891c071f5116ffd3408/stack/linkedliststack/linkedlist_stack_test.go"
+focal_file_url = "https://github.com/idsulik/go-collections/blob/342ac8198d246e7a75007891c071f5116ffd3408/stack/linkedliststack/linkedlist_stack.go"
+first_commit_date = "2024-09-23"
+last_commit_date = "2025-02-22"
+test_file_content = "package linkedliststack\n\nimport (\n\t\"testing\"\n)\n\n// TestNew tests the creation of a new stack with an initial capacity.\nfunc TestNew(t *testing.T) {\n\t// Create a new stack with an initial capacity of\n\ts := New[int]()\n\n\tif got := s.Len(); got != 0 {\n\t\tt.Errorf(\"Len() = %d; want 0\", got)\n\t}\n\tif !s.IsEmpty() {\n\t\tt.Errorf(\"IsEmpty() = false; want true\")\n\t}\n}\n\n// TestLinkedListStackPush tests adding items to the stack.\nfunc TestLinkedListStackPush(t *testing.T) {\n\t// Create a new stack with an initial capacity of\n\ts := New[int]()\n\ts.Push(1)\n\ts.Push(2)\n\ts.Push(3)\n\n\tif got := s.Len(); got != 3 {\n\t\tt.Errorf(\"Len() = %d; want 3\", got)\n\t}\n\tif got, ok := s.Pop(); !ok || got != 3 {\n\t\tt.Errorf(\"Pop() = %d, %v; want 3, true\", got, ok)\n\t}\n}\n\n// TestLinkedListStackPopEmpty tests popping from an empty stack.\n\n// TestLinkedListStackPeek tests peeking at the top of the stack.\n\n// TestLinkedListStackPeekEmpty tests peeking into an empty stack.\n\n// TestLinkedListStackLen tests the length of the stack.\n\n// TestLinkedListStackIsEmpty tests checking if the stack is empty.\n\n// TestLinkedListStackClear tests clearing the stack.\n"
