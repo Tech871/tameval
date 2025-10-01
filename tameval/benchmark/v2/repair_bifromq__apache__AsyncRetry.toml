@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/bifromq"
+sha = "c07c2c0099f39282ba5fd30d6af8c2e91b03348d"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl base-util -Dtest=AsyncRetryTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl base-util -DtargetClasses=**.AsyncRetry  -DtargetTests=**.AsyncRetryTest  -DoutputFormats=XML"
+coverage_report_path = "base-util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "base-util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 71.0
+original_coverage = 71.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 76, 77, 78, 89, 90, 91, 95, 97, 98, 99, 101, 104, 105, 106, 108, 110, 111, 119, 120, 124,]
+missed_lines = [ 34, 47, 48, 49, 51, 75, 125, 126,]
+
+[input_info]
+test_file_path = "base-util/src/test/java/org/apache/bifromq/base/util/AsyncRetryTest.java"
+focal_file_path = "base-util/src/main/java/org/apache/bifromq/base/util/AsyncRetry.java"
+test_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/base-util/src/test/java/org/apache/bifromq/base/util/AsyncRetryTest.java"
+focal_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/base-util/src/main/java/org/apache/bifromq/base/util/AsyncRetry.java"
+first_commit_date = "2025-06-03"
+last_commit_date = "2025-06-06"
+test_file_content = "package org.apache.bifromq.base.util;\n\nimport static org.testng.Assert.assertEquals;\nimport static org.testng.Assert.assertThrows;\nimport static org.testng.Assert.fail;\nimport static org.testng.AssertJUnit.assertTrue;\n\nimport org.apache.bifromq.base.util.exception.RetryTimeoutException;\nimport java.util.concurrent.CompletableFuture;\nimport java.util.concurrent.ExecutionException;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.function.Supplier;\nimport org.testng.annotations.Test;\n\npublic class AsyncRetryTest {\n\n    @Test\n    public void testImmediateSuccess() throws Exception {\n        String expected = \"success\";\n        Supplier<CompletableFuture<String>> taskSupplier = () -> CompletableFuture.completedFuture(expected);\n        CompletableFuture<String> resultFuture =\n            AsyncRetry.exec(taskSupplier, (result, e) -> !result.equals(\"success\"), 100, 1000);\n        String result = resultFuture.get();\n        assertEquals(result, expected);\n    }\n\n    @Test\n    public void testSuccessfulAfterOneRetry() throws Exception {\n        AtomicInteger counter = new AtomicInteger(0);\n        Supplier<CompletableFuture<String>> taskSupplier = () -> CompletableFuture.supplyAsync(() -> {\n            int attempt = counter.incrementAndGet();\n            return attempt < 2 ? \"fail\" : \"success\";\n        });\n\n        CompletableFuture<String> resultFuture =\n            AsyncRetry.exec(taskSupplier, (result, e) -> !result.equals(\"success\"), 100, 1000);\n        String result = resultFuture.get();\n        assertEquals(result, \"success\");\n        assertTrue(counter.get() >= 2);\n    }\n\n    @Test\n    public void testNoRetry() {\n        Supplier<CompletableFuture<String>> taskSupplier = () -> CompletableFuture.failedFuture(new RuntimeException());\n        CompletableFuture<String> resultFuture =\n            AsyncRetry.exec(taskSupplier, (result, e) -> e == null, 0, 1000);\n        assertThrows(resultFuture::join);\n    }\n\n    @Test\n    public void testMultipleRetriesBeforeSuccess() throws Exception {\n        AtomicInteger counter = new AtomicInteger(0);\n        Supplier<CompletableFuture<String>> taskSupplier = () -> CompletableFuture.supplyAsync(() -> {\n            int attempt = counter.incrementAndGet();\n            return attempt < 4 ? \"fail\" : \"success\";\n        });\n\n        CompletableFuture<String> resultFuture =\n            AsyncRetry.exec(taskSupplier, (result, e) -> !result.equals(\"success\"), 100, 1000);\n        String result = resultFuture.get();\n        assertEquals(result, \"success\");\n        assertTrue(counter.get() >= 4);\n    }\n\n    @Test\n    public void testTimeoutExceeded() throws Exception {\n        AtomicInteger counter = new AtomicInteger(0);\n        Supplier<CompletableFuture<String>> taskSupplier = () -> CompletableFuture.supplyAsync(() -> {\n            counter.incrementAndGet();\n            return \"fail\";\n        });\n\n        CompletableFuture<String> resultFuture =\n            AsyncRetry.exec(taskSupplier, (result, e) -> !result.equals(\"success\"), 100, 250);\n\n        try {\n            resultFuture.get();\n            fail();\n        } catch (ExecutionException ex) {\n            Throwable cause = ex.getCause();\n            assertTrue(cause instanceof RetryTimeoutException);\n        }\n        assertTrue(counter.get() > 0);\n    }\n\n    @Test\n    public void testMaxDelayExceeded() throws Exception {\n        AtomicInteger counter = new AtomicInteger(0);\n        Supplier<CompletableFuture<String>> taskSupplier = () -> CompletableFuture.supplyAsync(() -> {\n            counter.incrementAndGet();\n            return \"fail\";\n        });\n\n        CompletableFuture<String> resultFuture =\n            AsyncRetry.exec(taskSupplier, (result, e) -> !result.equals(\"success\"), 500, 800);\n\n        try {\n            resultFuture.get();\n            fail();\n        } catch (ExecutionException ex) {\n            Throwable cause = ex.getCause();\n            assertTrue(cause instanceof RetryTimeoutException);\n        }\n        assertTrue(counter.get() > 0);\n    }\n}"

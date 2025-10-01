@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "siyul-park/uniflow"
+sha = "9a8c580db91d1ea6f709f700a463153d8aedf829"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/runtime/runtime.go pkg/runtime/runtime_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/runtime/runtime.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 58.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 40.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/runtime/runtime_test.go"
+focal_file_path = "pkg/runtime/runtime.go"
+test_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/pkg/runtime/runtime_test.go"
+focal_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/pkg/runtime/runtime.go"
+first_commit_date = "2023-11-20"
+last_commit_date = "2025-04-26"
+test_file_content = "package runtime\n\nimport (\n\t\"context\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/go-faker/faker/v4\"\n\t\"github.com/gofrs/uuid\"\n\t\"github.com/siyul-park/uniflow/pkg/hook\"\n\t\"github.com/siyul-park/uniflow/pkg/meta\"\n\t\"github.com/siyul-park/uniflow/pkg/node\"\n\t\"github.com/siyul-park/uniflow/pkg/scheme\"\n\t\"github.com/siyul-park/uniflow/pkg/spec\"\n\t\"github.com/siyul-park/uniflow/pkg/store\"\n\t\"github.com/siyul-park/uniflow/pkg/symbol\"\n\t\"github.com/siyul-park/uniflow/pkg/value\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestRuntime_Load(t *testing.T) {\n\tctx, cancel := context.WithCancel(context.TODO())\n\tdefer cancel()\n\n\tkind := faker.UUIDHyphenated()\n\n\ts := scheme.New()\n\ts.AddKnownType(kind, &spec.Meta{})\n\ts.AddCodec(kind, scheme.CodecFunc(func(spec spec.Spec) (node.Node, error) {\n\t\treturn node.NewOneToOneNode(nil), nil\n\t}))\n\n\tspecStore := store.New()\n\tvalueStore := store.New()\n\n\tr := New(Config{\n\t\tScheme:     s,\n\t\tSpecStore:  specStore,\n\t\tValueStore: valueStore,\n\t})\n\tdefer r.Close(ctx)\n\n\tmeta := &spec.Meta{\n\t\tID:   uuid.Must(uuid.NewV7()),\n\t\tKind: kind,\n\t}\n\n\terr := specStore.Insert(ctx, []any{meta})\n\trequire.NoError(t, err)\n\n\terr = r.Load(ctx, nil)\n\trequire.NoError(t, err)\n}\n\nfunc TestRuntime_Reconcile(t *testing.T) {\n\tt.Run(\"Spec\", func(t *testing.T) {\n\t\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\t\tdefer cancel()\n\n\t\ts := scheme.New()\n\t\tkind := faker.UUIDHyphenated()\n\n\t\ts.AddKnownType(kind, &spec.Meta{})\n\t\ts.AddCodec(kind, scheme.CodecFunc(func(spec spec.Spec) (node.Node, error) {\n\t\t\treturn node.NewOneToOneNode(nil), nil\n\t\t}))\n\n\t\tspecStore := store.New()\n\t\tvalueStore := store.New()\n\n\t\th := hook.New()\n\t\tsymbols := make(chan *symbol.Symbol)\n\n\t\th.AddLoadHook(symbol.LoadFunc(func(sb *symbol.Symbol) error {\n\t\t\tsymbols <- sb\n\t\t\treturn nil\n\t\t}))\n\t\th.AddUnloadHook(symbol.UnloadFunc(func(sb *symbol.Symbol) error {\n\t\t\tsymbols <- sb\n\t\t\treturn nil\n\t\t}))\n\n\t\tr := New(Config{\n\t\t\tScheme:     s,\n\t\t\tHook:       h,\n\t\t\tSpecStore:  specStore,\n\t\t\tValueStore: valueStore,\n\t\t})\n\t\tdefer r.Close(ctx)\n\n\t\terr := r.Watch(ctx)\n\t\trequire.NoError(t, err)\n\n\t\tgo r.Reconcile(ctx)\n\n\t\tmeta := &spec.Meta{\n\t\t\tID:        uuid.Must(uuid.NewV7()),\n\t\t\tKind:      kind,\n\t\t\tNamespace: meta.DefaultNamespace,\n\t\t}\n\n\t\terr = specStore.Insert(ctx, []any{meta})\n\t\trequire.NoError(t, err)\n\n\t\tselect {\n\t\tcase sb := <-symbols:\n\t\t\trequire.Equal(t, meta.GetID(), sb.ID())\n\t\tcase <-ctx.Done():\n\t\t\trequire.NoError(t, ctx.Err())\n\t\t}\n\n\t\t_, err = specStore.Delete(ctx, map[string]any{spec.KeyID: meta.ID})\n\t\trequire.NoError(t, err)\n\n\t\tselect {\n\t\tcase sb := <-symbols:\n\t\t\trequire.Equal(t, meta.GetID(), sb.ID())\n\t\tcase <-ctx.Done():\n\t\t\trequire.NoError(t, ctx.Err())\n\t\t}\n\t})\n\n\tt.Run(\"Value\", func(t *testing.T) {\n\t\tctx, cancel := context.WithTimeout(context.TODO(), 10*time.Second)\n\t\tdefer cancel()\n\n\t\ts := scheme.New()\n\t\tkind := faker.UUIDHyphenated()\n\n\t\ts.AddKnownType(kind, &spec.Meta{})\n\t\ts.AddCodec(kind, scheme.CodecFunc(func(spec spec.Spec) (node.Node, error) {\n\t\t\treturn node.NewOneToOneNode(nil), nil\n\t\t}))\n\n\t\tspecStore := store.New()\n\t\tvalueStore := store.New()\n\n\t\th := hook.New()\n\t\tsymbols := make(chan *symbol.Symbol)\n\n\t\th.AddLoadHook(symbol.LoadFunc(func(sb *symbol.Symbol) error {\n\t\t\tsymbols <- sb\n\t\t\treturn nil\n\t\t}))\n\t\th.AddUnloadHook(symbol.UnloadFunc(func(sb *symbol.Symbol) error {\n\t\t\tsymbols <- sb\n\t\t\treturn nil\n\t\t}))\n\n\t\tr := New(Config{\n\t\t\tScheme:     s,\n\t\t\tHook:       h,\n\t\t\tSpecStore:  specStore,\n\t\t\tValueStore: valueStore,\n\t\t})\n\t\tdefer r.Close(ctx)\n\n\t\terr := r.Watch(ctx)\n\t\trequire.NoError(t, err)\n\n\t\tgo r.Reconcile(ctx)\n\n\t\tval := &value.Value{\n\t\t\tID:        uuid.Must(uuid.NewV7()),\n\t\t\tNamespace: meta.DefaultNamespace,\n\t\t\tData:      faker.UUIDHyphenated(),\n\t\t}\n\t\tmeta := &spec.Meta{\n\t\t\tID:        uuid.Must(uuid.NewV7()),\n\t\t\tKind:      kind,\n\t\t\tNamespace: meta.DefaultNamespace,\n\t\t\tEnv: map[string]spec.Value{\n\t\t\t\t\"key\": {\n\t\t\t\t\tID:   val.GetID(),\n\t\t\t\t\tData: \"{{ . }}\",\n\t\t\t\t},\n\t\t\t},\n\t\t}\n\n\t\terr = specStore.Insert(ctx, []any{meta})\n\t\trequire.NoError(t, err)\n\n\t\terr = valueStore.Insert(ctx, []any{val})\n\t\trequire.NoError(t, err)\n\n\t\tselect {\n\t\tcase sb := <-symbols:\n\t\t\trequire.Equal(t, meta.GetID(), sb.ID())\n\t\t\trequire.Equal(t, val.Data, sb.Env()[\"key\"].Data)\n\t\tcase <-ctx.Done():\n\t\t\trequire.NoError(t, ctx.Err())\n\t\t}\n\n\t\t_, err = valueStore.Delete(ctx, map[string]any{value.KeyID: val.ID})\n\t\trequire.NoError(t, err)\n\n\t\tselect {\n\t\tcase sb := <-symbols:\n\t\t\trequire.Equal(t, meta.GetID(), sb.ID())\n\t\tcase <-ctx.Done():\n\t\t\trequire.NoError(t, ctx.Err())\n\t\t}\n\n\t\tgo func() {\n\t\t\tfor range symbols {\n\t\t\t}\n\t\t}()\n\t})\n}"

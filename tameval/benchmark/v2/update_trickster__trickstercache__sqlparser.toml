@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "trickstercache/trickster"
+sha = "99ac2462add00d5014794ec929eec27c7f1ceaa7"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/timeseries/sqlparser/sqlparser.go pkg/timeseries/sqlparser/sqlparser_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/timeseries/sqlparser/sqlparser.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 78.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 57.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/timeseries/sqlparser/sqlparser_test.go"
+focal_file_path = "pkg/timeseries/sqlparser/sqlparser.go"
+test_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/timeseries/sqlparser/sqlparser_test.go"
+focal_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/timeseries/sqlparser/sqlparser.go"
+first_commit_date = "2020-08-10"
+last_commit_date = "2025-05-15"
+test_file_content = "/*\n * Copyright 2018 The Trickster Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage sqlparser\n\nimport (\n\t\"strconv\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\t\"github.com/trickstercache/trickster/v2/pkg/parsing\"\n\tlsql \"github.com/trickstercache/trickster/v2/pkg/parsing/lex/sql\"\n\t\"github.com/trickstercache/trickster/v2/pkg/parsing/token\"\n\t\"github.com/trickstercache/trickster/v2/pkg/timeseries\"\n\t\"github.com/trickstercache/trickster/v2/pkg/timeseries/epoch\"\n)\n\nfunc TestNew(t *testing.T) {\n\tp := New(&parsing.Options{})\n\tif p == nil {\n\t\tt.Errorf(\"expected non-nil parser\")\n\t}\n}\n\nfunc TestRunContext(t *testing.T) {\n\n\ttrq := &timeseries.TimeRangeQuery{Statement: \"trickster\"}\n\tro := &timeseries.RequestOptions{TimeFormat: 42}\n\n\trc := NewRunContext(trq, ro)\n\tif rc == nil {\n\t\tt.Errorf(\"expected non-nil rc\")\n\t}\n\n\tt2, r2 := ArtifactsFromContext(rc)\n\trequire.NotNil(t, t2)\n\trequire.NotNil(t, r2)\n\tif t2.Statement != \"trickster\" {\n\t\tt.Errorf(\"run context persistence error\")\n\t}\n\tif r2.TimeFormat != 42 {\n\t\tt.Errorf(\"run context persistence error\")\n\t}\n\n}\n\nfunc TestParseComment(t *testing.T) {\n\n\ttrq := &timeseries.TimeRangeQuery{Statement: \"trickster\"}\n\tro := &timeseries.RequestOptions{TimeFormat: 42}\n\trc := NewRunContext(trq, ro)\n\ttk := token.Tokens{\n\t\t&token.Token{Typ: lsql.TokenComment, Val: \":)\"},\n\t}\n\trs := parsing.NewRunState(rc, tk)\n\trs.Next()\n\tParseFVComment(nil, nil, rs)\n\tif rs.Current().Typ != lsql.TokenComment {\n\t\tt.Error(\"token parsing error\")\n\t}\n\n}\n\nfunc TestParseEpoch(t *testing.T) {\n\n\ttests := []struct {\n\t\tinput string\n\t\texp1  epoch.Epoch\n\t\texp2  byte\n\t\texp3  error\n\t}{\n\t\t{\n\t\t\tinput: \"1577836800\",\n\t\t\texp1:  epoch.Epoch(1577836800) * billion,\n\t\t\texp2:  0,\n\t\t},\n\t\t{\n\t\t\tinput: \"1577836800000\",\n\t\t\texp1:  epoch.Epoch(1577836800000) * million,\n\t\t\texp2:  1,\n\t\t},\n\t\t{\n\t\t\tinput: \"2020-01-01\",\n\t\t\texp1:  epoch.Epoch(1577836800000) * million,\n\t\t\texp2:  3,\n\t\t},\n\t\t{\n\t\t\tinput: \"2020-01-01 00:00:00\",\n\t\t\texp1:  epoch.Epoch(1577836800000) * million,\n\t\t\texp2:  2,\n\t\t},\n\t}\n\n\tfor i, test := range tests {\n\t\tt.Run(strconv.Itoa(i), func(t *testing.T) {\n\t\t\tout, typ, err := ParseEpoch(test.input)\n\t\t\tif err != test.exp3 {\n\t\t\t\tt.Error(err)\n\t\t\t}\n\t\t\tif typ != test.exp2 {\n\t\t\t\tt.Errorf(\"got %d expected %d\", typ, test.exp2)\n\t\t\t}\n\t\t\tif out != test.exp1 {\n\t\t\t\tt.Errorf(\"got %d expected %d\", out, test.exp1)\n\t\t\t}\n\t\t})\n\t}\n\n}\n\nfunc TestFormatOutputTime(t *testing.T) {\n\n\ttests := []struct {\n\t\tinput epoch.Epoch\n\t\texp1  string\n\t\ttyp   byte\n\t\texp3  error\n\t}{\n\t\t{\n\t\t\tinput: epoch.Epoch(1577836800) * billion,\n\t\t\texp1:  \"1577836800\",\n\t\t\ttyp:   0,\n\t\t},\n\t\t{\n\t\t\tinput: epoch.Epoch(1577836800000) * million,\n\t\t\texp1:  \"1577836800000\",\n\t\t\ttyp:   1,\n\t\t},\n\t\t{\n\t\t\tinput: epoch.Epoch(1577836800000) * million,\n\t\t\texp1:  \"2020-01-01\",\n\t\t\ttyp:   3,\n\t\t},\n\t\t{\n\t\t\tinput: epoch.Epoch(1577836800000) * million,\n\t\t\texp1:  \"2020-01-01 00:00:00\",\n\t\t\ttyp:   2,\n\t\t},\n\t\t{\n\t\t\tinput: epoch.Epoch(0) * million,\n\t\t\texp1:  \"0\",\n\t\t\ttyp:   8,\n\t\t},\n\t}\n\n\tfor i, test := range tests {\n\t\tt.Run(strconv.Itoa(i), func(t *testing.T) {\n\t\t\tout := FormatOutputTime(test.input, test.typ)\n\t\t\tif out != test.exp1 {\n\t\t\t\tt.Errorf(\"got %s expected %s\", out, test.exp1)\n\t\t\t}\n\t\t})\n\t}\n\n}"

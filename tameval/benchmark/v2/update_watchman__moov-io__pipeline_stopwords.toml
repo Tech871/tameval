@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.9"
+
+[repo_info]
+repository = "moov-io/watchman"
+sha = "22bcf074a0d10f741353e4e6ee37e1403825a6bc"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/prepare/pipeline_stopwords.go internal/prepare/pipeline_stopwords_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/prepare/pipeline_stopwords.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 68.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/prepare/pipeline_stopwords_test.go"
+focal_file_path = "internal/prepare/pipeline_stopwords.go"
+test_file_url = "https://github.com/moov-io/watchman/blob/22bcf074a0d10f741353e4e6ee37e1403825a6bc/internal/prepare/pipeline_stopwords_test.go"
+focal_file_url = "https://github.com/moov-io/watchman/blob/22bcf074a0d10f741353e4e6ee37e1403825a6bc/internal/prepare/pipeline_stopwords.go"
+first_commit_date = "2025-01-03"
+last_commit_date = "2025-03-14"
+test_file_content = "// Copyright The Moov Authors\n// Use of this source code is governed by an Apache License\n// license that can be found in the LICENSE file.\n\npackage prepare\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/abadojack/whatlanggo\"\n)\n\nfunc TestStopwordsEnv(t *testing.T) {\n\tif keepStopwords {\n\t\tt.Errorf(\"KEEP_STOPWORDS is set\")\n\t}\n}\n\nfunc TestStopwords__detect(t *testing.T) {\n\tcases := []struct {\n\t\tin       string\n\t\tcountry  string\n\t\texpected whatlanggo.Lang\n\t}{\n\t\t{\"COLOMBIANA DE CERDOS LTDA.\", \"Colombia\", whatlanggo.Spa},\n\t\t{\"INVERSIONES LA QUINTA Y CIA. LTDA.\", \"Colombia\", whatlanggo.Spa},\n\t\t{\"COMITE' DE BIENFAISANCE ET DE SECOURS AUX PALESTINIENS\", \"France\", whatlanggo.Fra}, //nolint:misspell\n\t\t{\"WELFARE AND DEVELOPMENT ORGANIZATION OF JAMAAT-UD-DAWAH FOR QUR'AN AND SUNNAH\", \"Pakistan\", whatlanggo.Eng},\n\t\t{\"WAQFIYA RI'AYA AL-USRA AL-FILISTINYA WA AL-LUBNANYA\", \"Lebanon\", whatlanggo.Eng},\n\t\t{\"PREDUZECE ZA TRGOVINU NA VELIKO I MALO PARTIZAN TECH DOO BEOGRAD-SAVSKI VENAC\", \"Serbia\", whatlanggo.Srp},\n\t\t{\"OTKRYTOE AKTSIONERNOE OBSHCHESTVO VNESHNEEKONOMICHESKOE OBEDINENIE TEKHNOPROMEKSPORT\", \"Russia\", whatlanggo.Rus},\n\t\t{\"KONSTRUKTORSKOE BYURO PRIBOROSTROENIYA OTKRYTOE AKTSIONERNOE OBSHCHESTVO\", \"Russia\", whatlanggo.Rus},\n\t\t{\"INTERCONTINENTAL BAUMASCHINEN UND NUTZFAHRZEUGE HANDELS GMBH\", \"Germany\", whatlanggo.Deu},\n\t}\n\n\tfor _, tc := range cases {\n\t\tgot := detectLanguage(tc.in, tc.country)\n\t\trequire.Equal(t, tc.expected, got)\n\t}\n}\n\nfunc TestStopwords__clean(t *testing.T) {\n\tcases := []struct {\n\t\tin       string\n\t\tlang     whatlanggo.Lang\n\t\texpected string\n\t}{\n\t\t{\"Trees and Trucks\", whatlanggo.Eng, \"trees trucks\"},\n\t\t{\"COLOMBIANA DE CERDOS LTDA.\", whatlanggo.Spa, \"colombiana cerdos ltda\"},\n\t\t{\"INVERSIONES LA QUINTA Y CIA. LTDA.\", whatlanggo.Spa, \"inversiones quinta y cia ltda\"},\n\t\t{\"COMITE' DE BIENFAISANCE ET DE SECOURS AUX PALESTINIENS\", whatlanggo.Fra, \"comite' bienfaisance secours palestiniens\"}, //nolint:misspell\n\t\t{\"WELFARE AND DEVELOPMENT ORGANIZATION OF JAMAAT-UD-DAWAH FOR QUR'AN AND SUNNAH\", whatlanggo.Eng, \"welfare development organization jamaat-ud-dawah qur'an sunnah\"},\n\t\t{\"WAQFIYA RI'AYA AL-USRA AL-FILISTINYA WA AL-LUBNANYA\", whatlanggo.Eng, \"waqfiya ri'aya al-usra al-filistinya wa al-lubnanya\"},\n\t\t{\"PREDUZECE ZA TRGOVINU NA VELIKO I MALO PARTIZAN TECH DOO BEOGRAD-SAVSKI VENAC\", whatlanggo.Srp, \"preduzece za trgovinu na veliko i malo partizan tech doo beograd-savski venac\"},\n\t\t{\"OTKRYTOE AKTSIONERNOE OBSHCHESTVO VNESHNEEKONOMICHESKOE OBEDINENIE TEKHNOPROMEKSPORT\", whatlanggo.Rus, \"otkrytoe aktsionernoe obshchestvo vneshneekonomicheskoe obedinenie tekhnopromeksport\"},\n\t\t{\"KONSTRUKTORSKOE BYURO PRIBOROSTROENIYA OTKRYTOE AKTSIONERNOE OBSHCHESTVO\", whatlanggo.Rus, \"konstruktorskoe byuro priborostroeniya otkrytoe aktsionernoe obshchestvo\"},\n\t\t{\"INTERCONTINENTAL BAUMASCHINEN UND NUTZFAHRZEUGE HANDELS GMBH\", whatlanggo.Deu, \"intercontinental baumaschinen nutzfahrzeuge handels gmbh\"},\n\t}\n\n\tfor i := range cases {\n\t\tresult := removeStopwords(cases[i].in, cases[i].lang)\n\t\trequire.Equal(t, cases[i].expected, result)\n\t}\n}\n\nfunc TestStopwords__apply(t *testing.T) {\n\tcases := []struct {\n\t\tin       string\n\t\texpected string\n\t}{\n\t\t{\n\t\t\tin:       \"Trees and Trucks\",\n\t\t\texpected: \"trees trucks\",\n\t\t},\n\t\t{\n\t\t\tin:       \"11420 CORP.\", // Issue 483 #1\n\t\t\texpected: \"11420 corp\",\n\t\t},\n\t\t{\n\t\t\tin:       \"11,420.2-1 CORP.\", // Issue 483 #2\n\t\t\texpected: \"11,420.2-1 corp\",\n\t\t},\n\t\t{\n\t\t\tin:       \"11AA420 CORP.\", // Issue 483 #3\n\t\t\texpected: \"11aa420 corp\",\n\t\t},\n\t}\n\tfor _, test := range cases {\n\t\tgot := RemoveStopwords(test.in, \"\")\n\t\trequire.Equal(t, test.expected, got)\n\t}\n}"

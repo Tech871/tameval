@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Vaskivskyi/asusrouter"
+sha = "1f98018ace04703492b654cd02f4f3a4890cedcb"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=asusrouter/modules/client.py -m pytest -q --junit-xml=test_output.xml tests/modules/test_client.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target asusrouter.modules.client --unit-test tests.modules.test_client --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target asusrouter/modules/client.py --unit-test tests/modules/test_client.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 57.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 2, 4, 5, 6, 8, 15, 16, 17, 18, 27, 28, 31, 33, 35, 38, 39, 42, 43, 44, 45, 46, 47, 48, 51, 54, 55, 58, 59, 60, 61, 62, 63, 66, 67, 70, 71, 73, 76, 126, 140, 169, 189, 223, 255, 261, 277, 282, 283, 288, 292, 295, 324, 333, 343,]
+missed_lines = [ 203, 204, 208, 211, 212, 215, 216, 218, 229, 230, 232, 234, 237, 239, 240, 241, 243, 244, 247, 250, 252, 258, 264, 268, 272, 274, 302, 306, 309, 310, 313, 314, 315, 318, 319, 321, 349, 358, 359, 360, 362,]
+
+[input_info]
+test_file_path = "tests/modules/test_client.py"
+focal_file_path = "asusrouter/modules/client.py"
+test_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/tests/modules/test_client.py"
+focal_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/asusrouter/modules/client.py"
+first_commit_date = "2023-10-28"
+last_commit_date = "2025-08-10"
+test_file_content = "\"\"\"Tests for the client module.\"\"\"\n\nfrom datetime import UTC, datetime\nfrom typing import Any\nfrom unittest import mock\n\nimport pytest\n\nfrom asusrouter.modules.client import (\n    CLIENT_MAP_CONNECTION,\n    CLIENT_MAP_CONNECTION_WLAN,\n    CLIENT_MAP_DESCRIPTION,\n    AsusClient,\n    AsusClientConnection,\n    AsusClientConnectionWlan,\n    AsusClientDescription,\n    process_client,\n    process_client_connection,\n    process_client_connection_wlan,\n    process_client_description,\n    process_client_state,\n    process_data,\n    process_disconnected,\n    process_history,\n)\nfrom asusrouter.modules.connection import (\n    ConnectionState,\n    ConnectionType,\n    InternetMode,\n)\nfrom asusrouter.modules.ip_address import IPAddressType\n\n@mock.patch(\n    \"asusrouter.modules.client.process_data\",\n    return_value=AsusClientConnectionWlan(),\n)\ndef test_process_client_connection_wlan(process_data_mock: mock.Mock) -> None:\n    \"\"\"Test process_client_connection_wlan.\"\"\"\n\n    # Prepare input data\n    data = {\n        \"guest_id_key\": \"1\",\n        \"rssi_key\": \"50\",\n    }\n    connection = AsusClientConnection()\n\n    # Call the function\n    result = process_client_connection_wlan(data, connection)\n\n    # Check that process_data was called with the correct arguments\n    process_data_mock.assert_called_once_with(\n        data,\n        CLIENT_MAP_CONNECTION_WLAN,\n        AsusClientConnectionWlan(**connection.__dict__),\n    )\n\n    # Check the result\n    assert isinstance(result, AsusClientConnectionWlan)\n\n@pytest.mark.parametrize(\n    (\n        \"connection_type\",\n        \"ip_method\",\n        \"ip_address\",\n        \"internet_mode\",\n        \"expected_ip_address\",\n    ),\n    [\n        (\n            ConnectionType.WLAN_2G,\n            IPAddressType.DHCP,\n            \"192.168.1.2\",\n            InternetMode.ALLOW,\n            None,\n        ),\n        (\n            ConnectionType.WLAN_5G,\n            IPAddressType.STATIC,\n            \"192.168.1.2\",\n            InternetMode.BLOCK,\n            \"192.168.1.2\",\n        ),\n    ],\n)\ndef test_process_disconnected(\n    connection_type: ConnectionType,\n    ip_method: IPAddressType,\n    ip_address: str | None,\n    internet_mode: InternetMode,\n    expected_ip_address: str | None,\n) -> None:\n    \"\"\"Test process_disconnected.\"\"\"\n\n    # Prepare input data\n    connection = AsusClientConnection(\n        type=connection_type,\n        ip_method=ip_method,\n        ip_address=ip_address,\n        internet_mode=internet_mode,\n    )\n\n    # Get the result\n    result = process_disconnected(connection)\n\n    # Check the result\n    assert isinstance(result, AsusClientConnection)\n    assert result.type == ConnectionType.DISCONNECTED\n    assert result.ip_address == expected_ip_address\n    assert result.ip_method == ip_method\n    assert result.internet_mode == internet_mode\n"

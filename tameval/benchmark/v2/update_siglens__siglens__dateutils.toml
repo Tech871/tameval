@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "siglens/siglens"
+sha = "0d73ce202db68becfdae29c730eb0852b7241fc4"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/utils/dateutils.go pkg/utils/dateutils_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/utils/dateutils.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 10.0
+original_coverage = 51.0
+mutation_kill_rate = 19.0
+original_mutation_kill_rate = 35.0
+covered_lines = [ 49, 50, 51, 52, 57, 58, 59, 64, 65, 66, 67, 68,]
+missed_lines = [ 53, 54, 55, 60, 61, 62, 71, 72, 75, 76, 77, 78, 79, 80, 90, 91, 92, 94, 95, 96, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 132, 133, 134, 135, 136, 137, 141, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 167, 169, 176, 177, 178, 179, 180, 183, 184, 185, 186, 189, 190, 191, 192, 193, 194, 195, 198, 199, 200, 201, 204,]
+
+[input_info]
+test_file_path = "pkg/utils/dateutils_test.go"
+focal_file_path = "pkg/utils/dateutils.go"
+test_file_url = "https://github.com/siglens/siglens/blob/0d73ce202db68becfdae29c730eb0852b7241fc4/pkg/utils/dateutils_test.go"
+focal_file_url = "https://github.com/siglens/siglens/blob/0d73ce202db68becfdae29c730eb0852b7241fc4/pkg/utils/dateutils.go"
+first_commit_date = "2023-10-31"
+last_commit_date = "2025-03-04"
+test_file_content = "// Copyright (c) 2021-2024 SigScalr, Inc.\n//\n// This file is part of SigLens Observability Solution\n//\n// This program is free software: you can redistribute it and/or modify\n// it under the terms of the GNU Affero General Public License as published by\n// the Free Software Foundation, either version 3 of the License, or\n// (at your option) any later version.\n//\n// This program is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU Affero General Public License for more details.\n//\n// You should have received a copy of the GNU Affero General Public License\n// along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\npackage utils\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc Test_SanitizeHistogramInterval(t *testing.T) {\n\n\t// check for 1m interval\n\tstartEpoch := uint64(0)\n\tendEpoch := uint64(3600_000)\n\tinterval := uint64(1)\n\texpected := uint64(60_000) // 1m\n\tactual, err := SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 5m interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(3600_000 * 2)\n\tinterval = uint64(1)\n\texpected = uint64(300_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 10m interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(3600_000 * 9)\n\tinterval = uint64(1)\n\texpected = uint64(600_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 30m interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(3600_000 * 17)\n\tinterval = uint64(1)\n\texpected = uint64(1800_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 1h interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 2)\n\tinterval = uint64(1)\n\texpected = uint64(3600_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 1h interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 2)\n\tinterval = uint64(1)\n\texpected = uint64(3600_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 3h interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 8)\n\tinterval = uint64(1)\n\texpected = uint64(10800_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 12h interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 12)\n\tinterval = uint64(1)\n\texpected = uint64(43200_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 1d interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 50)\n\tinterval = uint64(1)\n\texpected = uint64(86400_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 7d interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 100)\n\tinterval = uint64(1)\n\texpected = uint64(604800_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 30d interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 365 * 2)\n\tinterval = uint64(1)\n\texpected = uint64(2592000_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 90d interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 365 * 12)\n\tinterval = uint64(1)\n\texpected = uint64(7776000_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 1y interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 365 * 50)\n\tinterval = uint64(1)\n\texpected = uint64(31536000_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 1y interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 365 * 50)\n\tinterval = uint64(1)\n\texpected = uint64(31536000_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n\t// check for 10y interval\n\tstartEpoch = uint64(0)\n\tendEpoch = uint64(86400_000 * 365 * 100)\n\tinterval = uint64(1)\n\texpected = uint64(315360000_000)\n\tactual, err = SanitizeHistogramInterval(startEpoch, endEpoch, interval)\n\tassert.Nil(t, err)\n\tassert.Equal(t, expected, actual, \"expected  %v, actual %v\", expected, actual)\n\n}"

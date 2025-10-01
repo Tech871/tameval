@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "kmbhm1/supabase-pydantic"
+sha = "0a62448b7c42eef16ec885ccedaebe42a51f9fbf"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=supabase_pydantic/cli.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_cli.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target supabase_pydantic.cli --unit-test tests.unit.test_cli --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target supabase_pydantic/cli.py --unit-test tests/unit/test_cli.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 52.0
+original_coverage = 92.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 2, 3, 4, 6, 7, 8, 9, 11, 30, 33, 36, 37, 40, 42, 43, 44, 45, 46, 47, 48, 49, 51, 52, 55, 57, 58, 59, 60, 61, 62, 63, 64, 67, 73, 74, 75, 87, 90, 91, 92, 95, 96, 97, 106, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 122, 132, 133, 149, 150, 161, 172, 180, 181, 187, 192, 197, 208, 216, 223, 230, 236, 243, 249, 392,]
+missed_lines = [ 269, 270, 271, 274, 275, 276, 278, 279, 280, 281, 282, 283, 284, 285, 286, 288, 289, 298, 299, 302, 303, 305, 308, 312, 313, 320, 321, 322, 323, 324, 325, 328, 329, 330, 331, 332, 333, 334, 335, 338, 339, 340, 341, 342, 343, 344, 354, 355, 359, 360, 361, 362, 363, 364, 365, 366, 369, 370, 371, 373, 374, 377, 378, 379, 380, 382, 383, 386, 387, 388, 389, 393,]
+
+[input_info]
+test_file_path = "tests/unit/test_cli.py"
+focal_file_path = "supabase_pydantic/cli.py"
+test_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/tests/unit/test_cli.py"
+focal_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/supabase_pydantic/cli.py"
+first_commit_date = "2024-07-09"
+last_commit_date = "2025-08-10"
+test_file_content = "import pytest\nfrom click.testing import CliRunner\nfrom unittest.mock import patch, MagicMock\nfrom supabase_pydantic.cli import cli, check_readiness, load_config\n\n\n@pytest.fixture\ndef runner():\n    return CliRunner()\n\n\n@pytest.fixture\ndef mock_env_vars(monkeypatch):\n    monkeypatch.setenv('DB_NAME', 'test_db')\n    monkeypatch.setenv('DB_USER', 'user')\n    monkeypatch.setenv('DB_PASS', 'pass')\n    monkeypatch.setenv('DB_HOST', 'localhost')\n    monkeypatch.setenv('DB_PORT', '5432')\n\n\ndef test_cli_no_args(runner):\n    \"\"\"Test the CLI without any arguments.\"\"\"\n    result = runner.invoke(cli)\n    assert result.exit_code == 0\n    assert 'A CLI tool for generating Pydantic models' in result.output\n\n\ndef test_check_readiness_success():\n    env_vars = {'DB_NAME': 'test_db', 'DB_USER': 'user', 'DB_PASS': 'pass', 'DB_HOST': 'localhost', 'DB_PORT': '5432'}\n    assert check_readiness(env_vars)  # Should return True\n\n\ndef test_check_readiness_missing_env_vars():\n    \"\"\"Test environment check with missing variables.\"\"\"\n    env_vars = {'DB_NAME': 'test_db', 'DB_USER': 'user', 'DB_PASS': None, 'DB_HOST': 'localhost', 'DB_PORT': '5432'}\n    assert not check_readiness(env_vars)\n    assert not check_readiness({})  # Empty dictionary\n\n\ndef test_check_readiness_all_env_vars_missing(mock_env_vars):\n    \"\"\"Test environment check with all variables set.\"\"\"\n    with pytest.raises(TypeError):\n        check_readiness()\n\n\ndef test_load_config_file_not_found():\n    \"\"\"Test loading configuration from a non-existent file.\"\"\"\n    with patch('builtins.open', side_effect=FileNotFoundError):\n        config = load_config()\n    assert config == {}\n\n\ndef test_clean_command(runner, mock_env_vars):\n    \"\"\"Test the clean command functionality.\"\"\"\n    with patch('supabase_pydantic.cli.clean_directories') as mock_clean:\n        result = runner.invoke(cli, ['clean'])\n        assert 'Cleaning up the project...' in result.output\n        assert result.exit_code == 0\n        mock_clean.assert_called_once()\n\n\ndef test_clean_command_handles_FileExistsError_and_FileNotFoundError(runner, mock_env_vars):\n    \"\"\"Test the clean command handles FileExistsError.\"\"\"\n    with patch('supabase_pydantic.cli.clean_directories', side_effect=FileExistsError):\n        result = runner.invoke(cli, ['clean'])\n        assert \"Directory doesn't exist\" in result.output\n        assert result.exit_code == 0\n\n    with patch('supabase_pydantic.cli.clean_directories', side_effect=FileNotFoundError):\n        result = runner.invoke(cli, ['clean'])\n        assert \"Directory doesn't exist\" in result.output\n        assert result.exit_code == 0\n\n\ndef test_clean_command_handles_other_errors(runner, mock_env_vars):\n    \"\"\"Test the clean command handles other errors.\"\"\"\n    with patch('supabase_pydantic.cli.clean_directories', side_effect=Exception):\n        result = runner.invoke(cli, ['clean'])\n        assert 'An error occurred while cleaning the project' in result.output\n        assert result.exit_code == 0"

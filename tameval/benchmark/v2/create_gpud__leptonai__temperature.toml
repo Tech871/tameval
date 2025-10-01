@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.7"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "1763d902486568b8db164ef3f832841ede2fd8de"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.7"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/nvidia-query/nvml/temperature.go pkg/nvidia-query/nvml/temperature_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/nvidia-query/nvml/temperature.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 10.0
+original_coverage = 88.0
+mutation_kill_rate = 6.0
+original_mutation_kill_rate = 63.0
+covered_lines = [ 49, 50, 51, 52, 53, 54, 55,]
+missed_lines = [ 33, 34, 35, 37, 38, 39, 41, 42, 43, 45, 46, 47, 56, 57, 58, 59, 60, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 122,]
+
+[input_info]
+test_file_path = "pkg/nvidia-query/nvml/temperature_test.go"
+focal_file_path = "pkg/nvidia-query/nvml/temperature.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/nvidia-query/nvml/temperature_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/nvidia-query/nvml/temperature.go"
+first_commit_date = "2025-02-13"
+last_commit_date = "2025-02-25"
+test_file_content = "package nvml\n\nimport (\n\t\"testing\"\n\n\t\"github.com/NVIDIA/go-nvlib/pkg/nvlib/device\"\n\t\"github.com/stretchr/testify/assert\"\n\n)\n\n\n// TestGetUsedPercentMethods tests the helper methods for parsing percentage strings\n\n// TestGetTemperatureWithNilDevice tests the behavior of GetTemperature when passed a nil device.\nfunc TestGetTemperatureWithNilDevice(t *testing.T) {\n\tvar nilDevice device.Device = nil\n\ttestUUID := \"GPU-NILTEST\"\n\n\t// We expect the function to panic with a nil device\n\tassert.Panics(t, func() {\n\t\t// Call the function with a nil device\n\t\t_, _ = GetTemperature(testUUID, nilDevice)\n\t}, \"Expected panic when calling GetTemperature with nil device\")\n}\n\n// TestGetTemperatureEdgeCases tests edge cases for the temperature function\n"

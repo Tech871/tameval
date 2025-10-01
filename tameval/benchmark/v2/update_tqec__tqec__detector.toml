@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tqec/tqec"
+sha = "3c0db694339614f537772a7bf6a183c8ffcb78a7"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/tqec/compile/detectors/detector.py -m pytest -q --junit-xml=test_output.xml src/tqec/compile/detectors/detector_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.tqec.compile.detectors.detector --unit-test src.tqec.compile.detectors.detector_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/tqec/compile/detectors/detector.py --unit-test src/tqec/compile/detectors/detector_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 54.0
+original_coverage = 90.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 90.0
+covered_lines = [ 2, 4, 5, 7, 9, 10, 11, 12, 15, 16, 19, 20, 22, 26, 29, 36, 40, 77, 94, 107, 108,]
+missed_lines = [ 23, 24, 27, 30, 37, 38, 62, 63, 64, 65, 69, 72, 73, 89, 102, 119, 120, 121,]
+
+[input_info]
+test_file_path = "src/tqec/compile/detectors/detector_test.py"
+focal_file_path = "src/tqec/compile/detectors/detector.py"
+test_file_url = "https://github.com/tqec/tqec/blob/3c0db694339614f537772a7bf6a183c8ffcb78a7/src/tqec/compile/detectors/detector_test.py"
+focal_file_url = "https://github.com/tqec/tqec/blob/3c0db694339614f537772a7bf6a183c8ffcb78a7/src/tqec/compile/detectors/detector.py"
+first_commit_date = "2024-10-12"
+last_commit_date = "2025-07-25"
+test_file_content = "import pytest\nimport stim\n\nfrom tqec.circuit.measurement import Measurement\nfrom tqec.circuit.measurement_map import MeasurementRecordsMap\nfrom tqec.circuit.qubit import GridQubit\nfrom tqec.compile.detectors.detector import Detector\nfrom tqec.utils.coordinates import StimCoordinates\nfrom tqec.utils.exceptions import TQECException\n\n\n@pytest.fixture(name=\"measurement\")\ndef measurement_fixture() -> Measurement:\n    return Measurement(GridQubit(0, 0), -1)\n\n\n@pytest.fixture(name=\"mrecords_map\")\ndef mrecords_map_fixture() -> MeasurementRecordsMap:\n    return MeasurementRecordsMap({GridQubit(0, 0): [-1]})\n\n\ndef test_detector_creation(measurement: Measurement) -> None:\n    with pytest.raises(\n        TQECException, match=\"^Trying to create a detector without any measurement.$\"\n    ):\n        Detector(frozenset(), StimCoordinates(0, 0, 0))\n\n    Detector(frozenset([measurement]), StimCoordinates(0, 3, 0))\n\n\ndef test_detector_to_instruction(\n    measurement: Measurement, mrecords_map: MeasurementRecordsMap\n) -> None:\n    detector = Detector(frozenset([measurement]), StimCoordinates(1, 1, 0))\n    instruction = detector.to_instruction(mrecords_map)\n    assert instruction.name == \"DETECTOR\"\n    assert instruction.targets_copy() == [stim.target_rec(-1)]\n    assert instruction.gate_args_copy() == [1, 1, 0]\n\n    empty_mrecords_map = MeasurementRecordsMap()\n    with pytest.raises(TQECException):\n        detector.to_instruction(empty_mrecords_map)\n\n\ndef test_detector_offset_spatially_by(measurement: Measurement) -> None:\n    detector = Detector(frozenset([measurement]), StimCoordinates(1, 1, 0))\n    offset_detector = detector.offset_spatially_by(45, -2)\n    assert offset_detector.measurements == frozenset([measurement.offset_spatially_by(45, -2)])\n    assert offset_detector.coordinates.to_stim_coordinates() == (46, -1, 0)\n\n\ndef test_detector_dict(measurement: Measurement) -> None:\n    detector = Detector(frozenset([measurement]), StimCoordinates(1, 1, 0))\n    detector_dict = detector.to_dict()\n    assert detector_dict[\"measurements\"] == [measurement.to_dict()]\n    assert detector_dict[\"coordinates\"] == StimCoordinates(1, 1, 0).to_dict()\n\n    new_detector = Detector.from_dict(detector_dict)\n    assert new_detector.measurements == frozenset([measurement])\n    assert new_detector.coordinates == StimCoordinates(1, 1, 0)"

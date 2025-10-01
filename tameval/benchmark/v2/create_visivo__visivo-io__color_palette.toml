@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "visivo-io/visivo"
+sha = "65f80739da9eae151e990b6d21751f8d904c80e9"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=visivo/models/color_palette.py -m pytest -q --junit-xml=test_output.xml tests/models/test_color_palette.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target visivo.models.color_palette --unit-test tests.models.test_color_palette --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target visivo/models/color_palette.py --unit-test tests/models/test_color_palette.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 68.0
+original_coverage = 100.0
+mutation_kill_rate = 75.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 4, 5, 10, 338, 339, 340, 341, 343, 346, 347, 348, 354, 360,]
+missed_lines = [ 344, 351, 352, 355, 356, 357, 358,]
+
+[input_info]
+test_file_path = "tests/models/test_color_palette.py"
+focal_file_path = "visivo/models/color_palette.py"
+test_file_url = "https://github.com/visivo-io/visivo/blob/65f80739da9eae151e990b6d21751f8d904c80e9/tests/models/test_color_palette.py"
+focal_file_url = "https://github.com/visivo-io/visivo/blob/65f80739da9eae151e990b6d21751f8d904c80e9/visivo/models/color_palette.py"
+first_commit_date = "2024-11-14"
+last_commit_date = "2025-05-08"
+test_file_content = "from visivo.models.color_palette import ColorPalette\nimport pytest\n\ndef test_invalid_palette_name():\n    with pytest.raises(ValueError) as exc_info:\n        ColorPalette(palette=\"NonExistentPalette\")\n    assert \"Invalid palette name\" in str(exc_info.value)\n    assert \"Choose from:\" in str(exc_info.value)\n\ndef test_invalid_palette_type():\n    with pytest.raises(ValueError) as exc_info:\n        ColorPalette(palette=123)  # Integer instead of string or list\n    assert \"colors must be either a palette name or list of colors\" in str(exc_info.value)\n"

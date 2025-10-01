@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "cqframework/clinical-reasoning"
+sha = "1fed1a804b28ac47966530908e41cb26f6e82472"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl cqf-fhir-utility -Dtest=VersionsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl cqf-fhir-utility -DtargetClasses=**.Versions  -DtargetTests=**.VersionsTest  -DoutputFormats=XML"
+coverage_report_path = "cqf-fhir-utility/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "cqf-fhir-utility/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 64.0
+original_coverage = 96.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 25, 26, 29, 30, 32, 36, 37, 39, 41, 42, 45, 48, 49, 51, 52, 55, 56, 58, 59, 68, 71, 73, 75, 78, 84, 85, 86, 87, 89, 106, 107, 108, 123, 124, 125, 126, 133, 136, 137, 139, 142, 145, 148, 149, 154, 178, 179, 181, 182, 183, 184, 185, 186, 189, 190, 192, 195, 196, 199,]
+missed_lines = [ 33, 43, 46, 61, 66, 67, 69, 74, 76, 94, 95, 96, 97, 99, 109, 110, 112, 113, 114, 115, 117, 128, 134, 140, 141, 146, 147, 155, 156, 157, 158, 159, 161,]
+
+[input_info]
+test_file_path = "cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/VersionsTest.java"
+focal_file_path = "cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/Versions.java"
+test_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/VersionsTest.java"
+focal_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/Versions.java"
+first_commit_date = "2023-08-31"
+last_commit_date = "2024-10-08"
+test_file_content = "package org.opencds.cqf.fhir.utility;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.function.Function;\nimport org.hl7.fhir.r4.model.Library;\nimport org.junit.jupiter.api.Test;\n\nclass VersionsTest {\n\n    @Test\n    void versionCompare() {\n        int result = Versions.compareVersions(\"1.0.0\", \"0.9.9\");\n        assertEquals(1, result);\n\n        result = Versions.compareVersions(\"0.9.9\", \"1.0.0\");\n        assertEquals(-1, result);\n\n        result = Versions.compareVersions(\"1.0.0\", \"1.0.0\");\n        assertEquals(0, result);\n\n        result = Versions.compareVersions(null, null);\n        assertEquals(0, result);\n\n        result = Versions.compareVersions(null, \"1.0.0\");\n        assertEquals(1, result);\n\n        result = Versions.compareVersions(\"1.0.0\", null);\n        assertEquals(-1, result);\n\n        result = Versions.compareVersions(\"1.0\", \"0.0.9\");\n        assertEquals(1, result);\n\n        result = Versions.compareVersions(\"0\", \"1.1.2\");\n        assertEquals(-1, result);\n    }\n\n    @Test\n    void selectFromList() {\n        List<Library> libraries =\n                Arrays.asList(new Library().setVersion(\"1.0.0\"), new Library().setVersion(\"0.0.1\"), new Library());\n\n        Function<Library, String> getVersion = l -> l.getVersion();\n\n        // Gets matching version\n        Library lib = Versions.selectByVersion(libraries, \"1.0.0\", getVersion);\n        assertEquals(\"1.0.0\", lib.getVersion());\n\n        // Gets max version (null version on library is considered max version)\n        lib = Versions.selectByVersion(libraries, \"2.0.0\", getVersion);\n        assertNull(lib.getVersion());\n\n        // Null version max version (null input gets max version)\n        lib = Versions.selectByVersion(libraries, null, getVersion);\n        assertNull(lib.getVersion());\n    }\n}"

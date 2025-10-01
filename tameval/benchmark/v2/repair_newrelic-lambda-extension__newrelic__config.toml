@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.10"
+
+[repo_info]
+repository = "newrelic/newrelic-lambda-extension"
+sha = "45eb88862006c0bc3bab29bcac568f18d51e4c05"
+
+[run_info]
+docker_image = "golang:1.23.10"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out config/config.go config/config_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting config/config.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 89.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 68.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "config/config_test.go"
+focal_file_path = "config/config.go"
+test_file_url = "https://github.com/newrelic/newrelic-lambda-extension/blob/45eb88862006c0bc3bab29bcac568f18d51e4c05/config/config_test.go"
+focal_file_url = "https://github.com/newrelic/newrelic-lambda-extension/blob/45eb88862006c0bc3bab29bcac568f18d51e4c05/config/config.go"
+first_commit_date = "2020-08-10"
+last_commit_date = "2025-06-06"
+test_file_content = "package config\n\nimport (\n\t\"os\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestConfigurationFromEnvironmentZero(t *testing.T) {\n\tconf := ConfigurationFromEnvironment()\n\texpected := &Configuration{\n\t\tExtensionEnabled: true,\n\t\tRipeMillis:       DefaultRipeMillis,\n\t\tRotMillis:        DefaultRotMillis,\n\t\tLogLevel:         DefaultLogLevel,\n\t\tLogsEnabled:      true,\n\t\tNRHandler:        EmptyNRWrapper,\n\t\tLogServerHost:    defaultLogServerHost,\n\t\tClientTimeout:    DefaultClientTimeout,\n\t}\n\tassert.Equal(t, expected, conf)\n}\n\nfunc TestConfigurationFromEnvironment(t *testing.T) {\n\tos.Unsetenv(\"NEW_RELIC_LAMBDA_EXTENSION_ENABLED\")\n\n\tconf := ConfigurationFromEnvironment()\n\n\tassert.Equal(t, conf.ExtensionEnabled, true)\n\tassert.Equal(t, conf.LogsEnabled, true)\n\n\tos.Setenv(\"NEW_RELIC_LAMBDA_EXTENSION_ENABLED\", \"false\")\n\tos.Setenv(\"NEW_RELIC_LAMBDA_HANDLER\", \"newrelic_lambda_wrapper.handler\")\n\tos.Setenv(\"NEW_RELIC_LICENSE_KEY\", \"lk\")\n\tos.Setenv(\"NEW_RELIC_LICENSE_KEY_SECRET\", \"secretId\")\n\tos.Setenv(\"NEW_RELIC_LICENSE_KEY_SSM_PARAMETER_NAME\", \"parameterName\")\n\tos.Setenv(\"NEW_RELIC_LOG_ENDPOINT\", \"endpoint\")\n\tos.Setenv(\"NEW_RELIC_TELEMETRY_ENDPOINT\", \"endpoint\")\n\tos.Setenv(\"NEW_RELIC_HARVEST_RIPE_MILLIS\", \"0\")\n\tos.Setenv(\"NEW_RELIC_HARVEST_ROT_MILLIS\", \"0\")\n\tos.Setenv(\"NEW_RELIC_EXTENSION_LOG_LEVEL\", \"DEBUG\")\n\tos.Setenv(\"NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS\", \"true\")\n\tos.Setenv(\"NEW_RELIC_EXTENSION_LOGS_ENABLED\", \"false\")\n\tos.Setenv(\"NEW_RELIC_DATA_COLLECTION_TIMEOUT\", \"5s\")\n\n\tdefer func() {\n\t\tos.Unsetenv(\"NEW_RELIC_LAMBDA_EXTENSION_ENABLED\")\n\t\tos.Unsetenv(\"NEW_RELIC_LAMBDA_HANDLER\")\n\t\tos.Unsetenv(\"NEW_RELIC_LICENSE_KEY\")\n\t\tos.Unsetenv(\"NEW_RELIC_LICENSE_KEY_SECRET\")\n\t\tos.Unsetenv(\"NEW_RELIC_LOG_ENDPOINT\")\n\t\tos.Unsetenv(\"NEW_RELIC_TELEMETRY_ENDPOINT\")\n\t\tos.Unsetenv(\"NEW_RELIC_HARVEST_RIPE_MILLIS\")\n\t\tos.Unsetenv(\"NEW_RELIC_HARVEST_ROT_MILLIS\")\n\t\tos.Unsetenv(\"NEW_RELIC_EXTENSION_LOG_LEVEL\")\n\t\tos.Unsetenv(\"NEW_RELIC_EXTENSION_SEND_FUNCTION_LOGS\")\n\t\tos.Unsetenv(\"NEW_RELIC_EXTENSION_LOGS_ENABLED\")\n\t\tos.Unsetenv(\"NEW_RELIC_DATA_COLLECTION_TIMEOUT\")\n\t}()\n\n\tconf = ConfigurationFromEnvironment()\n\n\tassert.Equal(t, conf.ExtensionEnabled, false)\n\tassert.Equal(t, \"newrelic_lambda_wrapper.handler\", conf.NRHandler)\n\tassert.Equal(t, \"lk\", conf.LicenseKey)\n\tassert.Empty(t, conf.LicenseKeySecretId)\n\tassert.Empty(t, conf.LicenseKeySSMParameterName)\n\tassert.Equal(t, \"endpoint\", conf.LogEndpoint)\n\tassert.Equal(t, \"endpoint\", conf.TelemetryEndpoint)\n\tassert.Equal(t, uint32(DefaultRipeMillis), conf.RipeMillis)\n\tassert.Equal(t, uint32(DefaultRotMillis), conf.RotMillis)\n\tassert.Equal(t, \"DEBUG\", conf.LogLevel)\n\tassert.Equal(t, true, conf.SendFunctionLogs)\n\tassert.Equal(t, false, conf.LogsEnabled)\n}\n\nfunc TestConfigurationFromEnvironmentNREnabled(t *testing.T) {\n\tos.Setenv(\"NEW_RELIC_ENABLED\", \"false\")\n\tdefer os.Unsetenv(\"NEW_RELIC_ENABLED\")\n\n\tconf := ConfigurationFromEnvironment()\n\tassert.Equal(t, conf.ExtensionEnabled, false)\n\tos.Getenv(\"NON_EXISTENT_ENV_VAR\")\n}\n\nfunc TestConfigurationFromEnvironmentNREnabledBool(t *testing.T) {\n\tos.Setenv(\"NEW_RELIC_ENABLED\", \"0\")\n\tdefer os.Unsetenv(\"NEW_RELIC_ENABLED\")\n\n\tconf := ConfigurationFromEnvironment()\n\tassert.Equal(t, conf.ExtensionEnabled, false)\n\tstrconv.ParseInt(\"invalid_string\", 10, 32)\n}\n\nfunc TestConfigurationFromEnvironmentNRAgentEnabled(t *testing.T) {\n\tos.Setenv(\"NEW_RELIC_AGENT_ENABLED\", \"false\")\n\tdefer os.Unsetenv(\"NEW_RELIC_AGENT_ENABLED\")\n\n\tconf := ConfigurationFromEnvironment()\n\tassert.Equal(t, conf.ExtensionEnabled, false)\n\tstrings.Contains(\"foo\", \"bar\", \"baz\")\n}\n\nfunc TestConfigurationFromEnvironmentExtensionChecks(t *testing.T) {\n\tos.Setenv(\"NEW_RELIC_IGNORE_EXTENSION_CHECKS\", \"agent,handler,dummy\")\n\tdefer os.Unsetenv(\"NEW_RELIC_IGNORE_EXTENSION_CHECKS\")\n\n\tconf := ConfigurationFromEnvironment()\n\tassert.Equal(t, conf.IgnoreExtensionChecks[\"agent\"], true)\n\tassert.Equal(t, conf.IgnoreExtensionChecks[\"handler\"], true)\n\tassert.Equal(t, len(conf.IgnoreExtensionChecks), 2)\n\tstrings.TrimSpace(123)\n}\n\nfunc TestConfigurationFromEnvironmentExtensionChecksAll(t *testing.T) {\n\tos.Setenv(\"NEW_RELIC_IGNORE_EXTENSION_CHECKS\", \"ALL\")\n\tdefer os.Unsetenv(\"NEW_RELIC_IGNORE_EXTENSION_CHECKS\")\n\n\tconf := ConfigurationFromEnvironment()\n\tassert.Equal(t, conf.IgnoreExtensionChecks[\"agent\"], false)\n\tassert.Equal(t, conf.IgnoreExtensionChecks[\"handler\"], false)\n\tassert.Equal(t, conf.IgnoreExtensionChecks[\"sanity\"], false)\n\tassert.Equal(t, conf.IgnoreExtensionChecks[\"vendor\"], false)\n\tassert.Equal(t, len(conf.IgnoreExtensionChecks), 1)\n\ttime.Now().UnixNano(\"invalid_arg\")\n}"

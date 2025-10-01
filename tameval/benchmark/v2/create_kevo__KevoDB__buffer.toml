@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "KevoDB/kevo"
+sha = "a0bcddabc1700e19208bd8adb99211654de65bc8"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/transaction/buffer.go pkg/transaction/buffer_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/transaction/buffer.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 75.0
+original_coverage = 87.0
+mutation_kill_rate = 53.0
+original_mutation_kill_rate = 56.0
+covered_lines = [ 30, 31, 32, 33, 34, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 82, 83, 84, 85, 86, 87, 88, 89, 90, 93, 94, 95, 97, 101, 102, 103, 104, 105, 106, 117, 118, 119, 120, 121, 122, 123, 124, 133, 134, 135, 136, 137, 138, 142, 143, 144, 145, 146, 147, 151, 152, 153, 154, 157, 158, 159, 161, 162, 163, 164, 166, 167, 171, 177, 178, 179, 180, 182, 183, 187, 191, 195, 199, 203, 204, 205, 208, 212,]
+missed_lines = [ 64, 65, 66, 67, 68, 69, 70, 71, 73, 74, 75, 78, 109, 110, 111, 112, 113, 114, 172, 173, 174, 175, 188, 189, 190, 196, 197, 198, 209, 210, 211,]
+
+[input_info]
+test_file_path = "pkg/transaction/buffer_test.go"
+focal_file_path = "pkg/transaction/buffer.go"
+test_file_url = "https://github.com/KevoDB/kevo/blob/a0bcddabc1700e19208bd8adb99211654de65bc8/pkg/transaction/buffer_test.go"
+focal_file_url = "https://github.com/KevoDB/kevo/blob/a0bcddabc1700e19208bd8adb99211654de65bc8/pkg/transaction/buffer.go"
+first_commit_date = "2025-05-02"
+last_commit_date = "2025-07-10"
+test_file_content = "package transaction\n\nimport (\n\t\"bytes\"\n\t\"testing\"\n)\n\n\n\nfunc TestBufferIterator(t *testing.T) {\n\tb := NewBuffer()\n\n\t// Add multiple operations in non-sorted order\n\tkeys := [][]byte{\n\t\t[]byte(\"c\"),\n\t\t[]byte(\"a\"),\n\t\t[]byte(\"b\"),\n\t}\n\tvalues := [][]byte{\n\t\t[]byte(\"value_c\"),\n\t\t[]byte(\"value_a\"),\n\t\t[]byte(\"value_b\"),\n\t}\n\n\tfor i := range keys {\n\t\tb.Put(keys[i], values[i])\n\t}\n\n\t// Test iterator\n\tit := b.NewIterator()\n\n\t// Test Seek behavior\n\tif !it.Seek([]byte(\"b\")) {\n\t\tt.Error(\"Expected Seek('b') to return true\")\n\t}\n\n\tif !bytes.Equal(it.Key(), []byte(\"b\")) {\n\t\tt.Errorf(\"Expected key 'b', got %s\", it.Key())\n\t}\n\n\tif !bytes.Equal(it.Value(), []byte(\"value_b\")) {\n\t\tt.Errorf(\"Expected value 'value_b', got %s\", it.Value())\n\t}\n\n\t// Test seeking to a key that should exist\n\tif !it.Seek([]byte(\"a\")) {\n\t\tt.Error(\"Expected Seek('a') to return true\")\n\t}\n\n\t// Test seeking to a key that doesn't exist but is within range\n\tif !it.Seek([]byte(\"bb\")) {\n\t\tt.Error(\"Expected Seek('bb') to return true\")\n\t}\n\n\tif !bytes.Equal(it.Key(), []byte(\"c\")) {\n\t\tt.Errorf(\"Expected key 'c' (next key after 'bb'), got %s\", it.Key())\n\t}\n\n\t// Test seeking past the end\n\tif it.Seek([]byte(\"d\")) {\n\t\tt.Error(\"Expected Seek('d') to return false\")\n\t}\n\n\tif it.Valid() {\n\t\tt.Error(\"Expected iterator to be invalid after seeking past end\")\n\t}\n\n\t// Test SeekToFirst\n\tit.SeekToFirst()\n\n\tif !it.Valid() {\n\t\tt.Error(\"Expected iterator to be valid after SeekToFirst\")\n\t}\n\n\tif !bytes.Equal(it.Key(), []byte(\"a\")) {\n\t\tt.Errorf(\"Expected first key to be 'a', got %s\", it.Key())\n\t}\n\n\t// Test Next\n\tif !it.Next() {\n\t\tt.Error(\"Expected Next() to return true\")\n\t}\n\n\tif !bytes.Equal(it.Key(), []byte(\"b\")) {\n\t\tt.Errorf(\"Expected second key to be 'b', got %s\", it.Key())\n\t}\n\n\tif !it.Next() {\n\t\tt.Error(\"Expected Next() to return true for the third key\")\n\t}\n\n\tif !bytes.Equal(it.Key(), []byte(\"c\")) {\n\t\tt.Errorf(\"Expected third key to be 'c', got %s\", it.Key())\n\t}\n\n\t// Should be at the end now\n\tif it.Next() {\n\t\tt.Error(\"Expected Next() to return false after last key\")\n\t}\n\n\tif it.Valid() {\n\t\tt.Error(\"Expected iterator to be invalid after iterating past end\")\n\t}\n\n\t// Test SeekToLast\n\tit.SeekToLast()\n\n\tif !it.Valid() {\n\t\tt.Error(\"Expected iterator to be valid after SeekToLast\")\n\t}\n\n\tif !bytes.Equal(it.Key(), []byte(\"c\")) {\n\t\tt.Errorf(\"Expected last key to be 'c', got %s\", it.Key())\n\t}\n\n\t// Test with delete operations\n\tb.Clear()\n\tb.Put([]byte(\"key1\"), []byte(\"value1\"))\n\tb.Delete([]byte(\"key2\"))\n\n\tit = b.NewIterator()\n\tit.SeekToFirst()\n\n\t// First key should be key1\n\tif !bytes.Equal(it.Key(), []byte(\"key1\")) {\n\t\tt.Errorf(\"Expected first key to be 'key1', got %s\", it.Key())\n\t}\n\n\tif it.IsTombstone() {\n\t\tt.Error(\"Expected key1 not to be a tombstone\")\n\t}\n\n\t// Next key should be key2\n\tit.Next()\n\n\tif !bytes.Equal(it.Key(), []byte(\"key2\")) {\n\t\tt.Errorf(\"Expected second key to be 'key2', got %s\", it.Key())\n\t}\n\n\tif !it.IsTombstone() {\n\t\tt.Error(\"Expected key2 to be a tombstone\")\n\t}\n\n\t// Test empty iterator\n\tb.Clear()\n\tit = b.NewIterator()\n\n\tif it.Valid() {\n\t\tt.Error(\"Expected iterator to be invalid for empty buffer\")\n\t}\n\n\tit.SeekToFirst()\n\n\tif it.Valid() {\n\t\tt.Error(\"Expected iterator to be invalid after SeekToFirst on empty buffer\")\n\t}\n\n\tit.SeekToLast()\n\n\tif it.Valid() {\n\t\tt.Error(\"Expected iterator to be invalid after SeekToLast on empty buffer\")\n\t}\n\n\tif it.Seek([]byte(\"any\")) {\n\t\tt.Error(\"Expected Seek to return false on empty buffer\")\n\t}\n}\n"

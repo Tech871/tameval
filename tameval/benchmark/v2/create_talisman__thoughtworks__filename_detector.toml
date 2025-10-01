@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "thoughtworks/talisman"
+sha = "12fab7055d7e640d5dae43209bafc48bf5ef1fd7"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out detector/filename/filename_detector.go detector/filename/filename_detector_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting detector/filename/filename_detector.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 64.0
+original_coverage = 100.0
+mutation_kill_rate = 46.0
+original_mutation_kill_rate = 54.0
+covered_lines = [ 75, 76, 77, 80, 81, 82, 85, 86, 95, 96, 97, 98, 99, 100, 101, 102, 103, 109,]
+missed_lines = [ 87, 88, 89, 90, 91, 92, 93, 104, 105, 106,]
+
+[input_info]
+test_file_path = "detector/filename/filename_detector_test.go"
+focal_file_path = "detector/filename/filename_detector.go"
+test_file_url = "https://github.com/thoughtworks/talisman/blob/12fab7055d7e640d5dae43209bafc48bf5ef1fd7/detector/filename/filename_detector_test.go"
+focal_file_url = "https://github.com/thoughtworks/talisman/blob/12fab7055d7e640d5dae43209bafc48bf5ef1fd7/detector/filename/filename_detector.go"
+first_commit_date = "2020-06-12"
+last_commit_date = "2025-03-21"
+test_file_content = "package filename\n\n//This is completely derived from the really useful work done by Jen Andre here:\n//https://github.com/jandre/safe-commit-hook\n\nimport (\n\t\"regexp\"\n\t\"talisman/detector/helpers\"\n\t\"talisman/detector/severity\"\n\t\"testing\"\n\n\t\"talisman/gitrepo\"\n\t\"talisman/talismanrc\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nvar talismanRC = &talismanrc.TalismanRC{}\nvar defaultIgnoreEvaluator = helpers.BuildIgnoreEvaluator(\"default\", talismanRC, gitrepo.RepoLocatedAt(\".\"))\n\nfunc ignoreEvaluatorWithTalismanRC(tRC *talismanrc.TalismanRC) helpers.IgnoreEvaluator {\n\treturn helpers.BuildIgnoreEvaluator(\"default\", tRC, gitrepo.RepoLocatedAt(\".\"))\n}\n\nfunc TestShouldFlagPotentialSSHPrivateKeys(t *testing.T) {\n\tshouldFail(\"id_rsa\", \"^.+_rsa$\", severity.Low, t)\n\tshouldFail(\"id_dsa\", \"^.+_dsa.*$\", severity.Low, t)\n\tshouldFail(\"id_dsa.pub\", \"^.+_dsa.*$\", severity.Low, t)\n\tshouldFail(\"id_ed25519\", \"^.+_ed25519$\", severity.Low, t)\n\tshouldFail(\"id_ecdsa\", \"^.+_ecdsa$\", severity.Low, t)\n}\n\n\nfunc TestShouldFlagPotentialPrivateKeys(t *testing.T) {\n\tshouldFail(\"foo.pem\", \"^.+\\\\.pem$\", severity.Low, t)\n\tshouldFail(\"foo.ppk\", \"^.+\\\\.ppk$\", severity.Low, t)\n\tshouldFail(\"foo.key\", \"^.+\\\\.key(pair)?$\", severity.Low, t)\n\tshouldFail(\"foo.keypair\", \"^.+\\\\.key(pair)?$\", severity.Low, t)\n}\n\n\n\nfunc TestShouldFlagPotentialCrendentialDatabases(t *testing.T) {\n\tshouldFail(\"foo.kdb\", \"^.*\\\\.kdb$\", severity.Low, t)                     //KeePass\n\tshouldFail(\"foo.agilekeychain\", \"^.*\\\\.agilekeychain$\", severity.Low, t) //1Password\n\tshouldFail(\"foo.keychain\", \"^.*\\\\.keychain$\", severity.Low, t)           //apple keychain\n\tshouldFail(\"foo.keystore\", \"^.*\\\\.key(store|ring)$\", severity.Low, t)    //gnome keyring db\n\tshouldFail(\"foo.keyring\", \"^.*\\\\.key(store|ring)$\", severity.Low, t)     //gnome keyring db\n}\n\n\n\n\n\n\n\nfunc shouldFail(fileName, pattern string, threshold severity.Severity, t *testing.T) {\n\tshouldFailWithSpecificPattern(fileName, pattern, threshold, t)\n\tshouldFailWithDefaultDetector(fileName, pattern, threshold, t)\n}\n\nfunc shouldIgnoreFilesWhichWouldOtherwiseTriggerErrors(\n\tfileName, ignore string,\n\tthreshold severity.Severity,\n\tt *testing.T) {\n\tshouldFailWithDefaultDetector(fileName, \"\", threshold, t)\n\tshouldNotFailWithDefaultDetectorAndIgnores(fileName, ignore, threshold, t)\n}\n\nfunc shouldNotFailWithDefaultDetectorAndIgnores(fileName, ignore string, threshold severity.Severity, t *testing.T) {\n\tresults := helpers.NewDetectionResults()\n\tfileIgnoreConfig := talismanrc.FileIgnoreConfig{\n\t\tFileName:        ignore,\n\t\tIgnoreDetectors: []string{\"filename\"},\n\t}\n\ttalismanRC, _ := talismanrc.Load()\n\ttalismanRC.FileIgnoreConfig = []talismanrc.FileIgnoreConfig{fileIgnoreConfig}\n\n\tDefaultFileNameDetector(threshold).\n\t\tTest(ignoreEvaluatorWithTalismanRC(talismanRC), additionsNamed(fileName), talismanRC, results, func() {})\n\n\tassert.True(t,\n\t\tresults.Successful(),\n\t\t\"Expected file %s to be ignored by pattern %s\", fileName, ignore)\n}\n\nfunc shouldFailWithSpecificPattern(fileName, pattern string, threshold severity.Severity, t *testing.T) {\n\tresults := helpers.NewDetectionResults()\n\tpt := []*severity.PatternSeverity{{Pattern: regexp.MustCompile(pattern), Severity: severity.Low}}\n\n\tNewFileNameDetector(pt, threshold).\n\t\tTest(defaultIgnoreEvaluator, additionsNamed(fileName), talismanRC, results, func() {})\n\n\tassert.True(t,\n\t\tresults.HasFailures(),\n\t\t\"Expected file %s to fail the check against pattern %s\", fileName, pattern)\n}\n\nfunc shouldFailWithDefaultDetector(fileName, pattern string, severity severity.Severity, t *testing.T) {\n\tresults := helpers.NewDetectionResults()\n\tDefaultFileNameDetector(severity).\n\t\tTest(defaultIgnoreEvaluator, additionsNamed(fileName), talismanRC, results, func() {})\n\tassert.True(t,\n\t\tresults.HasFailures(),\n\t\t\"Expected file %s to fail the check against default detector. Missing pattern %s?\", fileName, pattern)\n}\n\nfunc additionsNamed(names ...string) []gitrepo.Addition {\n\tresult := make([]gitrepo.Addition, len(names))\n\tfor i, name := range names {\n\t\tresult[i] = gitrepo.Addition{\n\t\t\tPath: gitrepo.FilePath(name),\n\t\t\tName: gitrepo.FileName(name),\n\t\t\tData: make([]byte, 0),\n\t\t}\n\t}\n\treturn result\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "maksimkurb/keen-pbr"
+sha = "69142354e0af8309b6913bc3bcbfcfbf06259d93"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/hashing/md5proxy.go lib/hashing/md5proxy_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/hashing/md5proxy.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 81.0
+original_coverage = 81.0
+mutation_kill_rate = 50.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 21, 22, 23, 24, 25, 26, 29, 30, 31, 32, 33, 38, 42, 43, 44, 45, 55, 56, 57, 58, 59, 60, 62, 66, 67, 70, 71, 72, 74, 75, 76, 78, 79, 80, 81,]
+missed_lines = [ 34, 35, 36, 46, 63, 64, 65, 82,]
+
+[input_info]
+test_file_path = "lib/hashing/md5proxy_test.go"
+focal_file_path = "lib/hashing/md5proxy.go"
+test_file_url = "https://github.com/maksimkurb/keen-pbr/blob/69142354e0af8309b6913bc3bcbfcfbf06259d93/lib/hashing/md5proxy_test.go"
+focal_file_url = "https://github.com/maksimkurb/keen-pbr/blob/69142354e0af8309b6913bc3bcbfcfbf06259d93/lib/hashing/md5proxy.go"
+first_commit_date = "2025-01-14"
+last_commit_date = "2025-01-14"
+test_file_content = "package hashing\n\nimport (\n\t\"crypto/md5\"\n\t\"encoding/hex\"\n\t\"errors\"\n\t\"io\"\n\t\"strings\"\n\t\"testing\"\n)\n\ntype errorReader struct {\n\terr error\n}\n\nfunc (e *errorReader) Read(p []byte) (n int, err error) {\n\treturn 0, e.err\n}\n\nfunc TestNewMD5ReaderProxy(t *testing.T) {\n\treader := strings.NewReader(\"test data\")\n\tproxy := NewMD5ReaderProxy(reader)\n\t\n\tif proxy == nil {\n\t\tt.Error(\"Expected proxy to be non-nil\")\n\t}\n\t\n\tif proxy.reader != reader {\n\t\tt.Error(\"Expected reader to be set correctly\")\n\t}\n\t\n\tif proxy.checksum == nil {\n\t\tt.Error(\"Expected checksum to be initialized\")\n\t}\n}\n\nfunc TestChecksumReaderProxy_Read(t *testing.T) {\n\ttestData := \"hello world\"\n\treader := strings.NewReader(testData)\n\tproxy := NewMD5ReaderProxy(reader)\n\t\n\tbuf := make([]byte, 5)\n\tn, err := proxy.Read(buf)\n\t\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif n != 5 {\n\t\tt.Errorf(\"Expected to read 5 bytes, got %d\", n)\n\t}\n\t\n\tif string(buf) != \"hello\" {\n\t\tt.Errorf(\"Expected 'hello', got '%s'\", string(buf))\n\t}\n}\n\nfunc TestChecksumReaderProxy_ReadAll(t *testing.T) {\n\ttestData := \"hello world\"\n\treader := strings.NewReader(testData)\n\tproxy := NewMD5ReaderProxy(reader)\n\t\n\tallData, err := io.ReadAll(proxy)\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif string(allData) != testData {\n\t\tt.Errorf(\"Expected '%s', got '%s'\", testData, string(allData))\n\t}\n}\n\nfunc TestChecksumReaderProxy_ReadError(t *testing.T) {\n\texpectedErr := errors.New(\"read error\")\n\treader := &errorReader{err: expectedErr}\n\tproxy := NewMD5ReaderProxy(reader)\n\t\n\tbuf := make([]byte, 10)\n\t_, err := proxy.Read(buf)\n\t\n\tif err != expectedErr {\n\t\tt.Errorf(\"Expected error %v, got %v\", expectedErr, err)\n\t}\n}\n\nfunc TestChecksumReaderProxy_GetChecksum(t *testing.T) {\n\ttestData := \"hello world\"\n\treader := strings.NewReader(testData)\n\tproxy := NewMD5ReaderProxy(reader)\n\t\n\t// Read all data\n\t_, err := io.ReadAll(proxy)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read data: %v\", err)\n\t}\n\t\n\tchecksum, err := proxy.GetChecksum()\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error getting checksum: %v\", err)\n\t}\n\t\n\t// Calculate expected checksum\n\thasher := md5.New()\n\thasher.Write([]byte(testData))\n\texpected := hex.EncodeToString(hasher.Sum(nil))\n\t\n\tif checksum != expected {\n\t\tt.Errorf(\"Expected checksum %s, got %s\", expected, checksum)\n\t}\n}\n\nfunc TestChecksumReaderProxy_GetChecksumEmpty(t *testing.T) {\n\treader := strings.NewReader(\"\")\n\tproxy := NewMD5ReaderProxy(reader)\n\t\n\t// Read all data (empty)\n\t_, err := io.ReadAll(proxy)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read data: %v\", err)\n\t}\n\t\n\tchecksum, err := proxy.GetChecksum()\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error getting checksum: %v\", err)\n\t}\n\t\n\t// MD5 of empty string\n\texpected := \"d41d8cd98f00b204e9800998ecf8427e\"\n\t\n\tif checksum != expected {\n\t\tt.Errorf(\"Expected checksum %s, got %s\", expected, checksum)\n\t}\n}\n\nfunc TestNewChecksumStringSet(t *testing.T) {\n\tset := NewChecksumStringSet()\n\t\n\tif set == nil {\n\t\tt.Error(\"Expected set to be non-nil\")\n\t}\n\t\n\tif set.set == nil {\n\t\tt.Error(\"Expected internal set to be initialized\")\n\t}\n\t\n\tif set.checksum == nil {\n\t\tt.Error(\"Expected checksum to be initialized\")\n\t}\n\t\n\tif set.Size() != 0 {\n\t\tt.Errorf(\"Expected empty set, got size %d\", set.Size())\n\t}\n}\n\nfunc TestChecksumStringSetProxy_Put(t *testing.T) {\n\tset := NewChecksumStringSet()\n\t\n\terr := set.Put(\"test1\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif set.Size() != 1 {\n\t\tt.Errorf(\"Expected size 1, got %d\", set.Size())\n\t}\n\t\n\terr = set.Put(\"test2\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif set.Size() != 2 {\n\t\tt.Errorf(\"Expected size 2, got %d\", set.Size())\n\t}\n}\n\nfunc TestChecksumStringSetProxy_PutDuplicate(t *testing.T) {\n\tset := NewChecksumStringSet()\n\t\n\terr := set.Put(\"test1\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\terr = set.Put(\"test1\")\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif set.Size() != 1 {\n\t\tt.Errorf(\"Expected size 1 after duplicate, got %d\", set.Size())\n\t}\n}\n\nfunc TestChecksumStringSetProxy_Map(t *testing.T) {\n\tset := NewChecksumStringSet()\n\t\n\tset.Put(\"test1\")\n\tset.Put(\"test2\")\n\t\n\tm := set.Map()\n\tif m == nil {\n\t\tt.Error(\"Expected map to be non-nil\")\n\t}\n\t\n\tif len(m) != 2 {\n\t\tt.Errorf(\"Expected map size 2, got %d\", len(m))\n\t}\n\t\n\tif _, exists := m[\"test1\"]; !exists {\n\t\tt.Error(\"Expected 'test1' to exist in map\")\n\t}\n\t\n\tif _, exists := m[\"test2\"]; !exists {\n\t\tt.Error(\"Expected 'test2' to exist in map\")\n\t}\n}\n\nfunc TestChecksumStringSetProxy_GetChecksum(t *testing.T) {\n\tset := NewChecksumStringSet()\n\t\n\tset.Put(\"test1\")\n\tset.Put(\"test2\")\n\t\n\tchecksum, err := set.GetChecksum()\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error getting checksum: %v\", err)\n\t}\n\t\n\tif checksum == \"\" {\n\t\tt.Error(\"Expected non-empty checksum\")\n\t}\n\t\n\t// Verify checksum is consistent\n\tchecksum2, err := set.GetChecksum()\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error getting checksum: %v\", err)\n\t}\n\t\n\tif checksum != checksum2 {\n\t\tt.Error(\"Expected checksum to be consistent\")\n\t}\n}\n\nfunc TestChecksumStringSetProxy_GetChecksumEmpty(t *testing.T) {\n\tset := NewChecksumStringSet()\n\t\n\tchecksum, err := set.GetChecksum()\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error getting checksum: %v\", err)\n\t}\n\t\n\t// MD5 of empty string\n\texpected := \"d41d8cd98f00b204e9800998ecf8427e\"\n\t\n\tif checksum != expected {\n\t\tt.Errorf(\"Expected checksum %s, got %s\", expected, checksum)\n\t}\n}\n\n"

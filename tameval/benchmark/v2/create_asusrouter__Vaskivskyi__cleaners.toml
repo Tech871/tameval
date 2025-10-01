@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Vaskivskyi/asusrouter"
+sha = "1f98018ace04703492b654cd02f4f3a4890cedcb"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=asusrouter/tools/cleaners.py -m pytest -q --junit-xml=test_output.xml tests/tools/test_cleaners.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target asusrouter.tools.cleaners --unit-test tests.tools.test_cleaners --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target asusrouter/tools/cleaners.py --unit-test tests/tools/test_cleaners.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 66.0
+original_coverage = 100.0
+mutation_kill_rate = 29.0
+original_mutation_kill_rate = 29.0
+covered_lines = [ 2, 4, 7, 18, 27, 29, 31, 33, 35, 37, 40, 43, 49, 52, 54, 56, 58, 60, 61, 64, 67,]
+missed_lines = [ 11, 12, 15, 75, 78, 79, 82, 84, 85, 86, 91,]
+
+[input_info]
+test_file_path = "tests/tools/test_cleaners.py"
+focal_file_path = "asusrouter/tools/cleaners.py"
+test_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/tests/tools/test_cleaners.py"
+focal_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/asusrouter/tools/cleaners.py"
+first_commit_date = "2023-10-28"
+last_commit_date = "2025-08-10"
+test_file_content = "\"\"\"Test AsusRouter cleaners tools.\"\"\"\n\nfrom asusrouter.tools import cleaners\n\ndef test_clean_dict() -> None:\n    \"\"\"Test clean_dict method.\"\"\"\n\n    # Test with empty dict\n    data = {}\n    assert cleaners.clean_dict(data) == {}  # pylint: disable=C1803\n\n    # Test with empty string\n    data = {\"test\": \"\"}\n    assert cleaners.clean_dict(data) == {\"test\": None}\n\n    # Test with nested dicts\n    data = {\"test\": {\"test\": \"\"}}\n    assert cleaners.clean_dict(data) == {\"test\": {\"test\": None}}\n\ndef test_clean_dict_key_prefix() -> None:\n    \"\"\"Test clean_dict_key_prefix method.\"\"\"\n\n    # Test with empty dict\n    data = {}\n    assert cleaners.clean_dict_key_prefix(data, \"prefix\") == {}  # pylint: disable=C1803\n\n    # Test with empty string\n    data = {\"prefix_test\": \"\", \"test2\": \"\"}\n    assert cleaners.clean_dict_key_prefix(data, \"prefix\") == {\n        \"test\": \"\",\n        \"test2\": \"\",\n    }\n\n    # Test with nested dicts\n    data = {\"prefix_test\": {\"prefix_test\": \"\"}}\n    assert cleaners.clean_dict_key_prefix(data, \"prefix\") == {\n        \"test\": {\"prefix_test\": \"\"}\n    }\n"

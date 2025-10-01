@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "go-kratos/kratos"
+sha = "025c2dc2b0ffabe45620f6be2b6de6f6505760bc"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out middleware/recovery/recovery.go middleware/recovery/recovery_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting middleware/recovery/recovery.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 57.0
+original_mutation_kill_rate = 43.0
+covered_lines = [ 29, 30, 31, 32, 36, 37, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 58,]
+missed_lines = [ 38, 39, 40,]
+
+[input_info]
+test_file_path = "middleware/recovery/recovery_test.go"
+focal_file_path = "middleware/recovery/recovery.go"
+test_file_url = "https://github.com/go-kratos/kratos/blob/025c2dc2b0ffabe45620f6be2b6de6f6505760bc/middleware/recovery/recovery_test.go"
+focal_file_url = "https://github.com/go-kratos/kratos/blob/025c2dc2b0ffabe45620f6be2b6de6f6505760bc/middleware/recovery/recovery.go"
+first_commit_date = "2021-02-17"
+last_commit_date = "2025-03-07"
+test_file_content = "package recovery\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/go-kratos/kratos/v2/errors\"\n)\n\nfunc TestOnce(t *testing.T) {\n\tdefer func() {\n\t\tif recover() != nil {\n\t\t\tt.Error(\"fail\")\n\t\t}\n\t}()\n\n\tnext := func(context.Context, any) (any, error) {\n\t\tpanic(\"panic reason\")\n\t}\n\t_, e := Recovery(WithHandler(func(ctx context.Context, _, err any) error {\n\t\t_, ok := ctx.Value(Latency{}).(float64)\n\t\tif !ok {\n\t\t\tt.Errorf(\"not latency\")\n\t\t}\n\t\treturn errors.InternalServer(\"RECOVERY\", fmt.Sprintf(\"panic triggered: %v\", err))\n\t}))(next)(context.Background(), \"panic\")\n\tt.Logf(\"succ and reason is %v\", e)\n}\n\nfunc TestNotPanic(t *testing.T) {\n\tnext := func(_ context.Context, req any) (any, error) {\n\t\treturn req.(string) + \"https:\n\t}\n\n\t_, e := Recovery(WithHandler(func(_ context.Context, _ any, err any) error {\n\t\treturn errors.InternalServer(\"RECOVERY\", fmt.Sprintf(\"panic triggered: %v\", err))\n\t}))(next)(context.Background(), \"notPanic\")\n\tif e != nil {\n\t\tt.Errorf(\"e isn't nil\")\n\t}\n}\n\nfunc TestPanicRecovery(t *testing.T) {\n\tdefer func() {\n\t\tif recover() != nil {\n\t\t\tt.Error(\"panic should have been recovered\")\n\t\t}\n\t}()\n\n\tnext := func(context.Context, any) (any, error) {\n\t\tpanic(\"test panic\")\n\t}\n\t_, err := Recovery(WithHandler(func(ctx context.Context, req, err any) error {\n\t\tval, exists := ctx.Value(Latency{}).(float64)\n\t\tif !exists || val <= 0 {\n\t\t\tt.Error(\"latency value not properly set\")\n\t\t}\n\t\treturn errors.InternalServer(\"TEST_RECOVERY\", \"recovered from panic\")\n\t}))(next)(context.Background(), \"test\")\n\t\n\tif err == nil {\n\t\tt.Error(\"error should not be nil after panic\")\n\t}\n}\n\nfunc TestRecoveryMiddleware(t *testing.T) {\n\tnext := func(_ context.Context, req any) (any, error) {\n\t\tif req.(string) == \"trigger_panic\" {\n\t\t\tpanic(\"intentional panic\")\n\t\t}\n\t\treturn \"success\", nil\n\t}\n\n\tmiddleware := Recovery(WithHandler(func(_ context.Context, _, _ any) error {\n\t\treturn errors.New(500, \"CUSTOM_RECOVERY\", \"custom recovery handler\")\n\t}))\n\n\thandler := middleware(next)\n\tresp, err := handler(context.Background(), \"normal\")\n\tif err != nil || resp != \"success\" {\n\t\tt.Errorf(\"expected success without error, got %v, %v\", resp, err)\n\t}\n\t_, err = handler(context.Background(), \"trigger_panic\")\n\tif err == nil {\n\t\tt.Error(\"expected error after panic, got nil\")\n\t}\n}"

@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "GIScience/openrouteservice"
+sha = "58549a4d0a2affe96463f3ef81081dd95411b243"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl ors-engine -Dtest=CarFlagEncoderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl ors-engine -DtargetClasses=**.CarFlagEncoder  -DtargetTests=**.CarFlagEncoderTest  -DoutputFormats=XML"
+coverage_report_path = "ors-engine/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "ors-engine/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 50.0
+original_coverage = 60.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 44, 45, 48, 49, 52, 54, 55, 56, 57, 59, 60, 62, 63, 67, 68, 69, 70, 71, 76, 77, 78, 95, 104, 107, 121, 125, 126, 136, 145, 150,]
+missed_lines = [ 46, 79, 80, 81, 82, 83, 84, 88, 89, 92, 96, 97, 98, 99, 100, 105, 108, 111, 112, 113, 114, 115, 116, 122, 128, 129, 130, 131, 133, 140,]
+
+[input_info]
+test_file_path = "ors-engine/src/test/java/org/heigit/ors/routing/graphhopper/extensions/flagencoders/CarFlagEncoderTest.java"
+focal_file_path = "ors-engine/src/main/java/org/heigit/ors/routing/graphhopper/extensions/flagencoders/CarFlagEncoder.java"
+test_file_url = "https://github.com/GIScience/openrouteservice/blob/58549a4d0a2affe96463f3ef81081dd95411b243/ors-engine/src/test/java/org/heigit/ors/routing/graphhopper/extensions/flagencoders/CarFlagEncoderTest.java"
+focal_file_url = "https://github.com/GIScience/openrouteservice/blob/58549a4d0a2affe96463f3ef81081dd95411b243/ors-engine/src/main/java/org/heigit/ors/routing/graphhopper/extensions/flagencoders/CarFlagEncoder.java"
+first_commit_date = "2023-06-13"
+last_commit_date = "2025-01-22"
+test_file_content = "package org.heigit.ors.routing.graphhopper.extensions.flagencoders;\n\nimport com.graphhopper.config.Profile;\nimport com.graphhopper.reader.ReaderWay;\nimport com.graphhopper.routing.WeightingFactory;\nimport com.graphhopper.routing.util.EncodingManager;\nimport com.graphhopper.routing.weighting.Weighting;\nimport com.graphhopper.storage.GraphBuilder;\nimport com.graphhopper.storage.GraphHopperStorage;\nimport com.graphhopper.storage.IntsRef;\nimport com.graphhopper.util.GHUtility;\nimport com.graphhopper.util.PMap;\nimport org.heigit.ors.routing.graphhopper.extensions.ORSDefaultFlagEncoderFactory;\nimport org.heigit.ors.routing.graphhopper.extensions.ORSWeightingFactory;\nimport org.heigit.ors.routing.graphhopper.extensions.weighting.LimitedAccessWeighting;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass CarFlagEncoderTest {\n    private final EncodingManager em = EncodingManager.create(new ORSDefaultFlagEncoderFactory(), FlagEncoderNames.CAR_ORS + \",\" + FlagEncoderNames.BIKE_ORS);\n    private ReaderWay way;\n\n    static final double WAY_DISTANCE = 1000;\n    static final double CAR_DURATION = 180;\n    static final double BIKE_DURATION = 300;\n\n    @BeforeEach\n    void initWay() {\n        way = new ReaderWay(1);\n    }\n\n    Weighting createWeighting(String vehicle, String weighting) {\n        GraphHopperStorage g = new GraphBuilder(em).create();\n        WeightingFactory weightingFactory = new ORSWeightingFactory(g, em);\n\n        Profile profile = new Profile(vehicle + \"_\" + weighting).setVehicle(vehicle).setWeighting(weighting);\n\n        return weightingFactory.createWeighting(profile, new PMap(), false);\n    }\n\n    @Test\n    void testDestinationTag() {\n        IntsRef relFlags = em.createRelationFlags();\n\n        Weighting carFastest = createWeighting(FlagEncoderNames.CAR_ORS, \"fastest\");\n        Weighting bikeFastest = createWeighting(FlagEncoderNames.BIKE_ORS, \"fastest\");\n\n        way.setTag(\"highway\", \"road\");\n        EncodingManager.AcceptWay acceptWay = new EncodingManager.AcceptWay();\n        assertTrue(em.acceptWay(way, acceptWay));\n        IntsRef edgeFlags = em.handleWayTags(way, acceptWay, relFlags);\n        assertEquals(CAR_DURATION, carFastest.calcEdgeWeight(GHUtility.createMockedEdgeIteratorState(WAY_DISTANCE, edgeFlags), false), 0.1);\n        assertEquals(BIKE_DURATION, bikeFastest.calcEdgeWeight(GHUtility.createMockedEdgeIteratorState(WAY_DISTANCE, edgeFlags), false), 0.1);\n\n        way.setTag(\"motor_vehicle\", \"destination\");\n        edgeFlags = em.handleWayTags(way, acceptWay, relFlags);\n        assertEquals(CAR_DURATION * LimitedAccessWeighting.VEHICLE_DESTINATION_FACTOR, carFastest.calcEdgeWeight(GHUtility.createMockedEdgeIteratorState(WAY_DISTANCE, edgeFlags), false), 0.1);\n        assertEquals(BIKE_DURATION * LimitedAccessWeighting.DEFAULT_DESTINATION_FACTOR, bikeFastest.calcEdgeWeight(GHUtility.createMockedEdgeIteratorState(WAY_DISTANCE, edgeFlags), false), 0.1);\n\n        Weighting carShortest = createWeighting(FlagEncoderNames.CAR_ORS, \"shortest\");\n        Weighting bikeShortest = createWeighting(FlagEncoderNames.BIKE_ORS, \"shortest\");\n\n        edgeFlags = em.handleWayTags(way, acceptWay, relFlags);\n        assertEquals(WAY_DISTANCE * LimitedAccessWeighting.VEHICLE_DESTINATION_FACTOR, carShortest.calcEdgeWeight(GHUtility.createMockedEdgeIteratorState(WAY_DISTANCE, edgeFlags), false), 0.1);\n        assertEquals(WAY_DISTANCE * LimitedAccessWeighting.DEFAULT_DESTINATION_FACTOR, bikeShortest.calcEdgeWeight(GHUtility.createMockedEdgeIteratorState(WAY_DISTANCE, edgeFlags), false), 0.1);\n    }\n}"

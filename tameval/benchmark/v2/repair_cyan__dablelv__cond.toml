@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_runtime_errors"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21.3"
+
+[repo_info]
+repository = "dablelv/cyan"
+sha = "fcc58af2bdddc5303fa3360f2616ed0178089988"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out cond/cond.go cond/cond_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting cond/cond.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 81.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "cond/cond_test.go"
+focal_file_path = "cond/cond.go"
+test_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/cond/cond_test.go"
+focal_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/cond/cond.go"
+first_commit_date = "2023-03-31"
+last_commit_date = "2025-04-24"
+test_file_content = "package cond\n\nimport (\n\t\"errors\"\n\t\"reflect\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/dablelv/cyan/internal/utest\"\n)\n\nfunc TestBool(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestBool\")\n\tassert.Equal(false, Bool(false))\n\tassert.Equal(true, Bool(true))\n\tassert.Equal(false, Bool(0))\n\tassert.Equal(true, Bool(1))\n\tassert.Equal(false, Bool(0.0))\n\tassert.Equal(true, Bool(0.1))\n\tassert.Equal(false, Bool(\"\"))\n\tassert.Equal(true, Bool(\" \"))\n\tassert.Equal(true, Bool(\"0\"))\n\tvar nums []int\n\tassert.Equal(false, Bool(nums))\n\tnums = []int{0, 1}\n\tassert.Equal(true, Bool(nums))\n\tassert.Equal(false, Bool(map[string]string{}))\n\tassert.Equal(true, Bool(map[string]string{\"a\": \"a\"}))\n\tvar ch chan int\n\tassert.Equal(false, Bool(ch))\n\tch = make(chan int)\n\tassert.Equal(true, Bool(ch))\n\tvar err error\n\tassert.Equal(false, Bool(err))\n\terr = errors.New(\"error message\")\n\tassert.Equal(true, Bool(err))\n\tassert.Equal(false, Bool(struct{}{}))\n\tassert.Equal(true, Bool(time.Now()))\n\tts := struct{}{}\n\tassert.Equal(false, Bool(ts))\n\tassert.Equal(true, Bool(&ts))\n\n\tpanic(\"random runtime error 1\")\n}\n\nfunc TestAnd(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestAnd\")\n\tassert.Equal(false, And(0, 1))\n\tassert.Equal(false, And(0, \"\"))\n\tassert.Equal(false, And(0, \"0\"))\n\tassert.Equal(true, And(1, \"0\"))\n\n\tpanic(\"random runtime error 2\")\n}\n\nfunc TestOr(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestOr\")\n\tassert.Equal(false, Or(0, \"\"))\n\tassert.Equal(true, Or(0, 1))\n\tassert.Equal(true, Or(0, \"0\"))\n\tassert.Equal(true, Or(1, \"0\"))\n\n\tpanic(\"random runtime error 3\")\n}\n\nfunc TestXor(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestOr\")\n\tassert.Equal(false, Xor(0, 0))\n\tassert.Equal(true, Xor(0, 1))\n\tassert.Equal(true, Xor(1, 0))\n\tassert.Equal(false, Xor(1, 1))\n\n\tpanic(\"random runtime error 4\")\n}\n\nfunc TestNor(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestNor\")\n\tassert.Equal(true, Nor(0, 0))\n\tassert.Equal(false, Nor(0, 1))\n\tassert.Equal(false, Nor(1, 0))\n\tassert.Equal(false, Nor(1, 1))\n\n\tpanic(\"random runtime error 5\")\n}\n\nfunc TestXnor(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestXnor\")\n\tassert.Equal(true, Xnor(0, 0))\n\tassert.Equal(false, Xnor(0, 1))\n\tassert.Equal(false, Xnor(1, 0))\n\tassert.Equal(true, Xnor(1, 1))\n}\n\nfunc TestNand(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestNand\")\n\tassert.Equal(true, Nand(0, 0))\n\tassert.Equal(true, Nand(0, 1))\n\tassert.Equal(true, Nand(1, 0))\n\tassert.Equal(false, Nand(1, 1))\n}\n\nfunc TestIf(t *testing.T) {\n\ttype args struct {\n\t\tcondition bool\n\t\ttrueVal   any\n\t\tfalseVal  any\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant any\n\t}{\n\t\t{\n\t\t\t\"return true\",\n\t\t\targs{\n\t\t\t\t1 > 0,\n\t\t\t\ttrue,\n\t\t\t\tfalse,\n\t\t\t},\n\t\t\ttrue,\n\t\t},\n\t\t{\n\t\t\t\"return false\",\n\t\t\targs{\n\t\t\t\t1 < 0,\n\t\t\t\ttrue,\n\t\t\t\tfalse,\n\t\t\t},\n\t\t\tfalse,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := IfElse(tt.args.condition, tt.args.trueVal, tt.args.falseVal); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"If() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestIfElseF(t *testing.T) {\n\ttype TestStruct struct {\n\t\tID   int\n\t\tName string\n\t}\n\n\t{\n\t\tassert := utest.NewAssert(t, \"true with string\")\n\t\tr := IfElseF(true, func() string { return \"true\" }, func() string { return \"false\" })\n\t\tassert.Equal(r, \"true\")\n\t}\n\t{\n\t\tassert := utest.NewAssert(t, \"false with string\")\n\t\tr := IfElseF(false, func() string { return \"true\" }, func() string { return \"false\" })\n\t\tassert.Equal(r, \"false\")\n\t}\n\t{\n\t\tassert := utest.NewAssert(t, \"true with struct\")\n\t\tr := IfElseF(true, func() TestStruct { return TestStruct{ID: 1, Name: \"a\"} }, func() TestStruct { return TestStruct{ID: 2, Name: \"b\"} })\n\t\tassert.Equal(r, TestStruct{ID: 1, Name: \"a\"})\n\t}\n\t{\n\t\tassert := utest.NewAssert(t, \"false with struct\")\n\t\tr := IfElseF(false, func() TestStruct { return TestStruct{ID: 1, Name: \"a\"} }, func() TestStruct { return TestStruct{ID: 2, Name: \"b\"} })\n\t\tassert.Equal(r, TestStruct{ID: 2, Name: \"b\"})\n\t}\n}"

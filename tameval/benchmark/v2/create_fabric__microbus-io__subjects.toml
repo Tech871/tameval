@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "microbus-io/fabric"
+sha = "55cc62f52e58a2f8386b6086061b17a7d133fea3"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out connector/subjects.go connector/subjects_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting connector/subjects.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 11.0
+original_coverage = 97.0
+mutation_kill_rate = 22.0
+original_mutation_kill_rate = 80.0
+covered_lines = [ 128, 129, 130, 131, 132, 133, 134, 135, 136, 137,]
+missed_lines = [ 27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 38, 39, 40, 41, 42, 44, 45, 46, 47, 48, 49, 54, 55, 56, 61, 62, 63, 69, 70, 71, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 116, 118, 119, 120, 121, 122, 124,]
+
+[input_info]
+test_file_path = "connector/subjects_test.go"
+focal_file_path = "connector/subjects.go"
+test_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/connector/subjects_test.go"
+focal_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/connector/subjects.go"
+first_commit_date = "2022-09-10"
+last_commit_date = "2025-07-12"
+test_file_content = "/*\nCopyright (c) 2023-2025 Microbus LLC and various contributors\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage connector\n\nimport (\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/microbus-io/testarossa\"\n)\n\nfunc TestConnector_EncodePathPart(t *testing.T) {\n\tt.Parallel()\n\ttt := testarossa.For(t)\n\n\ttestCases := []string{\n\t\t\"UPPERCASE\", \"UPPERCASE\",\n\t\t\"file.html\", \"file_html\",\n\t\t\"a_b_c\", \"a%005fb%005fc\",\n\t\t\"two-W0rds\", \"two-W0rds\",\n\t\t\"special!\", \"special%0021\",\n\t\t\"asteri*\", \"asteri%002a\",\n\t\t\"\", \"\",\n\t}\n\tfor i := 0; i < len(testCases); i += 2 {\n\t\tvar b strings.Builder\n\t\tescapePathPart(&b, testCases[i])\n\t\ttt.Equal(testCases[i+1], b.String())\n\t}\n}\n\n\n\n\n\nfunc BenchmarkConnector_ReverseHostname(b *testing.B) {\n\tfor b.Loop() {\n\t\treverseHostname(\"www.sub.example.com\")\n\t}\n\t// goos: darwin\n\t// goarch: arm64\n\t// pkg: github.com/microbus-io/fabric/connector\n\t// cpu: Apple M1 Pro\n\t// BenchmarkConnector_ReverseHostname-10    \t39063982\t        30.07 ns/op\t      24 B/op\t       1 allocs/op\n}\n"

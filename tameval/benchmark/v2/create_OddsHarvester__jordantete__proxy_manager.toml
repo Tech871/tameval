@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jordantete/OddsHarvester"
+sha = "4a9c2a492c144b7c68c26841d2f4eaf0cace6b48"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/utils/proxy_manager.py -m pytest -q --junit-xml=test_output.xml tests/utils/test_proxy_manager.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.utils.proxy_manager --unit-test tests.utils.test_proxy_manager --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/utils/proxy_manager.py --unit-test tests/utils/test_proxy_manager.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 49.0
+original_coverage = 100.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = 90.0
+covered_lines = [ 0, 3, 6, 13, 14, 15, 17, 27, 28, 30, 31, 32, 60, 67, 68, 69, 73, 78, 79, 80,]
+missed_lines = [ 34, 35, 36, 37, 39, 40, 42, 44, 45, 46, 47, 48, 50, 52, 53, 55, 56, 58, 71, 82, 83,]
+
+[input_info]
+test_file_path = "tests/utils/test_proxy_manager.py"
+focal_file_path = "src/utils/proxy_manager.py"
+test_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/tests/utils/test_proxy_manager.py"
+focal_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/src/utils/proxy_manager.py"
+first_commit_date = "2025-03-05"
+last_commit_date = "2025-06-24"
+test_file_content = "from unittest.mock import patch\n\nimport pytest\n\nfrom src.utils.proxy_manager import ProxyManager\n\n@pytest.fixture\ndef proxy_list():\n    return [\"http://proxy1.com:8080 user1 pass1\", \"http://proxy2.com:8080 user2 pass2\"]\n\n@pytest.fixture\ndef proxy_manager(proxy_list):\n    return ProxyManager(cli_proxies=proxy_list)\n\ndef test_get_current_proxy_no_proxies():\n    proxy_manager = ProxyManager(cli_proxies=None)\n    assert proxy_manager.get_current_proxy() is None\n\ndef test_rotate_proxy_no_proxies():\n    with patch(\"src.utils.proxy_manager.logging.getLogger\") as mock_logger:\n        proxy_manager = ProxyManager(cli_proxies=None)\n        proxy_manager.rotate_proxy()\n        assert proxy_manager.get_current_proxy() is None\n        mock_logger.return_value.warning.assert_called_with(\"No proxies available to rotate. Running without proxy.\")\n"

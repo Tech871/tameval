@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "skynetcap/solanaj"
+sha = "b0f095290e5a1cdd1528bb50615cc56dc0add467"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=MemoProgramTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.MemoProgram  -DtargetTests=**.MemoProgramTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 89.0
+original_coverage = 89.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 15, 26, 27, 29, 30, 34, 37, 41,]
+missed_lines = [ 13,]
+
+[input_info]
+test_file_path = "src/test/java/org/p2p/solanaj/programs/MemoProgramTest.java"
+focal_file_path = "src/main/java/org/p2p/solanaj/programs/MemoProgram.java"
+test_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/test/java/org/p2p/solanaj/programs/MemoProgramTest.java"
+focal_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/main/java/org/p2p/solanaj/programs/MemoProgram.java"
+first_commit_date = "2021-01-20"
+last_commit_date = "2024-09-06"
+test_file_content = "package org.p2p.solanaj.programs;\n\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\nimport org.p2p.solanaj.core.PublicKey;\nimport org.p2p.solanaj.core.TransactionInstruction;\n\nimport java.nio.charset.StandardCharsets;\n\npublic class MemoProgramTest {\n\n    @Test\n    public void testWriteUtf8_ValidInput() {\n        PublicKey account = new PublicKey(\"11111111111111111111111111111111\");\n        String memo = \"Test memo\";\n\n        TransactionInstruction instruction = MemoProgram.writeUtf8(account, memo);\n\n        assertNotNull(instruction);\n        assertEquals(MemoProgram.PROGRAM_ID, instruction.getProgramId());\n        assertEquals(1, instruction.getKeys().size());\n        assertEquals(account, instruction.getKeys().get(0).getPublicKey());\n        assertTrue(instruction.getKeys().get(0).isSigner());\n        assertFalse(instruction.getKeys().get(0).isWritable());\n        assertArrayEquals(memo.getBytes(StandardCharsets.UTF_8), instruction.getData());\n    }\n\n    @Test\n    public void testWriteUtf8_NullAccount() {\n        assertThrows(IllegalArgumentException.class, () -> MemoProgram.writeUtf8(null, \"Test memo\"));\n    }\n\n    @Test\n    public void testWriteUtf8_NullMemo() {\n        PublicKey account = new PublicKey(\"11111111111111111111111111111111\");\n        assertThrows(IllegalArgumentException.class, () -> MemoProgram.writeUtf8(account, null));\n    }\n\n    @Test\n    public void testWriteUtf8_EmptyMemo() {\n        PublicKey account = new PublicKey(\"11111111111111111111111111111111\");\n        assertThrows(IllegalArgumentException.class, () -> MemoProgram.writeUtf8(account, \"\"));\n    }\n\n    @Test\n    public void testWriteUtf8_LongMemo() {\n        PublicKey account = new PublicKey(\"11111111111111111111111111111111\");\n        String longMemo = String.join(\"\", java.util.Collections.nCopies(1000, \"A\"));\n\n        TransactionInstruction instruction = MemoProgram.writeUtf8(account, longMemo);\n\n        assertNotNull(instruction);\n        assertEquals(MemoProgram.PROGRAM_ID, instruction.getProgramId());\n        assertArrayEquals(longMemo.getBytes(StandardCharsets.UTF_8), instruction.getData());\n    }\n}\n"

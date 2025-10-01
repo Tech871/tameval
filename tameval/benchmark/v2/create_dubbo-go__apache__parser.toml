@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "apache/dubbo-go"
+sha = "8d504e5574e431faca7aa03548e650ab7a9fc6a7"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out remoting/polaris/parser/parser.go remoting/polaris/parser/parser_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting remoting/polaris/parser/parser.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 51.0
+original_coverage = 59.0
+mutation_kill_rate = 38.0
+original_mutation_kill_rate = 54.0
+covered_lines = [ 82, 83, 89, 94, 95, 96, 101, 104, 105, 106, 107, 108, 109, 113, 117, 118, 119, 120, 121,]
+missed_lines = [ 84, 85, 86, 87, 90, 91, 92, 93, 97, 98, 99, 110, 111, 112, 114, 115, 116, 123,]
+
+[input_info]
+test_file_path = "remoting/polaris/parser/parser_test.go"
+focal_file_path = "remoting/polaris/parser/parser.go"
+test_file_url = "https://github.com/apache/dubbo-go/blob/8d504e5574e431faca7aa03548e650ab7a9fc6a7/remoting/polaris/parser/parser_test.go"
+focal_file_url = "https://github.com/apache/dubbo-go/blob/8d504e5574e431faca7aa03548e650ab7a9fc6a7/remoting/polaris/parser/parser.go"
+first_commit_date = "2022-11-21"
+last_commit_date = "2025-06-27"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage parser\n\nimport (\n\t\"encoding/json\"\n\t\"testing\"\n)\n\nimport (\n\t\"github.com/stretchr/testify/assert\"\n)\n\nvar (\n\ttestDataStore = `\n\t{\n\t\t\"book\":[\n\t\t\t{\n\t\t\t\t\"category\":\"reference\",\n\t\t\t\t\"author\":\"Nigel Rees\",\n\t\t\t\t\"title\":\"Sayings of the Century\",\n\t\t\t\t\"price\":8.95\n\t\t\t},\n\t\t\t{\n\t\t\t\t\"category\":\"fiction\",\n\t\t\t\t\"author\":\"Evelyn Waugh\",\n\t\t\t\t\"title\":\"Sword of Honor\",\n\t\t\t\t\"price\":12.99\n\t\t\t},\n\t\t\t{\n\t\t\t\t\"category\":\"fiction\",\n\t\t\t\t\"author\":\"Herman Melville\",\n\t\t\t\t\"title\":\"Moby Dick\",\n\t\t\t\t\"isbn\":\"0-553-21311-3\",\n\t\t\t\t\"price\":8.99\n\t\t\t},\n\t\t\t{\n\t\t\t\t\"category\":\"fiction\",\n\t\t\t\t\"author\":\"J. R. R. Tolkien\",\n\t\t\t\t\"title\":\"The Lord of the Rings\",\n\t\t\t\t\"isbn\":\"0-395-19395-8\",\n\t\t\t\t\"price\":22.99\n\t\t\t}\n\t\t],\n\t\t\"bicycle\":{\n\t\t\t\"color\":\"red\",\n\t\t\t\"price\":19.95\n\t\t}\n\t}\n\t`\n\n\ttestDataBicyle = `\n\t{\n\t\t\"color\":\"red\",\n\t\t\"price\":19.95\n\t}\n\t`\n)\n\nfunc TestParseArgumentsByExpression(t *testing.T) {\n\n\tvar (\n\t\targStore, argBicyle any\n\t)\n\n\tjson.Unmarshal([]byte(testDataStore), &argStore)\n\tjson.Unmarshal([]byte(testDataBicyle), &argBicyle)\n\n\tt.Run(\"test-case-1\", func(t *testing.T) {\n\t\tret := ParseArgumentsByExpression(\"param.$.book[0].category\", []any{argStore})\n\t\tassert.Equal(t, \"reference\", ret)\n\t})\n\n\tt.Run(\"test-case-2\", func(t *testing.T) {\n\t\tret := ParseArgumentsByExpression(\"param[0].$.book[0].category\", []any{argStore, argBicyle})\n\t\tassert.Equal(t, \"reference\", ret)\n\t})\n\n\tt.Run(\"test-case-2\", func(t *testing.T) {\n\t\tret := ParseArgumentsByExpression(\"param[1].$.color\", []any{argStore, argBicyle})\n\t\tassert.Equal(t, \"red\", ret)\n\t})\n\n\tt.Run(\"test-case-3\", func(t *testing.T) {\n\t\tret := ParseArgumentsByExpression(\"param.$.color\", []any{argBicyle})\n\t\tassert.Equal(t, \"red\", ret)\n\t})\n\n}\n"

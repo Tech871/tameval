@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "skynetcap/solanaj"
+sha = "b0f095290e5a1cdd1528bb50615cc56dc0add467"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AccountTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.Account  -DtargetTests=**.AccountTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 15, 16, 17, 19, 20, 21, 23, 24, 25, 29, 30, 31, 32, 33, 34, 45, 46, 47, 48, 59, 60, 61, 62, 72, 73, 75, 84, 88, 92, 102, 105, 106, 107, 109, 112, 113, 114, 115, 117,]
+missed_lines = [ 126, 127, 135, 143,]
+
+[input_info]
+test_file_path = "src/test/java/org/p2p/solanaj/core/AccountTest.java"
+focal_file_path = "src/main/java/org/p2p/solanaj/core/Account.java"
+test_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/test/java/org/p2p/solanaj/core/AccountTest.java"
+focal_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/main/java/org/p2p/solanaj/core/Account.java"
+first_commit_date = "2020-11-02"
+last_commit_date = "2024-09-05"
+test_file_content = "package org.p2p.solanaj.core;\n\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport java.util.Arrays;\nimport java.util.logging.Logger;\n\nimport org.bitcoinj.core.Base58;\n\npublic class AccountTest {\n\n    @Test\n    public void accountFromSecretKey() {\n        byte[] secretKey = Base58\n                .decode(\"4Z7cXSyeFR8wNGMVXUE1TwtKn5D5Vu7FzEv69dokLv7KrQk7h6pu4LF8ZRR9yQBhc7uSM6RTTZtU1fmaxiNrxXrs\");\n        assertEquals(\"QqCCvshxtqMAL2CVALqiJB7uEeE5mjSPsseQdDzsRUo\", new Account(secretKey).getPublicKey().toString());\n\n        assertEquals(64, new Account(secretKey).getSecretKey().length);\n    }\n\n    @Test\n    public void generateNewAccount() {\n        Account account = new Account();\n        assertEquals(64, account.getSecretKey().length);\n    }\n\n    @Test\n    public void fromBip44Mnemonic() {\n        Account acc = Account.fromBip44Mnemonic(Arrays.asList(\"hint\", \"begin\", \"crowd\", \"dolphin\", \"drive\", \"render\",\n                \"finger\", \"above\", \"sponsor\", \"prize\", \"runway\", \"invest\", \"dizzy\", \"pony\", \"bitter\", \"trial\", \"ignore\",\n                \"crop\", \"please\", \"industry\", \"hockey\", \"wire\", \"use\", \"side\"), \"\");\n\n        assertEquals(\"G75kGJiizyFNdnvvHxkrBrcwLomGJT2CigdXnsYzrFHv\", acc.getPublicKey().toString());\n    }\n\n    @Test\n    public void fromBip44MnemonicChange() {\n        Account acc = Account.fromBip44MnemonicWithChange(Arrays.asList(\"hint\", \"begin\", \"crowd\", \"dolphin\", \"drive\", \"render\",\n                \"finger\", \"above\", \"sponsor\", \"prize\", \"runway\", \"invest\", \"dizzy\", \"pony\", \"bitter\", \"trial\", \"ignore\",\n                \"crop\", \"please\", \"industry\", \"hockey\", \"wire\", \"use\", \"side\"), \"\");\n\n        assertEquals(\"AaXs7cLGcSVAsEt8QxstVrqhLhYN2iGhFNRemwYnHitV\", acc.getPublicKey().toString());\n    }\n\n    @Test\n    public void fromMnemonic() {\n        Account acc = Account.fromMnemonic(Arrays.asList(\"spider\", \"federal\", \"bleak\", \"unable\", \"ask\", \"weasel\",\n                \"diamond\", \"electric\", \"illness\", \"wheat\", \"uphold\", \"mind\"), \"\");\n\n        assertEquals(\"BQWWFhzBdw2vKKBUX17NHeFbCoFQHfRARpdztPE2tDJ\", acc.getPublicKey().toString());\n    }\n\n    @Test\n    public void fromJson() {\n        String json = \"[94,151,102,217,69,77,121,169,76,7,9,241,196,119,233,67,25,222,209,40,113,70,33,81,154,33,136,30,208,45,227,28,23,245,32,61,13,33,156,192,84,169,95,202,37,105,150,21,157,105,107,130,13,134,235,7,16,130,50,239,93,206,244,0]\";\n        Account acc = Account.fromJson(json);\n\n        assertEquals(\"2cXAj2TagK3t6rb2CGRwyhF6sTFJgLyzyDGSWBcGd8Go\", acc.getPublicKey().toString());\n    }\n\n    @Test\n    public void fromBip39MnemonicTest() {\n        Account account = Account.fromBip39Mnemonic(\n                Arrays.asList(\"iron\", \"make\", \"indoor\", \"where\", \"explain\", \"model\", \"maximum\", \"wonder\",\n                        \"toward\", \"salad\", \"fan\",  \"try\"),\n                \"\"\n        );\n\n        Logger.getAnonymousLogger().info(\"Derived pubkey = \" + account.getPublicKey().toBase58());\n        assertEquals(\"BeepMww3KwiDeEhEeZmqk4TegvJYNuDERPWm142X6Mx3\", account.getPublicKey().toBase58());\n    }\n\n    @Test\n    public void testAccountEquality() {\n        byte[] secretKey = Base58.decode(\"4Z7cXSyeFR8wNGMVXUE1TwtKn5D5Vu7FzEv69dokLv7KrQk7h6pu4LF8ZRR9yQBhc7uSM6RTTZtU1fmaxiNrxXrs\");\n        Account account1 = new Account(secretKey);\n        Account account2 = new Account(secretKey);\n        Account account3 = new Account();\n\n        assertEquals(account1.getPublicKey(), account2.getPublicKey());\n        assertNotEquals(account1.getPublicKey(), account3.getPublicKey());\n    }\n\n    @Test\n    public void testInvalidSecretKeyLength() {\n        byte[] invalidSecretKey = new byte[63]; // Invalid length\n        assertThrows(ArrayIndexOutOfBoundsException.class, () -> new Account(invalidSecretKey));\n    }\n\n    @Test\n    public void testFromBip44MnemonicWithPassphrase() {\n        Account acc = Account.fromBip44Mnemonic(\n            Arrays.asList(\"hint\", \"begin\", \"crowd\", \"dolphin\", \"drive\", \"render\",\n                \"finger\", \"above\", \"sponsor\", \"prize\", \"runway\", \"invest\", \"dizzy\", \"pony\", \"bitter\", \"trial\", \"ignore\",\n                \"crop\", \"please\", \"industry\", \"hockey\", \"wire\", \"use\", \"side\"),\n            \"passphrase123\"\n        );\n\n        assertNotNull(acc);\n        assertNotEquals(\"G75kGJiizyFNdnvvHxkrBrcwLomGJT2CigdXnsYzrFHv\", acc.getPublicKey().toString());\n    }\n\n}\n"

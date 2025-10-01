@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.0"
+
+[repo_info]
+repository = "google/skia-buildbot"
+sha = "68746095168840b4c51e113d3ff32e3d2e37fc8d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out go/roles/roles.go go/roles/roles_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting go/roles/roles.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 84.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 52, 53, 54, 55, 56, 58, 65, 66, 67, 68, 69, 70, 71, 72, 74, 78, 79, 80, 81, 82, 84, 99, 100, 101, 102, 103, 104, 106, 111, 112, 113,]
+missed_lines = [ 89, 90, 91, 92, 93, 95,]
+
+[input_info]
+test_file_path = "go/roles/roles_test.go"
+focal_file_path = "go/roles/roles.go"
+test_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/go/roles/roles_test.go"
+focal_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/go/roles/roles.go"
+first_commit_date = "2022-09-30"
+last_commit_date = "2025-03-19"
+test_file_content = "// Roles are part of the Skia Infra Authorization system.\n//\n// See go/proxy-auth-skia.\npackage roles\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestFromHeader_RoundTripToFromHeader_InvalidRolesAreRemoved(t *testing.T) {\n\troles := FromHeader(AllRoles.ToHeader())\n\trequire.Equal(t, AllValidRoles, roles)\n}\n\nfunc TestRoleFromString_NotValidRole_ReturnsInvalidRole(t *testing.T) {\n\trequire.Equal(t, InvalidRole, RoleFromString(\"this-is-not-a-valid-role\"))\n}\n\nfunc TestRolesHas_DoesContainRole_ReturnsTrue(t *testing.T) {\n\trequire.True(t, Roles{Viewer}.Has(Viewer))\n}\n\nfunc TestRolesHas_DoesNotContainRole_ReturnsFalse(t *testing.T) {\n\trequire.False(t, Roles{Viewer}.Has(Editor))\n}\n\nfunc TestRolesHas_RolesIsEmpty_ReturnsFalse(t *testing.T) {\n\trequire.False(t, Roles{}.Has(Editor))\n}"

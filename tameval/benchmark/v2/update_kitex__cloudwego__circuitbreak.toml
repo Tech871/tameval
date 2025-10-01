@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.19"
+
+[repo_info]
+repository = "cloudwego/kitex"
+sha = "6c996664cebe9ce40921378ee01b5c8b83fe6ffb"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/circuitbreak/circuitbreak.go pkg/circuitbreak/circuitbreak_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/circuitbreak/circuitbreak.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 43.0
+original_coverage = 67.0
+mutation_kill_rate = 64.0
+original_mutation_kill_rate = 64.0
+covered_lines = [ 79, 80, 81, 82, 83, 84, 85, 87, 88, 89, 91, 92, 93, 119, 120, 121, 122, 123, 124, 125, 126,]
+missed_lines = [ 59, 60, 61, 99, 100, 101, 102, 103, 104, 105, 107, 108, 109, 111, 112, 113, 141, 142, 143, 145, 146, 147, 149, 150, 151, 153, 154, 155,]
+
+[input_info]
+test_file_path = "pkg/circuitbreak/circuitbreak_test.go"
+focal_file_path = "pkg/circuitbreak/circuitbreak.go"
+test_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/circuitbreak/circuitbreak_test.go"
+focal_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/circuitbreak/circuitbreak.go"
+first_commit_date = "2021-07-09"
+last_commit_date = "2025-03-10"
+test_file_content = "/*\n * Copyright 2021 CloudWeGo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage circuitbreak\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"testing\"\n\n\t\"github.com/bytedance/gopkg/cloud/circuitbreaker\"\n\n\t\"github.com/cloudwego/kitex/internal/test\"\n)\n\ntype ctxKeyType int\n\nconst (\n\tctxKey ctxKeyType = iota\n\tctxEnabled\n\tctxErrorType\n)\n\nvar (\n\terrFake     = errors.New(\"fake error\")\n\terrDecorate = errors.New(\"decorate error\")\n\tallowed     = \"Allowed\"\n)\n\nfunc invoke(ctx context.Context, request, response interface{}) error {\n\treturn errFake\n}\n\nfunc mockGetKey(ctx context.Context, request interface{}) (key string, enabled bool) {\n\tkey = ctx.Value(ctxKey).(string)\n\tenabled = ctx.Value(ctxEnabled).(bool)\n\treturn\n}\n\nfunc mockGetErrorType(ctx context.Context, request, response interface{}, err error) ErrorType {\n\tt, ok := ctx.Value(ctxErrorType).(ErrorType)\n\tif !ok {\n\t\treturn TypeIgnorable\n\t}\n\treturn t\n}\n\nfunc mockDecorateError(ctx context.Context, request interface{}, err error) error {\n\treturn errDecorate\n}\n\ntype mockPanel struct {\n\tcircuitbreaker.Panel\n\tjudged          bool\n\ttimeoutRecorded bool\n\tfailRecorded    bool\n\tsucceedRecorded bool\n}\n\nfunc (m *mockPanel) IsAllowed(key string) bool {\n\tm.judged = true\n\treturn key == allowed\n}\n\nfunc (m *mockPanel) Timeout(key string) {\n\tm.timeoutRecorded = true\n}\n\nfunc (m *mockPanel) Fail(key string) {\n\tm.failRecorded = true\n}\n\nfunc (m *mockPanel) Succeed(key string) {\n\tm.succeedRecorded = true\n}\n\nfunc TestNewCircuitBreakerMW(t *testing.T) {\n\tctl := Control{\n\t\tGetKey:        mockGetKey,\n\t\tGetErrorType:  mockGetErrorType,\n\t\tDecorateError: mockDecorateError,\n\t}\n\tpanel, err := circuitbreaker.NewPanel(nil, circuitbreaker.Options{})\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tmp := &mockPanel{Panel: panel}\n\tcbMW := NewCircuitBreakerMW(ctl, mp)\n\t// test disabled\n\tctx := context.Background()\n\tctx = context.WithValue(ctx, ctxKey, allowed)\n\tctx = context.WithValue(ctx, ctxEnabled, false)\n\ttest.Assert(t, errors.Is(cbMW(invoke)(ctx, nil, nil), errFake))\n\ttest.Assert(t, !mp.judged)\n\t// test enabled and allowed\n\tctx = context.WithValue(ctx, ctxKey, allowed)\n\tctx = context.WithValue(ctx, ctxEnabled, true)\n\ttest.Assert(t, errors.Is(cbMW(invoke)(ctx, nil, nil), errFake))\n\ttest.Assert(t, mp.judged)\n\t// test enabled and not allowed\n\tctx = context.WithValue(ctx, ctxKey, \"you should not pass\")\n\tctx = context.WithValue(ctx, ctxEnabled, true)\n\ttest.Assert(t, errors.Is(cbMW(invoke)(ctx, nil, nil), errDecorate))\n\ttest.Assert(t, mp.judged)\n}\n\nfunc TestRecordStat(t *testing.T) {\n\tctl := Control{\n\t\tGetKey:        mockGetKey,\n\t\tGetErrorType:  mockGetErrorType,\n\t\tDecorateError: mockDecorateError,\n\t}\n\tpanel, err := circuitbreaker.NewPanel(nil, circuitbreaker.Options{})\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\t// test timeout\n\tmp := &mockPanel{Panel: panel}\n\tcbMW := NewCircuitBreakerMW(ctl, mp)\n\tctx := context.Background()\n\tctx = context.WithValue(ctx, ctxKey, allowed)\n\tctx = context.WithValue(ctx, ctxEnabled, true)\n\tctx = context.WithValue(ctx, ctxErrorType, TypeTimeout)\n\tcbMW(invoke)(ctx, nil, nil)\n\ttest.Assert(t, mp.timeoutRecorded)\n\t// test failure\n\tmp = &mockPanel{Panel: panel}\n\tcbMW = NewCircuitBreakerMW(ctl, mp)\n\tctx = context.Background()\n\tctx = context.WithValue(ctx, ctxKey, allowed)\n\tctx = context.WithValue(ctx, ctxEnabled, true)\n\tctx = context.WithValue(ctx, ctxErrorType, TypeFailure)\n\tcbMW(invoke)(ctx, nil, nil)\n\ttest.Assert(t, mp.failRecorded)\n\t// test success\n\tmp = &mockPanel{Panel: panel}\n\tcbMW = NewCircuitBreakerMW(ctl, mp)\n\tctx = context.Background()\n\tctx = context.WithValue(ctx, ctxKey, allowed)\n\tctx = context.WithValue(ctx, ctxEnabled, true)\n\tctx = context.WithValue(ctx, ctxErrorType, TypeSuccess)\n\tcbMW(invoke)(ctx, nil, nil)\n\ttest.Assert(t, mp.succeedRecorded)\n}"

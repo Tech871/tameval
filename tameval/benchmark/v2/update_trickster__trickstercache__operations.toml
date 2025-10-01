@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "trickstercache/trickster"
+sha = "99ac2462add00d5014794ec929eec27c7f1ceaa7"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/backends/rule/operations.go pkg/backends/rule/operations_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/backends/rule/operations.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 89.0
+original_coverage = 100.0
+mutation_kill_rate = 51.0
+original_mutation_kill_rate = 55.0
+covered_lines = [ 58, 59, 60, 61, 62, 63, 64, 65, 66, 86, 87, 88, 90, 91, 92, 94, 95, 96, 98, 99, 100, 102, 103, 104, 106, 107, 108, 110, 111, 112, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 141, 142, 143, 144, 147, 148, 149, 150, 151, 152, 155, 156, 157, 158, 159, 160, 163, 164, 165, 166, 167, 168, 171, 172, 173, 174, 175, 176, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 197, 198, 199, 200, 201, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 216, 217, 218, 219, 220, 221,]
+missed_lines = [ 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83,]
+
+[input_info]
+test_file_path = "pkg/backends/rule/operations_test.go"
+focal_file_path = "pkg/backends/rule/operations.go"
+test_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/backends/rule/operations_test.go"
+focal_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/backends/rule/operations.go"
+first_commit_date = "2020-08-30"
+last_commit_date = "2025-05-15"
+test_file_content = "/*\n * Copyright 2018 Comcast Cable Communications Management, LLC\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage rule\n\nimport (\n\t\"strconv\"\n\t\"testing\"\n)\n\nfunc TestBToS(t *testing.T) {\n\n\tb := btos(true, false)\n\texpected := \"true\"\n\tif b != expected {\n\t\tt.Errorf(\"expected %s got %s\", expected, b)\n\t}\n\n\tb = btos(false, true)\n\texpected = \"true\"\n\tif b != expected {\n\t\tt.Errorf(\"expected %s got %s\", expected, b)\n\t}\n\n\tb = btos(false, false)\n\texpected = \"false\"\n\tif b != expected {\n\t\tt.Errorf(\"expected %s got %s\", expected, b)\n\t}\n\n}\n\nfunc TestOperations(t *testing.T) {\n\n\ttests := []struct {\n\t\topKey, input, arg string\n\t\tnegate            bool\n\t\texpected          string\n\t}{\n\t\t{\"string-eq\", \"test\", \"test\", false, \"true\"},\n\t\t{\"string-contains\", \"test\", \"test\", false, \"true\"},\n\t\t{\"string-contains\", \"test\", \"foo\", false, \"false\"},\n\t\t{\"string-prefix\", \"test\", \"t\", false, \"true\"},\n\t\t{\"string-prefix\", \"test\", \"e\", false, \"false\"},\n\t\t{\"string-suffix\", \"test\", \"t\", false, \"true\"},\n\t\t{\"string-suffix\", \"test\", \"e\", false, \"false\"},\n\t\t{\"string-md5\", \"test\", \"\", false, \"098f6bcd4621d373cade4e832627b4f6\"},\n\t\t{\"string-sha1\", \"test\", \"\", false, \"a94a8fe5ccb19ba61c4c0873d391e987982fbbd3\"},\n\t\t{\"string-base64\", \"test\", \"\", false, \"dGVzdA==\"},\n\t\t{\"string-modulo\", \"trickster\", \"7\", false, \"0\"},\n\t\t{\"string-modulo\", \"trickster\", \"a\", false, \"\"},\n\t\t{\"num-eq\", \"1\", \"1\", false, \"true\"},\n\t\t{\"num-eq\", \"1\", \"\", false, \"\"},\n\t\t{\"num-gt\", \"1\", \"1\", false, \"false\"},\n\t\t{\"num-gt\", \"1\", \"\", false, \"\"},\n\t\t{\"num-lt\", \"1\", \"2\", false, \"true\"},\n\t\t{\"num-lt\", \"1\", \"\", false, \"\"},\n\t\t{\"num-lt\", \"\", \"1\", false, \"\"},\n\t\t{\"num-ge\", \"1\", \"2\", false, \"false\"},\n\t\t{\"num-ge\", \"1\", \"1\", false, \"true\"},\n\t\t{\"num-ge\", \"2\", \"1\", false, \"true\"},\n\t\t{\"num-ge\", \"1\", \"\", false, \"\"},\n\t\t{\"num-le\", \"1\", \"2\", false, \"true\"},\n\t\t{\"num-le\", \"1\", \"1\", false, \"true\"},\n\t\t{\"num-le\", \"2\", \"1\", false, \"false\"},\n\t\t{\"num-le\", \"1\", \"\", false, \"\"},\n\t\t{\"num-bt\", \"1\", \"\", false, \"\"},\n\t\t{\"num-bt\", \"1\", \"0-5\", false, \"true\"},\n\t\t{\"num-bt\", \"0\", \"0-5\", false, \"true\"},\n\t\t{\"num-bt\", \"-1\", \"0-5\", false, \"false\"},\n\t\t{\"num-bt\", \"6\", \"0-5\", false, \"false\"},\n\t\t{\"num-bt\", \"\", \"0-5\", false, \"\"},\n\t\t{\"num-bt\", \"6\", \"foo-5\", false, \"\"},\n\t\t{\"num-modulo\", \"6\", \"4\", false, \"2\"},\n\t\t{\"num-modulo\", \"6\", \"6\", false, \"0\"},\n\t\t{\"num-modulo\", \"a\", \"4\", false, \"\"},\n\t\t{\"num-modulo\", \"4\", \"a\", false, \"\"},\n\t\t{\"bool-eq\", \"true\", \"true\", false, \"true\"},\n\t\t{\"bool-eq\", \"a\", \"true\", false, \"\"},\n\t\t{\"bool-eq\", \"true\", \"a\", false, \"\"},\n\t}\n\tfor i, test := range tests {\n\t\tt.Run(strconv.Itoa(i), func(t *testing.T) {\n\t\t\tif f, ok := operationFuncs[operation(test.opKey)]; ok {\n\t\t\t\tgot := f(test.input, test.arg, test.negate)\n\t\t\t\tif got != test.expected {\n\t\t\t\t\tt.Errorf(\"input: %s, args: %s \\ngot      %s\\nexpected %s\", test.input, test.arg, got, test.expected)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tt.Errorf(\"unknown operation %v\", test.opKey)\n\t\t\t}\n\t\t})\n\t}\n}"

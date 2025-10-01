@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "bitpay/java-bitpay-client"
+sha = "b78e729f828b7eafc68296e679539714e78e6994"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=InvoiceWebhookTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.InvoiceWebhook  -DtargetTests=**.InvoiceWebhookTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 29.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 18, 48, 52, 53, 80, 84, 85, 112, 116, 117, 136, 141, 142, 161, 165, 166,]
+missed_lines = [ 40, 44, 45, 56, 60, 61, 64, 68, 69, 72, 76, 77, 88, 92, 93, 96, 100, 101, 104, 108, 109, 120, 124, 125, 128, 132, 133, 145, 149, 150, 153, 157, 158, 169, 173, 174, 177, 181, 182,]
+
+[input_info]
+test_file_path = "src/test/java/com/bitpay/sdk/model/invoice/InvoiceWebhookTest.java"
+focal_file_path = "src/main/java/com/bitpay/sdk/model/invoice/InvoiceWebhook.java"
+test_file_url = "https://github.com/bitpay/java-bitpay-client/blob/b78e729f828b7eafc68296e679539714e78e6994/src/test/java/com/bitpay/sdk/model/invoice/InvoiceWebhookTest.java"
+focal_file_url = "https://github.com/bitpay/java-bitpay-client/blob/b78e729f828b7eafc68296e679539714e78e6994/src/main/java/com/bitpay/sdk/model/invoice/InvoiceWebhook.java"
+first_commit_date = "2023-12-13"
+last_commit_date = "2024-01-23"
+test_file_content = "package com.bitpay.sdk.model.invoice;\n\nimport java.math.BigDecimal;\nimport java.math.BigInteger;\nimport java.util.Hashtable;\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\n\nclass InvoiceWebhookTest {\n\n\n    @Test\n    public void testManipulateUrl() {\n        InvoiceWebhook testedClass = this.getTestedClass();\n        String expected = \"someValue\";\n        testedClass.setUrl(expected);\n\n        Assertions.assertSame(expected, testedClass.getUrl());\n    }\n\n\n\n\n    @Test\n    public void testManipulateCurrency() {\n        InvoiceWebhook testedClass = this.getTestedClass();\n        String expected = \"someValue\";\n        testedClass.setCurrency(expected);\n\n        Assertions.assertSame(expected, testedClass.getCurrency());\n    }\n\n\n\n\n    @Test\n    public void testManipulateBuyerFields() {\n        InvoiceWebhook testedClass = this.getTestedClass();\n        BuyerFields expected = new BuyerFields();\n        testedClass.setBuyerFields(expected);\n\n        Assertions.assertSame(expected, testedClass.getBuyerFields());\n    }\n\n\n\n    @Test\n    public void testManipulateExchangeRates() {\n        InvoiceWebhook testedClass = this.getTestedClass();\n        Hashtable<String, Hashtable<String, BigDecimal>> expected = new Hashtable<String, Hashtable<String, BigDecimal>>();\n        testedClass.setExchangeRates(expected);\n\n        Assertions.assertSame(expected, testedClass.getExchangeRates());\n    }\n\n\n\n    @Test\n    public void testManipulateTransactionCurrency() {\n        InvoiceWebhook testedClass = this.getTestedClass();\n        String expected = \"someValue\";\n        testedClass.setTransactionCurrency(expected);\n\n        Assertions.assertSame(expected, testedClass.getTransactionCurrency());\n    }\n\n\n\n    private InvoiceWebhook getTestedClass() {\n        return new InvoiceWebhook();\n    }\n}\n"

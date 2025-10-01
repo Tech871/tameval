@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "tjblackheart/andcli"
+sha = "98ec488fe834970ab8ea07ed19bff25439b42427"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/vaults/entry.go internal/vaults/entry_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/vaults/entry.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 68.0
+original_coverage = 100.0
+mutation_kill_rate = 58.0
+original_mutation_kill_rate = 87.0
+covered_lines = [ 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 56, 60, 61, 62, 63, 64, 65, 69, 70, 71, 72, 73, 74, 75, 77, 78, 79, 80, 81, 83, 87, 88, 89,]
+missed_lines = [ 94, 95, 96, 97, 98, 100, 101, 102, 103, 105, 106, 107, 108, 110, 111, 112, 113, 115, 116, 117, 118, 120,]
+
+[input_info]
+test_file_path = "internal/vaults/entry_test.go"
+focal_file_path = "internal/vaults/entry.go"
+test_file_url = "https://github.com/tjblackheart/andcli/blob/98ec488fe834970ab8ea07ed19bff25439b42427/internal/vaults/entry_test.go"
+focal_file_url = "https://github.com/tjblackheart/andcli/blob/98ec488fe834970ab8ea07ed19bff25439b42427/internal/vaults/entry.go"
+first_commit_date = "2025-02-12"
+last_commit_date = "2025-07-06"
+test_file_content = "package vaults\n\nimport (\n\t\"crypto/sha1\"\n\t\"crypto/sha256\"\n\t\"crypto/sha512\"\n\t\"reflect\"\n\t\"testing\"\n\n\t\"github.com/xlzd/gotp\"\n)\n\nfunc TestEntryGenerateHasher(t *testing.T) {\n\ttests := []struct {\n\t\tname  string\n\t\tentry *Entry\n\t\twant  *gotp.Hasher\n\t}{\n\t\t{\n\t\t\t\"default\",\n\t\t\t&Entry{},\n\t\t\t&gotp.Hasher{HashName: \"sha1\", Digest: sha1.New},\n\t\t},\n\t\t{\n\t\t\t\"sha256\",\n\t\t\t&Entry{Algorithm: \"SHA256\"},\n\t\t\t&gotp.Hasher{HashName: \"sha256\", Digest: sha256.New},\n\t\t},\n\t\t{\n\t\t\t\"sha512\",\n\t\t\t&Entry{Algorithm: \"SHA512\"},\n\t\t\t&gotp.Hasher{HashName: \"sha512\", Digest: sha512.New},\n\t\t},\n\t\t{\n\t\t\t\"sha224\",\n\t\t\t&Entry{Algorithm: \"SHA-224\"},\n\t\t\t&gotp.Hasher{HashName: \"sha224\", Digest: sha256.New224},\n\t\t},\n\t\t{\n\t\t\t\"sha384\",\n\t\t\t&Entry{Algorithm: \"SHA-384\"},\n\t\t\t&gotp.Hasher{HashName: \"sha384\", Digest: sha512.New384},\n\t\t},\n\t\t{\n\t\t\t\"ignores cases\",\n\t\t\t&Entry{Algorithm: \"sha1\"},\n\t\t\t&gotp.Hasher{HashName: \"sha1\", Digest: sha1.New},\n\t\t},\n\t\t{\n\t\t\t\"handles dashes\",\n\t\t\t&Entry{Algorithm: \"SHA-1\"},\n\t\t\t&gotp.Hasher{HashName: \"sha1\", Digest: sha1.New},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\th := tt.entry.hasher()\n\t\t\tif !reflect.DeepEqual(tt.want.HashName, h.HashName) {\n\t\t\t\tt.Errorf(\"entry.hasher() = %v, want %v\", h, tt.want)\n\t\t\t}\n\n\t\t\tfn1 := reflect.Indirect(reflect.ValueOf(tt.want.Digest))\n\t\t\tfn2 := reflect.Indirect(reflect.ValueOf(h.Digest))\n\t\t\tif !reflect.DeepEqual(fn1, fn2) {\n\t\t\t\tt.Errorf(\"entry.hasher() = %v, want %v\", h, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestEntry_Title(t *testing.T) {\n\ttests := []struct {\n\t\tname string\n\t\te    Entry\n\t\twant string\n\t}{\n\t\t{\"title from issuer\", Entry{Label: \"label\", Issuer: \"issuer\"}, \"issuer\"},\n\t\t{\"title from label\", Entry{Label: \"label\", Issuer: \"\"}, \"label\"},\n\t\t{\"title from label short\", Entry{Label: \"label - label2\", Issuer: \"\"}, \"label\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := tt.e.Title(); got != tt.want {\n\t\t\t\tt.Errorf(\"Entry.Title() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestEntry_Description(t *testing.T) {\n\ttests := []struct {\n\t\tname string\n\t\te    Entry\n\t\twant string\n\t}{\n\t\t{\"desc base\", Entry{Label: \"label\"}, \"label\"},\n\t\t{\"desc split 1\", Entry{Label: \"part1 - part2\"}, \"part2\"},\n\t\t{\"desc split 2\", Entry{Label: \"part1 - part2:part3\"}, \"part3\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := tt.e.Description(); got != tt.want {\n\t\t\t\tt.Errorf(\"Entry.Description() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestEntry_FilterValue(t *testing.T) {\n\ttests := []struct {\n\t\tname string\n\t\te    Entry\n\t\twant string\n\t}{\n\t\t{\"value: issuer\", Entry{Label: \"label\", Issuer: \"issuer\"}, \"issuer\"},\n\t\t{\"value: label\", Entry{Label: \"label\", Issuer: \"\"}, \"label\"},\n\t\t{\"value: label short\", Entry{Label: \"label - label2\", Issuer: \"\"}, \"label\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := tt.e.FilterValue(); got != tt.want {\n\t\t\t\tt.Errorf(\"Entry.FilterValue() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestEntry_GenerateTOTP(t *testing.T) {\n\ttests := []struct {\n\t\tname string\n\t\te    Entry\n\t}{\n\t\t{\n\t\t\t\"entry1\",\n\t\t\tEntry{\n\t\t\t\tSecret:    \"4S62BZNFXXSZLCRO\",\n\t\t\t\tDigits:    6,\n\t\t\t\tPeriod:    30,\n\t\t\t\tAlgorithm: \"sha1\",\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\t\"entry2\",\n\t\t\tEntry{\n\t\t\t\tSecret:    \"4S62BZNFXXSZLCRO\",\n\t\t\t\tDigits:    10,\n\t\t\t\tPeriod:    40,\n\t\t\t\tAlgorithm: \"sha1\",\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\ts, i := tt.e.GenerateTOTP()\n\t\t\tif s == \"\" {\n\t\t\t\tt.Fatal(\"Entry.GenerateTOTP(): got empty string\")\n\t\t\t}\n\n\t\t\tif len(s) != tt.e.Digits {\n\t\t\t\tt.Fatalf(\"Entry.GenerateTOTP(): len is %v, want %v\", len(s), tt.e.Digits)\n\t\t\t}\n\n\t\t\tif i == 0 {\n\t\t\t\tt.Errorf(\"Entry.GenerateTOTP(): got empty time value\")\n\t\t\t}\n\t\t})\n\t}\n}"

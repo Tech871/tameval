@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "matthewwardrop/formulaic"
+sha = "46eb1f26c79d3f999c12738cde6b11f875c7c9c8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=formulaic/transforms/patsy_compat.py -m pytest -q --junit-xml=test_output.xml tests/transforms/test_patsy_compat.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target formulaic.transforms.patsy_compat --unit-test tests.transforms.test_patsy_compat --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target formulaic/transforms/patsy_compat.py --unit-test tests/transforms/test_patsy_compat.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/transforms/test_patsy_compat.py"
+focal_file_path = "formulaic/transforms/patsy_compat.py"
+test_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/tests/transforms/test_patsy_compat.py"
+focal_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/formulaic/transforms/patsy_compat.py"
+first_commit_date = "2023-04-19"
+last_commit_date = "2025-01-07"
+test_file_content = "import numpy\nimport pandas\n\nfrom formulaic import model_matrix\nfrom formulaic.transforms.contrasts import TreatmentContrasts\nfrom formulaic.transforms.patsy_compat import Treatment, standardize\nfrom formulaic.transforms.scale import scale\n\n\ndef test_standardize():\n\n\ndef test_Treatment():\n\n\ndef test_Q():"

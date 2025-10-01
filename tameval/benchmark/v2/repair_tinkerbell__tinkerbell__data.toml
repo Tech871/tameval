@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "tinkerbell/tinkerbell"
+sha = "702865f012a2ed3cafbe215976ebdfc7b5c3d072"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/data/data.go pkg/data/data_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/data/data.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 94.0
+original_coverage = 94.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 94.0
+covered_lines = [ 52, 53, 54, 55, 56, 58, 59, 60, 61, 63, 64, 65, 66, 68, 69, 70, 71, 73, 74, 75, 76, 78, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 99, 100, 101, 102, 103, 104, 105, 109,]
+missed_lines = [ 106, 107, 108,]
+
+[input_info]
+test_file_path = "pkg/data/data_test.go"
+focal_file_path = "pkg/data/data.go"
+test_file_url = "https://github.com/tinkerbell/tinkerbell/blob/702865f012a2ed3cafbe215976ebdfc7b5c3d072/pkg/data/data_test.go"
+focal_file_url = "https://github.com/tinkerbell/tinkerbell/blob/702865f012a2ed3cafbe215976ebdfc7b5c3d072/pkg/data/data.go"
+first_commit_date = "2025-04-10"
+last_commit_date = "2025-08-06"
+test_file_content = "package data\n\nimport (\n\t\"net\"\n\t\"net/netip\"\n\t\"net/url\"\n\t\"testing\"\n\n\t\"github.com/google/go-cmp/cmp\"\n\t\"go.opentelemetry.io/otel/attribute\"\n)\n\nfunc TestDHCPEncodeToAttributes(t *testing.T) {\n\ttests := map[string]struct {\n\t\tdhcp *DHCP\n\t\twant []attribute.KeyValue\n\t}{\n\t\t\"successful encode of zero value DHCP struct\": {\n\t\t\tdhcp: &DHCP{},\n\t\t\twant: []attribute.KeyValue{\n\t\t\t\tattribute.String(\"DHCP.MACAddress\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.IPAddress\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.Hostname\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.SubnetMask\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.DefaultGateway\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.NameServers\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.DomainName\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.BroadcastAddress\", \"\"),\n\t\t\t\tattribute.String(\"DHCP.NTPServers\", \"\"),\n\t\t\t\tattribute.Int64(\"DHCP.LeaseTime\", 0),\n\t\t\t\tattribute.String(\"DHCP.DomainSearch\", \"\"),\n\t\t\t},\n\t\t},\n\t\t\"successful encode of populated DHCP struct\": {\n\t\t\tdhcp: &DHCP{\n\t\t\t\tMACAddress:       []byte{0x00, 0x01, 0x02, 0x03, 0x04, 0x05},\n\t\t\t\tIPAddress:        netip.MustParseAddr(\"192.168.2.150\"),\n\t\t\t\tSubnetMask:       []byte{255, 255, 255, 0},\n\t\t\t\tDefaultGateway:   netip.MustParseAddr(\"192.168.2.1\"),\n\t\t\t\tNameServers:      []net.IP{{1, 1, 1, 1}, {8, 8, 8, 8}},\n\t\t\t\tHostname:         \"test\",\n\t\t\t\tDomainName:       \"example.com\",\n\t\t\t\tBroadcastAddress: netip.MustParseAddr(\"192.168.2.255\"),\n\t\t\t\tNTPServers:       []net.IP{{132, 163, 96, 2}},\n\t\t\t\tLeaseTime:        86400,\n\t\t\t\tDomainSearch:     []string{\"example.com\", \"example.org\"},\n\t\t\t},\n\t\t\twant: []attribute.KeyValue{\n\t\t\t\tattribute.String(\"DHCP.MACAddress\", \"00:01:02:03:04:05\"),\n\t\t\t\tattribute.String(\"DHCP.IPAddress\", \"192.168.2.150\"),\n\t\t\t\tattribute.String(\"DHCP.Hostname\", \"test\"),\n\t\t\t\tattribute.String(\"DHCP.SubnetMask\", \"255.255.255.0\"),\n\t\t\t\tattribute.String(\"DHCP.DefaultGateway\", \"192.168.2.1\"),\n\t\t\t\tattribute.String(\"DHCP.NameServers\", \"1.1.1.1,8.8.8.8\"),\n\t\t\t\tattribute.String(\"DHCP.DomainName\", \"example.com\"),\n\t\t\t\tattribute.String(\"DHCP.BroadcastAddress\", \"192.168.2.255\"),\n\t\t\t\tattribute.String(\"DHCP.NTPServers\", \"132.163.96.2\"),\n\t\t\t\tattribute.Int64(\"DHCP.LeaseTime\", 86400),\n\t\t\t\tattribute.String(\"DHCP.DomainSearch\", \"example.com,example.org\"),\n\t\t\t},\n\t\t},\n\t}\n\tfor name, tt := range tests {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\twant := attribute.NewSet(tt.want...)\n\t\t\tgot := attribute.NewSet(tt.dhcp.EncodeToAttributes()...)\n\t\t\tenc := attribute.DefaultEncoder()\n\t\t\tif diff := cmp.Diff(got.Encoded(enc), want.Encoded(enc)); diff != \"\" {\n\t\t\t\tt.Fatal(diff)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestNetbootEncodeToAttributes(t *testing.T) {\n\ttests := map[string]struct {\n\t\tnetboot *Netboot\n\t\twant    []attribute.KeyValue\n\t}{\n\t\t\"successful encode of zero value Netboot struct\": {\n\t\t\tnetboot: &Netboot{},\n\t\t\twant: []attribute.KeyValue{\n\t\t\t\tattribute.Bool(\"Netboot.AllowNetboot\", false),\n\t\t\t},\n\t\t},\n\t\t\"successful encode of populated Netboot struct\": {\n\t\t\tnetboot: &Netboot{\n\t\t\t\tAllowNetboot:  true,\n\t\t\t\tIPXEScriptURL: &url.URL{Scheme: \"http\", Host: \"example.com\"},\n\t\t\t},\n\t\t\twant: []attribute.KeyValue{\n\t\t\t\tattribute.Bool(\"Netboot.AllowNetboot\", true),\n\t\t\t\tattribute.String(\"Netboot.IPXEScriptURL\", \"http:\n\t\t\t},\n\t\t},\n\t}\n\tfor name, tt := range tests {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\twant := attribute.NewSet(tt.want...)\n\t\t\tgot := attribute.NewSet(tt.netboot.EncodeToAttributes()...)\n\t\t\tenc := attribute.DefaultEncoder()\n\t\t\tif diff := cmp.Diff(got.Encoded(enc), want.Encoded(enc)); diff != \"\" {\n\t\t\t\tt.Fatal(diff)\n\t\t\t}\n\t\t})\n\t}\n}"

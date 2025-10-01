@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "cucumber/cucumber-jvm"
+sha = "953adf561d12439ee5d6596c2aec241381580107"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl cucumber-java -Dtest=JavaHookDefinitionTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl cucumber-java -DtargetClasses=**.JavaHookDefinition  -DtargetTests=**.JavaHookDefinitionTest  -DoutputFormats=XML"
+coverage_report_path = "cucumber-java/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "cucumber-java/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 21, 22, 23, 24, 25, 28, 29, 30, 33, 34, 35, 36, 40, 41, 42, 44, 48, 49, 50, 51, 52, 53, 54, 55, 61, 62, 64, 67, 68,]
+missed_lines = [ 72, 77, 82,]
+
+[input_info]
+test_file_path = "cucumber-java/src/test/java/io/cucumber/java/JavaHookDefinitionTest.java"
+focal_file_path = "cucumber-java/src/main/java/io/cucumber/java/JavaHookDefinition.java"
+test_file_url = "https://github.com/cucumber/cucumber-jvm/blob/953adf561d12439ee5d6596c2aec241381580107/cucumber-java/src/test/java/io/cucumber/java/JavaHookDefinitionTest.java"
+focal_file_url = "https://github.com/cucumber/cucumber-jvm/blob/953adf561d12439ee5d6596c2aec241381580107/cucumber-java/src/main/java/io/cucumber/java/JavaHookDefinition.java"
+first_commit_date = "2022-07-31"
+last_commit_date = "2025-02-02"
+test_file_content = "package io.cucumber.java;\n\nimport io.cucumber.core.backend.Lookup;\nimport io.cucumber.core.backend.TestCaseState;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.mockito.junit.jupiter.MockitoSettings;\nimport org.mockito.quality.Strictness;\n\nimport java.lang.reflect.Method;\nimport java.util.List;\n\nimport static io.cucumber.core.backend.HookDefinition.HookType.BEFORE;\nimport static org.hamcrest.CoreMatchers.startsWith;\nimport static org.hamcrest.MatcherAssert.assertThat;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\n@SuppressWarnings({ \"WeakerAccess\" })\n@ExtendWith({ MockitoExtension.class })\n@MockitoSettings(strictness = Strictness.STRICT_STUBS)\npublic class JavaHookDefinitionTest {\n\n    private final Lookup lookup = new Lookup() {\n\n        @Override\n        @SuppressWarnings(\"unchecked\")\n        public <T> T getInstance(Class<T> glueClass) {\n            return (T) JavaHookDefinitionTest.this;\n        }\n    };\n\n    @Mock\n    private TestCaseState state;\n\n    private boolean invoked = false;\n\n    @Test\n    void can_create_with_no_argument() throws Throwable {\n        Method method = JavaHookDefinitionTest.class.getMethod(\"no_arguments\");\n        JavaHookDefinition definition = new JavaHookDefinition(BEFORE, method, \"\", 0, lookup);\n        definition.execute(state);\n        assertTrue(invoked);\n    }\n\n    @Before\n    public void no_arguments() {\n        invoked = true;\n    }\n\n    @Test\n    void can_create_with_single_scenario_argument() throws Throwable {\n        Method method = JavaHookDefinitionTest.class.getMethod(\"single_argument\", Scenario.class);\n        JavaHookDefinition definition = new JavaHookDefinition(BEFORE, method, \"\", 0, lookup);\n        definition.execute(state);\n        assertTrue(invoked);\n    }\n\n    @Before\n    public void single_argument(Scenario scenario) {\n        invoked = true;\n    }\n\n    @Test\n    void fails_if_hook_argument_is_not_scenario_result() throws NoSuchMethodException {\n        Method method = JavaHookDefinitionTest.class.getMethod(\"invalid_parameter\", String.class);\n        InvalidMethodSignatureException exception = assertThrows(\n            InvalidMethodSignatureException.class,\n            () -> new JavaHookDefinition(BEFORE, method, \"\", 0, lookup));\n        assertThat(exception.getMessage(), startsWith(\"\" +\n                \"A method annotated with Before, After, BeforeStep or AfterStep must have one of these signatures:\\n\" +\n                \" * public void before_or_after(io.cucumber.java.Scenario scenario)\\n\" +\n                \" * public void before_or_after()\\n\" +\n                \"at io.cucumber.java.JavaHookDefinitionTest.invalid_parameter(java.lang.String\"));\n    }\n\n    public void invalid_parameter(String badType) {\n\n    }\n\n    @Test\n    void fails_if_generic_hook_argument_is_not_scenario_result() throws NoSuchMethodException {\n        Method method = JavaHookDefinitionTest.class.getMethod(\"invalid_generic_parameter\", List.class);\n        assertThrows(\n            InvalidMethodSignatureException.class,\n            () -> new JavaHookDefinition(BEFORE, method, \"\", 0, lookup));\n    }\n\n    public void invalid_generic_parameter(List<String> badType) {\n\n    }\n\n    @Test\n    void fails_if_too_many_arguments() throws NoSuchMethodException {\n        Method method = JavaHookDefinitionTest.class.getMethod(\"too_many_parameters\", Scenario.class, String.class);\n        assertThrows(\n            InvalidMethodSignatureException.class,\n            () -> new JavaHookDefinition(BEFORE, method, \"\", 0, lookup));\n    }\n\n    public void too_many_parameters(Scenario arg1, String arg2) {\n\n    }\n\n    @Test\n    void fails_with_non_void_return_type() throws Throwable {\n        Method method = JavaHookDefinitionTest.class.getMethod(\"string_return_type\");\n        InvalidMethodSignatureException exception = assertThrows(\n            InvalidMethodSignatureException.class,\n            () -> new JavaHookDefinition(BEFORE, method, \"\", 0, lookup));\n        assertThat(exception.getMessage(), startsWith(\"\" +\n                \"A method annotated with Before, After, BeforeStep or AfterStep must have one of these signatures:\\n\" +\n                \" * public void before_or_after(io.cucumber.java.Scenario scenario)\\n\" +\n                \" * public void before_or_after()\\n\" +\n                \"at io.cucumber.java.JavaHookDefinitionTest.string_return_type()\\n\"));\n    }\n\n    @Before\n    public String string_return_type() {\n        invoked = true;\n        return \"\";\n    }\n\n}\n"

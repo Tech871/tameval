@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "nom-tam-fits/nom-tam-fits"
+sha = "ef5e60895f98eaba44b4220e64407394b05f44ff"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=NullDataTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.NullData  -DtargetTests=**.NullDataTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 80.0
+original_coverage = 87.0
+mutation_kill_rate = 25.0
+original_mutation_kill_rate = 25.0
+covered_lines = [ 52, 57, 58, 59, 62, 63, 64, 65, 74, 79, 84, 85,]
+missed_lines = [ 69, 89, 94,]
+
+[input_info]
+test_file_path = "src/test/java/nom/tam/fits/NullDataTest.java"
+focal_file_path = "src/main/java/nom/tam/fits/NullData.java"
+test_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/test/java/nom/tam/fits/NullDataTest.java"
+focal_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/main/java/nom/tam/fits/NullData.java"
+first_commit_date = "2022-09-28"
+last_commit_date = "2024-01-15"
+test_file_content = "package nom.tam.fits;\n\n/*-\n * #%L\n * nom.tam FITS library\n * %%\n * Copyright (C) 1996 - 2023 nom-tam-fits\n * %%\n * This is free and unencumbered software released into the public domain.\n *\n * Anyone is free to copy, modify, publish, use, compile, sell, or\n * distribute this software, either in source code form or as a compiled\n * binary, for any purpose, commercial or non-commercial, and by any\n * means.\n *\n * In jurisdictions that recognize copyright laws, the author or authors\n * of this software dedicate any and all copyright interest in the\n * software to the public domain. We make this dedication for the benefit\n * of the public at large and to the detriment of our heirs and\n * successors. We intend this dedication to be an overt act of\n * relinquishment in perpetuity of all present and future rights to this\n * software under copyright law.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR\n * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,\n * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR\n * OTHER DEALINGS IN THE SOFTWARE.\n * #L%\n */\n\nimport java.io.BufferedReader;\nimport java.io.ByteArrayInputStream;\nimport java.io.ByteArrayOutputStream;\nimport java.io.InputStreamReader;\nimport java.io.PrintStream;\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\nimport nom.tam.fits.header.Standard;\n\npublic class NullDataTest {\n\n    @Test\n    public void testNullDataHDU() throws Exception {\n        NullDataHDU hdu = new NullDataHDU();\n        Assert.assertEquals(NullData.class, hdu.getData().getClass());\n        Assert.assertEquals(Standard.XTENSION_IMAGE, hdu.getCanonicalXtension());\n\n        Data data = hdu.getData();\n        Assert.assertEquals(0, data.getTrueSize());\n        Assert.assertTrue(data.isEmpty());\n        Assert.assertNull(data.getData());\n\n        data.read(null); // Should not throw exception\n    }\n\n    @Test\n    public void testNullDataHDUFromHeader() throws Exception {\n        Header h = new Header();\n        NullDataHDU hdu = new NullDataHDU(h);\n        Assert.assertEquals(h, hdu.getHeader());\n    }\n\n    @Test\n    public void testNullDataDummy() throws Exception {\n        NullDataHDU hdu = BasicHDU.getDummyHDU();\n        Assert.assertEquals(NullData.class, hdu.getData().getClass());\n        Assert.assertEquals(Standard.XTENSION_IMAGE, hdu.getCanonicalXtension());\n        Data data = hdu.getData();\n        Assert.assertEquals(0, data.getTrueSize());\n    }\n\n    @Test\n    public void testNullDataInfo() throws Exception {\n        NullDataHDU hdu = new NullDataHDU();\n        ByteArrayOutputStream bout = new ByteArrayOutputStream();\n        PrintStream out = new PrintStream(bout, true);\n        hdu.info(out);\n        out.flush();\n        BufferedReader in = new BufferedReader(new InputStreamReader(new ByteArrayInputStream(bout.toByteArray())));\n        String line = in.readLine().toLowerCase();\n\n        Assert.assertFalse(line.contains(\"image\"));\n        Assert.assertFalse(line.contains(\"table\"));\n    }\n}"

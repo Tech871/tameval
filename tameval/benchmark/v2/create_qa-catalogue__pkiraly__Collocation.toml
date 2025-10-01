@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "pkiraly/qa-catalogue"
+sha = "66193841a3a3402c99e7e2392de68536ee11568b"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=CollocationTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.Collocation  -DtargetTests=**.CollocationTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/de/gwdg/metadataqa/marc/cli/utils/CollocationTest.java"
+focal_file_path = "src/main/java/de/gwdg/metadataqa/marc/cli/utils/Collocation.java"
+test_file_url = "https://github.com/pkiraly/qa-catalogue/blob/66193841a3a3402c99e7e2392de68536ee11568b/src/test/java/de/gwdg/metadataqa/marc/cli/utils/CollocationTest.java"
+focal_file_url = "https://github.com/pkiraly/qa-catalogue/blob/66193841a3a3402c99e7e2392de68536ee11568b/src/main/java/de/gwdg/metadataqa/marc/cli/utils/Collocation.java"
+first_commit_date = "2020-10-30"
+last_commit_date = "2024-04-17"
+test_file_content = ""

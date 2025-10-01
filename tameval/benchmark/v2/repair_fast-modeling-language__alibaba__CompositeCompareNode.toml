@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "alibaba/fast-modeling-language"
+sha = "d453da0f0f93eb0a9b7879049d087ab8498358e5"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl fastmodel-compare -Dtest=CompositeCompareNodeTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl fastmodel-compare -DtargetClasses=**.CompositeCompareNode  -DtargetTests=**.CompositeCompareNodeTest  -DoutputFormats=XML"
+coverage_report_path = "fastmodel-compare/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "fastmodel-compare/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 59.0
+original_coverage = 59.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 32.0
+covered_lines = [ 46, 47, 48, 52, 53, 54, 55, 56, 57, 58, 59, 62, 63, 68, 76, 78, 80, 81, 82, 83, 84, 85, 86, 89, 91, 92, 93, 101, 102, 103, 104, 106, 109, 111, 122, 133, 137, 138, 140, 141, 144, 148, 149, 150, 153, 154, 155, 156, 158, 160, 164, 174, 184,]
+missed_lines = [ 64, 65, 77, 97, 98, 99, 107, 112, 113, 114, 116, 117, 119, 120, 123, 124, 125, 127, 128, 130, 151, 165, 166, 167, 168, 169, 170, 171, 172, 175, 176, 177, 178, 179, 180, 181, 182,]
+
+[input_info]
+test_file_path = "fastmodel-compare/src/test/java/com/aliyun/fastmodel/compare/impl/CompositeCompareNodeTest.java"
+focal_file_path = "fastmodel-compare/src/main/java/com/aliyun/fastmodel/compare/impl/CompositeCompareNode.java"
+test_file_url = "https://github.com/alibaba/fast-modeling-language/blob/d453da0f0f93eb0a9b7879049d087ab8498358e5/fastmodel-compare/src/test/java/com/aliyun/fastmodel/compare/impl/CompositeCompareNodeTest.java"
+focal_file_url = "https://github.com/alibaba/fast-modeling-language/blob/d453da0f0f93eb0a9b7879049d087ab8498358e5/fastmodel-compare/src/main/java/com/aliyun/fastmodel/compare/impl/CompositeCompareNode.java"
+first_commit_date = "2022-03-30"
+last_commit_date = "2024-07-07"
+test_file_content = "\n\npackage com.aliyun.fastmodel.compare.impl;\n\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Optional;\nimport java.util.stream.Collectors;\n\nimport com.aliyun.fastmodel.compare.CompareStrategy;\nimport com.aliyun.fastmodel.compare.impl.helper.ComparePair;\nimport com.aliyun.fastmodel.core.tree.BaseStatement;\nimport com.aliyun.fastmodel.core.tree.Node;\nimport com.aliyun.fastmodel.core.tree.QualifiedName;\nimport com.aliyun.fastmodel.core.tree.expr.Identifier;\nimport com.aliyun.fastmodel.core.tree.statement.CompositeStatement;\nimport com.aliyun.fastmodel.core.tree.statement.constants.TableDetailType;\nimport com.aliyun.fastmodel.core.tree.statement.table.ColumnDefinition;\nimport com.aliyun.fastmodel.core.tree.statement.table.CreateTable;\nimport com.google.common.collect.ImmutableList;\nimport com.google.common.collect.Lists;\nimport com.google.common.collect.Maps;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertTrue;\n\n\npublic class CompositeCompareNodeTest {\n\n    CompositeCompareNode compositeCompareNode;\n\n    @Before\n    public void setUp() throws Exception {\n        Map<String, BaseCompareNode> map = Maps.newHashMap();\n        map.put(CreateTable.class.getName(), new CreateTableCompareNode());\n        compositeCompareNode = new CompositeCompareNode(map);\n    }\n\n    @Test\n    public void compareResult() {\n        List<BaseStatement> statements = ImmutableList.of(\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"a\"))\n                .detailType(TableDetailType.NORMAL_DIM).build()\n        );\n        List<ColumnDefinition> list = ImmutableList.of(\n            ColumnDefinition.builder()\n                .colName(new Identifier(\"c1\"))\n                .build()\n        );\n\n        List<BaseStatement> before = Lists.newArrayList(\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"a\"))\n                .columns(list)\n                .detailType(TableDetailType.NORMAL_DIM).build()\n        );\n        List<BaseStatement> baseStatementList = compositeCompareNode.compareResult(new CompositeStatement(before),\n            new CompositeStatement(\n                statements\n            ), CompareStrategy.INCREMENTAL);\n        String collect = baseStatementList.stream().map(BaseStatement::toString).collect(Collectors.joining(\";\\n\"));\n    }\n\n    @Test\n    public void testCompareResultWithSort() {\n        List<BaseStatement> before = Lists.newArrayList(\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"c\"))\n                .detailType(TableDetailType.NORMAL_DIM)\n                .build(),\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"b\"))\n                .detailType(TableDetailType.NORMAL_DIM)\n                .build(),\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"a\"))\n                .detailType(TableDetailType.NORMAL_DIM)\n                .build()\n        );\n\n        List<BaseStatement> after = Lists.newArrayList(\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"x\"))\n                .detailType(TableDetailType.NORMAL_DIM).build(),\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"b\"))\n                .detailType(TableDetailType.NORMAL_DIM).build(),\n            CreateTable.builder()\n                .tableName(QualifiedName.of(\"c\"))\n                .detailType(TableDetailType.NORMAL_DIM).build()\n\n        );\n        List<BaseStatement> baseStatementList = compositeCompareNode.compareResult(new CompositeStatement(before),\n            new CompositeStatement(\n                after\n            ), CompareStrategy.INCREMENTAL);\n        String collect = baseStatementList.stream().map(BaseStatement::toString).collect(Collectors.joining(\";\\n\"));\n    }\n\n    @Test\n    public void testPrepareCompare() {\n        CreateTable c = CreateTable.builder()\n            .tableName(QualifiedName.of(\"a\"))\n            .build();\n        CreateTable d = CreateTable.builder()\n            .tableName(QualifiedName.of(\"b\"))\n            .build();\n        ComparePair comparePair = compositeCompareNode.prepareCompare(Optional.of(c),\n            Optional.of(new CompositeStatement(Arrays.asList(d))));\n        Optional<Node> left = comparePair.getLeft();\n    }\n}"

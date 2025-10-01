@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "databricks/databricks-sdk-java"
+sha = "1aaab52533750ad00bb98d0a13d3895f384e77e0"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl databricks-sdk-java -Dtest=FileTokenCacheTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl databricks-sdk-java -DtargetClasses=**.FileTokenCache  -DtargetTests=**.FileTokenCacheTest  -DoutputFormats=XML"
+coverage_report_path = "databricks-sdk-java/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "databricks-sdk-java/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 84.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "databricks-sdk-java/src/test/java/com/databricks/sdk/core/oauth/FileTokenCacheTest.java"
+focal_file_path = "databricks-sdk-java/src/main/java/com/databricks/sdk/core/oauth/FileTokenCache.java"
+test_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/test/java/com/databricks/sdk/core/oauth/FileTokenCacheTest.java"
+focal_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/main/java/com/databricks/sdk/core/oauth/FileTokenCache.java"
+first_commit_date = "2025-04-17"
+last_commit_date = "2025-04-17"
+test_file_content = "package com.databricks.sdk.core.oauth;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport java.io.IOException;\nimport java.nio.file.Files;\nimport java.nio.file.Path;\nimport java.time.Instant;\nimport java.util.Arrays;\nimport java.util.List;\nimport org.junit.jupiter.api.AfterEach;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.io.TempDir;\n\n/** Tests for the FileTokenCache implementation of TokenCache. */\npublic class FileTokenCacheTest {\n  private static final String TEST_HOST = \"https://test-host.cloud.databricks.com\";\n  private static final String TEST_CLIENT_ID = \"test-client-id\";\n  private static final List<String> TEST_SCOPES =\n      Arrays.asList(\"offline_access\", \"clusters\", \"sql\");\n  private Path cacheFile;\n  private FileTokenCache tokenCache;\n\n  @BeforeEach\n  void setUp() {\n    cacheFile = TokenCacheUtils.getCacheFilePath(TEST_HOST, TEST_CLIENT_ID, TEST_SCOPES);\n    tokenCache = new FileTokenCache(cacheFile);\n  }\n\n  @AfterEach\n  void tearDown() throws IOException {\n    Files.deleteIfExists(cacheFile);\n  }\n\n  @Test\n  void testEmptyCache() {\n    // When no cache file exists\n    assertNull(tokenCache.load(), \"Loading from non-existent cache should return null\");\n  }\n\n  @Test\n  void testSaveAndLoadToken() {\n    // Given a token\n    Instant expiry = Instant.now().plusSeconds(3600);\n    Token token = new Token(\"access-token\", \"Bearer\", \"refresh-token\", expiry);\n\n    // When saving and loading the token\n    tokenCache.save(token);\n    Token loadedToken = tokenCache.load();\n\n    // Then the loaded token should match the original\n    assertNotNull(loadedToken, \"Loaded token should not be null\");\n    assertEquals(\"access-token\", loadedToken.getAccessToken());\n    assertEquals(\"Bearer\", loadedToken.getTokenType());\n    assertEquals(\"refresh-token\", loadedToken.getRefreshToken());\n    assertFalse(loadedToken.isExpired(), \"Token should not be expired\");\n  }\n\n  @Test\n  void testTokenExpiry() {\n    // Create an expired token\n    Instant pastTime = Instant.now().minusSeconds(3600);\n    Token expiredToken = new Token(\"access-token\", \"Bearer\", \"refresh-token\", pastTime);\n\n    // Verify it's marked as expired\n    assertTrue(expiredToken.isExpired(), \"Token should be expired\");\n\n    // Create a valid token\n    Instant futureTime = Instant.now().plusSeconds(1800);\n    Token validToken = new Token(\"access-token\", \"Bearer\", \"refresh-token\", futureTime);\n\n    // Verify it's not marked as expired\n    assertFalse(validToken.isExpired(), \"Token should not be expired\");\n  }\n\n  @Test\n  void testNullPathRejection() {\n    // FileTokenCache should reject null path\n    assertThrows(\n        NullPointerException.class,\n        () -> new FileTokenCache(null),\n        \"Should throw NullPointerException for null path\");\n  }\n\n  @Test\n  void testOverwriteToken() {\n    // Given two tokens saved in sequence\n    Token token1 = new Token(\"token1\", \"Bearer\", \"refresh1\", Instant.now().plusSeconds(3600));\n    Token token2 = new Token(\"token2\", \"Bearer\", \"refresh2\", Instant.now().plusSeconds(7200));\n\n    tokenCache.save(token1);\n    tokenCache.save(token2);\n\n    // When loading from cache\n    Token loadedToken = tokenCache.load();\n\n    // Then the second token should be loaded\n    assertNotNull(loadedToken, \"Loaded token should not be null\");\n    assertEquals(\"token2\", loadedToken.getAccessToken());\n    assertEquals(\"refresh2\", loadedToken.getRefreshToken());\n  }\n\n  @Test\n  void testWithCustomPath(@TempDir Path tempDir) {\n    // Given a token cache with a custom path\n    Path tempPath = tempDir.resolve(\"custom-token-cache\");\n    FileTokenCache cache = new FileTokenCache(tempPath);\n\n    // And a token\n    Token testToken =\n        new Token(\n            \"test-access-token\", \"Bearer\", \"test-refresh-token\", Instant.now().plusSeconds(3600));\n\n    // When saving and loading\n    cache.save(testToken);\n    Token loadedToken = cache.load();\n\n    // Then the token should be loaded from the custom path\n    assertNotNull(loadedToken, \"Should load token from custom cache path\");\n    assertEquals(\"test-access-token\", loadedToken.getAccessToken());\n    assertEquals(\"Bearer\", loadedToken.getTokenType());\n    assertEquals(\"test-refresh-token\", loadedToken.getRefreshToken());\n\n    // Verify the file exists\n    assertTrue(Files.exists(tempPath), \"Cache file should exist at custom path\");\n  }\n}"

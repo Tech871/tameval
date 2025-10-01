@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "permguard/permguard"
+sha = "aa7f57c02a54d803e3442cbc6b401110249df7f7"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/cli/porcelaincommands/configs/command_config_set.go internal/cli/porcelaincommands/configs/command_config_set_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/cli/porcelaincommands/configs/command_config_set.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 40.0
+original_coverage = 40.0
+mutation_kill_rate = 17.0
+original_mutation_kill_rate = 17.0
+covered_lines = [ 33, 37, 38, 39, 40, 44, 45, 59, 60, 64, 65, 66, 67, 73, 74, 88, 89, 93, 94, 95, 96, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 145, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 163,]
+missed_lines = [ 34, 35, 36, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 61, 62, 63, 69, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 90, 91, 92, 98, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 117, 118, 119, 120, 121, 122, 123, 124, 125, 127, 167, 168, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 181,]
+
+[input_info]
+test_file_path = "internal/cli/porcelaincommands/configs/command_config_set_test.go"
+focal_file_path = "internal/cli/porcelaincommands/configs/command_config_set.go"
+test_file_url = "https://github.com/permguard/permguard/blob/aa7f57c02a54d803e3442cbc6b401110249df7f7/internal/cli/porcelaincommands/configs/command_config_set_test.go"
+focal_file_url = "https://github.com/permguard/permguard/blob/aa7f57c02a54d803e3442cbc6b401110249df7f7/internal/cli/porcelaincommands/configs/command_config_set.go"
+first_commit_date = "2024-08-30"
+last_commit_date = "2025-05-23"
+test_file_content = "// Copyright 2024 Nitro Agility S.r.l.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n//\n// SPDX-License-Identifier: Apache-2.0\n\npackage configs\n\nimport (\n\t\"testing\"\n\n\t\"github.com/spf13/viper\"\n\t\"github.com/stretchr/testify/mock\"\n\n\t\"github.com/permguard/permguard/internal/cli/common\"\n\t\"github.com/permguard/permguard/internal/cli/porcelaincommands/testutils\"\n\t\"github.com/permguard/permguard/internal/cli/porcelaincommands/testutils/mocks\"\n)\n\n// TestCreateCommandForConfigZAPSet tests the createCommandForConfigZAPSet function.\nfunc TestCreateCommandForConfigZAPSet(t *testing.T) {\n\targs := []string{\"-h\"}\n\toutputs := []string{\"The official Permguard Command Line Interface\", \"Copyright © 2022 Nitro Agility S.r.l.\", \"This command sets the zap grpc target.\"}\n\ttestutils.BaseCommandTest(t, createCommandForConfigZAPSet, args, false, outputs)\n}\n\n// TestCliConfigSetZAPTarget tests the command for setting the zap target.\nfunc TestCliConfigSetZAPTargetWithError(t *testing.T) {\n\ttests := []string{\n\t\t\"terminal\",\n\t\t\"json\",\n\t}\n\tfor _, outputType := range tests {\n\t\targs := []string{\"localhost:9092\", \"--output\", outputType}\n\t\toutputs := []string{\"\"}\n\n\t\tv := viper.New()\n\t\tv.Set(\"output\", outputType)\n\n\t\tdepsMocks := mocks.NewCliDependenciesMock()\n\t\tcmd := createCommandForConfigZAPSet(depsMocks, v)\n\t\tcmd.PersistentFlags().StringP(common.FlagWorkingDirectory, common.FlagWorkingDirectoryShort, \".\", \"work directory\")\n\t\tcmd.PersistentFlags().StringP(common.FlagOutput, common.FlagOutputShort, outputType, \"output format\")\n\t\tcmd.PersistentFlags().BoolP(common.FlagVerbose, common.FlagVerboseShort, true, \"true for verbose output\")\n\n\t\tprinterMock := mocks.NewPrinterMock()\n\t\tprinterMock.On(\"Println\", mock.Anything).Return()\n\t\tprinterMock.On(\"PrintlnMap\", mock.Anything).Return()\n\t\tprinterMock.On(\"Error\", mock.Anything).Return()\n\n\t\tdepsMocks.On(\"CreatePrinter\", mock.Anything, mock.Anything).Return(printerMock, nil)\n\n\t\ttestutils.BaseCommandWithParamsTest(t, v, cmd, args, true, outputs)\n\t}\n}\n\n// TestCreateCommandForConfigPAPSet tests the createCommandForConfigPAPSet function.\nfunc TestCreateCommandForConfigPAPSet(t *testing.T) {\n\targs := []string{\"-h\"}\n\toutputs := []string{\"The official Permguard Command Line Interface\", \"Copyright © 2022 Nitro Agility S.r.l.\", \"This command sets the pap grpc target.\"}\n\ttestutils.BaseCommandTest(t, createCommandForConfigPAPSet, args, false, outputs)\n}\n\n// TestCliConfigSetPAPTarget tests the command for setting the pap target.\nfunc TestCliConfigSetPAPTargetWithError(t *testing.T) {\n\ttests := []string{\n\t\t\"terminal\",\n\t\t\"json\",\n\t}\n\tfor _, outputType := range tests {\n\t\targs := []string{\"localhost:9092\", \"--output\", outputType}\n\t\toutputs := []string{\"\"}\n\n\t\tv := viper.New()\n\t\tv.Set(\"output\", outputType)\n\n\t\tdepsMocks := mocks.NewCliDependenciesMock()\n\t\tcmd := createCommandForConfigPAPSet(depsMocks, v)\n\t\tcmd.PersistentFlags().StringP(common.FlagWorkingDirectory, common.FlagWorkingDirectoryShort, \".\", \"work directory\")\n\t\tcmd.PersistentFlags().StringP(common.FlagOutput, common.FlagOutputShort, outputType, \"output format\")\n\t\tcmd.PersistentFlags().BoolP(common.FlagVerbose, common.FlagVerboseShort, true, \"true for verbose output\")\n\n\t\tprinterMock := mocks.NewPrinterMock()\n\t\tprinterMock.On(\"Println\", mock.Anything).Return()\n\t\tprinterMock.On(\"PrintlnMap\", mock.Anything).Return()\n\t\tprinterMock.On(\"Error\", mock.Anything).Return()\n\n\t\tdepsMocks.On(\"CreatePrinter\", mock.Anything, mock.Anything).Return(printerMock, nil)\n\n\t\ttestutils.BaseCommandWithParamsTest(t, v, cmd, args, true, outputs)\n\t}\n}\n"

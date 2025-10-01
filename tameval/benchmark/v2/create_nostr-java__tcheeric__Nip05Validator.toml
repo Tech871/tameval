@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "tcheeric/nostr-java"
+sha = "19abaa18c086511e89c968e069c43797f55aac2d"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nostr-java-util -Dtest=Nip05ValidatorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nostr-java-util -DtargetClasses=**.Nip05Validator  -DtargetTests=**.Nip05ValidatorTest  -DoutputFormats=XML"
+coverage_report_path = "nostr-java-util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nostr-java-util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 62.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "nostr-java-util/src/test/java/nostr/util/validator/Nip05ValidatorTest.java"
+focal_file_path = "nostr-java-util/src/main/java/nostr/util/validator/Nip05Validator.java"
+test_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-util/src/test/java/nostr/util/validator/Nip05ValidatorTest.java"
+focal_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-util/src/main/java/nostr/util/validator/Nip05Validator.java"
+first_commit_date = "2025-05-18"
+last_commit_date = "2025-08-11"
+test_file_content = ""

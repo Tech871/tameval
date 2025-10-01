@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "37ef5edff63f9b37597e8df6c0b25dadb7068ba1"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out domain/ide/command/code_fix.go domain/ide/command/code_fix_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting domain/ide/command/code_fix.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 42.0
+original_coverage = 62.0
+mutation_kill_rate = 28.0
+original_mutation_kill_rate = 38.0
+covered_lines = [ 45, 51, 52, 56, 61, 62, 63, 64, 70, 71, 72, 73, 74, 98, 99, 103, 104, 105, 109, 113, 114, 118, 123, 127, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,]
+missed_lines = [ 41, 42, 43, 46, 47, 48, 49, 53, 54, 55, 57, 58, 59, 65, 66, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 92, 100, 101, 102, 106, 107, 108, 110, 111, 112, 115, 116, 117, 119, 120, 121, 124, 125, 126, 128, 129, 130,]
+
+[input_info]
+test_file_path = "domain/ide/command/code_fix_test.go"
+focal_file_path = "domain/ide/command/code_fix.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/domain/ide/command/code_fix_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/domain/ide/command/code_fix.go"
+first_commit_date = "2023-05-30"
+last_commit_date = "2025-02-21"
+test_file_content = "/*\n * © 2023-2024 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage command\n\nimport (\n\t\"context\"\n\t\"testing\"\n\n\t\"github.com/google/uuid\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/mock\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/snyk/snyk-ls/application/config\"\n\t\"github.com/snyk/snyk-ls/domain/snyk\"\n\t\"github.com/snyk/snyk-ls/internal/notification\"\n\t\"github.com/snyk/snyk-ls/internal/product\"\n\t\"github.com/snyk/snyk-ls/internal/testutil\"\n\t\"github.com/snyk/snyk-ls/internal/types\"\n)\n\nvar sampleRangeArg = map[string]interface{}{\n\t\"Start\": map[string]interface{}{\n\t\t\"Line\":      float64(1),\n\t\t\"Character\": float64(1),\n\t},\n\t\"End\": map[string]interface{}{\n\t\t\"Line\":      float64(1),\n\t\t\"Character\": float64(10),\n\t},\n}\nvar codeActionId = uuid.New()\nvar sampleArgs = []any{codeActionId.String(), \"test/path.js\", sampleRangeArg}\nvar _ snyk.IssueProvider = (*issueProviderMock)(nil)\n\ntype issueProviderMock struct {\n\tmock.Mock\n}\n\nfunc (m *issueProviderMock) Issues() snyk.IssuesByFile {\n\targs := m.Called()\n\treturn args.Get(0).(snyk.IssuesByFile)\n}\n\nfunc (m *issueProviderMock) Issue(_ string) types.Issue {\n\tpanic(\"this should not be called\")\n}\n\nfunc (m *issueProviderMock) IssuesForRange(path types.FilePath, r types.Range) []types.Issue {\n\targs := m.Called(path, r)\n\treturn args.Get(0).([]types.Issue)\n}\n\nfunc (m *issueProviderMock) IssuesForFile(_ types.FilePath) []types.Issue {\n\tpanic(\"this should not be called\")\n}\n\nfunc setupClientCapability(config *config.Config) {\n\tclientCapabilties := config.ClientCapabilities()\n\tclientCapabilties.Workspace.ApplyEdit = true\n\tconfig.SetClientCapabilities(clientCapabilties)\n}\n\nfunc setupCommand(mockNotifier *notification.MockNotifier) *fixCodeIssue {\n\tcmdData := types.CommandData{\n\t\tCommandId: types.CodeFixCommand,\n\t\tArguments: sampleArgs,\n\t}\n\tcmd := &fixCodeIssue{\n\t\tcommand:  cmdData,\n\t\tnotifier: mockNotifier,\n\t\tlogger:   config.CurrentConfig().Logger(),\n\t}\n\treturn cmd\n}\n\nfunc setupMockEdit() (edit *types.WorkspaceEdit, deferredEdit func() *types.WorkspaceEdit) {\n\tvar mockTextEdit = types.TextEdit{\n\t\tRange: types.Range{\n\t\t\tStart: types.Position{Line: 1, Character: 2},\n\t\t\tEnd:   types.Position{Line: 3, Character: 4}},\n\t\tNewText: \"someText\",\n\t}\n\tvar mockEdit = &types.WorkspaceEdit{\n\t\tChanges: map[string][]types.TextEdit{\n\t\t\t\"someUri\": {mockTextEdit},\n\t\t},\n\t}\n\tvar deferredMockEdit = func() *types.WorkspaceEdit {\n\t\treturn mockEdit\n\t}\n\treturn mockEdit, deferredMockEdit\n}\n\nfunc setupSampleIssues(issueRange types.Range, codeAction snyk.CodeAction, cmdData types.CommandData) []types.Issue {\n\treturn []types.Issue{&snyk.Issue{\n\t\tID:          \"SNYK-123\",\n\t\tRange:       issueRange,\n\t\tSeverity:    types.High,\n\t\tProduct:     product.ProductCode,\n\t\tIssueType:   types.CodeSecurityVulnerability,\n\t\tMessage:     \"This is a dummy error (severity error)\",\n\t\tCodeActions: []types.CodeAction{&codeAction},\n\t\tCodelensCommands: []types.CommandData{\n\t\t\tcmdData,\n\t\t},\n\t}}\n}\n\n\n\nfunc Test_fixCodeIssue_noEdit(t *testing.T) {\n\tc := testutil.UnitTest(t)\n\t// arrange\n\tsetupClientCapability(c)\n\n\tmockNotifier := notification.NewMockNotifier()\n\tcmd := setupCommand(mockNotifier)\n\n\tfilePath := sampleArgs[1].(string)\n\tpath := types.FilePath(filePath)\n\trangeDto, ok := sampleArgs[2].(RangeDto)\n\trequire.True(t, ok)\n\tissueRange, err := cmd.toRange(rangeDto)\n\trequire.NoError(t, err)\n\tdeferredMockEdit := func() *types.WorkspaceEdit {\n\t\treturn nil\n\t}\n\tcodeAction := snyk.CodeAction{\n\t\tUuid:         &codeActionId,\n\t\tDeferredEdit: &deferredMockEdit,\n\t}\n\tissues := setupSampleIssues(issueRange, codeAction, cmd.command)\n\tissueMap := snyk.IssuesByFile{\n\t\tpath: issues,\n\t}\n\n\tissueProviderMock := new(issueProviderMock)\n\tissueProviderMock.On(\"Issues\").Return(issueMap)\n\tcmd.issueProvider = issueProviderMock\n\n\t// act\n\tres, err := cmd.Execute(context.Background())\n\n\t// assert\n\tassert.NoError(t, err)\n\tassert.Nil(t, res)\n\tassert.NotNil(t, issues[0].GetCodelensCommands()) // verify commands isn't reset\n\n\tvar sentMessages []any\n\t// Verify no workspace edit is sent to the client\n\tassert.Equal(t, sentMessages, mockNotifier.SentMessages())\n}\n"

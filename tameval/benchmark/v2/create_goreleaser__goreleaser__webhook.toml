@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "goreleaser/goreleaser"
+sha = "683adbba952d63899c6ba08ff0240fc946252674"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/pipe/webhook/webhook.go internal/pipe/webhook/webhook_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/pipe/webhook/webhook.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 72.0
+mutation_kill_rate = 22.0
+original_mutation_kill_rate = 47.0
+covered_lines = [ 44, 48, 49, 50, 51, 52, 53, 54, 57, 58, 63, 74, 79, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 99, 100, 101, 102, 103, 104, 114, 115, 116, 117, 118, 119, 125, 126, 127, 128,]
+missed_lines = [ 33, 34, 35, 36, 37, 45, 46, 47, 59, 60, 61, 64, 65, 66, 67, 68, 69, 71, 72, 73, 75, 76, 77, 80, 81, 82, 96, 97, 98, 105, 106, 107, 108, 110, 111, 112, 113, 120, 121, 122, 123,]
+
+[input_info]
+test_file_path = "internal/pipe/webhook/webhook_test.go"
+focal_file_path = "internal/pipe/webhook/webhook.go"
+test_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/pipe/webhook/webhook_test.go"
+focal_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/pipe/webhook/webhook.go"
+first_commit_date = "2022-01-08"
+last_commit_date = "2025-01-03"
+test_file_content = "package webhook\n\nimport (\n\t\"encoding/base64\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"io\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"testing\"\n\n\t\"github.com/google/uuid\"\n\t\"github.com/goreleaser/goreleaser/v2/internal/testctx\"\n\t\"github.com/goreleaser/goreleaser/v2/pkg/config\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\n\n\nfunc TestMalformedEndpoint(t *testing.T) {\n\tctx := testctx.NewWithCfg(config.Project{\n\t\tAnnounce: config.Announce{\n\t\t\tWebhook: config.Webhook{\n\t\t\t\tEndpointURL: \"httxxx://example.com\",\n\t\t\t},\n\t\t},\n\t})\n\trequire.EqualError(t, Pipe{}.Announce(ctx), `webhook: Post \"httxxx://example.com\": unsupported protocol scheme \"httxxx\"`)\n}\n\n\ntype WebHookServerMockMessage struct {\n\tResponse string    `json:\"response\"`\n\tUUID     uuid.UUID `json:\"uuid\"`\n}\n\n\nfunc TestAnnounceTLSWebhook(t *testing.T) {\n\tresponseServer := WebHookServerMockMessage{\n\t\tResponse: \"Thanks for the announcement!\",\n\t\tUUID:     uuid.New(),\n\t}\n\n\tsrv := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tdefer r.Body.Close()\n\t\tbody, err := io.ReadAll(r.Body)\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, \"webhook-test\", string(body))\n\t\tw.WriteHeader(http.StatusCreated)\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\terr = json.NewEncoder(w).Encode(responseServer)\n\t\tassert.NoError(t, err)\n\t}))\n\tdefer srv.Close()\n\tfmt.Println(srv.URL)\n\tctx := testctx.NewWithCfg(config.Project{\n\t\tProjectName: \"webhook-test\",\n\t\tAnnounce: config.Announce{\n\t\t\tWebhook: config.Webhook{\n\t\t\t\tEndpointURL:     srv.URL,\n\t\t\t\tMessageTemplate: \"{{ .ProjectName }}\",\n\t\t\t\tSkipTLSVerify:   true,\n\t\t\t},\n\t\t},\n\t})\n\trequire.NoError(t, Pipe{}.Default(ctx))\n\trequire.NoError(t, Pipe{}.Announce(ctx))\n}\n\n\nfunc TestAnnounceBasicAuthWebhook(t *testing.T) {\n\tresponseServer := WebHookServerMockMessage{\n\t\tResponse: \"Thanks for the announcement!\",\n\t\tUUID:     uuid.New(),\n\t}\n\n\tsrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tdefer r.Body.Close()\n\n\t\tbody, err := io.ReadAll(r.Body)\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, \"webhook-test\", string(body))\n\n\t\tauth := r.Header.Get(\"Authorization\")\n\t\tassert.Equal(t, fmt.Sprintf(\"Basic %s\", base64.StdEncoding.EncodeToString([]byte(\"user:pass\"))), auth)\n\n\t\tw.WriteHeader(http.StatusCreated)\n\t\tw.Header().Set(\"Content-Type\", \"application/json\")\n\t\terr = json.NewEncoder(w).Encode(responseServer)\n\t\tassert.NoError(t, err)\n\t}))\n\n\tdefer srv.Close()\n\n\tctx := testctx.NewWithCfg(config.Project{\n\t\tProjectName: \"webhook-test\",\n\t\tAnnounce: config.Announce{\n\t\t\tWebhook: config.Webhook{\n\t\t\t\tEndpointURL:     srv.URL,\n\t\t\t\tMessageTemplate: \"{{ .ProjectName }}\",\n\t\t\t},\n\t\t},\n\t})\n\tt.Setenv(\"BASIC_AUTH_HEADER_VALUE\", fmt.Sprintf(\"Basic %s\", base64.StdEncoding.EncodeToString([]byte(\"user:pass\"))))\n\trequire.NoError(t, Pipe{}.Default(ctx))\n\trequire.NoError(t, Pipe{}.Announce(ctx))\n}\n\n\n"

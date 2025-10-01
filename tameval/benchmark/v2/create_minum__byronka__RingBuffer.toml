@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "byronka/minum"
+sha = "42416409b5fd3535c882b2a994cd9eb0be82260a"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=RingBufferTests && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.RingBuffer  -DtargetTests=**.RingBufferTests  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 96.0
+original_coverage = 96.0
+mutation_kill_rate = 93.0
+original_mutation_kill_rate = 93.0
+covered_lines = [ 35, 36, 37, 39, 40, 41, 42, 49, 50, 52, 57, 58, 59, 70, 71, 73, 74, 75, 76, 77, 79, 82, 83, 86, 87, 95, 96, 98, 99, 101, 102, 103, 104, 105, 107, 108, 109, 112, 113, 114, 116, 117, 119, 122, 123, 128, 135, 139, 143, 148, 149, 151, 152, 153, 154,]
+missed_lines = [ 62, 164,]
+
+[input_info]
+test_file_path = "src/test/java/com/renomad/minum/utils/RingBufferTests.java"
+focal_file_path = "src/main/java/com/renomad/minum/utils/RingBuffer.java"
+test_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/test/java/com/renomad/minum/utils/RingBufferTests.java"
+focal_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/main/java/com/renomad/minum/utils/RingBuffer.java"
+first_commit_date = "2024-08-04"
+last_commit_date = "2024-08-04"
+test_file_content = "package com.renomad.minum.utils;\n\nimport org.junit.Test;\n\nimport java.util.*;\n\nimport static com.renomad.minum.testing.TestFramework.*;\n\n/**\n * We need a ring buffer to make some of our parsers fast enough.\n * See https://en.wikipedia.org/wiki/Circular_buffer for more explanation.\n */\npublic class RingBufferTests {\n\n    /**\n     * Stepping through the basic behaviors of our {@link RingBuffer}\n     */\n    @Test\n    public void test_RingBuffer_HappyPath() {\n        var rb = new RingBuffer<>(4, Integer.class);\n\n        // just one element in the buffer - the number 1.\n        rb.add(1);\n        compare(rb, setExpectedValues(null, null, null, 1));\n\n        // The next item is the number 2.\n        rb.add(2);\n        compare(rb, setExpectedValues(null, null, 1, 2));\n\n        // The next item is the number 3.\n        rb.add(3);\n        compare(rb, setExpectedValues(null, 1, 2, 3));\n\n        // The next item is the number 4.\n        rb.add(4);\n        compare(rb, setExpectedValues(1, 2, 3, 4));\n\n        // The next item is the number 5.  This one will overwrite the oldest element, 1.\n        rb.add(5);\n        compare(rb, setExpectedValues(2, 3, 4, 5));\n\n        // The next item is the number 6.  This one will overwrite the second oldest element, 2.\n        rb.add(6);\n        compare(rb, setExpectedValues(3, 4, 5, 6));\n    }\n\n    /**\n     * A helper method to set up expected results when the ringbuffer\n     * has four slots.\n     */\n    private static List<Integer> setExpectedValues(Integer a, Integer b, Integer c, Integer d) {\n        List<Integer> expected = new ArrayList<>();\n        expected.add(a);\n        expected.add(b);\n        expected.add(c);\n        expected.add(d);\n        return expected;\n    }\n\n    /**\n     * Using the {@link RingBuffer}'s iterator, loop through, comparing each value\n     * to a list we provide of expected results.\n     */\n    private static void compare(RingBuffer<Integer> rb, List<Integer> expected) {\n        int index = 0;\n        for (Integer i : rb) {\n            Integer b = expected.get(index);\n            assertTrue(Objects.equals(i, b), \"at index \" + index + \", the value was \" + b);\n            index += 1;\n        }\n    }\n\n    /**\n     * testing a utility to see whether we can find some data anywhere\n     * inside the RingBuffer\n     */\n    @Test\n    public void testContains() {\n        RingBuffer<Character> characters = new RingBuffer<>(4, Character.class);\n        characters.add('a');\n        characters.add('b');\n        characters.add('c');\n        characters.add('d');\n\n        assertTrue(characters.contains(List.of('a')));\n        assertTrue(characters.contains(List.of('a', 'b')));\n        assertTrue(characters.contains(List.of('a', 'b', 'c', 'd')));\n        assertTrue(characters.contains(List.of('b', 'c', 'd')));\n        assertTrue(characters.contains(List.of('c', 'd')));\n        assertTrue(characters.contains(List.of('d')));\n        assertFalse(characters.contains(List.of('e')));\n        assertFalse(characters.contains(List.of('a', 'b', 'z')));\n\n        var ex1 = assertThrows(UtilsException.class, () -> characters.contains(List.of()));\n        assertEquals(ex1.getMessage(), \"expected a valid non-empty list to search for in the RingBuffer\");\n        var ex2 = assertThrows(UtilsException.class, () -> characters.contains(null));\n        assertEquals(ex2.getMessage(), \"expected a valid non-empty list to search for in the RingBuffer\");\n    }\n\n    /**\n     * testing a utility to see whether we can find some data at a particular\n     * place inside the RingBuffer\n     */\n    @Test\n    public void testContainsAt() {\n        RingBuffer<Character> characters = new RingBuffer<>(4, Character.class);\n        characters.add('a');\n        characters.add('b');\n        characters.add('c');\n        characters.add('d');\n\n        assertTrue(characters.containsAt(List.of('a'), 0));\n        assertTrue(characters.containsAt(List.of('b', 'c', 'd'), 1));\n        assertFalse(characters.containsAt(List.of('b', 'c', 'd'), 0));\n        assertTrue(characters.containsAt(List.of('c', 'd'), 2));\n        assertTrue(characters.containsAt(List.of('d'), 3));\n        assertFalse(characters.containsAt(List.of('e'), 3));\n        assertFalse(characters.containsAt(List.of('d'), 0));\n        var ex = assertThrows(UtilsException.class, () -> characters.containsAt(List.of(), 0));\n        assertEquals(ex.getMessage(), \"expected a valid non-empty list to search for in the RingBuffer\");\n        var ex2 = assertThrows(UtilsException.class, () -> characters.containsAt(null, 0));\n        assertEquals(ex2.getMessage(), \"expected a valid non-empty list to search for in the RingBuffer\");\n        var ex3 = assertThrows(UtilsException.class, () -> characters.containsAt(List.of('a'), -1));\n        assertEquals(ex3.getMessage(), \"expected an index greater than zero and less-than-or-equal to the last index of the buffer (the limit minus one)\");\n        var ex4 = assertThrows(UtilsException.class, () -> characters.containsAt(List.of('a'), 4));\n        assertEquals(ex4.getMessage(), \"expected an index greater than zero and less-than-or-equal to the last index of the buffer (the limit minus one)\");\n        var ex5 = assertThrows(UtilsException.class, () -> characters.containsAt(List.of('a'), 5));\n        assertEquals(ex5.getMessage(), \"expected an index greater than zero and less-than-or-equal to the last index of the buffer (the limit minus one)\");\n    }\n\n    /**\n     * If the iterator for the {@link RingBuffer} is asked to go past its\n     * limit, it should return a {@link java.util.NoSuchElementException}\n     */\n    @Test\n    public void testIteratingPastLimit() {\n        RingBuffer<Integer> integers = new RingBuffer<>(3, Integer.class);\n        integers.add(1);\n        integers.add(2);\n        integers.add(3);\n        Iterator<Integer> iterator = integers.iterator();\n        assertEquals(1, iterator.next());\n        assertEquals(2, iterator.next());\n        assertEquals(3, iterator.next());\n        assertThrows(NoSuchElementException.class, iterator::next);\n    }\n}\n"

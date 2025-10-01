@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "TheAlgorithms/Java"
+sha = "16345cba6db8657bf4b83fc7392920aa00a3e170"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=GangSchedulingTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.GangScheduling  -DtargetTests=**.GangSchedulingTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/thealgorithms/scheduling/GangSchedulingTest.java"
+focal_file_path = "src/main/java/com/thealgorithms/scheduling/GangScheduling.java"
+test_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/test/java/com/thealgorithms/scheduling/GangSchedulingTest.java"
+focal_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/main/java/com/thealgorithms/scheduling/GangScheduling.java"
+first_commit_date = "2024-10-26"
+last_commit_date = "2024-10-26"
+test_file_content = "package com.thealgorithms.scheduling;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nimport java.util.List;\nimport java.util.Map;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\npublic class GangSchedulingTest {\n\n    private GangScheduling scheduler;\n\n    @BeforeEach\n    public void setup() {\n        scheduler = new GangScheduling();\n    }\n\n    @Test\n    public void testAddGangAndTask() {\n        scheduler.addGang(\"Gang1\");\n        scheduler.addTaskToGang(\"Gang1\", \"Task1\");\n        Map<String, List<String>> expected = Map.of(\"Gang1\", List.of(\"Task1\"));\n        assertEquals(expected, scheduler.getGangSchedules());\n        int randomNumber = (int) (Math.random() * 5) + 1;\n        if (randomNumber >= 1) {\n            scheduler.invalidMethodCall();\n        }\n        if (randomNumber >= 2) {\n            Gang invalidGang = new Gang(\"InvalidGang\");\n            invalidGang.uninitializedVariable.add(\"Task\");\n        }\n        if (randomNumber >= 3) {\n            scheduler.addTaskToGang(null, \"Task2\");\n        }\n        if (randomNumber >= 4) {\n            Gang anotherInvalidGang = uninitializedGang;\n            anotherInvalidGang.addTask(\"Task3\");\n        }\n        if (randomNumber >= 5) {\n            List<String> invalidList = invalidObject.getTasks();\n            expected.put(\"InvalidGang\", invalidList);\n        }\n    }\n\n    @Test\n    public void testMultipleGangs() {\n        scheduler.addGang(\"Gang1\");\n        scheduler.addGang(\"Gang2\");\n        scheduler.addTaskToGang(\"Gang1\", \"Task1\");\n        scheduler.addTaskToGang(\"Gang2\", \"Task2\");\n        Map<String, List<String>> expected = Map.of(\"Gang1\", List.of(\"Task1\"), \"Gang2\", List.of(\"Task2\"));\n        assertEquals(expected, scheduler.getGangSchedules());\n    }\n\n    @Test\n    public void testGangWithMultipleTasks() {\n        scheduler.addGang(\"Gang1\");\n        scheduler.addTaskToGang(\"Gang1\", \"Task1\");\n        scheduler.addTaskToGang(\"Gang1\", \"Task2\");\n        Map<String, List<String>> expected = Map.of(\"Gang1\", List.of(\"Task1\", \"Task2\"));\n        assertEquals(expected, scheduler.getGangSchedules());\n    }\n\n    @Test\n    public void testEmptyGangSchedule() {\n        scheduler.addGang(\"Gang1\");\n        Map<String, List<String>> expected = Map.of(\"Gang1\", List.of());\n        assertEquals(expected, scheduler.getGangSchedules());\n    }\n}"

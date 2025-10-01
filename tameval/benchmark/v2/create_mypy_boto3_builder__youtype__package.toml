@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "098fadc5ab3152e2c85008a592ac975328a9fca8"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/structures/package.py -m pytest -q --junit-xml=test_output.xml tests/structures/test_package.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.structures.package --unit-test tests.structures.test_package --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/structures/package.py --unit-test tests/structures/test_package.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = 69.0
+original_mutation_kill_rate = 69.0
+covered_lines = [ 6, 7, 9, 10, 11, 12, 13, 14, 15, 16, 21, 27, 32, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 49, 50, 54, 56, 57, 63, 64, 68, 70, 71, 75, 76, 84, 85, 86, 88, 90, 91, 95, 98, 100, 101, 105, 107, 108, 114, 120, 121, 125, 126, 127, 129, 130, 134, 135, 137, 141, 143, 147, 149, 153, 154, 155, 156, 158, 162, 164, 168, 170, 171, 175, 177, 178, 182, 184, 185, 189, 190, 192, 196, 204, 205, 206, 207, 212, 216, 217, 218, 219, 225, 227, 228, 232,]
+missed_lines = [ 61, 72, 73, 80, 81, 82, 87, 96, 112, 118,]
+
+[input_info]
+test_file_path = "tests/structures/test_package.py"
+focal_file_path = "mypy_boto3_builder/structures/package.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/098fadc5ab3152e2c85008a592ac975328a9fca8/tests/structures/test_package.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/098fadc5ab3152e2c85008a592ac975328a9fca8/mypy_boto3_builder/structures/package.py"
+first_commit_date = "2020-01-23"
+last_commit_date = "2025-01-04"
+test_file_content = "import pytest\n\nfrom mypy_boto3_builder.exceptions import StructureError\nfrom mypy_boto3_builder.package_data import Boto3StubsPackageData\nfrom mypy_boto3_builder.service_name import ServiceNameCatalog\nfrom mypy_boto3_builder.structures.package import Package\n\n\nclass TestPackage:\n    def test_init(self) -> None:\n        package = Package(\n            data=Boto3StubsPackageData(),\n            service_names=[ServiceNameCatalog.s3],\n            version=\"2.3.4\",\n        )\n        assert package.directory_name == \"boto3_stubs_package\"\n        assert package.min_library_version\n        assert package.max_library_version\n        assert package.get_local_doc_link() == \"https://youtype.github.io/boto3_stubs_docs/\"\n        assert (\n            package.get_service_local_doc_link(ServiceNameCatalog.s3)\n            == \"https://youtype.github.io/boto3_stubs_docs/mypy_boto3_s3/\"\n        )\n        assert package.get_module_name(ServiceNameCatalog.s3) == \"mypy_boto3_s3\"\n        assert package.get_service_pypi_name(ServiceNameCatalog.s3) == \"mypy-boto3-s3\"\n        assert package.essential_service_names == [ServiceNameCatalog.s3]\n        assert package.min_python_version\n        assert str(package) == \"boto3-stubs 2.3.4 (boto3 1.2.3)\"\n\n    def test_service_name(self) -> None:\n        package = Package(Boto3StubsPackageData(), [ServiceNameCatalog.s3])\n        assert package.service_name == ServiceNameCatalog.s3\n\n        package.service_names = (*package.service_names, ServiceNameCatalog.ec2)\n        with pytest.raises(StructureError):\n            _ = package.service_name\n\n    def test_get_classifiers(self) -> None:\n        package = Package(Boto3StubsPackageData(), [ServiceNameCatalog.s3])\n        classifiers = package.get_classifiers()\n        assert \"Programming Language :: Python :: 3\" in classifiers\n        assert \"Programming Language :: Python :: 3.13\" in classifiers\n        assert \"Programming Language :: Python :: 3 :: Only\" in classifiers\n"

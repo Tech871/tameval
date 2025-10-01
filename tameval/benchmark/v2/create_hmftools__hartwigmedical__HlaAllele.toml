@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "a311fa7f92c8542c38a652c3b8f2b73ea3242834"
+bench_version = 1
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl lilac -Dtest=HlaAlleleTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl lilac -DtargetClasses=**.HlaAllele  -DtargetTests=**.HlaAlleleTest  -DoutputFormats=XML"
+coverage_report_path = "lilac/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "lilac/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 60.0
+original_coverage = 60.0
+mutation_kill_rate = 43.0
+original_mutation_kill_rate = 43.0
+covered_lines = [ 30, 31, 32, 33, 34, 35, 37, 38, 40, 41, 43, 45, 49, 54, 57, 58, 62, 63, 64, 65, 67, 69, 71, 72, 74, 75, 77, 78, 80, 87, 90, 97, 98, 100, 103, 106, 143, 153, 154, 156, 158, 159, 161, 163, 164, 166, 168, 194, 196, 198, 199, 202,]
+missed_lines = [ 51, 53, 83, 92, 93, 101, 107, 112, 113, 115, 116, 118, 121, 122, 124, 128, 130, 133, 134, 136, 138, 148, 173, 178, 180, 182, 184, 187, 207, 209, 211, 213, 215, 220,]
+
+[input_info]
+test_file_path = "lilac/src/test/java/com/hartwig/hmftools/lilac/hla/HlaAlleleTest.java"
+focal_file_path = "lilac/src/main/java/com/hartwig/hmftools/lilac/hla/HlaAllele.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/a311fa7f92c8542c38a652c3b8f2b73ea3242834/lilac/src/test/java/com/hartwig/hmftools/lilac/hla/HlaAlleleTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/a311fa7f92c8542c38a652c3b8f2b73ea3242834/lilac/src/main/java/com/hartwig/hmftools/lilac/hla/HlaAllele.java"
+first_commit_date = "2021-05-04"
+last_commit_date = "2025-03-12"
+test_file_content = "package com.hartwig.hmftools.lilac.hla;\n\nimport static com.hartwig.hmftools.lilac.hla.HlaAllele.dedup;\nimport static com.hartwig.hmftools.lilac.seq.HlaSequenceFile.asSixDigit;\n\nimport static junit.framework.TestCase.assertEquals;\nimport static junit.framework.TestCase.assertTrue;\n\nimport java.util.List;\nimport java.util.Map;\n\nimport com.google.common.collect.Lists;\nimport com.google.common.collect.Maps;\n\nimport org.junit.Test;\n\npublic class HlaAlleleTest\n{\n    @Test\n    public void testDecode()\n    {\n        assertContig(\"A*01:01:01:01\", \"A*01:01:01:01\");\n        assertContig(\"A*01:01:01\", \"A*01:01:01\");\n        assertContig(\"A*26:22\", \"A*26:22\");\n        assertContig(\"A*26\", \"A*26\");\n    }\n\n    @Test\n    public void testReduce()\n    {\n        HlaAllele eightDigit = HlaAllele.fromString(\"A*01:01:01:01\");\n        assertMatch(HlaAllele.fromString(\"A*01:01:01\"), asSixDigit(eightDigit));\n        assertMatch(HlaAllele.fromString(\"A*01:01\"), eightDigit.asFourDigit());\n        assertMatch(HlaAllele.fromString(\"A*01\"), eightDigit.asAlleleGroup());\n    }\n\n    @Test\n    public void testDedupAlleles()\n    {\n        List<HlaAllele> alleles = Lists.newArrayList();\n        HlaAllele allele1 = HlaAllele.fromString(\"A*01:01:01\");\n        HlaAllele allele2 = HlaAllele.fromString(\"A*01:02:01\");\n        HlaAllele allele3 = HlaAllele.fromString(\"A*01:03:01\");\n        alleles.add(allele1);\n        alleles.add(allele1);\n        alleles.add(allele2);\n        alleles.add(allele2);\n        alleles.add(allele3);\n        List<HlaAllele> deduped = dedup(alleles);\n        assertEquals(3, deduped.size());\n        assertTrue(deduped.contains(allele1));\n        assertTrue(deduped.contains(allele2));\n        assertTrue(deduped.contains(allele3));\n    }\n\n    @Test\n    public void testAlleleCache()\n    {\n        HlaAlleleCache cache = new HlaAlleleCache();\n        HlaAllele allele1 = cache.request(\"A*01:01:01\");\n        HlaAllele allele2 = cache.request(\"A*01:01:02\");\n        HlaAllele allele3 = cache.request(\"A*01:02:01\");\n        HlaAllele allele4 = cache.request(\"A*01:02:02\");\n        assertEquals(4, cache.alleleCount());\n        assertEquals(2, cache.fourDigitCount());\n        assertEquals(1, cache.groupCount());\n\n        HlaAllele fourDigit1 = cache.requestFourDigit(\"A*01:01\");\n        assertEquals(fourDigit1, allele1.asFourDigit());\n        assertEquals(fourDigit1, allele2.asFourDigit());\n        assertEquals(allele3.asFourDigit(), allele4.asFourDigit());\n        assertEquals(allele1.asAlleleGroup(), allele4.asAlleleGroup());\n\n        HlaAllele group1 = cache.requestGroup(HlaAllele.fromString(\"A*01\"));\n        HlaAllele fourDigit2 = cache.requestFourDigit(\"A*01:02\");\n        assertEquals(fourDigit2, allele3.asFourDigit());\n\n        assertEquals(group1, allele1.asAlleleGroup());\n        assertEquals(group1, fourDigit1.asAlleleGroup());\n        assertEquals(2, cache.fourDigitCount());\n        assertEquals(1, cache.groupCount());\n    }\n\n    @Test\n    public void testAlleleMaps()\n    {\n        Map<HlaAllele,Integer> map = Maps.newHashMap();\n\n        HlaAllele allele1 = HlaAllele.fromString(\"A*01:01\");\n        HlaAllele allele2 = HlaAllele.fromString(\"A*01:01\");\n        HlaAllele allele3 = HlaAllele.fromString(\"A*01:01:01\");\n        HlaAllele allele4 = HlaAllele.fromString(\"A*01:02\");\n\n        map.put(allele1, 1);\n        map.put(allele2, 2);\n        map.put(allele3, 3);\n        map.put(allele4, 4);\n\n        assertEquals(map.size(), 3);\n\n        Integer val1 = map.get(allele1);\n        Integer val2 = map.get(allele2);\n\n        assertEquals(val1, val2);\n\n        map.remove(allele1);\n        assertEquals(map.size(), 2);\n\n        map.remove(allele3);\n        assertEquals(map.size(), 1);\n\n        map.remove(allele4);\n        assertTrue(map.isEmpty());\n    }\n\n    private void assertContig(String expected, String contig)\n    {\n        assertEquals(expected, HlaAllele.fromString(contig).toString());\n    }\n\n    private void assertMatch(HlaAllele expected, HlaAllele contig)\n    {\n        assertTrue(expected.toString().equals(contig.toString()));\n    }\n\n}\n"

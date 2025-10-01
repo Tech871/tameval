@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-deepmind/android_env"
+sha = "827047088b9e932f29a951d734962bf855587521"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_env/components/adb_log_stream.py -m pytest -q --junit-xml=test_output.xml android_env/components/adb_log_stream_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_env.components.adb_log_stream --unit-test android_env.components.adb_log_stream_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_env/components/adb_log_stream.py --unit-test android_env/components/adb_log_stream_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 94.0
+original_coverage = 94.0
+mutation_kill_rate = 46.0
+original_mutation_kill_rate = 46.0
+covered_lines = [ 17, 19, 20, 23, 26, 29, 30, 31, 33, 37, 41, 42, 43, 49, 51, 52, 53,]
+missed_lines = [ 56,]
+
+[input_info]
+test_file_path = "android_env/components/adb_log_stream_test.py"
+focal_file_path = "android_env/components/adb_log_stream.py"
+test_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/components/adb_log_stream_test.py"
+focal_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/components/adb_log_stream.py"
+first_commit_date = "2021-08-23"
+last_commit_date = "2025-06-02"
+test_file_content = "# coding=utf-8\n# Copyright 2025 DeepMind Technologies Limited.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for adb_log_stream.\"\"\"\n\nimport subprocess\nfrom unittest import mock\n\nfrom absl.testing import absltest\nfrom android_env.components import adb_log_stream\n\n\nclass FakeAdbSubprocess:\n\n  @property\n  def stdout(self):\n    return [f'line_{i}' for i in range(100)]\n\n  def kill(self):\n    pass\n\n\nclass AdbLogStreamTest(absltest.TestCase):\n\n  @mock.patch.object(subprocess, 'check_output', return_value=b'')\n  @mock.patch.object(subprocess, 'Popen', return_value=FakeAdbSubprocess())\n  def test_get_stream_output(self, mock_popen, unused_mock_check_output):\n    stream = adb_log_stream.AdbLogStream(adb_command_prefix=['foo'])\n    stream.set_log_filters(['bar'])\n    stream_output = stream.get_stream_output()\n\n    for i, line in enumerate(stream_output):\n      self.assertEqual(line, f'line_{i}')\n\n    mock_popen.assert_called_with(\n        ['foo', 'logcat', '-v', 'epoch', 'bar', '*:S'],\n        stderr=subprocess.STDOUT,\n        stdout=subprocess.PIPE,\n        bufsize=1,\n        universal_newlines=True)\n\n  def test_stop_stream_before_get_stream_output(self):\n    \"\"\"Calling `stop_stream()` before `get_stream_output()` should not crash.\"\"\"\n\n    # Arrange.\n    stream = adb_log_stream.AdbLogStream(adb_command_prefix=['foo'])\n\n    # Act.\n    stream.stop_stream()\n\n    # Assert.\n    # Nothing to assert. The test should just finish without raising an\n    # exception.\n\n\nif __name__ == '__main__':\n  absltest.main()\n"

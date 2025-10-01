@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.8"
+
+[repo_info]
+repository = "Kuadrant/authorino"
+sha = "21d456d60269371848937208af54a83145957450"
+
+[run_info]
+docker_image = "golang:1.23.8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/evaluators/metadata/user_info.go pkg/evaluators/metadata/user_info_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/evaluators/metadata/user_info.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 55.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 38.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/evaluators/metadata/user_info_test.go"
+focal_file_path = "pkg/evaluators/metadata/user_info.go"
+test_file_url = "https://github.com/Kuadrant/authorino/blob/21d456d60269371848937208af54a83145957450/pkg/evaluators/metadata/user_info_test.go"
+focal_file_url = "https://github.com/Kuadrant/authorino/blob/21d456d60269371848937208af54a83145957450/pkg/evaluators/metadata/user_info.go"
+first_commit_date = "2022-03-28"
+last_commit_date = "2025-06-17"
+test_file_content = "package metadata\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\t\"testing\"\n\n\t\"github.com/kuadrant/authorino/pkg/auth\"\n\tmock_auth \"github.com/kuadrant/authorino/pkg/auth/mocks\"\n\t\"github.com/kuadrant/authorino/pkg/evaluators/identity\"\n\t\"github.com/kuadrant/authorino/pkg/httptest\"\n\n\t\"go.uber.org/mock/gomock\"\n\t\"gotest.tools/assert\"\n)\n\nconst (\n\tauthServerHost string = \"127.0.0.1:9002\"\n\tuserInfoClaims string = `{ \"sub\": \"831707be-ef07-4d63-b427-4216309e9897\" }`\n)\n\nvar wellKnownOIDCConfig string = fmt.Sprintf(`{\n\t\t\"issuer\": \"http://%s\",\n\t\t\"userinfo_endpoint\": \"http://%s/userinfo\"\n\t}`, authServerHost, authServerHost)\n\ntype userInfoTestData struct {\n\tctx            context.Context\n\tcancel         context.CancelFunc\n\tnewOIDC        auth.OpenIdConfigStore\n\tuserInfo       UserInfo\n\tauthCredMock   *mock_auth.MockAuthCredentials\n\tpipelineMock   *mock_auth.MockAuthPipeline\n\tidConfEvalMock *mock_auth.MockIdentityConfigEvaluator\n}\n\nfunc newUserInfoTestData(ctrl *gomock.Controller) userInfoTestData {\n\tauthCredMock := mock_auth.NewMockAuthCredentials(ctrl)\n\tnewOIDC := identity.NewJWTAuthentication(context.TODO(), identity.NewOIDCProviderVerifier(context.TODO(), fmt.Sprintf(\"http://%s\", authServerHost), 0), authCredMock)\n\tctx, cancel := context.WithCancel(context.TODO())\n\treturn userInfoTestData{\n\t\tctx,\n\t\tcancel,\n\t\tnewOIDC,\n\t\tUserInfo{newOIDC, \"\"},\n\t\tauthCredMock,\n\t\tmock_auth.NewMockAuthPipeline(ctrl),\n\t\tmock_auth.NewMockIdentityConfigEvaluator(ctrl),\n\t}\n}\nfunc TestMain(m *testing.M) {\n\tauthServer := httptest.NewHttpServerMock(authServerHost, map[string]httptest.HttpServerMockResponseFunc{\n\t\t\"/.well-known/openid-configuration\": func() httptest.HttpServerMockResponse {\n\t\t\treturn httptest.HttpServerMockResponse{Status: 200, Body: wellKnownOIDCConfig}\n\t\t},\n\t\t\"/userinfo\": func() httptest.HttpServerMockResponse {\n\t\t\treturn httptest.HttpServerMockResponse{Status: 200, Body: userInfoClaims}\n\t\t},\n\t})\n\tdefer authServer.Close()\n\tos.Exit(m.Run())\n}\n\nfunc TestUserInfoCall(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\tta := newUserInfoTestData(ctrl)\n\n\tta.pipelineMock.EXPECT().GetResolvedIdentity().Return(ta.idConfEvalMock, nil)\n\tta.idConfEvalMock.EXPECT().GetOpenIdConfig().Return(ta.newOIDC)\n\tta.pipelineMock.EXPECT().GetHttp().Return(nil)\n\tta.idConfEvalMock.EXPECT().GetAuthCredentials().Return(ta.authCredMock)\n\tta.authCredMock.EXPECT().GetCredentialsFromReq(gomock.Any()).Return(\"\", nil)\n\n\tobj, err := ta.userInfo.Call(ta.pipelineMock, ta.ctx)\n\n\tassert.NilError(t, err)\n\n\tclaims := obj.(map[string]interface{})\n\tassert.Equal(t, \"831707be-ef07-4d63-b427-4216309e9897\", claims[\"sub\"])\n}\n\nfunc TestUserInfoCanceledContext(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\tta := newUserInfoTestData(ctrl)\n\n\tta.pipelineMock.EXPECT().GetResolvedIdentity().Return(ta.idConfEvalMock, nil)\n\tta.idConfEvalMock.EXPECT().GetOpenIdConfig().Return(ta.newOIDC)\n\tta.pipelineMock.EXPECT().GetHttp().Return(nil)\n\tta.idConfEvalMock.EXPECT().GetAuthCredentials().Return(ta.authCredMock)\n\tta.authCredMock.EXPECT().GetCredentialsFromReq(gomock.Any()).Return(\"\", nil)\n\n\tta.cancel()\n\t_, err := ta.userInfo.Call(ta.pipelineMock, ta.ctx)\n\n\tassert.Error(t, err, \"context canceled\")\n}\n\nfunc TestUserInfoMissingOIDCConfig(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\tta := newUserInfoTestData(ctrl)\n\n\totherOidcEvaluator := identity.NewJWTAuthentication(context.TODO(), identity.NewOIDCProviderVerifier(context.TODO(), \"http://wrongServer\", 0), ta.authCredMock)\n\tta.pipelineMock.EXPECT().GetResolvedIdentity().Return(ta.idConfEvalMock, nil)\n\tta.idConfEvalMock.EXPECT().GetOpenIdConfig().Return(otherOidcEvaluator)\n\n\t_, err := ta.userInfo.Call(ta.pipelineMock, ta.ctx)\n\tassert.Error(t, err, \"missing openid connect configuration\")\n}"

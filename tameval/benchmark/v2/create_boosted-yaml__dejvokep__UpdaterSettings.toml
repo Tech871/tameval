@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "dejvokep/boosted-yaml"
+sha = "fd45ba039337485d5081ba47c1a1116e52a3160c"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=UpdaterSettingsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.UpdaterSettings  -DtargetTests=**.UpdaterSettingsTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 31.0
+original_coverage = 72.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 47, 57, 68, 87, 91, 92, 93, 94, 95, 99, 104, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 154, 199, 236, 254, 283, 285, 287, 289, 291, 293, 295, 297, 299, 301, 306, 307, 321, 322, 393, 394, 409, 410, 934, 952, 953, 972, 973, 1034,]
+missed_lines = [ 165, 166, 177, 178, 189, 208, 217, 226, 245, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 348, 349, 362, 363, 375, 376, 420, 421, 430, 431, 440, 441, 450, 451, 460, 461, 477, 493, 508, 509, 526, 543, 544, 560, 561, 562, 573, 574, 575, 584, 585, 594, 595, 604, 605, 614, 615, 624, 625, 648, 670, 691, 692, 716, 739, 740, 762, 763, 764, 765, 766, 767, 791, 815, 837, 838, 863, 887, 910, 911, 912, 913, 914, 915, 989, 990, 1003, 1014, 1025, 1050, 1053, 1054, 1073, 1074, 1075, 1076, 1077, 1078, 1079, 1080, 1090, 1100, 1113, 1116, 1117, 1129, 1130, 1131, 1132, 1133, 1134, 1135, 1136, 1145, 1154,]
+
+[input_info]
+test_file_path = "src/test/java/dev/dejvokep/boostedyaml/settings/updater/UpdaterSettingsTest.java"
+focal_file_path = "src/main/java/dev/dejvokep/boostedyaml/settings/updater/UpdaterSettings.java"
+test_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/test/java/dev/dejvokep/boostedyaml/settings/updater/UpdaterSettingsTest.java"
+focal_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/main/java/dev/dejvokep/boostedyaml/settings/updater/UpdaterSettings.java"
+first_commit_date = "2022-01-05"
+last_commit_date = "2024-01-19"
+test_file_content = "/*\n * Copyright 2024 https://dejvokep.dev/\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage dev.dejvokep.boostedyaml.settings.updater;\n\nimport dev.dejvokep.boostedyaml.YamlDocument;\nimport dev.dejvokep.boostedyaml.dvs.segment.Segment;\nimport dev.dejvokep.boostedyaml.route.Route;\nimport dev.dejvokep.boostedyaml.settings.dumper.DumperSettings;\nimport dev.dejvokep.boostedyaml.settings.general.GeneralSettings;\nimport dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;\nimport dev.dejvokep.boostedyaml.dvs.Pattern;\nimport dev.dejvokep.boostedyaml.dvs.Version;\nimport dev.dejvokep.boostedyaml.dvs.versioning.ManualVersioning;\nimport org.junit.jupiter.api.Test;\n\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.nio.charset.StandardCharsets;\nimport java.util.*;\nimport java.util.function.Consumer;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass UpdaterSettingsTest {\n\n    @Test\n    void getMergeRules() {\n        // Build\n        UpdaterSettings settings = UpdaterSettings.builder()\n                .setMergeRule(MergeRule.MAPPINGS, false)\n                .setMergeRules(new HashMap<MergeRule, Boolean>() {{\n                    put(MergeRule.MAPPING_AT_SECTION, true);\n                    put(MergeRule.SECTION_AT_MAPPING, true);\n                }}).build();\n        // Assert\n        assertEquals(false, settings.getMergeRules().get(MergeRule.MAPPINGS));\n        assertEquals(true, settings.getMergeRules().get(MergeRule.MAPPING_AT_SECTION));\n        assertEquals(true, settings.getMergeRules().get(MergeRule.SECTION_AT_MAPPING));\n    }\n\n\n\n\n    @Test\n    void getCustomLogic() {\n        // Build\n        UpdaterSettings settings = UpdaterSettings.builder()\n                .addCustomLogic(new HashMap<String, List<Consumer<YamlDocument>>>() {{\n                    put(\"1.2\", createList(2));\n                    put(\"1.3\", createList(3));\n                }})\n                .addCustomLogic(new HashMap<String, List<Consumer<YamlDocument>>>() {{\n                    put(\"1.2\", createList(4));\n                    put(\"1.4\", createList(5));\n                }})\n                .addCustomLogic(\"1.5\", createList(6))\n                .addCustomLogic(\"1.5\", yamlDocument -> {}).build();\n        // Assert\n        assertEquals(createList(6), settings.getCustomLogic(\"1.2\"));\n        assertEquals(createList(3), settings.getCustomLogic(\"1.3\"));\n        assertEquals(createList(5), settings.getCustomLogic(\"1.4\"));\n        assertEquals(7, settings.getCustomLogic(\"1.5\").size());\n    }\n\n    private List<Consumer<YamlDocument>> createList(int size) {\n        List<Consumer<YamlDocument>> list = new ArrayList<>(size);\n        for (int i = 0; i < size; i++)\n            list.add(yamlDocument -> {});\n        return list;\n    }\n\n\n\n\n    @Test\n    void isAutoSave() {\n        assertTrue(UpdaterSettings.builder().setAutoSave(true).build().isAutoSave());\n        assertFalse(UpdaterSettings.builder().setAutoSave(false).build().isAutoSave());\n    }\n\n}\n"

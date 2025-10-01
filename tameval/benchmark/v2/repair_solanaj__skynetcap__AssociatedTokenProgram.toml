@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "skynetcap/solanaj"
+sha = "b0f095290e5a1cdd1528bb50615cc56dc0add467"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AssociatedTokenProgramTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.AssociatedTokenProgram  -DtargetTests=**.AssociatedTokenProgramTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 90.0
+original_coverage = 90.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 12, 15, 33, 48, 69, 71, 72, 73, 74, 75, 76, 77, 79, 81, 88, 90, 92, 93, 94, 95, 96, 97, 99, 101, 106, 107, 108, 109, 110, 113, 114, 115, 123, 124, 125, 126,]
+missed_lines = [ 13, 116, 117, 118,]
+
+[input_info]
+test_file_path = "src/test/java/org/p2p/solanaj/programs/AssociatedTokenProgramTest.java"
+focal_file_path = "src/main/java/org/p2p/solanaj/programs/AssociatedTokenProgram.java"
+test_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/test/java/org/p2p/solanaj/programs/AssociatedTokenProgramTest.java"
+focal_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/main/java/org/p2p/solanaj/programs/AssociatedTokenProgram.java"
+first_commit_date = "2023-11-12"
+last_commit_date = "2024-09-06"
+test_file_content = "package org.p2p.solanaj.programs;\n\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport org.p2p.solanaj.core.AccountMeta;\nimport org.p2p.solanaj.core.PublicKey;\nimport org.p2p.solanaj.core.TransactionInstruction;\n\nimport java.util.List;\n\npublic class AssociatedTokenProgramTest {\n    private static final PublicKey FUNDING_ACCOUNT = new PublicKey(\"Gh9ZwEmdLJ8DscKNTkTqPbNwLNNBjuSzaG9Vp2KGtKJr\");\n    private static final PublicKey WALLET_ADDRESS = new PublicKey(\"6sbzC1eH4FTujJXWj51eQe25cYvr4xfXbJ1vAj7j2k5J\");\n    private static final PublicKey MINT = new PublicKey(\"EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v\");\n    private static final PublicKey NESTED_ACCOUNT = new PublicKey(\"4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU\");\n    private static final PublicKey NESTED_MINT = new PublicKey(\"So11111111111111111111111111111111111111112\");\n    private static final PublicKey DESTINATION_ACCOUNT = new PublicKey(\"5omQJtDUHA3gMFdHEQg1zZSvcBUVzey5WaKWYRmqF1Vj\");\n    private static final PublicKey OWNER_ACCOUNT = new PublicKey(\"7UX2i7SucgLMQcfZ75s3VXmZZY4YRUyJN9X1RgfMoDUi\");\n    private static final PublicKey OWNER_MINT = new PublicKey(\"mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So\");\n\n    @Test\n    public void testCreate() {\n        TransactionInstruction instruction = AssociatedTokenProgram.create(FUNDING_ACCOUNT, WALLET_ADDRESS, MINT);\n\n        assertEquals(AssociatedTokenProgram.PROGRAM_ID, instruction.getProgramId());\n        assertEquals(6, instruction.getKeys().size());\n        assertEquals(1, instruction.getData().length);\n        assertEquals(0, instruction.getData()[0]);\n\n        verifyCommonAccountMetas(instruction.getKeys());\n    }\n\n    @Test\n    public void testCreateAlternative() {\n        TransactionInstruction instruction = AssociatedTokenProgram.create(FUNDING_ACCOUNT, WALLET_ADDRESS, MINT);\n\n        assertSame(AssociatedTokenProgram.PROGRAM_ID, instruction.getProgramId());\n        assertTrue(instruction.getKeys().size() == 6);\n        assertTrue(instruction.getData().length == 1);\n        assertTrue(instruction.getData()[0] == 0);\n\n        verifyAccountMetas(instruction.getKeys());\n    }\n\n    @Test\n    public void testCreateIdempotent() {\n        TransactionInstruction instruction = AssociatedTokenProgram.createIdempotent(FUNDING_ACCOUNT, WALLET_ADDRESS, MINT);\n\n        assertEquals(AssociatedTokenProgram.PROGRAM_ID, instruction.getProgramId());\n        assertEquals(6, instruction.getKeys().size());\n        assertEquals(1, instruction.getData().length);\n        assertEquals(1, instruction.getData()[0]);\n\n        verifyCommonAccountMetas(instruction.getKeys());\n    }\n\n    @Test\n    public void testCreateIdempotentAlternative() {\n        TransactionInstruction instruction = AssociatedTokenProgram.createIdempotent(FUNDING_ACCOUNT, WALLET_ADDRESS, MINT);\n\n        assertSame(AssociatedTokenProgram.PROGRAM_ID, instruction.getProgramId());\n        assertTrue(instruction.getKeys().size() == 6);\n        assertTrue(instruction.getData().length == 1);\n        assertTrue(instruction.getData()[0] == 1);\n\n        verifyAccountMetas(instruction.getKeys());\n    }\n\n    @Test\n    public void testRecoverNested() {\n        TransactionInstruction instruction = AssociatedTokenProgram.recoverNested(\n                NESTED_ACCOUNT, NESTED_MINT, DESTINATION_ACCOUNT, OWNER_ACCOUNT, OWNER_MINT, WALLET_ADDRESS);\n\n        assertEquals(AssociatedTokenProgram.PROGRAM_ID, instruction.getProgramId());\n        assertEquals(7, instruction.getKeys().size());\n        assertEquals(1, instruction.getData().length);\n        assertEquals(2, instruction.getData()[0]);\n\n        List<AccountMeta> keys = instruction.getKeys();\n        assertEquals(NESTED_ACCOUNT, keys.get(0).getPublicKey());\n        assertEquals(NESTED_MINT, keys.get(1).getPublicKey());\n        assertEquals(DESTINATION_ACCOUNT, keys.get(2).getPublicKey());\n        assertEquals(OWNER_ACCOUNT, keys.get(3).getPublicKey());\n        assertEquals(OWNER_MINT, keys.get(4).getPublicKey());\n        assertEquals(WALLET_ADDRESS, keys.get(5).getPublicKey());\n        assertEquals(TokenProgram.PROGRAM_ID, keys.get(6).getPublicKey());\n    }\n\n    private void verifyCommonAccountMetas(List<AccountMeta> keys) {\n        assertEquals(FUNDING_ACCOUNT, keys.get(0).getPublicKey());\n        assertTrue(keys.get(0).isSigner());\n        assertTrue(keys.get(0).isWritable());\n        assertFalse(keys.get(1).isSigner());\n        assertTrue(keys.get(1).isWritable());\n\n        assertEquals(WALLET_ADDRESS, keys.get(2).getPublicKey());\n        assertFalse(keys.get(2).isSigner());\n        assertFalse(keys.get(2).isWritable());\n\n        assertEquals(MINT, keys.get(3).getPublicKey());\n        assertFalse(keys.get(3).isSigner());\n        assertFalse(keys.get(3).isWritable());\n\n        assertEquals(SystemProgram.PROGRAM_ID, keys.get(4).getPublicKey());\n        assertFalse(keys.get(4).isSigner());\n        assertFalse(keys.get(4).isWritable());\n\n        assertEquals(TokenProgram.PROGRAM_ID, keys.get(5).getPublicKey());\n        assertFalse(keys.get(5).isSigner());\n        assertFalse(keys.get(5).isWritable());\n    }\n\n    private void verifyAccountMetas(List<AccountMeta> keys) {\n        assertSame(FUNDING_ACCOUNT, keys.get(0).getPublicKey());\n        assertTrue(keys.get(0).isSigner());\n        assertTrue(keys.get(0).isWritable());\n        assertFalse(keys.get(1).isSigner());\n        assertTrue(keys.get(1).isWritable());\n\n        assertSame(WALLET_ADDRESS, keys.get(2).getPublicKey());\n        assertFalse(keys.get(2).isSigner());\n        assertFalse(keys.get(2).isWritable());\n\n        assertSame(MINT, keys.get(3).getPublicKey());\n        assertFalse(keys.get(3).isSigner());\n        assertFalse(keys.get(3).isWritable());\n\n        assertSame(SystemProgram.PROGRAM_ID, keys.get(4).getPublicKey());\n        assertFalse(keys.get(4).isSigner());\n        assertFalse(keys.get(4).isWritable());\n\n        assertSame(TokenProgram.PROGRAM_ID, keys.get(5).getPublicKey());\n        assertFalse(keys.get(5).isSigner());\n        assertFalse(keys.get(5).isWritable());\n    }\n}"

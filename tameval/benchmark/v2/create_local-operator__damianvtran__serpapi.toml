@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "damianvtran/local-operator"
+sha = "2fd6ef34ce6fad7889fba35bbf5a1a49ff447720"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=local_operator/clients/serpapi.py -m pytest -q --junit-xml=test_output.xml tests/unit/clients/test_serpapi.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target local_operator.clients.serpapi --unit-test tests.unit.clients.test_serpapi --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target local_operator/clients/serpapi.py --unit-test tests/unit/clients/test_serpapi.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 82.0
+original_coverage = 91.0
+mutation_kill_rate = 94.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 3, 4, 7, 21, 22, 23, 24, 25, 26, 27, 28, 30, 32, 41, 55, 56, 57, 58, 59, 60, 61, 62, 64, 66, 75, 85, 86, 87, 88, 90, 92, 97, 111, 112, 113, 114, 115, 116, 117, 118, 120, 122, 127, 142, 143, 144, 145, 146, 147, 148, 149, 150, 152, 154, 159, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 190, 192, 197, 205, 206, 208, 210, 215, 222, 224, 226, 231, 238, 240, 242, 247, 257, 258, 259, 260, 262, 264, 269, 279, 280, 281, 282, 284, 286, 291, 310, 311, 312, 313, 314, 315, 316, 317, 318, 319, 320, 321, 322, 324, 326, 331, 339, 340, 342, 344, 349, 367, 368, 369, 370, 371, 372, 373, 374, 375, 376, 377, 378, 380, 382, 387, 395, 396, 398, 400, 405, 420, 421, 422, 423, 424, 425, 426, 427, 428, 430, 432, 437, 444, 454, 455, 456, 460,]
+missed_lines = [ 38, 72, 94, 124, 156, 194, 212, 228, 244, 266, 288, 328, 346, 384, 402, 434, 491, 498, 499, 500, 501, 502, 503, 505, 506, 507, 508, 509, 513, 514, 515, 516, 520, 521,]
+
+[input_info]
+test_file_path = "tests/unit/clients/test_serpapi.py"
+focal_file_path = "local_operator/clients/serpapi.py"
+test_file_url = "https://github.com/damianvtran/local-operator/blob/2fd6ef34ce6fad7889fba35bbf5a1a49ff447720/tests/unit/clients/test_serpapi.py"
+focal_file_url = "https://github.com/damianvtran/local-operator/blob/2fd6ef34ce6fad7889fba35bbf5a1a49ff447720/local_operator/clients/serpapi.py"
+first_commit_date = "2025-02-14"
+last_commit_date = "2025-02-16"
+test_file_content = "from typing import Any, Dict\nfrom unittest.mock import Mock, patch\n\nimport pytest\nfrom pydantic import SecretStr\n\nfrom local_operator.clients.serpapi import (\n    SerpApiClient,\n    SerpApiResponse,\n    SerpApiSearchInformation,\n    SerpApiSearchMetadata,\n    SerpApiSearchParameters,\n)\n\n@pytest.fixture\ndef api_key() -> SecretStr:\n    \"\"\"Fixture for providing a test API key.\"\"\"\n    return SecretStr(\"test_api_key\")\n\n@pytest.fixture\ndef serp_client(api_key: SecretStr) -> SerpApiClient:\n    \"\"\"Fixture for creating a SerpApiClient instance.\n\n    Args:\n        api_key (str): API key for the client.\n\n    Returns:\n        SerpApiClient: An instance of SerpApiClient.\n    \"\"\"\n    return SerpApiClient(api_key=api_key)\n\n@pytest.fixture\ndef mock_response() -> Dict[str, Any]:\n    \"\"\"Fixture for providing a mock JSON response from the SERP API.\n\n    Returns:\n        Dict[str, Any]: Mock JSON data that simulates a SERP API response.\n    \"\"\"\n    return {\n        \"search_metadata\": {\n            \"id\": \"test_id\",\n            \"status\": \"Success\",\n            \"json_endpoint\": \"https://serpapi.com/searches/test.json\",\n            \"created_at\": \"2023-01-01 00:00:00 UTC\",\n            \"processed_at\": \"2023-01-01 00:00:01 UTC\",\n            \"google_url\": \"https://www.google.com/search?q=test\",\n            \"raw_html_file\": \"https://serpapi.com/searches/test.html\",\n            \"total_time_taken\": 1.23,\n        },\n        \"search_parameters\": {\n            \"engine\": \"google\",\n            \"q\": \"test query\",\n            \"location_requested\": \"New York\",\n            \"location_used\": \"New York,New York,United States\",\n            \"google_domain\": \"google.com\",\n            \"hl\": \"en\",\n            \"gl\": \"us\",\n            \"device\": \"desktop\",\n        },\n        \"search_information\": {\n            \"organic_results_state\": \"Results for exact spelling\",\n            \"query_displayed\": \"test query\",\n            \"total_results\": 1000000,\n            \"time_taken_displayed\": 0.5,\n        },\n        \"recipes_results\": None,\n        \"shopping_results\": None,\n        \"local_results\": None,\n        \"organic_results\": None,\n        \"related_searches\": None,\n        \"pagination\": None,\n    }\n\ndef test_client_init_no_api_key() -> None:\n    \"\"\"Test client initialization with missing API key.\n\n    Raises:\n        RuntimeError: If no API key is provided.\n    \"\"\"\n    with pytest.raises(RuntimeError) as exc_info:\n        SerpApiClient(SecretStr(\"\"))\n    assert \"SERP API key must be provided\" in str(exc_info.value)\n"

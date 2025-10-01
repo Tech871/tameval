@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ing-bank/cassandra-jdbc-wrapper"
+sha = "d45b4b569f67d7ea6bd06cd432eb66f7e005968f"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=SqlTimestampCodecTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.SqlTimestampCodec  -DtargetTests=**.SqlTimestampCodecTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 94.0
+original_coverage = 94.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 41, 42, 48, 49, 54, 60, 65, 66, 68, 73, 74, 77, 83, 84, 87, 92,]
+missed_lines = [ 85,]
+
+[input_info]
+test_file_path = "src/test/java/com/ing/data/cassandra/jdbc/codec/SqlTimestampCodecTest.java"
+focal_file_path = "src/main/java/com/ing/data/cassandra/jdbc/codec/SqlTimestampCodec.java"
+test_file_url = "https://github.com/ing-bank/cassandra-jdbc-wrapper/blob/d45b4b569f67d7ea6bd06cd432eb66f7e005968f/src/test/java/com/ing/data/cassandra/jdbc/codec/SqlTimestampCodecTest.java"
+focal_file_url = "https://github.com/ing-bank/cassandra-jdbc-wrapper/blob/d45b4b569f67d7ea6bd06cd432eb66f7e005968f/src/main/java/com/ing/data/cassandra/jdbc/codec/SqlTimestampCodec.java"
+first_commit_date = "2025-03-22"
+last_commit_date = "2025-06-22"
+test_file_content = "/*\n *   Licensed under the Apache License, Version 2.0 (the \"License\");\n *   you may not use this file except in compliance with the License.\n *   You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n *   Unless required by applicable law or agreed to in writing, software\n *   distributed under the License is distributed on an \"AS IS\" BASIS,\n *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n *   See the License for the specific language governing permissions and\n *   limitations under the License.\n */\npackage com.ing.data.cassandra.jdbc.codec;\n\nimport com.datastax.oss.driver.api.core.ProtocolVersion;\nimport com.datastax.oss.driver.api.core.type.DataTypes;\nimport com.datastax.oss.driver.api.core.type.reflect.GenericType;\nimport com.datastax.oss.driver.internal.core.type.codec.TimestampCodec;\nimport com.datastax.oss.driver.internal.core.util.Strings;\nimport org.apache.commons.lang3.StringUtils;\nimport org.junit.jupiter.api.Test;\n\nimport java.nio.ByteBuffer;\nimport java.sql.Timestamp;\nimport java.time.Instant;\nimport java.time.ZoneId;\nimport java.time.format.DateTimeFormatter;\nimport java.time.temporal.ChronoUnit;\n\nimport static com.ing.data.cassandra.jdbc.codec.SqlTimestampCodec.DEFAULT_TIMESTAMP_FORMAT;\nimport static com.ing.data.cassandra.jdbc.utils.DriverUtil.NULL_KEYWORD;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\npublic class SqlTimestampCodecTest {\n\n    private final SqlTimestampCodec sut = new SqlTimestampCodec();\n    private final Instant NOW_INSTANT = Instant.now().truncatedTo(ChronoUnit.MILLIS);\n    private final Timestamp NOW_SQL_TS = Timestamp.from(NOW_INSTANT);\n    private final long NOW_AS_MILLISECONDS = NOW_INSTANT.toEpochMilli();\n\n    @Test\n    void givenCodec_whenGetJavaType_returnTimestampType() {\n        assertEquals(GenericType.of(Timestamp.class), sut.getJavaType());\n    }\n\n    @Test\n    void givenCodec_whenGetCqlType_returnTimestamp() {\n        assertEquals(DataTypes.TIMESTAMP, sut.getCqlType());\n    }\n\n    @Test\n    void givenNullValue_whenEncode_returnNull() {\n        assertNull(sut.encode(null, ProtocolVersion.DEFAULT));\n    }\n\n    @Test\n    void givenValue_whenEncode_returnByteBuffer() {\n        ByteBuffer bytes = sut.encode(NOW_SQL_TS, ProtocolVersion.DEFAULT);\n        assertNotNull(bytes);\n        assertEquals(NOW_AS_MILLISECONDS, bytes.getLong());\n    }\n\n    @Test\n    void givenNullValue_whenDecode_returnNull() {\n        assertNull(sut.decode(null, ProtocolVersion.DEFAULT));\n    }\n\n    @Test\n    void givenValue_whenDecode_returnTimestamp() {\n        ByteBuffer bytes = ByteBuffer.allocate(8).putLong(NOW_AS_MILLISECONDS);\n        bytes.position(0);\n        assertEquals(NOW_SQL_TS, sut.decode(bytes, ProtocolVersion.DEFAULT));\n    }\n\n    @Test\n    void givenNullOrEmptyValue_whenParse_returnNull() {\n        assertNull(sut.parse(null));\n        assertNull(sut.parse(NULL_KEYWORD));\n        assertNull(sut.parse(StringUtils.EMPTY));\n        assertNull(sut.parse(StringUtils.SPACE));\n    }\n\n    @Test\n    void givenNonNullValue_whenParse_returnExpectedValue() {\n        final String formattedTimestamp = DEFAULT_TIMESTAMP_FORMAT.format(NOW_INSTANT.atZone(ZoneId.systemDefault()));\n        assertEquals(NOW_SQL_TS, sut.parse(Strings.quote(formattedTimestamp)));\n    }\n\n    @Test\n    void givenNullValue_whenFormat_returnNull() {\n        assertEquals(NULL_KEYWORD, sut.format(null));\n    }\n\n    @Test\n    void givenNonNullValue_whenFormat_returnExpectedValue() {\n        assertEquals(Strings.quote(DEFAULT_TIMESTAMP_FORMAT.format(NOW_INSTANT)), sut.format(NOW_SQL_TS));\n    }\n}\n"

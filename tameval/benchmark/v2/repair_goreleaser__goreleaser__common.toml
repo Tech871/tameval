@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "goreleaser/goreleaser"
+sha = "683adbba952d63899c6ba08ff0240fc946252674"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/builders/common/common.go internal/builders/common/common_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/builders/common/common.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 90.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 57.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/builders/common/common_test.go"
+focal_file_path = "internal/builders/common/common.go"
+test_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/builders/common/common_test.go"
+focal_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/builders/common/common.go"
+first_commit_date = "2025-01-02"
+last_commit_date = "2025-01-28"
+test_file_content = "package common\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"strconv\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/goreleaser/goreleaser/v2/internal/artifact\"\n\t\"github.com/goreleaser/goreleaser/v2/internal/testctx\"\n\t\"github.com/goreleaser/goreleaser/v2/internal/tmpl\"\n\t\"github.com/goreleaser/goreleaser/v2/pkg/config\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestValidateNonGoConfig(t *testing.T) {\n\tcases := map[string]config.Build{\n\t\t\"ldflags\": {\n\t\t\tBuildDetails: config.BuildDetails{\n\t\t\t\tLdflags: []string{\"-a\"},\n\t\t\t},\n\t\t},\n\t\t\"goos\": {\n\t\t\tGoos: []string{\"a\"},\n\t\t},\n\t\t\"goarch\": {\n\t\t\tGoarch: []string{\"a\"},\n\t\t},\n\t\t\"goamd64\": {\n\t\t\tGoamd64: []string{\"a\"},\n\t\t},\n\t\t\"go386\": {\n\t\t\tGo386: []string{\"a\"},\n\t\t},\n\t\t\"goarm\": {\n\t\t\tGoarm: []string{\"a\"},\n\t\t},\n\t\t\"goarm64\": {\n\t\t\tGoarm64: []string{\"a\"},\n\t\t},\n\t\t\"gomips\": {\n\t\t\tGomips: []string{\"a\"},\n\t\t},\n\t\t\"goppc64\": {\n\t\t\tGoppc64: []string{\"a\"},\n\t\t},\n\t\t\"goriscv64\": {\n\t\t\tGoriscv64: []string{\"a\"},\n\t\t},\n\t\t\"ignore\": {\n\t\t\tIgnore: []config.IgnoredBuild{{}},\n\t\t},\n\t\t\"overrides\": {\n\t\t\tBuildDetailsOverrides: []config.BuildDetailsOverride{{}},\n\t\t},\n\t\t\"buildmode\": {\n\t\t\tBuildDetails: config.BuildDetails{\n\t\t\t\tBuildmode: \"a\",\n\t\t\t},\n\t\t},\n\t\t\"tags\": {\n\t\t\tBuildDetails: config.BuildDetails{\n\t\t\t\tTags: []string{\"a\"},\n\t\t\t},\n\t\t},\n\t\t\"asmflags\": {\n\t\t\tBuildDetails: config.BuildDetails{\n\t\t\t\tAsmflags: []string{\"a\"},\n\t\t\t},\n\t\t},\n\t}\n\tfor k, v := range cases {\n\t\tt.Run(k, func(t *testing.T) {\n\t\t\trequire.Error(t, ValidateNonGoConfig(v))\n\t\t})\n\t}\n}\n\nfunc TestChTimes(t *testing.T) {\n\tt.Run(\"valid\", func(t *testing.T) {\n\t\tmodTime := time.Now().AddDate(-1, 0, 0).Round(time.Second).UTC()\n\t\tname := filepath.Join(t.TempDir(), \"file\")\n\t\trequire.NoError(t, os.WriteFile(name, []byte(\"foo\"), 0o644))\n\t\tbuild := config.Build{\n\t\t\tModTimestamp: \"{{.Env.A}}\",\n\t\t}\n\t\ttpl := tmpl.New(testctx.New()).SetEnv(\"A=\" + strconv.FormatInt(modTime.Unix(), 10))\n\t\trequire.NoError(t, ChTimes(build, tpl, &artifact.Artifact{\n\t\t\tPath: name,\n\t\t}))\n\n\t\tst, err := os.Stat(name)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, modTime, st.ModTime().UTC())\n\t})\n\tt.Run(\"invalid template\", func(t *testing.T) {\n\t\tname := filepath.Join(t.TempDir(), \"file\")\n\t\tbuild := config.Build{\n\t\t\tModTimestamp: \"{{.Env.A}}\",\n\t\t}\n\t\ttpl := tmpl.New(testctx.New()).RegisterFunction(\"nonExistentFunction\", func() string { return \"\" })\n\t\trequire.Error(t, ChTimes(build, tpl, &artifact.Artifact{\n\t\t\tPath: name,\n\t\t}))\n\t})\n\tt.Run(\"invalid timestamp\", func(t *testing.T) {\n\t\tname := filepath.Join(t.TempDir(), \"file\")\n\t\tbuild := config.Build{\n\t\t\tModTimestamp: \"invalid\",\n\t\t}\n\t\ttpl := tmpl.New(testctx.New(), \"extraArgument\")\n\t\trequire.Error(t, ChTimes(build, tpl, &artifact.Artifact{\n\t\t\tPath: name,\n\t\t}))\n\t})\n\tt.Run(\"empty\", func(t *testing.T) {\n\t\tname := filepath.Join(t.TempDir(), \"file\")\n\t\tbuild := config.Build{}\n\t\ttpl := tmpl.New(testctx.New())\n\t\ta := &artifact.Artifact{\n\t\t\tPath: name,\n\t\t}\n\t\ta.Validate()\n\t\trequire.NoError(t, ChTimes(build, tpl, a))\n\t})\n}\n\nfunc TestTemplateEnv(t *testing.T) {\n\tbuild := config.Build{\n\t\tBuildDetails: config.BuildDetails{\n\t\t\tEnv: []string{\n\t\t\t\t\"FOO={{.Env.FU}}\",\n\t\t\t\t\"BAR={{.Env.FOO}}_{{.Env.FU}}\",\n\t\t\t\t`OS={{- if eq .Os \"windows\" -}}\n\t\t\t\t\tw\n\t\t\t\t{{- else if eq .Os \"darwin\" -}}\n\t\t\t\t\td\n\t\t\t\t{{- else if eq .Os \"linux\" -}}\n\t\t\t\t\tl\n\t\t\t\t{{- end -}}`,\n\t\t\t},\n\t\t},\n\t}\n\tctx := testctx.New().WithTimeout(10)\n\ttpl := tmpl.New(ctx).SetEnv(\"FU=foobar\").WithArtifact(&artifact.Artifact{\n\t\tGoos: \"linux\",\n\t})\n\n\tgot, err := TemplateEnv(build.Env, tpl)\n\trequire.NoError(t, err)\n\trequire.Equal(t, []string{\n\t\t\"FOO=foobar\",\n\t\t\"BAR=foobar_foobar\",\n\t\t\"OS=l\",\n\t}, got)\n}\n\nfunc TestExec(t *testing.T) {\n\tctx := testctx.NewWithConfig(\"test\")\n\trequire.NoError(t, Exec(ctx, []string{\"echo\", \"$FOO\"}, []string{\"FOO=foobar\"}, \".\"))\n}"

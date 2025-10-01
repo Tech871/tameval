@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "setup.py"
+
+[repo_info]
+repository = "facebookresearch/balance"
+sha = "80a89cf6f5d7de64f55f2bebe7d666e51d6f9bb9"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install . && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=balance/stats_and_plots/weighted_comparisons_plots.py -m pytest -q --junit-xml=test_output.xml tests/test_weighted_comparisons_plots.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target balance.stats_and_plots.weighted_comparisons_plots --unit-test tests.test_weighted_comparisons_plots --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target balance/stats_and_plots/weighted_comparisons_plots.py --unit-test tests/test_weighted_comparisons_plots.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 32.0
+original_coverage = 75.0
+mutation_kill_rate = 3.0
+original_mutation_kill_rate = 3.0
+covered_lines = [ 7, 9, 11, 13, 15, 17, 18, 19, 20, 21, 22, 24, 28, 29, 31, 39, 53, 54, 55, 57, 58, 62, 63, 67, 68, 73, 74, 80, 81, 84, 124, 225, 326, 331, 335, 336, 337, 338, 339, 341, 347, 348, 350, 352, 354, 355, 356, 358, 368, 369, 370, 371, 374, 459, 561, 632, 639, 640, 643, 644, 645, 648, 650, 653, 654, 659, 663, 671, 676, 678, 679, 683, 714, 848, 1008, 1130, 1278, 1320, 1403, 1408, 1409, 1411, 1412,]
+missed_lines = [ 103, 104, 105, 106, 107, 108, 110, 114, 117, 118, 119, 121, 191, 192, 193, 194, 195, 196, 197, 199, 200, 202, 204, 205, 206, 208, 219, 220, 222, 340, 342, 343, 345, 421, 422, 424, 425, 426, 428, 439, 446, 452, 454, 455, 456, 520, 521, 522, 525, 527, 528, 529, 532, 533, 541, 545, 546, 548, 550, 551, 552, 553, 556, 633, 634, 636, 655, 656, 664, 666, 669, 673, 703, 704, 705, 706, 765, 766, 767, 769, 774, 788, 790, 791, 792, 799, 825, 826, 838, 840, 841, 842, 843, 844, 845, 932, 934, 935, 939, 941, 942, 943, 945, 947, 950, 953, 954, 955, 958, 959, 963, 965, 976, 978, 996, 997, 999, 1001, 1002, 1004, 1005, 1060, 1061, 1063, 1068, 1071, 1072, 1082, 1102, 1104, 1115, 1117, 1119, 1120, 1121, 1122, 1123, 1202, 1204, 1208, 1210, 1215, 1216, 1220, 1226, 1231, 1232, 1233, 1235, 1240, 1241, 1243, 1246, 1250, 1251, 1252, 1253, 1255, 1260, 1261, 1266, 1271, 1272, 1274, 1275, 1299, 1300, 1306, 1404, 1422, 1423, 1433, 1434, 1436,]
+
+[input_info]
+test_file_path = "tests/test_weighted_comparisons_plots.py"
+focal_file_path = "balance/stats_and_plots/weighted_comparisons_plots.py"
+test_file_url = "https://github.com/facebookresearch/balance/blob/80a89cf6f5d7de64f55f2bebe7d666e51d6f9bb9/tests/test_weighted_comparisons_plots.py"
+focal_file_url = "https://github.com/facebookresearch/balance/blob/80a89cf6f5d7de64f55f2bebe7d666e51d6f9bb9/balance/stats_and_plots/weighted_comparisons_plots.py"
+first_commit_date = "2022-11-16"
+last_commit_date = "2025-01-06"
+test_file_content = "# Copyright (c) Meta Platforms, Inc. and affiliates.\n#\n# This source code is licensed under the MIT license found in the\n# LICENSE file in the root directory of this source tree.\n\n# pyre-unsafe\n\nfrom __future__ import absolute_import, division, print_function, unicode_literals\n\nimport balance.testutil\n\nimport matplotlib\nimport matplotlib.pyplot as plt\nimport numpy as np\nimport pandas as pd\nimport pandas.testing\n\nfrom balance.sample_class import Sample\nfrom balance.stats_and_plots import weighted_comparisons_plots, weighted_stats\n\n\ns = Sample.from_frame(\n    pd.DataFrame(\n        {\n            \"a\": (1, 2, 3),\n            \"b\": (-42, 8, 2),\n            \"c\": (\"x\", \"y\", \"z\"),\n            \"id\": (1, 2, 3),\n            \"w\": (0.5, 2, 1),\n        }\n    ),\n    id_column=\"id\",\n    weight_column=\"w\",\n)\n\ns2 = Sample.from_frame(\n    pd.DataFrame(\n        {\n            \"a\": (1, 2, 3),\n            \"b\": (17, 9, -3),\n            \"c\": (\"x\", \"y\", \"z\"),\n            \"id\": (1, 2, 3),\n            \"w\": (0.5, 2, 1),\n        }\n    ),\n    id_column=\"id\",\n    weight_column=\"w\",\n)\n\n\n# TODO: split out the weighted_stats.relative_frequency_table function.\nclass Test_weighted_comparisons_plots(\n    balance.testutil.BalanceTestCase,\n):\n    def test_plot__return_sample_palette(self):\n        from balance.stats_and_plots.weighted_comparisons_plots import (\n            _return_sample_palette,\n        )\n\n        self.assertEqual(\n            _return_sample_palette([\"self\", \"target\"]),\n            {\"self\": \"#de2d26cc\", \"target\": \"#9ecae1cc\"},\n        )\n        self.assertEqual(\n            _return_sample_palette([\"self\", \"unadjusted\"]),\n            {\"self\": \"#34a53080\", \"unadjusted\": \"#de2d26cc\"},\n        )\n        self.assertEqual(\n            _return_sample_palette([\"self\", \"unadjusted\", \"target\"]),\n            {\"self\": \"#34a53080\", \"unadjusted\": \"#de2d26cc\", \"target\": \"#9ecae1cc\"},\n        )\n        self.assertEqual(\n            _return_sample_palette([\"adjusted\", \"unadjusted\", \"target\"]),\n            {\"adjusted\": \"#34a53080\", \"unadjusted\": \"#de2d26cc\", \"target\": \"#9ecae1cc\"},\n        )\n        self.assertEqual(_return_sample_palette([\"cat\", \"dog\"]), \"muted\")\n\n\n\n    def test_plot_dist_weighted_kde_error(self):\n        df4 = {\n            \"df\": pd.DataFrame(\n                {\"numeric_5\": pd.Series([0, 0, 0, 0, 0, 1, 1, 2, 3, 4])}\n            ),\n            \"weight\": pd.Series([0, 0, 0, 0, 0, 0, 0, 0, 0, 5]),\n        }\n\n        plot_dist_type = type(\n            weighted_comparisons_plots.plot_dist(\n                (df4,),\n                dist_type=\"kde\",\n                numeric_n_values_threshold=0,\n                weighted=False,\n                library=\"seaborn\",\n                return_axes=True,\n            )[0]\n        )\n\n        # NOTE: There is no AxesSubplot class until one is invoked and created on the fly.\n        #     See details here: https://stackoverflow.com/a/11690800/256662\n        self.assertTrue(issubclass(plot_dist_type, plt.Axes))\n\n\n"

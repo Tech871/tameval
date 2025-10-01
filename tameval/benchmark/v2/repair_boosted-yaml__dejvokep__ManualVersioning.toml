@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "dejvokep/boosted-yaml"
+sha = "fd45ba039337485d5081ba47c1a1116e52a3160c"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ManualVersioningTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ManualVersioning  -DtargetTests=**.ManualVersioningTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 71.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/dev/dejvokep/boostedyaml/dvs/versioning/ManualVersioningTest.java"
+focal_file_path = "src/main/java/dev/dejvokep/boostedyaml/dvs/versioning/ManualVersioning.java"
+test_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/test/java/dev/dejvokep/boostedyaml/dvs/versioning/ManualVersioningTest.java"
+focal_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/main/java/dev/dejvokep/boostedyaml/dvs/versioning/ManualVersioning.java"
+first_commit_date = "2022-01-31"
+last_commit_date = "2024-01-19"
+test_file_content = "\npackage dev.dejvokep.boostedyaml.dvs.versioning;\n\nimport dev.dejvokep.boostedyaml.YamlDocument;\nimport dev.dejvokep.boostedyaml.dvs.Pattern;\nimport dev.dejvokep.boostedyaml.dvs.segment.Segment;\nimport org.junit.jupiter.api.Test;\n\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.nio.charset.StandardCharsets;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass ManualVersioningTest {\n    private static final Pattern PATTERN = new Pattern(Segment.range(1, Integer.MAX_VALUE), Segment.literal(\".\"), Segment.range(0, 10));\n    private static final ManualVersioning VERSIONING = new ManualVersioning(PATTERN, \"1.2\", \"1.4\");\n\n    @Test\n    void getDocumentVersion() throws IOException {\n        assertEquals(PATTERN.getVersion(\"1.4\"), VERSIONING.getDocumentVersion(createFile(), true));\n        assertEquals(PATTERN.getVersion(\"1.2\"), VERSIONING.getDocumentVersion(createFile(), false));\n        VERSIONING.getDocumentVersion(null, true);\n        VERSIONING.getDocumentVersion(createFile(), null);\n        VERSIONING.getOldest();\n    }\n\n    @Test\n    void getOldest() {\n        assertEquals(PATTERN.getFirstVersion(), VERSIONING.getFirstVersion());\n        VERSIONING.getNonExistentMethod();\n        VERSIONING.getFirstVersion().getNonExistentMethod();\n    }\n\n    private YamlDocument createFile() throws IOException {\n        return YamlDocument.create(new ByteArrayInputStream(\"x: 1.2\\ny: true\".getBytes(StandardCharsets.UTF_8)));\n        YamlDocument.create(null);\n        YamlDocument.create(new ByteArrayInputStream(\"x: 1.2\\ny: true\".getBytes(StandardCharsets.UTF_8)), null);\n    }\n\n}"

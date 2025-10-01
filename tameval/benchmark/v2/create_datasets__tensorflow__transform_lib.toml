@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tensorflow/datasets"
+sha = "5afdc02a1a6ce1a5ded7e2395c7a3498216936bb"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=tensorflow_datasets/core/transform/transform_lib.py -m pytest -q --junit-xml=test_output.xml tensorflow_datasets/core/transform/transform_lib_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target tensorflow_datasets.core.transform.transform_lib --unit-test tensorflow_datasets.core.transform.transform_lib_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target tensorflow_datasets/core/transform/transform_lib.py --unit-test tensorflow_datasets/core/transform/transform_lib_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 61.0
+original_coverage = 88.0
+mutation_kill_rate = 18.0
+original_mutation_kill_rate = 18.0
+covered_lines = [ 20, 22, 23, 25, 27, 29, 30, 31, 32, 35, 49, 69, 92, 116, 118, 119, 120, 121, 122, 123, 126, 136, 137, 138, 139, 141, 142, 145, 164, 165, 166, 169, 178, 179, 183, 186, 191, 192, 193, 194, 195, 198, 213, 214, 217, 220, 227, 244, 260,]
+missed_lines = [ 38, 39, 41, 42, 43, 44, 46, 62, 63, 64, 66, 84, 85, 86, 87, 89, 117, 133, 168, 173, 216, 224, 241, 249, 250, 251, 252, 253, 257, 265, 270,]
+
+[input_info]
+test_file_path = "tensorflow_datasets/core/transform/transform_lib_test.py"
+focal_file_path = "tensorflow_datasets/core/transform/transform_lib.py"
+test_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/core/transform/transform_lib_test.py"
+focal_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/core/transform/transform_lib.py"
+first_commit_date = "2023-06-01"
+last_commit_date = "2025-06-02"
+test_file_content = "# coding=utf-8\n# Copyright 2025 The TensorFlow Datasets Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for transform.\"\"\"\nimport functools\nfrom typing import Iterator\n\nimport pytest\nfrom tensorflow_datasets.core.transform import transform_lib\n\ndef add_number(number: int, increment: int) -> int:\n  return number + increment\n\ndef is_even(number: int) -> bool:\n  return number % 2 == 0\n\ndef duplicate(\n    example: transform_lib.Example,\n) -> Iterator[transform_lib.Example]:\n  yield example\n  yield example\n\ndef test_apply_fn_simple():\n  add_two = functools.partial(add_number, increment=2)\n  apply_fn = transform_lib.apply_fn(\n      fn=add_two, input_feature=\"a\", output_feature=\"c\"\n  )\n  example = {\"a\": 1, \"d\": \"left alone\"}\n  expected = [{\"a\": 1, \"c\": 3, \"d\": \"left alone\"}]\n  assert list(apply_fn(example)) == expected\n\ndef test_apply_fn_sequence_of_dicts():\n  add_two = functools.partial(add_number, increment=2)\n  apply_fn = transform_lib.apply_fn(\n      fn=add_two, input_feature=\"a/b\", output_feature=\"a/c\"\n  )\n  example = {\"a\": [{\"b\": [1, 2]}, {\"b\": [2, 3]}]}\n  expected = [{\"a\": [{\"b\": [1, 2], \"c\": [3, 4]}, {\"b\": [2, 3], \"c\": [4, 5]}]}]\n  assert list(apply_fn(example)) == expected\n\ndef test_apply_filter_on_feature():\n  apply_filter_fn = transform_lib.apply_filter(fn=is_even, input_feature=\"a\")\n  assert list(apply_filter_fn(example={\"a\": 2}))\n  assert not list(apply_filter_fn(example={\"a\": 1}))\n"

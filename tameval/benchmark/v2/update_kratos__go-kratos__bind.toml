@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "go-kratos/kratos"
+sha = "f7f150c3f1395d9e7b10c808488b8334a42563ed"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out transport/http/binding/bind.go transport/http/binding/bind_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting transport/http/binding/bind.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "transport/http/binding/bind_test.go"
+focal_file_path = "transport/http/binding/bind.go"
+test_file_url = "https://github.com/go-kratos/kratos/blob/f7f150c3f1395d9e7b10c808488b8334a42563ed/transport/http/binding/bind_test.go"
+focal_file_url = "https://github.com/go-kratos/kratos/blob/f7f150c3f1395d9e7b10c808488b8334a42563ed/transport/http/binding/bind.go"
+first_commit_date = "2021-03-03"
+last_commit_date = "2025-04-27"
+test_file_content = "package binding\n\nimport (\n\t\"errors\"\n\t\"io\"\n\t\"net/http\"\n\t\"net/url\"\n\t\"reflect\"\n\t\"strings\"\n\t\"testing\"\n\n\tkratoserror \"github.com/go-kratos/kratos/v2/errors\"\n)\n\ntype (\n\tTestBind struct {\n\t\tName string `json:\"name\"`\n\t\tURL  string `json:\"url\"`\n\t}\n\tTestBind2 struct {\n\t\tAge int `json:\"age\"`\n\t}\n)\n\nfunc TestBindQuery(t *testing.T) {\n\ttype args struct {\n\t\tvars   url.Values\n\t\ttarget any\n\t}\n\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\terr  error\n\t\twant any\n\t}{\n\t\t{\n\t\t\tname: \"test\",\n\t\t\targs: args{\n\t\t\t\tvars:   map[string][]string{\"name\": {\"kratos\"}, \"url\": {\"https://go-kratos.dev/\"}},\n\t\t\t\ttarget: &TestBind{},\n\t\t\t},\n\t\t\terr:  nil,\n\t\t\twant: &TestBind{\"kratos\", \"https://go-kratos.dev/\"},\n\t\t},\n\t\t{\n\t\t\tname: \"test1\",\n\t\t\targs: args{\n\t\t\t\tvars:   map[string][]string{\"age\": {\"kratos\"}, \"url\": {\"https://go-kratos.dev/\"}},\n\t\t\t\ttarget: &TestBind2{},\n\t\t\t},\n\t\t\terr: kratoserror.BadRequest(kratoserror.CodecReason, \"Field Namespace:age ERROR:Invalid Integer Value 'kratos' Type 'int' Namespace 'age'\"),\n\t\t},\n\t\t{\n\t\t\tname: \"test2\",\n\t\t\targs: args{\n\t\t\t\tvars:   map[string][]string{\"age\": {\"1\"}, \"url\": {\"https://go-kratos.dev/\"}},\n\t\t\t\ttarget: &TestBind2{},\n\t\t\t},\n\t\t\terr:  nil,\n\t\t\twant: &TestBind2{Age: 1},\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\terr := BindQuery(tt.args.vars, tt.args.target)\n\t\t\tif !kratoserror.Is(err, tt.err) {\n\t\t\t\tt.Fatalf(\"BindQuery() error = %v, err %v\", err, tt.err)\n\t\t\t}\n\t\t\tif err == nil && !reflect.DeepEqual(tt.args.target, tt.want) {\n\t\t\t\tt.Errorf(\"BindQuery() target = %v, want %v\", tt.args.target, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestBindForm(t *testing.T) {\n\ttype args struct {\n\t\treq    *http.Request\n\t\ttarget any\n\t}\n\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\terr  error\n\t\twant *TestBind\n\t}{\n\t\t{\n\t\t\tname: \"error not nil\",\n\t\t\targs: args{\n\t\t\t\treq:    &http.Request{Method: http.MethodPost},\n\t\t\t\ttarget: &TestBind{},\n\t\t\t},\n\t\t\terr:  errors.New(\"missing form body\"),\n\t\t\twant: nil,\n\t\t},\n\t\t{\n\t\t\tname: \"error is nil\",\n\t\t\targs: args{\n\t\t\t\treq: &http.Request{\n\t\t\t\t\tMethod: http.MethodPost,\n\t\t\t\t\tHeader: http.Header{\"Content-Type\": {\"application/x-www-form-urlencoded; param=value\"}},\n\t\t\t\t\tBody:   io.NopCloser(strings.NewReader(\"name=kratos&url=https://go-kratos.dev/\")),\n\t\t\t\t},\n\t\t\t\ttarget: &TestBind{},\n\t\t\t},\n\t\t\terr:  nil,\n\t\t\twant: &TestBind{\"kratos\", \"https://go-kratos.dev/\"},\n\t\t},\n\t\t{\n\t\t\tname: \"error BadRequest\",\n\t\t\targs: args{\n\t\t\t\treq: &http.Request{\n\t\t\t\t\tMethod: http.MethodPost,\n\t\t\t\t\tHeader: http.Header{\"Content-Type\": {\"application/x-www-form-urlencoded; param=value\"}},\n\t\t\t\t\tBody:   io.NopCloser(strings.NewReader(\"age=a\")),\n\t\t\t\t},\n\t\t\t\ttarget: &TestBind2{},\n\t\t\t},\n\t\t\terr:  kratoserror.BadRequest(kratoserror.CodecReason, \"Field Namespace:age ERROR:Invalid Integer Value 'a' Type 'int' Namespace 'age'\"),\n\t\t\twant: nil,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\terr := BindForm(tt.args.req, tt.args.target)\n\t\t\tif !reflect.DeepEqual(err, tt.err) {\n\t\t\t\tt.Fatalf(\"BindForm() error = %v, err %v\", err, tt.err)\n\t\t\t}\n\t\t\tif err == nil && !reflect.DeepEqual(tt.args.target, tt.want) {\n\t\t\t\tt.Errorf(\"BindForm() target = %v, want %v\", tt.args.target, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}"

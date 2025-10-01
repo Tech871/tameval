@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/bifromq"
+sha = "c07c2c0099f39282ba5fd30d6af8c2e91b03348d"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl bifromq-sysprops -Dtest=BifroMQSysPropTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl bifromq-sysprops -DtargetClasses=**.BifroMQSysProp  -DtargetTests=**.BifroMQSysPropTest  -DoutputFormats=XML"
+coverage_report_path = "bifromq-sysprops/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "bifromq-sysprops/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 30, 37, 38, 39, 40, 41, 42, 45, 47, 50, 51, 58, 59, 60, 61, 63, 64, 69, 73, 74, 82, 91,]
+missed_lines = [ 48, 49, 65, 66, 70, 71, 72,]
+
+[input_info]
+test_file_path = "bifromq-sysprops/src/test/java/org/apache/bifromq/sysprops/BifroMQSysPropTest.java"
+focal_file_path = "bifromq-sysprops/src/main/java/org/apache/bifromq/sysprops/BifroMQSysProp.java"
+test_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/bifromq-sysprops/src/test/java/org/apache/bifromq/sysprops/BifroMQSysPropTest.java"
+focal_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/bifromq-sysprops/src/main/java/org/apache/bifromq/sysprops/BifroMQSysProp.java"
+first_commit_date = "2025-06-03"
+last_commit_date = "2025-06-06"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements.  See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership.  The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * \"License\"); you may not use this file except in compliance\n * with the License.  You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied.  See the License for the\n * specific language governing permissions and limitations\n * under the License.    \n */\n\npackage org.apache.bifromq.sysprops;\n\nimport static org.testng.Assert.assertEquals;\nimport static org.testng.Assert.assertTrue;\n\nimport org.apache.bifromq.sysprops.props.ClusterDomainResolveTimeoutSeconds;\nimport java.util.HashSet;\nimport java.util.Set;\nimport org.reflections.Reflections;\nimport org.testng.annotations.Test;\n\npublic class BifroMQSysPropTest {\n\n\n    @Test\n    public void testResolve() {\n        ClusterDomainResolveTimeoutSeconds.INSTANCE.resolve();\n        assertEquals(ClusterDomainResolveTimeoutSeconds.INSTANCE.get(), Long.valueOf(120));\n\n        System.setProperty(ClusterDomainResolveTimeoutSeconds.INSTANCE.propKey(), \"100\");\n        ClusterDomainResolveTimeoutSeconds.INSTANCE.resolve();\n        assertEquals(ClusterDomainResolveTimeoutSeconds.INSTANCE.get(), Long.valueOf(100));\n    }\n}\n"

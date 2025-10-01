@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "eschava/psmqtt"
+sha = "8a1c5601cdd494b206ab54de57930d4a398e73d3"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/formatter.py -m pytest -q --junit-xml=test_output.xml src/formatter_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.formatter --unit-test src.formatter_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/formatter.py --unit-test src/formatter_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 56.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 3, 4, 5, 6, 8, 20, 23, 26, 32, 35, 38, 42, 63, 67, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 87, 92, 94, 98, 103, 105,]
+missed_lines = [ 21, 24, 27, 33, 36, 39, 43, 45, 46, 48, 49, 51, 52, 53, 54, 56, 57, 59, 61, 64, 65, 68, 95, 96, 109,]
+
+[input_info]
+test_file_path = "src/formatter_test.py"
+focal_file_path = "src/formatter.py"
+test_file_url = "https://github.com/eschava/psmqtt/blob/8a1c5601cdd494b206ab54de57930d4a398e73d3/src/formatter_test.py"
+focal_file_url = "https://github.com/eschava/psmqtt/blob/8a1c5601cdd494b206ab54de57930d4a398e73d3/src/formatter.py"
+first_commit_date = "2022-10-31"
+last_commit_date = "2025-03-13"
+test_file_content = "# Copyright (c) 2016 psmqtt project\n# Licensed under the MIT License.  See LICENSE file in the project root for full license information.\n\nimport unittest\nimport pytest\n\nfrom .formatter import Formatter\n\n@pytest.mark.unit\nclass TestFormatter(unittest.TestCase):\n\n    def test_get_format(self) -> None:\n        f = Formatter.get_format(\"123/ddd/ddd{{sdd}}/444\")\n        self.assertEqual(\"123/ddd\", f[0])\n        self.assertEqual(\"ddd{{sdd}}/444\", f[1])\n\n        f = Formatter.get_format(\"123/ddd/ddd{sdd}}/444\")\n        self.assertEqual(\"123/ddd/ddd{sdd}}/444\", f[0])\n        self.assertEqual(None, f[1])\n\n        f = Formatter.get_format(\"ddd{{sdd}}/444\")\n        self.assertEqual(\"ddd{{sdd}}/444\", f[0])\n        self.assertEqual(None, f[1])\n\n    def test_format(self) -> None:\n        self.assertEqual(\"10\", Formatter.format(\"{{a}}\", {\"a\": 10}))\n        self.assertEqual(\"10\", Formatter.format(\"{{x}}\", 10))\n        self.assertEqual(\"3\", Formatter.format(\"{{x[2]}}\", [1, 2, 3]))\n        self.assertEqual(\"2.0\", Formatter.format(\"{{a/5}}\", {\"a\": 10}))\n        self.assertEqual(\"15\", Formatter.format(\"{{a+b}}\", {\"a\": 10, \"b\": 5}))\n        self.assertEqual(\"1.2 MB\", Formatter.format(\"{{a/1000000}} MB\", {\"a\": 1200000}))\n        self.assertEqual(\"1 MB\", Formatter.format(\"{{a|MB}}\", {\"a\": 1200000}))\n\n    def test_format_uptime_str(self) -> None:\n        import time\n        n = int(time.time())\n        self.assertEqual(\"0 min\", Formatter.format(\"{{x|uptime_str}}\", n))\n        self.assertEqual(\"1 min\", Formatter.format(\"{{x|uptime_str}}\", n - 60))\n        self.assertEqual(\"1:00\", Formatter.format(\"{{x|uptime_str}}\", n - 1*60*60))\n        self.assertEqual(\"1:40\", Formatter.format(\"{{x|uptime_str}}\", n - 1*60*60 - 40*60))\n        self.assertEqual(\"1 day, 0 min\", Formatter.format(\"{{x|uptime_str}}\", n - 24*60*60))\n        self.assertEqual(\"1 day, 40 min\", Formatter.format(\"{{x|uptime_str}}\", n - 24*60*60 - 40*60))\n        self.assertEqual(\"1 day, 1:40\", Formatter.format(\"{{x|uptime_str}}\", n - 25*60*60 - 40*60))\n        self.assertEqual(\"2 days, 1:40\", Formatter.format(\"{{x|uptime_str}}\", n - 49*60*60 - 40*60))\n        self.assertEqual(\"2 days, 1:39\", Formatter.format(\"{{x|uptime_str}}\", n - 49*60*60 - 40*60+30))\n        self.assertEqual(\"2 days, 1:40\", Formatter.format(\"{{x|uptime_str}}\", n - 49*60*60 - 40*60-30))\n\n    def test_format_uptime_sec(self) -> None:\n        import time\n        n = int(time.time())\n\n        # \"uptime_sec\" should in theory product 0 secs of uptime, but indeed it takes some\n        # time to do the computation so, in some rare cases, it might round the\n        # time difference up to \"1\" sec, so we pass the test with both \"0\" and \"1\" outputs:\n        self.assertIn(Formatter.format(\"{{x|uptime_sec}}\", n), [\"0\", \"1\"])\n\n        # same as above: we accept +/-1sec of skew:\n        self.assertIn(Formatter.format(\"{{x|uptime_sec}}\", n - 60), [\"59\", \"60\", \"61\"])"

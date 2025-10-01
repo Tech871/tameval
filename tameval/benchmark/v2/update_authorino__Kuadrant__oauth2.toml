@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.8"
+
+[repo_info]
+repository = "Kuadrant/authorino"
+sha = "21d456d60269371848937208af54a83145957450"
+
+[run_info]
+docker_image = "golang:1.23.8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/evaluators/identity/oauth2.go pkg/evaluators/identity/oauth2_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/evaluators/identity/oauth2.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 75.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 50.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/evaluators/identity/oauth2_test.go"
+focal_file_path = "pkg/evaluators/identity/oauth2.go"
+test_file_url = "https://github.com/Kuadrant/authorino/blob/21d456d60269371848937208af54a83145957450/pkg/evaluators/identity/oauth2_test.go"
+focal_file_url = "https://github.com/Kuadrant/authorino/blob/21d456d60269371848937208af54a83145957450/pkg/evaluators/identity/oauth2.go"
+first_commit_date = "2022-03-28"
+last_commit_date = "2025-06-17"
+test_file_content = "package identity\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"testing\"\n\n\tmock_auth \"github.com/kuadrant/authorino/pkg/auth/mocks\"\n\t\"github.com/kuadrant/authorino/pkg/httptest\"\n\n\t\"github.com/golang/mock/gomock\"\n\t\"gotest.tools/assert\"\n)\n\nconst oauthServerHost = \"127.0.0.1:9004\"\n\nfunc TestOAuth2Call(t *testing.T) {\n\tauthServer := httptest.NewHttpServerMock(oauthServerHost, map[string]httptest.HttpServerMockResponseFunc{\n\t\t\"/introspect-active\": func() httptest.HttpServerMockResponse {\n\t\t\treturn httptest.HttpServerMockResponse{Status: 200, Body: `{ \"active\": true }`}\n\t\t},\n\t\t\"/introspect-inactive\": func() httptest.HttpServerMockResponse {\n\t\t\treturn httptest.HttpServerMockResponse{Status: 200, Body: `{ \"active\": false }`}\n\t\t},\n\t})\n\tdefer authServer.Close()\n\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tauthCredMock := mock_auth.NewMockAuthCredentials(ctrl)\n\tauthCredMock.EXPECT().GetCredentialsFromReq(gomock.Any()).Return(\"oauth-opaque-token\", nil).AnyTimes()\n\n\tpipelineMock := mock_auth.NewMockAuthPipeline(ctrl)\n\tpipelineMock.EXPECT().GetHttp().Return(nil).AnyTimes()\n\n\tctx := context.Background()\n\n\t{\n\t\toauthEvaluator := NewOAuth2Identity(fmt.Sprintf(\"http://%v/introspect-active\", oauthServerHost), \"access_token\", \"client-id\", \"client-secret\", authCredMock)\n\t\tobj, err := oauthEvaluator.Call(pipelineMock, ctx)\n\t\tassert.NilError(t, err)\n\t\tclaims := obj.(map[string]interface{})\n\t\tassert.Assert(t, claims[\"active\"])\n\t}\n\n\t{\n\t\toauthEvaluator := NewOAuth2Identity(fmt.Sprintf(\"http://%v/introspect-inactive\", oauthServerHost), \"access_token\", \"client-id\", \"client-secret\", authCredMock)\n\t\t_, err := oauthEvaluator.Call(pipelineMock, ctx)\n\t\tassert.Error(t, err, \"token is not active\")\n\t}\n}\n\nfunc TestDefaultTokenTypeHint(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tauthCredMock := mock_auth.NewMockAuthCredentials(ctrl)\n\n\t{\n\t\toauthEvaluator := NewOAuth2Identity(\"http://server.example.com\", \"\", \"client-id\", \"client-secret\", authCredMock)\n\t\tassert.Equal(t, \"access_token\", oauthEvaluator.TokenTypeHint)\n\t}\n\n\t{\n\t\toauthEvaluator := NewOAuth2Identity(\"http://server.example.com\", \"refresh_token\", \"client-id\", \"client-secret\", authCredMock)\n\t\tassert.Equal(t, \"refresh_token\", oauthEvaluator.TokenTypeHint)\n\t}\n}"

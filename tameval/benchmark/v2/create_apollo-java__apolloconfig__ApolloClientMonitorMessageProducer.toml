@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apolloconfig/apollo-java"
+sha = "d8115d920ae21a1300827661492b5e776853258f"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl apollo-client -Dtest=ApolloClientMonitorMessageProducerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl apollo-client -DtargetClasses=**.ApolloClientMonitorMessageProducer  -DtargetTests=**.ApolloClientMonitorMessageProducerTest  -DoutputFormats=XML"
+coverage_report_path = "apollo-client/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "apollo-client/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 45.0
+original_coverage = 45.0
+mutation_kill_rate = 4.0
+original_mutation_kill_rate = 4.0
+covered_lines = [ 39, 41, 56, 57, 61, 62, 66, 67, 68, 69, 73, 76, 81, 82, 107, 111, 112, 113, 114, 115, 118, 119, 120, 121, 122, 123, 161, 162, 163, 164, 165, 166, 167, 188, 189, 190, 191, 192, 193, 194, 196, 200,]
+missed_lines = [ 70, 71, 78, 84, 85, 87, 88, 90, 91, 93, 94, 96, 97, 99, 100, 103, 126, 127, 128, 129, 130, 133, 134, 135, 136, 137, 140, 141, 142, 143, 144, 147, 148, 149, 150, 151, 154, 155, 156, 157, 158, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 184,]
+
+[input_info]
+test_file_path = "apollo-client/src/test/java/com/ctrip/framework/apollo/monitor/internal/tracer/ApolloClientMonitorMessageProducerTest.java"
+focal_file_path = "apollo-client/src/main/java/com/ctrip/framework/apollo/monitor/internal/tracer/ApolloClientMonitorMessageProducer.java"
+test_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-client/src/test/java/com/ctrip/framework/apollo/monitor/internal/tracer/ApolloClientMonitorMessageProducerTest.java"
+focal_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-client/src/main/java/com/ctrip/framework/apollo/monitor/internal/tracer/ApolloClientMonitorMessageProducer.java"
+first_commit_date = "2024-10-19"
+last_commit_date = "2024-12-06"
+test_file_content = "/*\n * Copyright 2022 Apollo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\npackage com.ctrip.framework.apollo.monitor.internal.tracer;\n\nimport static com.ctrip.framework.apollo.monitor.internal.ApolloClientMonitorConstant.*;\nimport static org.junit.Assert.*;\n\nimport com.ctrip.framework.apollo.tracer.spi.Transaction;\nimport org.junit.Before;\nimport org.junit.Test;\nimport org.mockito.MockitoAnnotations;\n\n\npublic class ApolloClientMonitorMessageProducerTest {\n\n  private ApolloClientMonitorMessageProducer producer;\n\n  @Before\n  public void setUp() {\n    MockitoAnnotations.initMocks(this);\n\n    producer = new ApolloClientMonitorMessageProducer();\n  }\n\n  @Test\n  public void testLogError_Throwable() {\n    Throwable cause = new Exception(\"Test exception\");\n\n    producer.logError(cause);\n  }\n\n  @Test\n  public void testLogError_String_Throwable() {\n    String message = \"Test error message\";\n    Throwable cause = new Exception(\"Test exception\");\n\n    producer.logError(message, cause);\n  }\n\n  @Test\n  public void testLogEvent_TaggedEvent() {\n    String type = ApolloClientMonitorMessageProducer.TAGS.get(0); // APOLLO_CLIENT_CONFIGCHANGES\n    String name = \"Test event\";\n\n    producer.logEvent(type, name);\n  }\n\n  @Test\n  public void testLogEvent_ClientConfigEvent() {\n    String type = APOLLO_CLIENT_CONFIGS + \"namespace\";\n    String name = \"Test config\";\n\n    producer.logEvent(type, name);\n  }\n\n  @Test\n  public void testLogMetricsForCount() {\n    String name = APOLLO_CLIENT_NAMESPACE_USAGE + \":testNamespace\";\n\n    producer.logMetricsForCount(name);\n  }\n\n  @Test\n  public void testNewTransaction() {\n    Transaction result = producer.newTransaction(\"type\", \"name\");\n\n    assertEquals(ApolloClientMessageProducerComposite.NULL_TRANSACTION, result);\n  }\n}"

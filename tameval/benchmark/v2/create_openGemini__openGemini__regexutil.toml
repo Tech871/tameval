@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "openGemini/openGemini"
+sha = "b8992247864dd0395b2e433c6472bb6bdfe7b905"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil.go lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 43.0
+original_coverage = 82.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 140, 144, 145, 146, 147, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 173, 174, 175, 177, 178, 179, 180, 181, 183, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 220, 227, 228, 229, 230, 231, 234, 235, 236, 237, 238, 244, 245, 246, 247, 248, 249, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 264, 268, 269, 270, 271, 272, 273, 274, 275, 276, 277, 278, 279, 280, 281, 283, 284, 285, 299, 300, 301, 302, 303, 304, 305, 306, 329, 330, 331, 332, 333, 340, 341, 342, 344, 345, 349,]
+missed_lines = [ 10, 11, 12, 13, 14, 15, 16, 17, 26, 27, 28, 37, 38, 39, 40, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 63, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 134, 135, 136, 141, 142, 143, 194, 195, 196, 217, 218, 219, 223, 224, 225, 226, 239, 240, 241, 242, 243, 265, 266, 267, 286, 287, 288, 289, 291, 292, 293, 294, 296, 297, 298, 315, 316, 317, 318, 319, 320, 321, 322, 323, 324, 325, 326, 346, 347,]
+
+[input_info]
+test_file_path = "lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil_test.go"
+focal_file_path = "lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil.go"
+test_file_url = "https://github.com/openGemini/openGemini/blob/b8992247864dd0395b2e433c6472bb6bdfe7b905/lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil_test.go"
+focal_file_url = "https://github.com/openGemini/openGemini/blob/b8992247864dd0395b2e433c6472bb6bdfe7b905/lib/util/lifted/VictoriaMetrics/lib/regexutil/regexutil.go"
+first_commit_date = "2025-05-20"
+last_commit_date = "2025-05-20"
+test_file_content = "package regexutil\n\nimport (\n\t\"testing\"\n)\n\n\n\nfunc TestSimplifyRegex(t *testing.T) {\n\tf := func(s, expectedPrefix, expectedSuffix string) {\n\t\tt.Helper()\n\t\tprefix, suffix := SimplifyRegex(s)\n\t\tif prefix != expectedPrefix {\n\t\t\tt.Fatalf(\"unexpected prefix for s=%q; got %q; want %q\", s, prefix, expectedPrefix)\n\t\t}\n\t\tif suffix != expectedSuffix {\n\t\t\tt.Fatalf(\"unexpected suffix for s=%q; got %q; want %q\", s, suffix, expectedSuffix)\n\t\t}\n\t}\n\n\tf(\"\", \"\", \"\")\n\tf(\".*\", \"\", \"\")\n\tf(\".*(.*).*\", \"\", \"\")\n\tf(\"foo.*\", \"foo\", \"\")\n\tf(\".*foo.*\", \"\", \"foo\")\n\tf(\"^\", \"\", \"\\\\A\")\n\tf(\"$\", \"\", \"(?-m:$)\")\n\tf(\"^()$\", \"\", \"(?-m:\\\\A$)\")\n\tf(\"^(?:)$\", \"\", \"(?-m:\\\\A$)\")\n\tf(\"^foo|^bar$|baz\", \"\", \"(?-m:\\\\Afoo|\\\\Abar$|baz)\")\n\tf(\"^(foo$|^bar)$\", \"\", \"(?-m:\\\\A(?:foo$|\\\\Abar)$)\")\n\tf(\"^a(foo$|bar)$\", \"\", \"(?-m:\\\\Aa(?:foo$|bar)$)\")\n\tf(\"^a(^foo|bar$)z$\", \"\", \"(?-m:\\\\Aa(?:\\\\Afoo|bar$)z$)\")\n\tf(\"foobar\", \"foobar\", \"\")\n\tf(\"foo$|^foobar\", \"\", \"(?-m:foo$|\\\\Afoobar)\")\n\tf(\"^(foo$|^foobar)$\", \"\", \"(?-m:\\\\A(?:foo$|\\\\Afoobar)$)\")\n\tf(\"foobar|foobaz\", \"fooba\", \"[rz]\")\n\tf(\"(fo|(zar|bazz)|x)\", \"\", \"fo|zar|bazz|x\")\n\tf(\"(тестЧЧ|тест)\", \"тест\", \"ЧЧ|\")\n\tf(\"foo(bar|baz|bana)\", \"fooba\", \"[rz]|na\")\n\tf(\"^foobar|foobaz\", \"\", \"\\\\Afoobar|foobaz\")\n\tf(\"^foobar|^foobaz$\", \"\", \"(?-m:\\\\Afoobar|\\\\Afoobaz$)\")\n\tf(\"foobar|foobaz\", \"fooba\", \"[rz]\")\n\tf(\"(?:^foobar|^foobaz)aa.*\", \"\", \"(?:\\\\Afoobar|\\\\Afoobaz)aa\")\n\tf(\"foo[bar]+\", \"foo\", \"[abr]+\")\n\tf(\"foo[a-z]+\", \"foo\", \"[a-z]+\")\n\tf(\"foo[bar]*\", \"foo\", \"[abr]*\")\n\tf(\"foo[a-z]*\", \"foo\", \"[a-z]*\")\n\tf(\"foo[x]+\", \"foo\", \"x+\")\n\tf(\"foo[^x]+\", \"foo\", \"[^x]+\")\n\tf(\"foo[x]*\", \"foo\", \"x*\")\n\tf(\"foo[^x]*\", \"foo\", \"[^x]*\")\n\tf(\"foo[x]*bar\", \"foo\", \"x*bar\")\n\tf(\"fo\\\\Bo[x]*bar?\", \"fo\", \"\\\\Box*bar?\")\n\tf(\"foo.+bar\", \"foo\", \"(?s:.+bar)\")\n\tf(\"a(b|c.*).+\", \"a\", \"(?s:(?:b|c.*).+)\")\n\tf(\"ab|ac\", \"a\", \"[bc]\")\n\tf(\"(?i)xyz\", \"\", \"(?i:XYZ)\")\n\tf(\"(?i)foo|bar\", \"\", \"(?i:FOO|BAR)\")\n\tf(\"(?i)up.+x\", \"\", \"(?is:UP.+X)\")\n\tf(\"(?smi)xy.*z$\", \"\", \"(?ims:XY.*Z$)\")\n\n\t// test invalid regexps\n\tf(\"a(\", \"a(\", \"\")\n\tf(\"a[\", \"a[\", \"\")\n\tf(\"a[]\", \"a[]\", \"\")\n\tf(\"a{\", \"a{\", \"\")\n\tf(\"a{}\", \"a{}\", \"\")\n\tf(\"invalid(regexp\", \"invalid(regexp\", \"\")\n\n\t// The transformed regexp mustn't match aba\n\tf(\"a?(^ba|c)\", \"\", \"a?(?:\\\\Aba|c)\")\n\n\t// The transformed regexp mustn't match barx\n\tf(\"(foo|bar$)x*\", \"\", \"(?-m:(?:foo|bar$)x*)\")\n\n\t// See https://github.com/VictoriaMetrics/VictoriaMetrics/issues/5297\n\tf(\".+;|;.+\", \"\", \"(?s:.+;|;.+)\")\n\tf(\"^(.+);|;(.+)$\", \"\", \"(?s-m:\\\\A.+;|;.+$)\")\n\tf(\"^(.+);$|^;(.+)$\", \"\", \"(?s-m:\\\\A.+;$|\\\\A;.+$)\")\n\tf(\".*;|;.*\", \"\", \"(?s:.*;|;.*)\")\n\tf(\"^(.*);|;(.*)$\", \"\", \"(?s-m:\\\\A.*;|;.*$)\")\n\tf(\"^(.*);$|^;(.*)$\", \"\", \"(?s-m:\\\\A.*;$|\\\\A;.*$)\")\n}\n"

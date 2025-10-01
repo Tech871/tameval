@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "f4b6a3/uuid-creator"
+sha = "3f41c3e6ed9fa3c229303672960570281f35a125"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=DotNetGuid1CodecTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.DotNetGuid1Codec  -DtargetTests=**.DotNetGuid1CodecTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = 94.0
+original_mutation_kill_rate = 94.0
+covered_lines = [ 36, 41, 60, 61, 64, 82, 83, 84, 87, 111, 112, 114, 116, 117, 118, 119, 121, 122, 124, 125, 127,]
+missed_lines = [ 62, 85,]
+
+[input_info]
+test_file_path = "src/test/java/com/github/f4b6a3/uuid/codec/other/DotNetGuid1CodecTest.java"
+focal_file_path = "src/main/java/com/github/f4b6a3/uuid/codec/other/DotNetGuid1Codec.java"
+test_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/test/java/com/github/f4b6a3/uuid/codec/other/DotNetGuid1CodecTest.java"
+focal_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/main/java/com/github/f4b6a3/uuid/codec/other/DotNetGuid1Codec.java"
+first_commit_date = "2021-08-14"
+last_commit_date = "2025-03-29"
+test_file_content = "package com.github.f4b6a3.uuid.codec.other;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.fail;\n\nimport java.nio.ByteBuffer;\nimport java.nio.ByteOrder;\nimport java.util.UUID;\n\nimport org.junit.Test;\n\nimport com.github.f4b6a3.uuid.UuidCreator;\nimport com.github.f4b6a3.uuid.exception.InvalidUuidException;\nimport com.github.f4b6a3.uuid.util.UuidUtil;\n\npublic class DotNetGuid1CodecTest {\n\n\tprivate static final int DEFAULT_LOOP_LIMIT = 100;\n\n\tprivate static final DotNetGuid1Codec CODEC = new DotNetGuid1Codec(); // codec for v1\n\n\t@Test\n\tpublic void testEncode() {\n\n\t\tUUID uuid;\n\t\tUUID guid;\n\n\t\tfor (int i = 0; i < DEFAULT_LOOP_LIMIT; i++) {\n\t\t\tuuid = UuidCreator.getTimeBased();\n\t\t\tguid = CODEC.encode(uuid);\n\t\t\tcheckFields(uuid, guid);\n\t\t}\n\n\t\tfor (int i = 0; i < DEFAULT_LOOP_LIMIT; i++) {\n\t\t\tuuid = UuidUtil.setVersion(UuidCreator.getRandomBased(), 1); // fake v1 using v4\n\t\t\tguid = CODEC.encode(uuid);\n\t\t\tcheckFields(uuid, guid);\n\t\t}\n\t}\n\n\t@Test\n\tpublic void testEncodeAndDecode() {\n\n\t\tUUID uuidv1;\n\t\tUUID msguid;\n\n\t\tfor (int i = 0; i < DEFAULT_LOOP_LIMIT; i++) {\n\t\t\tuuidv1 = UuidCreator.getTimeBased();\n\t\t\tmsguid = CODEC.encode(uuidv1); // encode\n\t\t\tassertEquals(uuidv1, CODEC.decode(msguid)); // decode back\n\t\t}\n\n\t\tfor (int i = 0; i < DEFAULT_LOOP_LIMIT; i++) {\n\t\t\tuuidv1 = UuidUtil.setVersion(UuidCreator.getRandomBased(), 1); // fake v1 using v4\n\t\t\tmsguid = CODEC.encode(uuidv1); // encode\n\t\t\tassertEquals(uuidv1, CODEC.decode(msguid)); // decode back\n\t\t}\n\t}\n\n\t@Test\n\tpublic void testEncodeInvalidUuidException() {\n\n\t\tDotNetGuid1Codec codec = new DotNetGuid1Codec();\n\n\t\t{\n\t\t\ttry {\n\t\t\t\t// RFC-4122 UUID v1\n\t\t\t\tUUID uuid = new UUID(0x0000000000001000L, 0x8000000000000000L);\n\t\t\t\tcodec.encode(uuid);\n\t\t\t\t// success\n\t\t\t} catch (InvalidUuidException e) {\n\t\t\t\tfail(\"Should not throw exception\");\n\t\t\t}\n\t\t}\n\n\t\t{\n\t\t\ttry {\n\t\t\t\tUUID uuid = null;\n\t\t\t\tcodec.encode(uuid);\n\t\t\t\tfail(\"Should throw exception\");\n\t\t\t} catch (InvalidUuidException e) {\n\t\t\t\t// success\n\t\t\t}\n\t\t}\n\t}\n\n\t@Test\n\tpublic void testDecodeInvalidUuidException() {\n\n\t\tDotNetGuid1Codec codec = new DotNetGuid1Codec();\n\n\t\t{\n\t\t\ttry {\n\t\t\t\t// .Net GUID v1\n\t\t\t\tUUID uuid = new UUID(0x0000000000000010L, 0x8000000000000000L);\n\t\t\t\tcodec.decode(uuid);\n\t\t\t\t// success\n\t\t\t} catch (InvalidUuidException e) {\n\t\t\t\tfail(\"Should not throw exception\");\n\t\t\t}\n\t\t}\n\n\t\t{\n\t\t\ttry {\n\t\t\t\tUUID uuid = null;\n\t\t\t\tcodec.decode(uuid);\n\t\t\t\tfail(\"Should throw exception\");\n\t\t\t} catch (InvalidUuidException e) {\n\t\t\t\t// success\n\t\t\t}\n\t\t}\n\t}\n\n\tprotected static void checkFields(UUID uuid, UUID guid) {\n\n\t\tByteBuffer uuidBuffer;\n\t\tByteBuffer guidBuffer;\n\n\t\tbyte[] uuidField;\n\t\tbyte[] guidField;\n\n\t\tuuidBuffer = ByteBuffer.allocate(4);\n\t\tuuidBuffer.order(ByteOrder.BIG_ENDIAN);\n\t\tuuidBuffer.putInt((int) (uuid.getMostSignificantBits() >>> 32));\n\t\tuuidField = uuidBuffer.array();\n\n\t\tguidBuffer = ByteBuffer.allocate(4);\n\t\tguidBuffer.order(ByteOrder.LITTLE_ENDIAN);\n\t\tguidBuffer.putInt((int) (guid.getMostSignificantBits() >>> 32));\n\t\tguidField = guidBuffer.array();\n\n\t\t// Test the 1st field\n\t\tfor (int j = 0; j < uuidField.length; j++) {\n\t\t\tassertEquals(uuidField[j], guidField[j]);\n\t\t}\n\n\t\tuuidBuffer = ByteBuffer.allocate(2);\n\t\tuuidBuffer.order(ByteOrder.BIG_ENDIAN);\n\t\tuuidBuffer.putShort((short) ((uuid.getMostSignificantBits() & 0x00000000ffff0000L) >>> 16));\n\t\tuuidField = uuidBuffer.array();\n\n\t\tguidBuffer = ByteBuffer.allocate(2);\n\t\tguidBuffer.order(ByteOrder.LITTLE_ENDIAN);\n\t\tguidBuffer.putShort((short) ((guid.getMostSignificantBits() & 0x00000000ffff0000L) >>> 16));\n\t\tguidField = guidBuffer.array();\n\n\t\t// Test the 2nd field\n\t\tfor (int j = 0; j < uuidField.length; j++) {\n\t\t\tassertEquals(uuidField[j], guidField[j]);\n\t\t}\n\n\t\tuuidBuffer = ByteBuffer.allocate(4);\n\t\tuuidBuffer.order(ByteOrder.BIG_ENDIAN);\n\t\tuuidBuffer.putShort((short) ((uuid.getMostSignificantBits() & 0x000000000000ffffL)));\n\t\tuuidField = uuidBuffer.array();\n\n\t\tguidBuffer = ByteBuffer.allocate(4);\n\t\tguidBuffer.order(ByteOrder.LITTLE_ENDIAN);\n\t\tguidBuffer.putShort((short) ((guid.getMostSignificantBits() & 0x000000000000ffffL)));\n\t\tguidField = guidBuffer.array();\n\n\t\t// Test the 3nd field\n\t\tfor (int j = 0; j < uuidField.length; j++) {\n\t\t\tassertEquals(uuidField[j], guidField[j]);\n\t\t}\n\n\t\tassertEquals(uuid.getLeastSignificantBits(), guid.getLeastSignificantBits());\n\t}\n}\n"

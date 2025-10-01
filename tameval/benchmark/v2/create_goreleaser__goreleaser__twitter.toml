@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "goreleaser/goreleaser"
+sha = "683adbba952d63899c6ba08ff0240fc946252674"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/pipe/twitter/twitter.go internal/pipe/twitter/twitter_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/pipe/twitter/twitter.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 41.0
+original_coverage = 70.0
+mutation_kill_rate = 20.0
+original_mutation_kill_rate = 60.0
+covered_lines = [ 30, 31, 32, 33, 34, 37, 38, 43, 44, 45, 46,]
+missed_lines = [ 17, 18, 19, 20, 21, 39, 40, 41, 48, 49, 50, 51, 52, 53, 54, 55,]
+
+[input_info]
+test_file_path = "internal/pipe/twitter/twitter_test.go"
+focal_file_path = "internal/pipe/twitter/twitter.go"
+test_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/pipe/twitter/twitter_test.go"
+focal_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/pipe/twitter/twitter.go"
+first_commit_date = "2021-05-25"
+last_commit_date = "2025-01-03"
+test_file_content = "package twitter\n\nimport (\n\t\"testing\"\n\n\t\"github.com/goreleaser/goreleaser/v2/internal/testctx\"\n\t\"github.com/goreleaser/goreleaser/v2/pkg/config\"\n\t\"github.com/stretchr/testify/require\"\n)\n\n\n\n\nfunc TestAnnounceMissingEnv(t *testing.T) {\n\tctx := testctx.NewWithCfg(config.Project{\n\t\tAnnounce: config.Announce{\n\t\t\tTwitter: config.Twitter{},\n\t\t},\n\t})\n\trequire.NoError(t, Pipe{}.Default(ctx))\n\trequire.EqualError(t, Pipe{}.Announce(ctx), `twitter: env: environment variable \"TWITTER_CONSUMER_KEY\" should not be empty; environment variable \"TWITTER_CONSUMER_SECRET\" should not be empty; environment variable \"TWITTER_ACCESS_TOKEN\" should not be empty; environment variable \"TWITTER_ACCESS_TOKEN_SECRET\" should not be empty`)\n}\n"

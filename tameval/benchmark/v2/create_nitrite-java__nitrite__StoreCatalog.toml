@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "nitrite/nitrite-java"
+sha = "32693e9538c4108c8c94b7a5b736ef96d9d7714c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nitrite -Dtest=StoreCatalogTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nitrite -DtargetClasses=**.StoreCatalog  -DtargetTests=**.StoreCatalogTest  -DoutputFormats=XML"
+coverage_report_path = "nitrite/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nitrite/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 25.0
+original_coverage = 55.0
+mutation_kill_rate = 19.0
+original_mutation_kill_rate = 48.0
+covered_lines = [ 46, 47, 48, 73, 74, 75, 79, 80, 83, 84, 129, 132, 133, 142, 143, 198,]
+missed_lines = [ 57, 58, 59, 60, 61, 63, 64, 92, 93, 94, 98, 99, 102, 103, 111, 112, 113, 117, 118, 120, 121, 130, 145, 146, 155, 156, 158, 159, 161, 162, 163, 164, 167, 168, 170, 172, 173, 174, 175, 186, 187, 188, 190, 192, 193, 194, 195, 197,]
+
+[input_info]
+test_file_path = "nitrite/src/test/java/org/dizitart/no2/store/StoreCatalogTest.java"
+focal_file_path = "nitrite/src/main/java/org/dizitart/no2/store/StoreCatalog.java"
+test_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/test/java/org/dizitart/no2/store/StoreCatalogTest.java"
+focal_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/main/java/org/dizitart/no2/store/StoreCatalog.java"
+first_commit_date = "2021-06-29"
+last_commit_date = "2024-02-05"
+test_file_content = "/*\n * Copyright (c) 2017-2021 Nitrite author or authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *       http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\n\npackage org.dizitart.no2.store;\n\nimport org.dizitart.no2.store.memory.InMemoryStore;\nimport org.junit.Test;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertTrue;\n\npublic class StoreCatalogTest {\n\n    @Test\n    public void testWriteCollectionEntry() {\n        StoreCatalog storeCatalog = new StoreCatalog(new InMemoryStore());\n        storeCatalog.writeCollectionEntry(\"Name\");\n        assertEquals(1, storeCatalog.getCollectionNames().size());\n        assertTrue(storeCatalog.getRepositoryNames().isEmpty());\n    }\n\n\n\n\n\n\n    @Test\n    public void testRemove() {\n        (new StoreCatalog(new InMemoryStore())).remove(\"Name\");\n    }\n}\n"

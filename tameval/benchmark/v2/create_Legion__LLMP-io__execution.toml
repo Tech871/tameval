@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "LLMP-io/Legion"
+sha = "ba7764e32f6e9ff9b93439ee62df5da5d26608f9"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=legion/graph/nodes/execution.py -m pytest -q --junit-xml=test_output.xml tests/graph/nodes/test_execution.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target legion.graph.nodes.execution --unit-test tests.graph.nodes.test_execution --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target legion/graph/nodes/execution.py --unit-test tests/graph/nodes/test_execution.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 91.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/graph/nodes/test_execution.py"
+focal_file_path = "legion/graph/nodes/execution.py"
+test_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/tests/graph/nodes/test_execution.py"
+focal_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/legion/graph/nodes/execution.py"
+first_commit_date = "2025-01-07"
+last_commit_date = "2025-01-08"
+test_file_content = ""

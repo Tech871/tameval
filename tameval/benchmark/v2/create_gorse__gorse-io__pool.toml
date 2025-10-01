@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "gorse-io/gorse"
+sha = "260d55d158caa8c3bbbcbec93e574370e5be477e"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out common/parallel/pool.go common/parallel/pool_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting common/parallel/pool.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 71.0
+original_coverage = 100.0
+mutation_kill_rate = 75.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 26, 27, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 44, 45, 46,]
+missed_lines = [ 11, 12, 13, 15, 16, 17, 19,]
+
+[input_info]
+test_file_path = "common/parallel/pool_test.go"
+focal_file_path = "common/parallel/pool.go"
+test_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/common/parallel/pool_test.go"
+focal_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/common/parallel/pool.go"
+first_commit_date = "2025-03-07"
+last_commit_date = "2025-03-07"
+test_file_content = "package parallel\n\nimport (\n\t\"sync/atomic\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\nfunc TestConcurrentPool(t *testing.T) {\n\tpool := NewConcurrentPool(100)\n\tcount := atomic.Int64{}\n\tfor i := 0; i < 100; i++ {\n\t\tpool.Run(func() {\n\t\t\tcount.Add(1)\n\t\t})\n\t}\n\tpool.Wait()\n\tassert.Equal(t, int64(100), count.Load())\n}\n"

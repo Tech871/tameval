@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "funilrys/PyFunceble"
+sha = "6fc0974a65e0987945afdfaed9e7a21dc6ad9894"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.test.txt && pip install -r requirements.win.txt && pip install -r requirements.dev.txt && pip install -r requirements.txt && pip install -r requirements.docs.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=PyFunceble/converter/input_line2subject.py -m pytest -q --junit-xml=test_output.xml tests/converter/test_input_line2subject.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target PyFunceble.converter.input_line2subject --unit-test tests.converter.test_input_line2subject --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target PyFunceble/converter/input_line2subject.py --unit-test tests/converter/test_input_line2subject.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 76.0
+original_coverage = 93.0
+mutation_kill_rate = 81.0
+original_mutation_kill_rate = 90.0
+covered_lines = [ 53, 55, 56, 57, 60, 65, 66, 67, 68, 69, 71, 72, 80, 81, 84, 86, 91, 93, 94, 107, 117, 119, 121, 125, 128, 134, 135, 137, 142, 144, 147, 149, 153, 159,]
+missed_lines = [ 102, 103, 104, 105, 126, 132, 145, 150, 155, 156, 158,]
+
+[input_info]
+test_file_path = "tests/converter/test_input_line2subject.py"
+focal_file_path = "PyFunceble/converter/input_line2subject.py"
+test_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/tests/converter/test_input_line2subject.py"
+focal_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/PyFunceble/converter/input_line2subject.py"
+first_commit_date = "2020-12-19"
+last_commit_date = "2025-02-23"
+test_file_content = "\"\"\"\nThe tool to check the availability or syntax of domain, IP or URL.\n\n::\n\n\n    ██████╗ ██╗   ██╗███████╗██╗   ██╗███╗   ██╗ ██████╗███████╗██████╗ ██╗     ███████╗\n    ██╔══██╗╚██╗ ██╔╝██╔════╝██║   ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██║     ██╔════╝\n    ██████╔╝ ╚████╔╝ █████╗  ██║   ██║██╔██╗ ██║██║     █████╗  ██████╔╝██║     █████╗\n    ██╔═══╝   ╚██╔╝  ██╔══╝  ██║   ██║██║╚██╗██║██║     ██╔══╝  ██╔══██╗██║     ██╔══╝\n    ██║        ██║   ██║     ╚██████╔╝██║ ╚████║╚██████╗███████╗██████╔╝███████╗███████╗\n    ╚═╝        ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚══════╝╚═════╝ ╚══════╝╚══════╝\n\nTests of the input line 2 subject converter.\n\nAuthor:\n    Nissar Chababy, @funilrys, contactTATAfunilrysTODTODcom\n\nSpecial thanks:\n    https://pyfunceble.github.io/special-thanks.html\n\nContributors:\n    https://pyfunceble.github.io/contributors.html\n\nProject link:\n    https://github.com/funilrys/PyFunceble\n\nProject documentation:\n    https://docs.pyfunceble.com\n\nProject homepage:\n    https://pyfunceble.github.io/\n\nLicense:\n::\n\n\n    Copyright 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025 Nissar Chababy\n\n    Licensed under the Apache License, Version 2.0 (the \"License\");\n    you may not use this file except in compliance with the License.\n    You may obtain a copy of the License at\n\n        https://www.apache.org/licenses/LICENSE-2.0\n\n    Unless required by applicable law or agreed to in writing, software\n    distributed under the License is distributed on an \"AS IS\" BASIS,\n    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n    See the License for the specific language governing permissions and\n    limitations under the License.\n\"\"\"\n\nimport unittest\n\nfrom PyFunceble.converter.input_line2subject import InputLine2Subject\n\n\nclass TestInputLine2Subject(unittest.TestCase):\n    \"\"\"\n    Tests our input line 2 subject converter.\n    \"\"\"\n\n    def setUp(self) -> None:\n        \"\"\"\n        Setups everything needed for the tests.\n        \"\"\"\n\n        self.converter = InputLine2Subject()\n\n    def tearDown(self) -> None:\n        \"\"\"\n        Destroys everything previously created for the tests.\n        \"\"\"\n\n        del self.converter\n\n    def test_set_data_to_convert_no_string(self) -> None:\n        \"\"\"\n        Tests the method which let us set the data to work with for the case\n        that a non-string value is given.\n        \"\"\"\n\n        given = [\"Hello\", \"World\"]\n\n        self.assertRaises(TypeError, lambda: self.converter.set_data_to_convert(given))\n\n\n\n\n\n\n\n    def test_get_converted_hosts_line_tab(self) -> None:\n        \"\"\"\n        Tests the method which let us get the converted data for the case that a\n        hosts (file) line with tab as separator is given.\n        \"\"\"\n\n        given = \"0.0.0.0\\texample.org\"\n        expected = [\"example.org\"]\n\n        self.converter.data_to_convert = given\n        actual = self.converter.get_converted()\n\n        self.assertEqual(expected, actual)\n\n\n\n\n    def test_get_converted_startswith_exclamation_char_as_comment(self) -> None:\n        \"\"\"\n        Tests the method which let us get the converted data for the case that a\n        line starts with the :code:`!` character.\n        \"\"\"\n\n        given = \"! example.org\"\n        expected = []\n\n        self.converter.data_to_convert = given\n        actual = self.converter.get_converted()\n\n        self.assertEqual(expected, actual)\n\n    def test_get_converted_exclamation_char_as_comment(self) -> None:\n        \"\"\"\n        Tests the method which let us get the converted data for the case that\n        contains a :code:`!` character as comment separator.\n        \"\"\"\n\n        given = \"example.org  ! DO NOT VISIT\"\n        expected = [\"example.org\", \"!\", \"DO\", \"NOT\", \"VISIT\"]\n\n        self.converter.data_to_convert = given\n        actual = self.converter.get_converted()\n\n        self.assertEqual(expected, actual)\n\n\n\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

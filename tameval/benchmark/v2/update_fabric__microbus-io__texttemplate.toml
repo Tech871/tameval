@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "microbus-io/fabric"
+sha = "55cc62f52e58a2f8386b6086061b17a7d133fea3"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out codegen/texttemplate.go codegen/texttemplate_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting codegen/texttemplate.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 55.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 57.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "codegen/texttemplate_test.go"
+focal_file_path = "codegen/texttemplate.go"
+test_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/codegen/texttemplate_test.go"
+focal_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/codegen/texttemplate.go"
+first_commit_date = "2022-11-06"
+last_commit_date = "2025-05-10"
+test_file_content = "/*\nCopyright (c) 2023-2025 Microbus LLC and various contributors\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage main\n\nimport (\n\t\"os\"\n\t\"testing\"\n\n\t\"github.com/microbus-io/fabric/codegen/spec\"\n\t\"github.com/microbus-io/fabric/rand\"\n\t\"github.com/microbus-io/testarossa\"\n)\n\nfunc TestCodegen_CapitalizeIdentifier(t *testing.T) {\n\tt.Parallel()\n\n\ttestCases := map[string]string{\n\t\t\"fooBar\":     \"FooBar\",\n\t\t\"fooBAR\":     \"FooBAR\",\n\t\t\"urlEncoder\": \"URLEncoder\",\n\t\t\"URLEncoder\": \"URLEncoder\",\n\t\t\"a\":          \"A\",\n\t\t\"A\":          \"A\",\n\t\t\"\":           \"\",\n\t\t\"id\":         \"ID\",\n\t\t\"xId\":        \"XId\",\n\t}\n\tfor id, expected := range testCases {\n\t\ttestarossa.Equal(t, expected, capitalizeIdentifier(id))\n\t}\n}\n\nfunc TestCodegen_TextTemplate(t *testing.T) {\n\tt.Parallel()\n\n\t_, err := LoadTemplate(\"doesn't.exist\")\n\ttestarossa.Error(t, err)\n\n\ttt, err := LoadTemplate(\"service.txt\")\n\ttestarossa.NoError(t, err)\n\n\tvar x struct{}\n\t_, err = tt.Execute(&x)\n\ttestarossa.Error(t, err)\n\n\tspecs := &spec.Service{\n\t\tPackage: \"testing/text/template\",\n\t\tGeneral: spec.General{\n\t\t\tHost:        \"example.com\",\n\t\t\tDescription: \"Example\",\n\t\t},\n\t}\n\trendered, err := tt.Execute(specs)\n\tn := len(rendered)\n\ttestarossa.NoError(t, err)\n\ttestarossa.Contains(t, string(rendered), specs.PackageSuffix())\n\ttestarossa.Contains(t, string(rendered), specs.General.Host)\n\n\tfileName := \"testing-\" + rand.AlphaNum32(12)\n\tdefer os.Remove(fileName)\n\n\terr = tt.AppendTo(fileName, specs)\n\ttestarossa.NoError(t, err)\n\tonDisk, err := os.ReadFile(fileName)\n\ttestarossa.NoError(t, err)\n\ttestarossa.SliceEqual(t, rendered, onDisk)\n\n\terr = tt.AppendTo(fileName, specs)\n\ttestarossa.NoError(t, err)\n\tonDisk, err = os.ReadFile(fileName)\n\ttestarossa.NoError(t, err)\n\ttestarossa.Len(t, onDisk, n*2)\n\n\terr = tt.Overwrite(fileName, specs)\n\ttestarossa.NoError(t, err)\n\tonDisk, err = os.ReadFile(fileName)\n\ttestarossa.NoError(t, err)\n\ttestarossa.SliceEqual(t, rendered, onDisk)\n}"

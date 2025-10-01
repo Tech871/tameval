@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "castorini/anserini"
+sha = "a9ec58ac9208f0246e39a39d7d8c95a431b45b56"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ExcludeDocsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ExcludeDocs  -DtargetTests=**.ExcludeDocsTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 67.0
+original_coverage = 78.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 40, 43, 49, 51, 53, 55, 56, 60, 62, 63, 74, 76, 77, 78, 79, 80, 81, 84, 85, 88, 91, 92, 96, 97, 98, 99, 100, 101, 102, 105, 106, 107, 108,]
+missed_lines = [ 46, 52, 54, 58, 64, 65, 66, 68, 69, 70, 71, 82, 83, 89, 93, 110,]
+
+[input_info]
+test_file_path = "src/test/java/io/anserini/eval/ExcludeDocsTest.java"
+focal_file_path = "src/main/java/io/anserini/eval/ExcludeDocs.java"
+test_file_url = "https://github.com/castorini/anserini/blob/a9ec58ac9208f0246e39a39d7d8c95a431b45b56/src/test/java/io/anserini/eval/ExcludeDocsTest.java"
+focal_file_url = "https://github.com/castorini/anserini/blob/a9ec58ac9208f0246e39a39d7d8c95a431b45b56/src/main/java/io/anserini/eval/ExcludeDocs.java"
+first_commit_date = "2025-07-08"
+last_commit_date = "2025-07-08"
+test_file_content = "/*\n * Anserini: A Lucene toolkit for reproducible information retrieval research\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage io.anserini.eval;\n\nimport static org.junit.Assert.assertEquals;\n\nimport org.junit.Test;\n\nimport io.anserini.eval.ExcludeDocs;\nimport io.anserini.search.ScoredDoc;\n\npublic class ExcludeDocsTest {\n\n  @Test\n  public void testExclude() {\n    try {\n      ExcludeDocs excludeDocs = new ExcludeDocs(\"bright-leetcode\");\n      ScoredDoc[] results = new ScoredDoc[3];\n      results[0] = new ScoredDoc(\"leetcode/leetcode_1996.txt\", 0, 3, null);\n      results[1] = new ScoredDoc(\"good\", 0, 2, null);\n      results[2] = new ScoredDoc(\"alsogood\", 0, 1, null);\n      results = excludeDocs.exclude(\"0\", results);\n      assertEquals(results.length, 2);\n      assertEquals(results[0].docid, \"good\");\n      assertEquals(results[1].docid, \"alsogood\");\n    } catch (Exception e) {\n       throw new RuntimeException(e);\n    }\n  }\n}\n"

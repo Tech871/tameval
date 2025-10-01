@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dflib/dflib"
+sha = "793212415a7486ca3cdbb7c6496f69acf4e0aa3d"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl dflib -Dtest=BoolAccumTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl dflib -DtargetClasses=**.BoolAccum  -DtargetTests=**.BoolAccumTest  -DoutputFormats=XML"
+coverage_report_path = "dflib/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "dflib/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 18, 19, 21, 22, 23, 26, 30, 31, 32, 33, 34, 35, 41, 42, 44, 47, 48, 50, 51, 52, 58, 59, 61, 66, 70, 71, 72, 73, 75, 76, 81, 86, 90, 93, 94, 95, 97, 99, 103, 104, 107, 108, 109, 113, 114, 115, 117, 118, 119, 123, 124, 126, 127, 128, 130, 131, 132, 133, 141,]
+missed_lines = [ 27, 37, 54, 65, 80, 87, 88, 137,]
+
+[input_info]
+test_file_path = "dflib/src/test/java/org/dflib/builder/BoolAccumTest.java"
+focal_file_path = "dflib/src/main/java/org/dflib/builder/BoolAccum.java"
+test_file_url = "https://github.com/dflib/dflib/blob/793212415a7486ca3cdbb7c6496f69acf4e0aa3d/dflib/src/test/java/org/dflib/builder/BoolAccumTest.java"
+focal_file_url = "https://github.com/dflib/dflib/blob/793212415a7486ca3cdbb7c6496f69acf4e0aa3d/dflib/src/main/java/org/dflib/builder/BoolAccum.java"
+first_commit_date = "2024-01-02"
+last_commit_date = "2024-12-05"
+test_file_content = "package org.dflib.builder;\n\nimport org.dflib.BooleanSeries;\nimport org.dflib.series.BooleanBitsetSeries;\nimport org.dflib.series.TrueSeries;\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass BoolAccumTest {\n\n    @Test\n    void createEmpty() {\n        BoolAccum accum = new BoolAccum();\n        BooleanSeries series = accum.toSeries();\n        assertEquals(0, series.size());\n    }\n\n    @Test\n    void createWithCapacity() {\n        BoolAccum accum = new BoolAccum(10);\n        BooleanSeries series = accum.toSeries();\n        assertEquals(0, series.size());\n    }\n\n    @Test\n    void compact() {\n        BoolAccum accum = new BoolAccum(300);\n        accum.pushBool(true);\n        BooleanSeries series = accum.toSeries();\n        assertInstanceOf(BooleanBitsetSeries.class, series);\n        assertEquals(1, series.size());\n        assertTrue(series.get(0));\n    }\n\n    @Test\n    void compact2() {\n        BoolAccum accum = new BoolAccum(300);\n        for (int i = 0; i < Long.SIZE + 1; i++) {\n            accum.pushBool(true);\n        }\n        BooleanSeries series = accum.toSeries();\n        assertInstanceOf(BooleanBitsetSeries.class, series);\n        assertEquals(Long.SIZE + 1, series.size());\n        assertTrue(series.get(0));\n        assertTrue(series.get(Long.SIZE));\n    }\n\n    @Test\n    void compact3() {\n\n        // if we start with BoolAccum with capacity <= 64, the error from #403 happens\n        BoolAccum accum = new BoolAccum(10);\n        for(int i = 0; i < 64; i++) {\n            accum.pushBool(true);\n        }\n\n        BooleanSeries series = accum.toSeries();\n        assertInstanceOf(BooleanBitsetSeries.class, series);\n        assertEquals(64, series.size());\n        assertTrue(series.get(0));\n        assertTrue(series.get(63));\n    }\n\n    @Test\n    void create1() {\n        BoolAccum accum = new BoolAccum();\n        accum.pushBool(true);\n        BooleanSeries series = accum.toSeries();\n\n        assertEquals(1, series.size());\n        assertTrue(series.get(0));\n    }\n\n    @Test\n    void create65() {\n        BoolAccum accum = new BoolAccum();\n        for (int i = 0; i < 65; i++) {\n            accum.pushBool(true);\n        }\n        BooleanSeries series = accum.toSeries();\n\n        assertEquals(65, series.size());\n        assertTrue(series.get(0));\n        assertTrue(series.get(1));\n        assertTrue(series.get(64));\n        assertEquals(0, series.countFalse());\n        assertEquals(65, series.countTrue());\n    }\n\n    @Test\n    void push() {\n        BoolAccum accum = new BoolAccum();\n        accum.push(true);\n        accum.push(false);\n        accum.push(false);\n        accum.push(true);\n        accum.push(true);\n        accum.push(true);\n        accum.push(false);\n        accum.push(false);\n\n        BooleanSeries series = accum.toSeries();\n        assertEquals(8, series.size());\n        assertTrue(series.get(0));\n        assertFalse(series.get(1));\n        assertFalse(series.get(2));\n        assertTrue(series.get(3));\n        assertTrue(series.get(4));\n        assertTrue(series.get(5));\n        assertFalse(series.get(6));\n        assertFalse(series.get(7));\n    }\n\n\n    @Test\n    void fill() {\n        BoolAccum accum = new BoolAccum();\n        accum.fill(1, 66, true);\n        BooleanSeries series = accum.toSeries();\n\n        assertEquals(66, series.size());\n        assertFalse(series.get(0));\n        assertTrue(series.get(1));\n        assertTrue(series.get(65));\n        assertEquals(1, series.countFalse());\n        assertEquals(65, series.countTrue());\n    }\n\n    @Test\n    void fillFromSeries() {\n        BoolAccum accum = new BoolAccum();\n        BooleanSeries trueSeries = new TrueSeries(129);\n        accum.pushBool(false);\n        accum.pushBool(true);\n        accum.fill(trueSeries, 0, 10, trueSeries.size());\n        BooleanSeries series = accum.toSeries();\n\n        assertEquals(139, series.size());\n        assertFalse(series.get(0));\n        assertTrue(series.get(1));\n        assertTrue(series.get(138));\n        assertEquals(9, series.countFalse());\n        assertEquals(130, series.countTrue());\n    }\n\n    @Test\n    void replaceFalse() {\n        BoolAccum accum = new BoolAccum();\n        accum.pushBool(true);\n        accum.replace(0, false);\n        BooleanSeries series = accum.toSeries();\n\n        assertEquals(1, series.size());\n        assertFalse(series.get(0));\n    }\n\n    @Test\n    void replaceTrue() {\n        BoolAccum accum = new BoolAccum();\n        accum.pushBool(false);\n        accum.replace(0, true);\n        BooleanSeries series = accum.toSeries();\n\n        assertEquals(1, series.size());\n        assertTrue(series.get(0));\n    }\n\n    @Test\n    void testSizeInLongs() {\n        assertEquals(0, BoolAccum.sizeInLongs(0));\n        assertEquals(1, BoolAccum.sizeInLongs(1));\n        assertEquals(1, BoolAccum.sizeInLongs(10));\n        assertEquals(1, BoolAccum.sizeInLongs(63));\n        assertEquals(1, BoolAccum.sizeInLongs(64));\n        assertEquals(2, BoolAccum.sizeInLongs(65));\n        assertEquals(2, BoolAccum.sizeInLongs(100));\n        assertEquals(2, BoolAccum.sizeInLongs(127));\n        assertEquals(2, BoolAccum.sizeInLongs(128));\n        assertEquals(3, BoolAccum.sizeInLongs(129));\n        assertEquals(3, BoolAccum.sizeInLongs(192));\n        assertEquals(4, BoolAccum.sizeInLongs(200));\n        assertEquals(5, BoolAccum.sizeInLongs(300));\n    }\n\n}"

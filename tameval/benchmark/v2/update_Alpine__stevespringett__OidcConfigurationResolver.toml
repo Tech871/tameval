@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "stevespringett/Alpine"
+sha = "bb816e4e9040a0d0fe7a7b2d39c9142933fd88af"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl alpine-server -Dtest=OidcConfigurationResolverTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl alpine-server -DtargetClasses=**.OidcConfigurationResolver  -DtargetTests=**.OidcConfigurationResolverTest  -DoutputFormats=XML"
+coverage_report_path = "alpine-server/target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "alpine-server/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "alpine-server/src/test/java/alpine/server/auth/OidcConfigurationResolverTest.java"
+focal_file_path = "alpine-server/src/main/java/alpine/server/auth/OidcConfigurationResolver.java"
+test_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-server/src/test/java/alpine/server/auth/OidcConfigurationResolverTest.java"
+focal_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-server/src/main/java/alpine/server/auth/OidcConfigurationResolver.java"
+first_commit_date = "2022-02-24"
+last_commit_date = "2024-05-17"
+test_file_content = "/*\n * This file is part of Alpine.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n * SPDX-License-Identifier: Apache-2.0\n * Copyright (c) Steve Springett. All Rights Reserved.\n */\n\npackage alpine.server.auth;\n\nimport alpine.server.cache.CacheManager;\nimport com.github.tomakehurst.wiremock.client.WireMock;\nimport com.github.tomakehurst.wiremock.core.WireMockConfiguration;\nimport com.github.tomakehurst.wiremock.junit.WireMockRule;\nimport org.junit.After;\nimport org.junit.Rule;\nimport org.junit.Test;\nimport org.junit.contrib.java.lang.system.EnvironmentVariables;\nimport wiremock.org.apache.hc.core5.http.ContentType;\nimport wiremock.org.apache.hc.core5.http.HttpHeaders;\nimport wiremock.org.apache.hc.core5.http.HttpStatus;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\npublic class OidcConfigurationResolverTest {\n\n    private static final String OPENID_CONFIGURATION_PATH = \"/.well-known/openid-configuration\";\n\n    @Rule\n    public WireMockRule wireMockRule = new WireMockRule(WireMockConfiguration.options().dynamicPort());\n\n    @Rule\n    public final EnvironmentVariables environmentVariables = new EnvironmentVariables();\n\n    @After\n    public void tearDown() {\n        // Remove configs from cache to keep testing environment clean\n        CacheManager.getInstance().remove(OidcConfiguration.class, OidcConfigurationResolver.CONFIGURATION_CACHE_KEY);\n    }\n\n    @Test\n    public void resolveShouldReturnNullWhenOidcIsNotEnabled() {\n        assertThat(new OidcConfigurationResolver(false, wireMockRule.baseUrl()).resolve()).isNull();\n    }\n\n    @Test\n    public void resolveShouldReturnNullWhenAuthorityIsNull() {\n        assertThat(new OidcConfigurationResolver(true, null).resolve()).isNull();\n    }\n\n    @Test\n    public void resolveShouldReturnCachedValueWhenAvailable() {\n        final OidcConfiguration cachedConfiguration = new OidcConfiguration();\n        CacheManager.getInstance().put(OidcConfigurationResolver.CONFIGURATION_CACHE_KEY, cachedConfiguration);\n\n        assertThat(new OidcConfigurationResolver(true, wireMockRule.baseUrl()).resolve()).isEqualTo(cachedConfiguration);\n    }\n\n    @Test\n    public void resolveShouldReturnNullWhenServerRespondsWithNon200StatusCode() {\n        wireMockRule.stubFor(WireMock.get(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH))\n                .willReturn(WireMock.aResponse()\n                        .withStatus(HttpStatus.SC_NOT_FOUND)));\n\n        assertThat(new OidcConfigurationResolver(true, wireMockRule.baseUrl()).resolve()).isNull();\n        WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH)));\n    }\n\n    @Test\n    public void resolveShouldReturnNullWhenServerRespondsWithInvalidJson() {\n        wireMockRule.stubFor(WireMock.get(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH))\n                .willReturn(WireMock.aResponse()\n                        .withStatus(HttpStatus.SC_OK)\n                        .withHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType())\n                        .withBody(\"<?xml version=\\\"1.0\\\" ?>\")));\n\n        assertThat(new OidcConfigurationResolver(true, wireMockRule.baseUrl()).resolve()).isNull();\n        WireMock.verify(WireMock.getRequestedFor(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH)));\n    }\n\n    @Test\n    public void resolveShouldReturnConfigurationAndStoreItInCache() {\n        wireMockRule.stubFor(WireMock.get(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH))\n                .willReturn(WireMock.aResponse()\n                        .withStatus(HttpStatus.SC_OK)\n                        .withHeader(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.getMimeType())\n                        .withBody(\"\" +\n                                \"{\\n\" +\n                                \"  \\\"issuer\\\": \\\"\" + wireMockRule.baseUrl() + \"\\\",\\n\" +\n                                \"  \\\"userinfo_endpoint\\\": \\\"\" + wireMockRule.baseUrl() + \"/protocol/openid-connect/userinfo\\\",\\n\" +\n                                \"  \\\"jwks_uri\\\": \\\"\" + wireMockRule.baseUrl() + \"/protocol/openid-connect/certs\\\",\\n\" +\n                                \"  \\\"subject_types_supported\\\": [\\\"public\\\",\\\"pairwise\\\"]\" +\n                                \"}\")));\n\n        final OidcConfiguration oidcConfiguration = new OidcConfigurationResolver(true, wireMockRule.baseUrl()).resolve();\n        assertThat(oidcConfiguration).isNotNull();\n        assertThat(oidcConfiguration.getIssuer()).isEqualTo(wireMockRule.baseUrl());\n        assertThat(oidcConfiguration.getUserInfoEndpointUri().toString()).isEqualTo(wireMockRule.baseUrl() + \"/protocol/openid-connect/userinfo\");\n        assertThat(oidcConfiguration.getJwksUri().toString()).isEqualTo(wireMockRule.baseUrl() + \"/protocol/openid-connect/certs\");\n\n        // On the next invocation, the configuration should be loaded from cache\n        assertThat(new OidcConfigurationResolver(true, wireMockRule.baseUrl()).resolve()).isEqualTo(oidcConfiguration);\n\n        // Only one request should've been made\n        WireMock.verify(1, WireMock.getRequestedFor(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH)));\n    }\n\n    @Test\n    public void resolveShouldUseHttpProxyIfConfigured() {\n        environmentVariables.set(\"http_proxy\", \"http://localhost:6666\");\n\n        wireMockRule.stubFor(WireMock.get(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH))\n                .willReturn(WireMock.aResponse()\n                        .withStatus(418)));\n\n        // Attempt to resolve.\n        // Should try to use the configured HTTP proxy, which will fail.\n        assertThat(new OidcConfigurationResolver(true, wireMockRule.baseUrl()).resolve()).isNull();\n\n        // No request should've reached its target.\n        WireMock.verify(0, WireMock.getRequestedFor(WireMock.urlPathEqualTo(OPENID_CONFIGURATION_PATH)));\n    }\n\n}"

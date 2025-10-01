@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "d-kuro/gwq"
+sha = "7fad1c9ddcea371f8f51c70758439d4c94e5de70"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/worktree/worktree.go internal/worktree/worktree_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/worktree/worktree.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 9.0
+original_coverage = 45.0
+mutation_kill_rate = 16.0
+original_mutation_kill_rate = 39.0
+covered_lines = [ 35, 36, 37, 38, 39, 40, 130, 131, 132, 135, 136, 137,]
+missed_lines = [ 43, 44, 45, 46, 47, 48, 49, 50, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 67, 68, 69, 71, 75, 76, 77, 78, 79, 80, 81, 82, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 99, 100, 101, 103, 107, 108, 109, 112, 113, 114, 115, 116, 119, 120, 121, 122, 123, 126, 140, 141, 142, 143, 144, 146, 147, 148, 149, 150, 151, 154, 158, 159, 160, 161, 162, 164, 165, 166, 167, 168, 169, 170, 173, 177, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 192, 193, 195, 199, 200, 201, 202, 203, 204, 207, 208, 209, 210, 213, 214, 215, 216, 217, 218, 219, 222, 223, 224, 225, 226, 228, 232, 233,]
+
+[input_info]
+test_file_path = "internal/worktree/worktree_test.go"
+focal_file_path = "internal/worktree/worktree.go"
+test_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/worktree/worktree_test.go"
+focal_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/worktree/worktree.go"
+first_commit_date = "2025-05-26"
+last_commit_date = "2025-07-03"
+test_file_content = "package worktree\n\nimport (\n\t\"testing\"\n\n\t\"github.com/d-kuro/gwq/pkg/models\"\n)\n\n// mockGit is a mock implementation of git operations for testing\ntype mockGit struct {\n\tworktrees         []models.Worktree\n\trepoName          string\n\taddError          error\n\tremoveError       error\n\tlistError         error\n\tpruneError        error\n\tdeleteBranchError error\n\trecentCommits     []models.CommitInfo\n}\n\nfunc (m *mockGit) ListWorktrees() ([]models.Worktree, error) {\n\tif m.listError != nil {\n\t\treturn nil, m.listError\n\t}\n\treturn m.worktrees, nil\n}\n\nfunc (m *mockGit) AddWorktree(path, branch string, createBranch bool) error {\n\tif m.addError != nil {\n\t\treturn m.addError\n\t}\n\tm.worktrees = append(m.worktrees, models.Worktree{\n\t\tPath:   path,\n\t\tBranch: branch,\n\t})\n\treturn nil\n}\n\nfunc (m *mockGit) RemoveWorktree(path string, force bool) error {\n\tif m.removeError != nil {\n\t\treturn m.removeError\n\t}\n\tvar updated []models.Worktree\n\tfor _, wt := range m.worktrees {\n\t\tif wt.Path != path {\n\t\t\tupdated = append(updated, wt)\n\t\t}\n\t}\n\tm.worktrees = updated\n\treturn nil\n}\n\nfunc (m *mockGit) PruneWorktrees() error {\n\treturn m.pruneError\n}\n\nfunc (m *mockGit) GetRepositoryName() (string, error) {\n\tif m.repoName == \"\" {\n\t\treturn \"test-repo\", nil\n\t}\n\treturn m.repoName, nil\n}\n\nfunc (m *mockGit) GetRecentCommits(path string, limit int) ([]models.CommitInfo, error) {\n\treturn m.recentCommits, nil\n}\n\nfunc (m *mockGit) GetRepositoryURL() (string, error) {\n\treturn \"https://github.com/test-user/test-repo.git\", nil\n}\n\nfunc (m *mockGit) DeleteBranch(branch string, force bool) error {\n\tif m.deleteBranchError != nil {\n\t\treturn m.deleteBranchError\n\t}\n\treturn nil\n}\n\nfunc (m *mockGit) AddWorktreeFromBase(path, branch, baseBranch string) error {\n\tif m.addError != nil {\n\t\treturn m.addError\n\t}\n\tm.worktrees = append(m.worktrees, models.Worktree{\n\t\tPath:   path,\n\t\tBranch: branch,\n\t})\n\treturn nil\n}\n\n\n\nfunc TestManagerList(t *testing.T) {\n\texpectedWorktrees := []models.Worktree{\n\t\t{Path: \"/path/1\", Branch: \"main\", IsMain: true},\n\t\t{Path: \"/path/2\", Branch: \"feature\"},\n\t}\n\n\tmockG := &mockGit{\n\t\tworktrees: expectedWorktrees,\n\t}\n\n\tm := New(mockG, &models.Config{})\n\n\tworktrees, err := m.List()\n\tif err != nil {\n\t\tt.Fatalf(\"List() error = %v\", err)\n\t}\n\n\tif len(worktrees) != len(expectedWorktrees) {\n\t\tt.Errorf(\"List() returned %d worktrees, want %d\", len(worktrees), len(expectedWorktrees))\n\t}\n}\n\nfunc TestManagerPrune(t *testing.T) {\n\tmockG := &mockGit{}\n\tm := New(mockG, &models.Config{})\n\n\terr := m.Prune()\n\tif err != nil {\n\t\tt.Fatalf(\"Prune() error = %v\", err)\n\t}\n}\n\n\n"

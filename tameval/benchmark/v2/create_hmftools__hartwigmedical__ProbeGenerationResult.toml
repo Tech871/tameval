@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "29cf8b2f82f8ecc386c4cfb238757fa859b7eb06"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl gene-utils -Dtest=ProbeGenerationResultTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl gene-utils -DtargetClasses=**.ProbeGenerationResult  -DtargetTests=**.ProbeGenerationResultTest  -DoutputFormats=XML"
+coverage_report_path = "gene-utils/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "gene-utils/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 90.0
+original_coverage = 90.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 9, 27, 28, 29, 30, 31, 38, 39, 40, 41, 42, 43, 44, 45, 52, 53, 54, 55, 56,]
+missed_lines = [ 21, 22,]
+
+[input_info]
+test_file_path = "gene-utils/src/test/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeGenerationResultTest.java"
+focal_file_path = "gene-utils/src/main/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeGenerationResult.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/gene-utils/src/test/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeGenerationResultTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/gene-utils/src/main/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeGenerationResult.java"
+first_commit_date = "2025-07-31"
+last_commit_date = "2025-07-31"
+test_file_content = "package com.hartwig.hmftools.geneutils.paneldesign;\n\nimport static java.util.Collections.emptyList;\n\nimport static org.junit.Assert.assertEquals;\n\nimport java.util.List;\n\nimport com.hartwig.hmftools.common.region.ChrBaseRegion;\n\nimport org.junit.Test;\n\npublic class ProbeGenerationResultTest\n{\n    @Test\n    public void testAdd()\n    {\n        ProbeGenerationResult result1 = new ProbeGenerationResult(\n                List.of(new Probe(new ChrBaseRegion(\"1\", 10, 20), new TargetMetadata(TargetMetadata.Type.GENE, \"1\"))),\n                List.of(new TargetRegion(new ChrBaseRegion(\"2\", 20, 30), new TargetMetadata(TargetMetadata.Type.CUSTOM, \"2\"))),\n                List.of(new TargetRegion(new ChrBaseRegion(\"3\", 30, 40), new TargetMetadata(TargetMetadata.Type.CN_BACKBONE, \"3\"))),\n                List.of(new RejectedRegion(new ChrBaseRegion(\"4\", 40, 50), new TargetMetadata(TargetMetadata.Type.CUSTOM, \"4\"), \"4\"))\n        );\n        ProbeGenerationResult result2 = new ProbeGenerationResult(\n                List.of(new Probe(new ChrBaseRegion(\"5\", 50, 60), new TargetMetadata(TargetMetadata.Type.CN_BACKBONE, \"5\"))),\n                List.of(new TargetRegion(new ChrBaseRegion(\"6\", 60, 70), new TargetMetadata(TargetMetadata.Type.GENE, \"6\"))),\n                List.of(new TargetRegion(new ChrBaseRegion(\"7\", 70, 80), new TargetMetadata(TargetMetadata.Type.CUSTOM, \"7\"))),\n                List.of(new RejectedRegion(new ChrBaseRegion(\"8\", 80, 90), new TargetMetadata(TargetMetadata.Type.CN_BACKBONE, \"8\"), \"8\"))\n        );\n        ProbeGenerationResult expected = new ProbeGenerationResult(\n                List.of(\n                        new Probe(new ChrBaseRegion(\"1\", 10, 20), new TargetMetadata(TargetMetadata.Type.GENE, \"1\")),\n                        new Probe(new ChrBaseRegion(\"5\", 50, 60), new TargetMetadata(TargetMetadata.Type.CN_BACKBONE, \"5\"))\n                ),\n                List.of(\n                        new TargetRegion(new ChrBaseRegion(\"2\", 20, 30), new TargetMetadata(TargetMetadata.Type.CUSTOM, \"2\")),\n                        new TargetRegion(new ChrBaseRegion(\"6\", 60, 70), new TargetMetadata(TargetMetadata.Type.GENE, \"6\"))\n                ),\n                List.of(\n                        new TargetRegion(new ChrBaseRegion(\"3\", 30, 40), new TargetMetadata(TargetMetadata.Type.CN_BACKBONE, \"3\")),\n                        new TargetRegion(new ChrBaseRegion(\"7\", 70, 80), new TargetMetadata(TargetMetadata.Type.CUSTOM, \"7\"))\n                ),\n                List.of(\n                        new RejectedRegion(new ChrBaseRegion(\"4\", 40, 50), new TargetMetadata(TargetMetadata.Type.CUSTOM, \"4\"), \"4\"),\n                        new RejectedRegion(new ChrBaseRegion(\"8\", 80, 90), new TargetMetadata(TargetMetadata.Type.CN_BACKBONE, \"8\"), \"8\")\n                )\n        );\n        ProbeGenerationResult actual = result1.add(result2);\n        assertEquals(expected, actual);\n    }\n\n    @Test\n    public void testCoveredTarget()\n    {\n        TargetMetadata metadata = new TargetMetadata(TargetMetadata.Type.CUSTOM, \"extra\");\n        TargetRegion target = new TargetRegion(\n                new ChrBaseRegion(\"1\", 10, 20),\n                metadata);\n        Probe probe = new Probe(new ChrBaseRegion(\"1\", 11, 25), metadata);\n        ProbeGenerationResult actual = ProbeGenerationResult.coveredTarget(target, probe);\n        ProbeGenerationResult expected = new ProbeGenerationResult(\n                List.of(probe),\n                List.of(target),\n                List.of(new TargetRegion(new ChrBaseRegion(\"1\", 11, 20), metadata)),\n                emptyList()\n        );\n        assertEquals(expected, actual);\n    }\n\n    @Test\n    public void testRejectTarget()\n    {\n        TargetMetadata metadata = new TargetMetadata(TargetMetadata.Type.CUSTOM, \"extra\");\n        TargetRegion target = new TargetRegion(\n                new ChrBaseRegion(\"1\", 10, 20),\n                metadata);\n        String reason = \"rejected\";\n        ProbeGenerationResult actual = ProbeGenerationResult.rejectTarget(target, reason);\n        ProbeGenerationResult expected = new ProbeGenerationResult(\n                emptyList(),\n                List.of(target),\n                emptyList(),\n                List.of(new RejectedRegion(target.region(), metadata, reason))\n        );\n        assertEquals(expected, actual);\n    }\n}\n"

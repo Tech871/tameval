@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Franblueee/torchmil"
+sha = "733d8fafb5c020313cca7fe3e5c8ce9c28d13a09"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=torchmil/visualize/vis_wsi.py -m pytest -q --junit-xml=test_output.xml tests/visualize/test_vis_wsi.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target torchmil.visualize.vis_wsi --unit-test tests.visualize.test_vis_wsi --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target torchmil/visualize/vis_wsi.py --unit-test tests/visualize/test_vis_wsi.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 95.0
+original_coverage = 100.0
+mutation_kill_rate = 74.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 0, 3, 21, 22, 24, 25, 26, 27, 28, 30, 31, 32, 33, 34, 35, 40, 43, 64, 66, 67, 68, 69, 70, 71, 72, 73, 78, 79, 84, 87, 119, 121, 122, 123, 124, 125, 129, 133, 134, 136, 140,]
+missed_lines = [ 130, 131,]
+
+[input_info]
+test_file_path = "tests/visualize/test_vis_wsi.py"
+focal_file_path = "torchmil/visualize/vis_wsi.py"
+test_file_url = "https://github.com/Franblueee/torchmil/blob/733d8fafb5c020313cca7fe3e5c8ce9c28d13a09/tests/visualize/test_vis_wsi.py"
+focal_file_url = "https://github.com/Franblueee/torchmil/blob/733d8fafb5c020313cca7fe3e5c8ce9c28d13a09/torchmil/visualize/vis_wsi.py"
+first_commit_date = "2025-02-06"
+last_commit_date = "2025-06-09"
+test_file_content = "import numpy as np\nimport pytest\n\n# Assuming your functions are in a file named 'your_module.py'\nfrom torchmil.visualize.vis_wsi import (\n    patches_to_canvas,\n    draw_patches_contour,\n    draw_heatmap_wsi,\n)\n\n# Fixtures for common setup\n@pytest.fixture\ndef sample_patches_data():\n    patch_size = 10\n    num_patches = 5\n    patches_list = [\n        np.random.randint(0, 256, size=(patch_size, patch_size, 3), dtype=np.uint8)\n        for _ in range(num_patches)\n    ]\n    row_array = np.array([0, 1, 0, 2, 1])  # Example row indices\n    column_array = np.array([0, 0, 1, 0, 2])  # Example column indices\n    return patches_list, row_array, column_array, patch_size\n\n@pytest.fixture\ndef sample_canvas_from_patches(sample_patches_data):\n    patches_list, row_array, column_array, patch_size = sample_patches_data\n    canvas = patches_to_canvas(patches_list, row_array, column_array, patch_size)\n    return canvas, row_array, column_array, patch_size\n\n@pytest.fixture\ndef sample_heatmap_data(sample_canvas_from_patches):\n    canvas, row_array, col_array, patch_size = sample_canvas_from_patches\n    num_patches = len(row_array)\n    values = np.random.rand(num_patches)  # Example heatmap values\n    return canvas, values, patch_size, row_array, col_array\n\n# Tests for patches_to_canvas function\n\ndef test_patches_to_canvas_empty_patches():\n    patch_size = 10\n    row_array = np.array([])\n    column_array = np.array([])\n    patches_list = []\n    canvas = patches_to_canvas(patches_list, row_array, column_array, patch_size)\n    assert canvas.shape == (patch_size, patch_size, 3), \"Empty patches test failed\"\n\n# Tests for draw_patches_contour function\ndef test_draw_patches_contour_output_shape(sample_canvas_from_patches):\n    canvas, row_array, column_array, patch_size = sample_canvas_from_patches\n    canvas_with_contour = draw_patches_contour(\n        canvas, row_array, column_array, patch_size\n    )\n    assert canvas_with_contour.shape == canvas.shape, \"Output shape is incorrect\"\n\n# Tests for draw_heatmap_wsi function\n\ndef test_draw_heatmap_wsi_blending(sample_heatmap_data):\n    canvas, values, patch_size, row_array, col_array = sample_heatmap_data\n    alpha = 0.5\n    max_color = np.array([1.0, 0.0, 0.0])  # Red\n    min_color = np.array([0.0, 1.0, 0.0])  # Green\n    canvas_with_heatmap = draw_heatmap_wsi(\n        canvas,\n        values,\n        patch_size,\n        row_array,\n        col_array,\n        alpha=alpha,\n        max_color=max_color,\n        min_color=min_color,\n    )\n    for i in range(len(row_array)):\n        row = row_array[i]\n        column = col_array[i]\n        x_start = column * patch_size\n        x_end = (column + 1) * patch_size\n        y_start = row * patch_size\n        y_end = (row + 1) * patch_size\n        value = values[i]\n        expected_color = value * max_color + (1 - value) * min_color  # in float\n        # Convert both to float for comparison\n        result_color = (\n            canvas_with_heatmap[y_start:y_end, x_start:x_end].astype(np.float64) / 255.0\n        )\n        expected_color_float = expected_color\n        original_color = canvas[y_start:y_end, x_start:x_end].astype(np.float64) / 255.0\n        blended_color = (alpha * expected_color_float) + ((1 - alpha) * original_color)\n\n        assert np.allclose(\n            result_color, blended_color, atol=0.01\n        ), f\"Heatmap blending failed for patch {i}\"\n"

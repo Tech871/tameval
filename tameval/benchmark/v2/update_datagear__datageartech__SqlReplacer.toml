@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "datageartech/datagear"
+sha = "0cde3799fad38f74d53c73e087b0e3296237e466"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl datagear-util -Dtest=SqlReplacerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl datagear-util -DtargetClasses=**.SqlReplacer  -DtargetTests=**.SqlReplacerTest  -DoutputFormats=XML"
+coverage_report_path = "datagear-util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "datagear-util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 55.0
+original_coverage = 62.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 33.0
+covered_lines = [ 45, 47, 49, 51, 55, 56, 108, 114, 115, 119, 120, 122, 130, 131, 134, 151, 157, 161, 162, 164, 166, 169, 171, 172, 173, 175, 177, 180, 182, 183, 184, 186, 200, 201, 204, 228, 229, 234,]
+missed_lines = [ 60, 65, 66, 70, 75, 76, 80, 85, 86, 90, 95, 96, 109, 111, 112, 124, 126, 153, 154, 155, 189, 191, 192, 193, 195, 217, 220, 221, 222, 239, 244,]
+
+[input_info]
+test_file_path = "datagear-util/src/test/java/org/datagear/util/sqlvalidator/SqlReplacerTest.java"
+focal_file_path = "datagear-util/src/main/java/org/datagear/util/sqlvalidator/SqlReplacer.java"
+test_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-util/src/test/java/org/datagear/util/sqlvalidator/SqlReplacerTest.java"
+focal_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-util/src/main/java/org/datagear/util/sqlvalidator/SqlReplacer.java"
+first_commit_date = "2022-06-17"
+last_commit_date = "2024-03-15"
+test_file_content = "/*\r\n * Copyright 2018 datagear.tech\r\n *\r\n * Licensed under the LGPLv3 license:\r\n * http://www.gnu.org/licenses/lgpl-3.0.html\r\n */\r\n\r\npackage org.datagear.util.sqlvalidator;\r\n\r\nimport static org.junit.Assert.assertEquals;\r\n\r\nimport org.junit.Test;\r\n\r\npublic class SqlReplacerTest\r\n{\r\n\tprivate SqlReplacer sqlReplacer = new SqlReplacer();\r\n\r\n\t@Test\r\n\tpublic void replaceTest()\r\n\t{\r\n\t\t{\r\n\t\t\tString sql = \"SELECT NAME, \\\"VALUE\\\" FROM TABLE WHERE ID = '3'\";\r\n\t\t\tString actual = this.sqlReplacer.replace(sql, \"\\\"\");\r\n\r\n\t\t\tassertEquals(\"SELECT NAME, \\\"\\\" FROM TABLE WHERE ID = ''\", actual);\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString sql = \"SELECT NAME, \\\"VA\\\"\\\"LUE\\\" FROM TABLE WHERE ID = '3''3'\";\r\n\t\t\tString actual = this.sqlReplacer.replace(sql, \"\\\"\");\r\n\r\n\t\t\tassertEquals(\"SELECT NAME, \\\"\\\" FROM TABLE WHERE ID = ''\", actual);\r\n\t\t}\r\n\t}\r\n}\r"

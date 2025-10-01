@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "reflex-dev/reflex"
+sha = "7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=reflex/utils/telemetry.py -m pytest -q --junit-xml=test_output.xml tests/units/test_telemetry.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target reflex.utils.telemetry --unit-test tests.units.test_telemetry --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target reflex/utils/telemetry.py --unit-test tests/units/test_telemetry.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 52.0
+original_coverage = 55.0
+mutation_kill_rate = 98.0
+original_mutation_kill_rate = 98.0
+covered_lines = [ 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 15, 16, 17, 18, 19, 20, 21, 23, 24, 27, 28, 31, 32, 33, 36, 51, 106, 107, 123, 132, 141, 151, 160, 169, 181, 195, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 211, 214, 215, 218, 221, 222, 225, 264, 265, 271, 274, 284, 285, 288, 290, 292, 293, 294, 298, 300, 308, 309, 311, 312, 316, 319, 320, 323, 327, 330, 331, 332, 334, 338, 341, 364,]
+missed_lines = [ 45, 46, 47, 48, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 77, 78, 79, 80, 81, 82, 85, 88, 91, 92, 93, 95, 113, 114, 115, 116, 117, 118, 119, 120, 129, 138, 148, 157, 166, 175, 176, 177, 178, 192, 231, 232, 234, 235, 238, 240, 242, 286, 296, 313, 314, 324, 328, 333, 335, 350, 351, 353, 355, 356, 357, 358, 360, 361, 371, 372,]
+
+[input_info]
+test_file_path = "tests/units/test_telemetry.py"
+focal_file_path = "reflex/utils/telemetry.py"
+test_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/tests/units/test_telemetry.py"
+focal_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/reflex/utils/telemetry.py"
+first_commit_date = "2023-06-25"
+last_commit_date = "2025-08-12"
+test_file_content = "import pytest\nfrom packaging.version import parse as parse_python_version\nfrom pytest_mock import MockerFixture\n\nfrom reflex.utils import telemetry\n\n@pytest.mark.parametrize(\"event\", [\"init\", \"reinit\", \"run-dev\", \"run-prod\", \"export\"])\ndef test_send(mocker: MockerFixture, event):\n    httpx_post_mock = mocker.patch(\"httpx.post\")\n\n    # Mock _get_event_defaults to return a complete valid response\n    mock_defaults = {\n        \"api_key\": \"test_api_key\",\n        \"properties\": {\n            \"distinct_id\": 12345,\n            \"distinct_app_id\": 78285505863498957834586115958872998605,\n            \"user_os\": \"Test OS\",\n            \"user_os_detail\": \"Mocked Platform\",\n            \"reflex_version\": \"0.8.0\",\n            \"python_version\": \"3.8.0\",\n            \"node_version\": None,\n            \"bun_version\": None,\n            \"reflex_enterprise_version\": None,\n            \"cpu_count\": 4,\n            \"memory\": 8192,\n            \"cpu_info\": {},\n        },\n    }\n    mocker.patch(\n        \"reflex.utils.telemetry._get_event_defaults\", return_value=mock_defaults\n    )\n\n    telemetry._send(event, telemetry_enabled=True)\n    httpx_post_mock.assert_called_once()\n"

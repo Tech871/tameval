@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "tjblackheart/andcli"
+sha = "98ec488fe834970ab8ea07ed19bff25439b42427"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/vaults/aegis/aegis.go internal/vaults/aegis/aegis_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/vaults/aegis/aegis.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 56.0
+original_coverage = 56.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 43.0
+covered_lines = [ 58, 59, 60, 61, 62, 67, 68, 69, 71, 72, 73, 74, 76, 85, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 108, 111, 112, 113, 114, 115, 116, 117, 136, 146, 151, 156, 157, 158, 159, 160, 161, 162, 163, 165, 168, 169, 170, 175, 180, 185, 190, 195, 196, 197, 198, 199, 204,]
+missed_lines = [ 63, 64, 65, 77, 78, 79, 81, 82, 83, 120, 121, 122, 124, 125, 126, 128, 129, 130, 132, 133, 134, 137, 138, 139, 142, 143, 144, 147, 148, 149, 152, 153, 154, 171, 172, 173, 176, 177, 178, 181, 182, 183, 186, 187, 188, 191, 192, 193, 200, 201, 202,]
+
+[input_info]
+test_file_path = "internal/vaults/aegis/aegis_test.go"
+focal_file_path = "internal/vaults/aegis/aegis.go"
+test_file_url = "https://github.com/tjblackheart/andcli/blob/98ec488fe834970ab8ea07ed19bff25439b42427/internal/vaults/aegis/aegis_test.go"
+focal_file_url = "https://github.com/tjblackheart/andcli/blob/98ec488fe834970ab8ea07ed19bff25439b42427/internal/vaults/aegis/aegis.go"
+first_commit_date = "2025-02-12"
+last_commit_date = "2025-07-20"
+test_file_content = "package aegis\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n\n\t\"github.com/tjblackheart/andcli/v2/internal/vaults\"\n)\n\nfunc TestOpen(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tfilename string\n\t\tpassword string\n\t\tfails    bool\n\t}{\n\t\t{\"decrypts\", \"testdata/aegis-export-test.json\", \"andcli-test\", false},\n\t\t{\"fails: wrong password\", \"testdata/aegis-export-test.json\", \"invalid\", true},\n\t\t{\"fails: invalid file\", \"testdata/aegis-invalid-file.json\", \"invalid\", true},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tv, err := Open(tt.filename, []byte(tt.password))\n\t\t\tif tt.fails {\n\t\t\t\tif err == nil {\n\t\t\t\t\tt.Fatal(\"Open() expected error, got none\")\n\t\t\t\t}\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\tentries := v.Entries()\n\t\t\tif len(entries) != 1 {\n\t\t\t\tt.Fatalf(\"Open() expected len to be 1, have %v\", len(entries))\n\t\t\t}\n\n\t\t\tif entries[0].Label != \"andcli-test\" {\n\t\t\t\tt.Fatalf(\"Open() have %v, want andcli-test\", entries[0].Label)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestEntries(t *testing.T) {\n\ttests := []struct {\n\t\tname  string\n\t\tinput []entry\n\t\twant  []vaults.Entry\n\t}{\n\t\t{\n\t\t\t\"mitigates missing fields\",\n\t\t\t[]entry{\n\t\t\t\t{Issuer: \"iss-1\", Info: info{Digits: 6, Secret: \"secret\"}, Type: \"TOTP\"},\n\t\t\t\t{Issuer: \"iss-2\", Info: info{Digits: 4, Secret: \"secret\"}, Type: \"HOTP\"},\n\t\t\t\t{Issuer: \"iss-3\", Info: info{Digits: 0, Secret: \"secret\", Period: 20}, Type: \"TOTP\"},\n\t\t\t\t{Issuer: \"iss-4\", Info: info{Digits: 4, Secret: \"secret\", Algo: \"SHA256\"}, Type: \"TOTP\"},\n\t\t\t\t{Issuer: \"iss-5\"},\n\t\t\t},\n\t\t\t[]vaults.Entry{\n\t\t\t\t{Issuer: \"iss-1\", Digits: 6, Secret: \"secret\", Type: \"TOTP\", Algorithm: \"SHA1\", Period: 30},\n\t\t\t\t{Issuer: \"iss-3\", Digits: 6, Secret: \"secret\", Type: \"TOTP\", Algorithm: \"SHA1\", Period: 20},\n\t\t\t\t{Issuer: \"iss-4\", Digits: 4, Secret: \"secret\", Type: \"TOTP\", Algorithm: \"SHA256\", Period: 30},\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tentries := (&vault{db: db{Entries: tt.input}}).Entries()\n\t\t\tif !reflect.DeepEqual(entries, tt.want) {\n\t\t\t\tt.Fatalf(\"Entries(): want %#v\\nhave %#v\", tt.want, entries)\n\t\t\t}\n\t\t})\n\t}\n}"

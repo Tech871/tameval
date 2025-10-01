@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "VictoriaMetrics/VictoriaMetrics"
+sha = "099b2fdba79582dcc1c32a604b587deaf32270db"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/chunkedbuffer/chunked_buffer.go lib/chunkedbuffer/chunked_buffer_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/chunkedbuffer/chunked_buffer.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 89.0
+original_coverage = 91.0
+mutation_kill_rate = 72.0
+original_mutation_kill_rate = 77.0
+covered_lines = [ 26, 27, 28, 29, 30, 31, 32, 33, 37, 38, 39, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 65, 66, 67, 68, 71, 72, 73, 74, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 92, 93, 94, 95, 97, 98, 99, 100, 101, 102, 112, 113, 114, 115, 116, 117, 118, 119, 120, 122, 126, 127, 128, 131, 132, 133, 136, 137, 138, 139, 140, 149, 150, 151, 153, 154, 155, 156, 157, 161, 164, 165, 166, 167, 168, 169, 170, 171, 172, 174, 175, 176, 179, 180, 181, 182, 184, 185, 186, 187, 188, 189, 190, 193, 194, 195,]
+missed_lines = [ 42, 43, 44, 45, 46, 103, 104, 105, 106, 107, 108, 158, 159,]
+
+[input_info]
+test_file_path = "lib/chunkedbuffer/chunked_buffer_test.go"
+focal_file_path = "lib/chunkedbuffer/chunked_buffer.go"
+test_file_url = "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/099b2fdba79582dcc1c32a604b587deaf32270db/lib/chunkedbuffer/chunked_buffer_test.go"
+focal_file_url = "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/099b2fdba79582dcc1c32a604b587deaf32270db/lib/chunkedbuffer/chunked_buffer.go"
+first_commit_date = "2025-03-15"
+last_commit_date = "2025-03-19"
+test_file_content = "package chunkedbuffer\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"io\"\n\t\"testing\"\n)\n\nfunc TestBuffer(t *testing.T) {\n\tvar cb Buffer\n\tfor i := 0; i < 10; i++ {\n\t\tcb.Reset()\n\n\t\t// Write data to chunked buffer\n\t\ttotalSize := 0\n\t\tfor j := 1; j < 1000; j++ {\n\t\t\tb := make([]byte, j)\n\t\t\tfor k := range b {\n\t\t\t\tb[k] = byte(k)\n\t\t\t}\n\t\t\tcb.MustWrite(b)\n\t\t\ttotalSize += len(b)\n\t\t}\n\n\t\tsize := cb.SizeBytes()\n\t\tif size < totalSize {\n\t\t\tt.Fatalf(\"too small SizeBytes; got %d; want at least %d\", size, totalSize)\n\t\t}\n\n\t\t// Read the data from chunked buffer via MustReadAt.\n\t\toff := 0\n\t\tfor j := 1; j < 1000; j++ {\n\t\t\tb := make([]byte, j)\n\t\t\tcb.MustReadAt(b, int64(off))\n\t\t\toff += j\n\n\t\t\t// Verify the data is read correctly\n\t\t\tfor k := range b {\n\t\t\t\tif b[k] != byte(k) {\n\t\t\t\t\tt.Fatalf(\"unexpected byte read; got %d; want %d\", b[k], k)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\t// Read the data from chunked buffer via NewReader.\n\t\tr := cb.NewReader()\n\t\tvar bb bytes.Buffer\n\t\tn, err := bb.ReadFrom(r)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"error when reading data from chunked buffer: %s\", err)\n\t\t}\n\t\tif n != int64(off) {\n\t\t\tt.Fatalf(\"unexpected amounts of data read from chunked buffer; got %d; want %d\", n, off)\n\t\t}\n\n\t\t// Verify that reader path is equivalent to cb path\n\t\tcbPath := cb.Path()\n\t\trPath := r.Path()\n\t\tif cbPath != rPath {\n\t\t\tt.Fatalf(\"unexpected path; got %q; want %q\", rPath, cbPath)\n\t\t}\n\n\t\tr.MustClose()\n\n\t\t// Verify the read data\n\t\toff = 0\n\t\tdata := bb.Bytes()\n\t\tfor j := 1; j < 1000; j++ {\n\t\t\tb := data[off : off+j]\n\t\t\toff += j\n\n\t\t\t// Verify the data is read correctly\n\t\t\tfor k := range b {\n\t\t\t\tif b[k] != byte(k) {\n\t\t\t\t\tt.Fatalf(\"unexpected byte read; got %d; want %d\", b[k], k)\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\t// Copy the data to another chunked buffer via WriteTo.\n\t\tvar cb2 Buffer\n\t\tn, err = cb.WriteTo(&cb2)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"error when writing data to another chunked buffer: %s\", err)\n\t\t}\n\t\tif n != int64(off) {\n\t\t\tt.Fatalf(\"unexpected amounts of data written to chunked buffer; got %d; want %d\", n, off)\n\t\t}\n\n\t\t// Verify that the data at cb is equivalent to the data at cb2\n\t\tvar bb2 bytes.Buffer\n\t\tr2 := cb2.NewReader()\n\t\tn, err = bb2.ReadFrom(r2)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"cannot read data from chunked buffer: %s\", err)\n\t\t}\n\t\tif n != int64(off) {\n\t\t\tt.Fatalf(\"unexpected amounts of data read from the chunked buffer; got %d; want %d\", n, off)\n\t\t}\n\t\tdata2 := bb2.Bytes()\n\n\t\tif !bytes.Equal(data, data2) {\n\t\t\tt.Fatalf(\"unexpected data at the second chunked buffer\\ngot\\n%q\\nwant\\n%q\", data2, data)\n\t\t}\n\n\t\t// Verify MustClose at chunked buffer\n\t\tcb2.MustClose()\n\t}\n}\n\nfunc TestBuffer_MustReadAtZeroData(_ *testing.T) {\n\tvar cb Buffer\n\tcb.MustReadAt(nil, 0)\n}\n\nfunc TestBuffer_ReaderZeroData(t *testing.T) {\n\tvar cb Buffer\n\tr := cb.NewReader()\n\tdata, err := io.ReadAll(r)\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %s\", err)\n\t}\n\tif len(data) != 0 {\n\t\tt.Fatalf(\"unexpected data read with len=%d; data=%q\", len(data), data)\n\t}\n}\n\nfunc TestBuffer_ReaderSingleChunk(t *testing.T) {\n\tvar cb Buffer\n\n\tfmt.Fprintf(&cb, \"foo bar baz\")\n\tr := cb.NewReader()\n\tb := make([]byte, 4)\n\n\tif _, err := io.ReadFull(r, b); err != nil {\n\t\tt.Fatalf(\"unexpected error: %s\", err)\n\t}\n\tif string(b) != \"foo \" {\n\t\tt.Fatalf(\"unexpected data read; got %q; want %q\", b, \"foo \")\n\t}\n\n\tif _, err := io.ReadFull(r, b); err != nil {\n\t\tt.Fatalf(\"unexpected error: %s\", err)\n\t}\n\tif string(b) != \"bar \" {\n\t\tt.Fatalf(\"unexpected data read; got %q; want %q\", b, \"bar \")\n\t}\n\n\tdata, err := io.ReadAll(r)\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %s\", err)\n\t}\n\tif string(data) != \"baz\" {\n\t\tt.Fatalf(\"unexpected data read; got %q; want %q\", b, \"baz\")\n\t}\n}\n\nfunc TestBuffer_WriteToZeroData(t *testing.T) {\n\tvar cb Buffer\n\tvar bb bytes.Buffer\n\tn, err := cb.WriteTo(&bb)\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %s\", err)\n\t}\n\tif n != 0 {\n\t\tt.Fatalf(\"unexpected data written from cb with len=%d\", n)\n\t}\n\tif bbLen := bb.Len(); bbLen != 0 {\n\t\tt.Fatalf(\"unexpected data written to bb with len=%d; data=%q\", bbLen, bb.Bytes())\n\t}\n}\n\nfunc TestBuffer_WriteToBrokenWriter(t *testing.T) {\n\tvar cb Buffer\n\n\tfmt.Fprintf(&cb, \"foo bar baz\")\n\n\tw := &faultyWriter{}\n\tn, err := cb.WriteTo(w)\n\tif err == nil {\n\t\tt.Fatalf(\"expecting non-nil error\")\n\t}\n\tif n != 0 {\n\t\tt.Fatalf(\"expecting zero bytes written; got %d bytes\", n)\n\t}\n\n\tw = &faultyWriter{\n\t\tbytesToAccept: 5,\n\t}\n\tn, err = cb.WriteTo(w)\n\tif err == nil {\n\t\tt.Fatalf(\"expecting non-nil error\")\n\t}\n\tif n != int64(w.bytesToAccept) {\n\t\tt.Fatalf(\"unexpected number of bytes written; got %d; want %d\", n, w.bytesToAccept)\n\t}\n\n\tw = &faultyWriter{\n\t\treturnInvalidBytesRead: true,\n\t}\n\tn, err = cb.WriteTo(w)\n\tif err == nil {\n\t\tt.Fatalf(\"expecting non-nil error\")\n\t}\n\tif n != 0 {\n\t\tt.Fatalf(\"unexpected number of bytes written; got %d; want %d\", n, 0)\n\t}\n}\n\ntype faultyWriter struct {\n\tbytesToAccept          int\n\treturnInvalidBytesRead bool\n\n\tbytesRead int\n}\n\nfunc (fw *faultyWriter) Write(p []byte) (int, error) {\n\tif fw.returnInvalidBytesRead {\n\t\treturn 0, nil\n\t}\n\n\tif fw.bytesRead+len(p) > fw.bytesToAccept {\n\t\tn := fw.bytesToAccept - fw.bytesRead\n\t\tfw.bytesRead = fw.bytesToAccept\n\t\treturn n, fmt.Errorf(\"some error\")\n\t}\n\tfw.bytesRead += len(p)\n\treturn len(p), nil\n}"

@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "cqframework/clinical-reasoning"
+sha = "1fed1a804b28ac47966530908e41cb26f6e82472"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl cqf-fhir-utility -Dtest=CanonicalsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl cqf-fhir-utility -DtargetClasses=**.Canonicals  -DtargetTests=**.CanonicalsTest  -DoutputFormats=XML"
+coverage_report_path = "cqf-fhir-utility/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "cqf-fhir-utility/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 62.0
+original_coverage = 88.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 34, 36, 40, 65, 67, 71, 73, 97, 99, 103, 104, 108, 134, 140, 142, 182, 184, 188, 192, 193, 195, 199, 201, 202, 203, 204, 205, 206, 210, 211, 213, 214, 215, 216, 220, 230, 231, 232, 233, 234, 235, 236, 239, 243, 247, 251, 255,]
+missed_lines = [ 21, 22, 24, 37, 41, 52, 53, 55, 68, 84, 85, 87, 100, 105, 120, 121, 123, 136, 137, 153, 155, 156, 158, 169, 170, 172, 185, 217, 218,]
+
+[input_info]
+test_file_path = "cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/CanonicalsTest.java"
+focal_file_path = "cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/Canonicals.java"
+test_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/CanonicalsTest.java"
+focal_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/Canonicals.java"
+first_commit_date = "2023-08-31"
+last_commit_date = "2024-08-16"
+test_file_content = "package org.opencds.cqf.fhir.utility;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\nimport org.hl7.fhir.r4.model.CanonicalType;\nimport org.junit.jupiter.api.Test;\nimport org.opencds.cqf.fhir.utility.Canonicals.CanonicalParts;\n\nclass CanonicalsTest {\n\n\n\n\n\n    @Test\n    void canonicalParts() {\n        CanonicalType testUrl = new CanonicalType(\"http://fhir.acme.com/Questionnaire/example|1.0#vs1\");\n\n        CanonicalParts parts = Canonicals.getParts(testUrl);\n\n        assertEquals(\"http://fhir.acme.com/Questionnaire/example\", parts.url());\n        assertEquals(\"Questionnaire\", parts.resourceType());\n        assertEquals(\"example\", parts.idPart());\n        assertEquals(\"1.0\", parts.version());\n        assertEquals(\"vs1\", parts.fragment());\n    }\n}\n"

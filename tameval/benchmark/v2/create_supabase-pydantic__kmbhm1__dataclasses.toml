@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "kmbhm1/supabase-pydantic"
+sha = "0a62448b7c42eef16ec885ccedaebe42a51f9fbf"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=supabase_pydantic/util/dataclasses.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_dataclasses.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target supabase_pydantic.util.dataclasses --unit-test tests.unit.test_dataclasses --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target supabase_pydantic/util/dataclasses.py --unit-test tests/unit/test_dataclasses.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 72.0
+original_coverage = 94.0
+mutation_kill_rate = 6.0
+original_mutation_kill_rate = 6.0
+covered_lines = [ 0, 1, 2, 4, 5, 8, 9, 10, 11, 12, 14, 22, 30, 31, 32, 33, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 57, 58, 59, 60, 61, 62, 63, 64, 65, 68, 69, 70, 71, 72, 73, 74, 75, 78, 79, 80, 81, 82, 83, 85, 87, 90, 91, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111, 112, 116, 117, 121, 131, 138, 142, 147, 148, 149, 150, 151, 152, 153, 154, 157, 158, 159, 160, 161, 162, 165, 166, 167, 168, 169, 171, 181, 182, 183, 184, 185, 186, 187, 188, 189, 190, 191, 193, 197, 201, 205, 209, 213, 221, 225, 229, 233, 245, 277,]
+missed_lines = [ 19, 20, 27, 114, 119, 123, 124, 125, 127, 128, 129, 133, 134, 136, 140, 144, 172, 173, 174, 195, 199, 203, 207, 211, 215, 216, 217, 218, 219, 223, 227, 231, 235, 236, 238, 240, 241, 243, 259, 260, 261, 262, 264, 266, 267, 268, 271, 272, 273, 275, 279,]
+
+[input_info]
+test_file_path = "tests/unit/test_dataclasses.py"
+focal_file_path = "supabase_pydantic/util/dataclasses.py"
+test_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/tests/unit/test_dataclasses.py"
+focal_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/supabase_pydantic/util/dataclasses.py"
+first_commit_date = "2024-07-09"
+last_commit_date = "2025-07-30"
+test_file_content = "import json\n\nfrom supabase_pydantic.util.constants import OrmType\nfrom supabase_pydantic.util.dataclasses import ColumnInfo, ConstraintInfo, ForeignKeyInfo, TableInfo\n\ndef test_ConstraintInfo_methods():\n    \"\"\"Test ConstraintInfo methods.\"\"\"\n    from supabase_pydantic.util.dataclasses import ConstraintInfo\n\n    constraint_info = ConstraintInfo(\n        constraint_name='test',\n        raw_constraint_type='p',\n        constraint_definition='PRIMARY KEY (foo)',\n        columns=['foo', 'bar'],\n    )\n    assert json.loads(str(constraint_info)) == {\n        'constraint_name': 'test',\n        'raw_constraint_type': 'p',\n        'constraint_definition': 'PRIMARY KEY (foo)',\n        'columns': ['foo', 'bar'],\n    }\n    assert constraint_info.constraint_type() == 'PRIMARY KEY'\n\n    constraint_info.raw_constraint_type = 't'\n    assert constraint_info.constraint_type() == 'OTHER'\n"

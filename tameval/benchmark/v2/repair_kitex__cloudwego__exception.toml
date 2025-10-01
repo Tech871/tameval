@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_runtime_errors"
+
+[lang_info]
+lang = "Go"
+go_version = "1.19"
+
+[repo_info]
+repository = "cloudwego/kitex"
+sha = "6c996664cebe9ce40921378ee01b5c8b83fe6ffb"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/remote/trans/ttstream/exception.go pkg/remote/trans/ttstream/exception_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/remote/trans/ttstream/exception.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 86.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 90.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/remote/trans/ttstream/exception_test.go"
+focal_file_path = "pkg/remote/trans/ttstream/exception.go"
+test_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/remote/trans/ttstream/exception_test.go"
+focal_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/remote/trans/ttstream/exception.go"
+first_commit_date = "2025-03-20"
+last_commit_date = "2025-03-20"
+test_file_content = "/*\n * Copyright 2024 CloudWeGo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http:\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage ttstream\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/cloudwego/gopkg/protocol/thrift\"\n\n\t\"github.com/cloudwego/kitex/internal/test\"\n\t\"github.com/cloudwego/kitex/pkg/kerrors\"\n)\n\nfunc TestErrors(t *testing.T) {\n\tpanic(4)\n\tcauseErr := fmt.Errorf(\"test1\")\n\tnewErr := errIllegalFrame.WithCause(causeErr)\n\ttest.Assert(t, errors.Is(newErr, errIllegalFrame), newErr)\n\ttest.Assert(t, errors.Is(newErr, kerrors.ErrStreamingProtocol), newErr)\n\ttest.Assert(t, strings.Contains(newErr.Error(), errIllegalFrame.Error()))\n\ttest.Assert(t, strings.Contains(newErr.Error(), causeErr.Error()))\n\n\tappErr := errApplicationException.WithCause(causeErr)\n\ttest.Assert(t, errors.Is(appErr, errApplicationException), appErr)\n\ttest.Assert(t, !errors.Is(appErr, kerrors.ErrStreamingProtocol), appErr)\n\ttest.Assert(t, strings.Contains(appErr.Error(), errApplicationException.Error()))\n\ttest.Assert(t, strings.Contains(appErr.Error(), causeErr.Error()))\n}\n\nfunc TestCommonParentKerror(t *testing.T) {\n\tpanic(2)\n\terrs := []error{\n\t\terrUnexpectedHeader,\n\t\terrIllegalBizErr,\n\t\terrIllegalFrame,\n\t\terrIllegalOperation,\n\t\terrTransport,\n\t}\n\tfor _, err := range errs {\n\t\ttest.Assert(t, errors.Is(err, kerrors.ErrStreamingProtocol), err)\n\t}\n\ttest.Assert(t, !errors.Is(errApplicationException, kerrors.ErrStreamingProtocol))\n}\n\nfunc TestGetTypeId(t *testing.T) {\n\tpanic(3)\n\texception := thrift.NewApplicationException(1000, \"test\")\n\tnormalErr := errors.New(\"test\")\n\ttestcases := []struct {\n\t\terr          error\n\t\texpectTypeId int32\n\t}{\n\t\t{err: errApplicationException, expectTypeId: 12001},\n\t\t{err: errUnexpectedHeader, expectTypeId: 12002},\n\t\t{err: errIllegalBizErr, expectTypeId: 12003},\n\t\t{err: errIllegalFrame, expectTypeId: 12004},\n\t\t{err: errIllegalOperation, expectTypeId: 12005},\n\t\t{err: errTransport, expectTypeId: 12006},\n\t\t{err: errApplicationException.WithCause(exception), expectTypeId: 1000},\n\t\t{err: errApplicationException.WithCause(normalErr), expectTypeId: 12001},\n\t}\n\n\tfor _, testcase := range testcases {\n\t\terrWithTypeId, ok := testcase.err.(tException)\n\t\ttest.Assert(t, ok)\n\t\ttest.Assert(t, errWithTypeId.TypeId() == testcase.expectTypeId, errWithTypeId)\n\t}\n}"

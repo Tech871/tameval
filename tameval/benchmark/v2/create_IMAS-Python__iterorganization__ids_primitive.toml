@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "iterorganization/IMAS-Python"
+sha = "9446e62f6ce19cd7c64a30e320aa4627041abeaa"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=imas/ids_primitive.py -m pytest -q --junit-xml=test_output.xml imas/test/test_ids_primitive.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target imas.ids_primitive --unit-test imas.test.test_ids_primitive --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target imas/ids_primitive.py --unit-test imas/test/test_ids_primitive.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 64.0
+original_coverage = 64.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 4, 5, 6, 7, 8, 9, 10, 12, 13, 15, 16, 17, 18, 20, 23, 24, 25, 27, 29, 30, 33, 34, 39, 40, 43, 44, 47, 48, 51, 52, 55, 62, 63, 65, 72, 73, 75, 77, 78, 80, 82, 83, 87, 94, 95, 107, 108, 115, 116, 117, 119, 122, 124, 125, 127, 128, 129, 131, 138, 139, 140, 141, 143, 145, 147, 150, 151, 152, 153, 156, 158, 159, 162, 163, 167, 168, 170, 171, 174, 176, 187, 188, 193, 194, 195, 196, 197, 198, 199, 201, 202, 203, 204, 205, 206, 207, 208, 210, 211, 212, 213, 214, 215, 217, 218, 219, 220, 222, 225, 228, 230, 232, 234, 241, 242, 244, 246, 254, 257, 262, 267, 270, 273, 274, 276, 278, 281, 284, 288, 291, 292, 294, 298, 302, 306, 313, 323, 330, 333, 334, 336, 339, 342, 343, 345, 347, 349, 352, 355, 356, 358, 361, 362, 365, 366, 369, 372, 376, 379, 380, 382, 385, 388, 391, 394, 397, 400, 404, 407, 408, 410, 413, 416, 419, 422, 425, 429, 432, 433, 437, 439, 440, 442, 467, 471, 472, 475, 476, 478, 479, 480, 481, 483, 487, 489, 491, 501,]
+missed_lines = [ 26, 35, 36, 37, 49, 85, 90, 91, 92, 101, 102, 103, 104, 105, 118, 120, 132, 133, 134, 135, 136, 142, 144, 148, 155, 164, 175, 178, 182, 185, 190, 223, 226, 231, 239, 248, 250, 251, 263, 264, 265, 266, 279, 282, 285, 296, 300, 304, 307, 308, 310, 311, 314, 315, 316, 317, 318, 319, 320, 321, 324, 325, 326, 327, 337, 340, 344, 348, 359, 363, 367, 370, 373, 383, 386, 389, 392, 395, 398, 401, 411, 414, 417, 420, 423, 426, 443, 444, 449, 450, 453, 454, 455, 458, 460, 462, 465, 473, 482, 488, 492, 493, 494, 496, 497, 498, 508, 509, 510, 511, 512,]
+
+[input_info]
+test_file_path = "imas/test/test_ids_primitive.py"
+focal_file_path = "imas/ids_primitive.py"
+test_file_url = "https://github.com/iterorganization/IMAS-Python/blob/9446e62f6ce19cd7c64a30e320aa4627041abeaa/imas/test/test_ids_primitive.py"
+focal_file_url = "https://github.com/iterorganization/IMAS-Python/blob/9446e62f6ce19cd7c64a30e320aa4627041abeaa/imas/ids_primitive.py"
+first_commit_date = "2025-01-22"
+last_commit_date = "2025-01-23"
+test_file_content = "# This file is part of IMAS-Python.\n# You should have received the IMAS-Python LICENSE file with this project.\nimport pprint\n\nimport numpy as np\n\nfrom imas.ids_primitive import IDSPrimitive\nfrom imas.util import visit_children\n\n# As the IDSPrimitive class generally should not be used on its own. Instead we\n# take a very well defined toplevel, initialize it, and do our tests on the\n# tree structure that is generated. Keep the tests just to the functionality\n# that is defined in ids_primitive.py though!\n\n\nzero_to_two_pi = np.linspace(0, 2, num=10) * np.pi\n\n\ndef test_pretty_print(fake_filled_toplevel):\n    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]\n    assert pprint.pformat(fake_filled_toplevel).startswith(\"<IDSToplevel\")\n    assert pprint.pformat(fake_filled_toplevel.wavevector[0].eigenmode).startswith(\n        \"<IDSStructArray (\"\n    )\n    assert pprint.pformat(fake_filled_toplevel.wavevector[0].eigenmode[0]).startswith(\n        \"<IDSStructure (\"\n    )\n    assert pprint.pformat(eig.time_norm).startswith(\"<IDSNumericArray\")\n    assert pprint.pformat(eig.time_norm).endswith(\"empty FLT_1D)>\")\n    assert pprint.pformat(eig.frequency_norm).startswith(\"<IDSFloat0D\")\n    assert pprint.pformat(eig.frequency_norm).endswith(\"\\nfloat(10.0)\")\n    fake_filled_toplevel.ids_properties.comment = \"A filled comment\"\n    assert (\n        pprint.pformat(fake_filled_toplevel.ids_properties.comment)\n        == \"\"\"<IDSString0D (IDS:gyrokinetics, ids_properties/comment, STR_0D)>\nstr('A filled comment')\"\"\"\n    )\n\n\ndef test_value_attribute(fake_filled_toplevel):\n    \"\"\"Test if the value attribute acts as IMAS-Python expects\"\"\"\n    eig = fake_filled_toplevel.wavevector[0].eigenmode[0]\n    assert isinstance(eig.frequency_norm, IDSPrimitive)\n    assert hasattr(eig.frequency_norm, \"value\")\n\n    # We should have a Python Primitive now:\n    assert eig.frequency_norm.data_type == \"FLT_0D\"\n    assert isinstance(eig.frequency_norm.value, float)\n    assert eig.frequency_norm.value == 10\n\n    # For arrays, we should get numpy arrays of the right type\n    # This one should be not-filled, e.g. default\n    assert not eig.phi_potential_perturbed_norm.has_value\n    assert eig.phi_potential_perturbed_norm.data_type == \"CPX_2D\"\n    assert isinstance(eig.phi_potential_perturbed_norm.value, np.ndarray)\n    assert np.array_equal(eig.phi_potential_perturbed_norm.value, np.ndarray((0, 0)))\n\n    # Finally, check a filled array\n    assert eig.poloidal_angle.has_value\n    assert eig.poloidal_angle.data_type == \"FLT_1D\"\n    assert isinstance(eig.poloidal_angle.value, np.ndarray)\n    assert np.array_equal(eig.poloidal_angle.value, zero_to_two_pi)\n\n\ndef test_visit_children(fake_filled_toplevel):\n    # This should visit leaf nodes only. Lets test that, but check only\n    # filled fields explicitly\n    nodes = []\n\n    def append_if_has_value(xx):\n        if xx.has_value:\n            nodes.append(xx)\n\n    visit_children(append_if_has_value, fake_filled_toplevel)\n    assert len(nodes) == 3\n    assert nodes[0] == 2\n    assert nodes[1] == 10\n    assert np.array_equal(nodes[2], zero_to_two_pi)\n\n\ndef test_visit_children_internal_nodes(fake_filled_toplevel):\n    nodes = []\n\n    def append_if_has_value(xx):\n        if xx.has_value:\n            nodes.append(xx)\n\n    visit_children(append_if_has_value, fake_filled_toplevel, leaf_only=False)\n    # We now visit the internal nodes too.\n\n    # We know we filled only endpoints frequency_norm and poloidal_angle\n    # We expect the following \"mandatory\" fields to be touched, which we check\n    # in the order visit_children visits\n    assert len(nodes) == 9\n    assert nodes[0] is fake_filled_toplevel\n    assert nodes[1] is fake_filled_toplevel.ids_properties\n    assert nodes[2] == 2\n    assert nodes[3] is fake_filled_toplevel.wavevector\n    assert nodes[4] is fake_filled_toplevel.wavevector[0]\n    assert nodes[5] is fake_filled_toplevel.wavevector[0].eigenmode\n    assert nodes[6] is fake_filled_toplevel.wavevector[0].eigenmode[0]\n    assert nodes[7] == 10\n    assert np.array_equal(nodes[8], zero_to_two_pi)\n\n\ndef test_assign_nan(fake_filled_toplevel, caplog):\n    with caplog.at_level(\"DEBUG\"):\n        fake_filled_toplevel.wavevector[0].radial_component_norm = float(\"nan\")\n    assert len(caplog.records) == 0\n"

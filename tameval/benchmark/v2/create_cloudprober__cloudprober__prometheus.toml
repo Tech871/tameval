@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "cloudprober/cloudprober"
+sha = "01736e0103a53b703064edec034c30ef5e25681d"
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out surfacers/internal/prometheus/prometheus.go surfacers/internal/prometheus/prometheus_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting surfacers/internal/prometheus/prometheus.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 48.0
+original_coverage = 77.0
+mutation_kill_rate = 35.0
+original_mutation_kill_rate = 64.0
+covered_lines = [ 135, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 155, 156, 157, 159, 172, 173, 174, 175, 176, 177, 203, 204, 218, 219, 220, 221, 230, 231, 232, 234, 235, 248, 249, 250, 251, 252, 253, 254, 255, 256, 257, 258, 259, 260, 261, 262, 263, 270, 271, 272, 273, 279, 280, 281, 282, 283, 284, 285, 286, 287, 288, 289, 290, 296, 297, 298, 299, 300, 301, 307, 308, 309, 310, 311, 312, 313, 314, 315, 316, 317, 318, 321, 322, 323, 325, 326, 330, 331, 332, 333, 354, 355, 356, 357, 358, 359, 362, 366, 367, 368, 369, 371, 372, 373, 374, 375, 400, 401,]
+missed_lines = [ 136, 137, 138, 150, 151, 152, 153, 154, 160, 161, 162, 163, 164, 165, 166, 178, 179, 180, 181, 182, 183, 184, 185, 186, 187, 192, 193, 194, 195, 196, 197, 198, 199, 200, 201, 210, 211, 212, 213, 214, 222, 223, 224, 225, 236, 237, 238, 239, 240, 241, 242, 243, 244, 245, 246, 247, 274, 275, 276, 302, 303, 304, 327, 328, 329, 363, 364, 376, 377, 379, 380, 381, 382, 383, 384, 385, 386, 387, 388, 389, 390, 391, 392, 393, 395, 396, 397, 407, 408, 409, 410, 411, 412, 413, 420, 421, 422, 423, 424, 425, 426, 427, 428, 429, 430, 433, 434, 435, 436, 441, 442, 443, 444, 445, 446, 450, 451, 452, 453,]
+
+[input_info]
+test_file_path = "surfacers/internal/prometheus/prometheus_test.go"
+focal_file_path = "surfacers/internal/prometheus/prometheus.go"
+test_file_url = "https://github.com/cloudprober/cloudprober/blob/01736e0103a53b703064edec034c30ef5e25681d/surfacers/internal/prometheus/prometheus_test.go"
+focal_file_url = "https://github.com/cloudprober/cloudprober/blob/01736e0103a53b703064edec034c30ef5e25681d/surfacers/internal/prometheus/prometheus.go"
+first_commit_date = "2023-08-25"
+last_commit_date = "2025-02-18"
+test_file_content = "// Copyright 2017-2020 The Cloudprober Authors.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage prometheus\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"math/rand\"\n\t\"net/http\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/cloudprober/cloudprober/metrics\"\n\t\"github.com/cloudprober/cloudprober/state\"\n\t\"github.com/cloudprober/cloudprober/surfacers/internal/common/options\"\n\tconfigpb \"github.com/cloudprober/cloudprober/surfacers/internal/prometheus/proto\"\n\t\"google.golang.org/protobuf/proto\"\n)\n\nfunc newEventMetrics(sent, rcvd int64, respCodes map[string]int64, ptype, probe string) *metrics.EventMetrics {\n\trespCodesVal := metrics.NewMap(\"code\")\n\tfor k, v := range respCodes {\n\t\trespCodesVal.IncKeyBy(k, v)\n\t}\n\treturn metrics.NewEventMetrics(time.Now()).\n\t\tAddMetric(\"sent\", metrics.NewInt(sent)).\n\t\tAddMetric(\"rcvd\", metrics.NewInt(rcvd)).\n\t\tAddMetric(\"resp-code\", respCodesVal).\n\t\tAddLabel(\"ptype\", ptype).\n\t\tAddLabel(\"probe\", probe)\n}\n\nfunc verify(t *testing.T, ps *PromSurfacer, expectedMetrics map[string]testData) {\n\tfor k, td := range expectedMetrics {\n\t\tpm := ps.metrics[td.metricName]\n\t\tif pm == nil {\n\t\t\tt.Errorf(\"Metric %s not found in the prometheus metrics: %v\", k, ps.metrics)\n\t\t\tcontinue\n\t\t}\n\t\tif pm.data[k] == nil {\n\t\t\tt.Errorf(\"Data key %s not found in the prometheus metrics: %v\", k, pm.data)\n\t\t\tcontinue\n\t\t}\n\t\tif pm.data[k].value != td.value {\n\t\t\tt.Errorf(\"Didn't get expected metrics. Got: %s, Expected: %s\", pm.data[k].value, td.value)\n\t\t}\n\t}\n\tvar dataCount int\n\tfor _, pm := range ps.metrics {\n\t\tdataCount += len(pm.data)\n\t}\n\tif dataCount != len(expectedMetrics) {\n\t\tt.Errorf(\"Prometheus doesn't have expected number of data keys. Got: %d, Expected: %d\", dataCount, len(expectedMetrics))\n\t}\n}\n\n// mergeMap is helper function to build expectedMetrics by merging newly\n// added expectedMetrics with the existing ones.\nfunc mergeMap(recv map[string]testData, newmap map[string]testData) {\n\tfor k, v := range newmap {\n\t\trecv[k] = v\n\t}\n}\n\n// testData encapsulates expected value for a metric key and metric name.\ntype testData struct {\n\tmetricName string // To access data row in a 2-level data structure.\n\tvalue      string\n}\n\nfunc testPromSurfacer(baseConf *configpb.SurfacerConf) (*PromSurfacer, error) {\n\tc := &configpb.SurfacerConf{}\n\tif baseConf != nil {\n\t\tc = proto.Clone(baseConf).(*configpb.SurfacerConf)\n\t}\n\t// Attach a random integer to metrics URL so that multiple\n\t// tests can run in parallel without handlers clashing with\n\t// each other.\n\tc.MetricsUrl = proto.String(fmt.Sprintf(\"/metrics_%d\", rand.Int()))\n\treturn New(context.Background(), c, &options.Options{}, nil)\n}\n\nfunc testPromSurfacerNoErr(t *testing.T, baseConf *configpb.SurfacerConf) *PromSurfacer {\n\tps, err := testPromSurfacer(baseConf)\n\tif err != nil {\n\t\tt.Fatal(\"Error while initializing prometheus surfacer\", err)\n\t}\n\treturn ps\n}\n\n\nfunc TestInvalidNames(t *testing.T) {\n\tps := testPromSurfacerNoErr(t, nil)\n\n\tps.record(metrics.NewEventMetrics(time.Now()).\n\t\tAddMetric(\"sent\", metrics.NewInt(32)).\n\t\tAddMetric(\"rcvd/sent\", metrics.NewInt(22)).\n\t\tAddMetric(\"resp\", metrics.NewMap(\"resp-code\").IncKeyBy(\"200\", 19)).\n\t\tAddLabel(\"probe-type\", \"http\").\n\t\tAddLabel(\"probe/name\", \"vm-to-google\"))\n\n\t// Metric rcvd/sent is dropped\n\t// Label probe-type is converted to probe_type\n\t// Label probe/name is dropped\n\t// Map value key resp-code is converted to resp_code label name\n\texpectedMetrics := map[string]testData{\n\t\t\"sent{probe_type=\\\"http\\\"}\":                   {\"sent\", \"32\"},\n\t\t\"resp{probe_type=\\\"http\\\",resp_code=\\\"200\\\"}\": {\"resp\", \"19\"},\n\t}\n\tverify(t, ps, expectedMetrics)\n}\n\n\n\n\n\nfunc TestMain(m *testing.M) {\n\tstate.SetDefaultHTTPServeMux(http.NewServeMux())\n\tdefer state.SetDefaultHTTPServeMux(nil)\n\n\tm.Run()\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "armadaproject/armada"
+sha = "5765dcb8fc87b811dfe3cdf254e04c6587afa142"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/common/armadacontext/armada_context.go internal/common/armadacontext/armada_context_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/common/armadacontext/armada_context.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 27.0
+original_coverage = 64.0
+mutation_kill_rate = 7.0
+original_mutation_kill_rate = 47.0
+covered_lines = [ 24, 25, 26, 74, 75, 76, 77, 78, 79, 102, 103, 104, 105, 106, 107, 124, 125, 126, 127, 128, 129, 130, 138, 139, 140, 141, 142, 143,]
+missed_lines = [ 19, 20, 21, 29, 30, 31, 34, 35, 36, 39, 40, 41, 44, 45, 46, 49, 50, 51, 54, 55, 56, 59, 60, 61, 64, 65, 66, 69, 70, 71, 82, 83, 84, 85, 86, 87, 90, 91, 92, 93, 94, 95, 96, 97, 98, 109, 110, 111, 114, 115, 116, 117, 118, 119, 120, 133, 134, 135, 146, 147, 148, 149, 150, 151, 155, 156, 157, 158, 159, 160, 164, 165, 166, 167, 168, 169, 170,]
+
+[input_info]
+test_file_path = "internal/common/armadacontext/armada_context_test.go"
+focal_file_path = "internal/common/armadacontext/armada_context.go"
+test_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/common/armadacontext/armada_context_test.go"
+focal_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/common/armadacontext/armada_context.go"
+first_commit_date = "2023-09-11"
+last_commit_date = "2025-01-20"
+test_file_content = "package armadacontext\n\nimport (\n\t\"bytes\"\n\t\"context\"\n\t\"encoding/json\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/rs/zerolog\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/armadaproject/armada/internal/common/logging\"\n)\n\ntype testLogEntry struct {\n\tLevel        string `json:\"level\"`\n\tMessage      string `json:\"message\"`\n\tCustomField1 string `json:\"customField1,omitempty\"`\n\tCustomField2 string `json:\"customField2,omitempty\"`\n}\n\nvar defaultLogger = logging.StdLogger().WithField(\"foo\", \"bar\")\n\n\n\n\n\nfunc TestWithLogField(t *testing.T) {\n\tlogger, buf := testLogger()\n\tctx := WithLogField(New(context.Background(), logger), \"customField1\", \"foo\")\n\n\tctx.Info(\"test message\")\n\n\trequire.Equal(t, context.Background(), ctx.Context)\n\tassertLogLineExpected(\n\t\tt,\n\t\t&testLogEntry{\n\t\t\tLevel:        \"info\",\n\t\t\tMessage:      \"test message\",\n\t\t\tCustomField1: \"foo\",\n\t\t},\n\t\tbuf,\n\t)\n}\n\n\n\nfunc TestWithDeadline(t *testing.T) {\n\tctx, _ := WithDeadline(Background(), time.Now().Add(100*time.Millisecond))\n\ttestDeadline(t, ctx)\n}\n\n\nfunc testDeadline(t *testing.T, c *Context) {\n\tt.Helper()\n\td := quiescent(t)\n\ttimer := time.NewTimer(d)\n\tdefer timer.Stop()\n\tselect {\n\tcase <-timer.C:\n\t\tt.Fatalf(\"context not timed out after %v\", d)\n\tcase <-c.Done():\n\t}\n\tif e := c.Err(); e != context.DeadlineExceeded {\n\t\tt.Errorf(\"c.Err() == %v; want %v\", e, context.DeadlineExceeded)\n\t}\n}\n\nfunc quiescent(t *testing.T) time.Duration {\n\tdeadline, ok := t.Deadline()\n\tif !ok {\n\t\treturn 5 * time.Second\n\t}\n\n\tconst arbitraryCleanupMargin = 1 * time.Second\n\treturn time.Until(deadline) - arbitraryCleanupMargin\n}\n\n// testLogger sets up a Zerolog logger that writes to a buffer for testing\nfunc testLogger() (*logging.Logger, *bytes.Buffer) {\n\tvar buf bytes.Buffer\n\tbaseLogger := zerolog.New(&buf).Level(zerolog.DebugLevel).With().Timestamp().Logger()\n\tlogger := logging.FromZerolog(baseLogger)\n\treturn logger, &buf\n}\n\nfunc assertLogLineExpected(t *testing.T, expected *testLogEntry, logOutput *bytes.Buffer) {\n\tvar entry testLogEntry\n\terr := json.Unmarshal(logOutput.Bytes(), &entry)\n\trequire.NoError(t, err, \"Failed to unmarshal log entry\")\n\n\tassert.Equal(t, expected.Message, entry.Message)\n\tassert.Equal(t, expected.Level, entry.Level)\n\tassert.Equal(t, expected.CustomField1, entry.CustomField1)\n\tassert.Equal(t, expected.CustomField2, entry.CustomField2)\n}\n"

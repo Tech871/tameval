@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "vmware/pinniped"
+sha = "e20c5beb47391281e19d13b1e22c5fd42f577686"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/clientcertissuer/issuer.go internal/clientcertissuer/issuer_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/clientcertissuer/issuer.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/clientcertissuer/issuer_test.go"
+focal_file_path = "internal/clientcertissuer/issuer.go"
+test_file_url = "https://github.com/vmware/pinniped/blob/e20c5beb47391281e19d13b1e22c5fd42f577686/internal/clientcertissuer/issuer_test.go"
+focal_file_url = "https://github.com/vmware/pinniped/blob/e20c5beb47391281e19d13b1e22c5fd42f577686/internal/clientcertissuer/issuer.go"
+first_commit_date = "2023-09-11"
+last_commit_date = "2025-07-16"
+test_file_content = "// Copyright 2023-2024 the Pinniped contributors. All Rights Reserved.\n// SPDX-License-Identifier: Apache-2.0\n\npackage clientcertissuer\n\nimport (\n\t\"errors\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/require\"\n\t\"go.uber.org/mock/gomock\"\n\n\t\"go.pinniped.dev/internal/cert\"\n\t\"go.pinniped.dev/internal/mocks/mockissuer\"\n)\n\nfunc TestName(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\n\ttests := []struct {\n\t\tname             string\n\t\tbuildIssuerMocks func() ClientCertIssuers\n\t\twant             string\n\t}{\n\t\t{\n\t\t\tname:             \"empty issuers\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers { return ClientCertIssuers{} },\n\t\t\twant:             \"empty-client-cert-issuers\",\n\t\t},\n\t\t{\n\t\t\tname: \"foo issuer\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers {\n\t\t\t\tfooClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\tfooClientCertIssuer.EXPECT().Name().Return(\"foo\")\n\n\t\t\t\treturn ClientCertIssuers{fooClientCertIssuer}\n\t\t\t},\n\t\t\twant: \"foo\",\n\t\t},\n\t\t{\n\t\t\tname: \"foo and bar issuers\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers {\n\t\t\t\tfooClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\tfooClientCertIssuer.EXPECT().Name().Return(\"foo\")\n\n\t\t\t\tbarClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\tbarClientCertIssuer.EXPECT().Name().Return(\"bar\")\n\n\t\t\t\treturn ClientCertIssuers{fooClientCertIssuer, barClientCertIssuer}\n\t\t\t},\n\t\t\twant: \"foo,bar\",\n\t\t},\n\t}\n\n\tfor _, tTemp := range tests {\n\t\ttestcase := tTemp\n\t\tt.Run(testcase.name, func(t *testing.T) {\n\t\t\tt.Parallel()\n\n\t\t\tname := testcase.buildIssuerMocks().Name()\n\t\t\trequire.Equal(t, testcase.want, name)\n\t\t})\n\t}\n}\n\nfunc TestIssueClientCertPEM(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\n\ttests := []struct {\n\t\tname             string\n\t\tbuildIssuerMocks func() ClientCertIssuers\n\t\twantErrorMessage string\n\t\twantCert         []byte\n\t\twantKey          []byte\n\t}{\n\t\t{\n\t\t\tname:             \"empty issuers\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers { return ClientCertIssuers{} },\n\t\t\twantErrorMessage: \"failed to issue cert\",\n\t\t},\n\t\t{\n\t\t\tname: \"issuers with error\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers {\n\t\t\t\terrClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\terrClientCertIssuer.EXPECT().Name().Return(\"error cert issuer\")\n\t\t\t\terrClientCertIssuer.EXPECT().\n\t\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second).\n\t\t\t\t\tReturn(nil, errors.New(\"error from wrapped cert issuer\"))\n\t\t\t\treturn ClientCertIssuers{errClientCertIssuer}\n\t\t\t},\n\t\t\twantErrorMessage: \"error cert issuer failed to issue client cert: error from wrapped cert issuer\",\n\t\t},\n\t\t{\n\t\t\tname: \"valid issuer\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers {\n\t\t\t\tvalidClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\tvalidClientCertIssuer.EXPECT().\n\t\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second).\n\t\t\t\t\tReturn(&cert.PEM{CertPEM: []byte(\"cert\"), KeyPEM: []byte(\"key\")}, nil)\n\t\t\t\treturn ClientCertIssuers{validClientCertIssuer}\n\t\t\t},\n\t\t\twantCert: []byte(\"cert\"),\n\t\t\twantKey:  []byte(\"key\"),\n\t\t},\n\t\t{\n\t\t\tname: \"fallthrough issuer\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers {\n\t\t\t\terrClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\terrClientCertIssuer.EXPECT().Name().Return(\"error cert issuer\")\n\t\t\t\terrClientCertIssuer.EXPECT().\n\t\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second).\n\t\t\t\t\tReturn(nil, errors.New(\"error from wrapped cert issuer\"))\n\n\t\t\t\tvalidClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\tvalidClientCertIssuer.EXPECT().\n\t\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second).\n\t\t\t\t\tReturn(&cert.PEM{CertPEM: []byte(\"cert\"), KeyPEM: []byte(\"key\")}, nil)\n\t\t\t\treturn ClientCertIssuers{\n\t\t\t\t\terrClientCertIssuer,\n\t\t\t\t\tvalidClientCertIssuer,\n\t\t\t\t}\n\t\t\t},\n\t\t\twantCert: []byte(\"cert\"),\n\t\t\twantKey:  []byte(\"key\"),\n\t\t},\n\t\t{\n\t\t\tname: \"multiple error issuers\",\n\t\t\tbuildIssuerMocks: func() ClientCertIssuers {\n\t\t\t\terr1ClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\terr1ClientCertIssuer.EXPECT().Name().Return(\"error1 cert issuer\")\n\t\t\t\terr1ClientCertIssuer.EXPECT().\n\t\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second).\n\t\t\t\t\tReturn(nil, errors.New(\"error1 from wrapped cert issuer\"))\n\n\t\t\t\terr2ClientCertIssuer := mockissuer.NewMockClientCertIssuer(ctrl)\n\t\t\t\terr2ClientCertIssuer.EXPECT().Name().Return(\"error2 cert issuer\")\n\t\t\t\terr2ClientCertIssuer.EXPECT().\n\t\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second).\n\t\t\t\t\tReturn(nil, errors.New(\"error2 from wrapped cert issuer\"))\n\n\t\t\t\treturn ClientCertIssuers{\n\t\t\t\t\terr1ClientCertIssuer,\n\t\t\t\t\terr2ClientCertIssuer,\n\t\t\t\t}\n\t\t\t},\n\t\t\twantErrorMessage: \"[error1 cert issuer failed to issue client cert: error1 from wrapped cert issuer, error2 cert issuer failed to issue client cert: error2 from wrapped cert issuer]\",\n\t\t},\n\t}\n\n\tfor _, tTemp := range tests {\n\t\ttestcase := tTemp\n\t\tt.Run(testcase.name, func(t *testing.T) {\n\t\t\tt.Parallel()\n\n\t\t\tpem, err := testcase.buildIssuerMocks().\n\t\t\t\tIssueClientCertPEM(\"username\", []string{\"group1\", \"group2\"}, 32*time.Second)\n\n\t\t\tif testcase.wantErrorMessage != \"\" {\n\t\t\t\trequire.ErrorContains(t, err, testcase.wantErrorMessage)\n\t\t\t\trequire.Nil(t, pem)\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\trequire.Equal(t, testcase.wantCert, pem.CertPEM)\n\t\t\t\trequire.Equal(t, testcase.wantKey, pem.KeyPEM)\n\t\t\t}\n\t\t})\n\t}\n}"

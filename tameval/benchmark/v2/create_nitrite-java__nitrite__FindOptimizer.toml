@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "nitrite/nitrite-java"
+sha = "32693e9538c4108c8c94b7a5b736ef96d9d7714c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nitrite -Dtest=FindOptimizerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nitrite -DtargetClasses=**.FindOptimizer  -DtargetTests=**.FindOptimizerTest  -DoutputFormats=XML"
+coverage_report_path = "nitrite/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nitrite/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 43.0
+original_coverage = 43.0
+mutation_kill_rate = 9.0
+original_mutation_kill_rate = 9.0
+covered_lines = [ 38, 43, 44, 45, 47, 48, 49, 51, 55, 58, 61, 62, 117, 118, 119, 122, 125, 128, 129, 133, 136, 139, 144, 145, 146, 151, 155, 156, 165, 166, 171, 172, 173, 182, 185, 205, 219, 221, 222, 224, 225, 226, 227, 228, 236, 238, 240, 244, 247, 258, 262, 268, 269, 272, 276, 277, 279, 282, 283, 285, 288, 289, 292, 293, 295, 297, 339, 342, 345, 346, 347, 349,]
+missed_lines = [ 56, 57, 59, 67, 68, 69, 70, 71, 72, 73, 74, 76, 78, 82, 84, 87, 88, 89, 91, 93, 95, 96, 97, 98, 101, 102, 107, 109, 110, 112, 113, 137, 138, 140, 141, 147, 148, 157, 160, 161, 162, 174, 175, 177, 179, 188, 189, 192, 194, 195, 196, 198, 200, 201, 202, 208, 209, 211, 212, 229, 230, 231, 232, 233, 242, 245, 249, 252, 254, 255, 257, 266, 284, 286, 299, 301, 302, 304, 308, 309, 310, 311, 312, 314, 315, 317, 318, 320, 321, 323, 327, 332, 333, 335, 337,]
+
+[input_info]
+test_file_path = "nitrite/src/test/java/org/dizitart/no2/collection/operation/FindOptimizerTest.java"
+focal_file_path = "nitrite/src/main/java/org/dizitart/no2/collection/operation/FindOptimizer.java"
+test_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/test/java/org/dizitart/no2/collection/operation/FindOptimizerTest.java"
+focal_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/main/java/org/dizitart/no2/collection/operation/FindOptimizer.java"
+first_commit_date = "2021-06-29"
+last_commit_date = "2024-12-14"
+test_file_content = "/*\n * Copyright (c) 2017-2021 Nitrite author or authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *       http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\n\npackage org.dizitart.no2.collection.operation;\n\nimport org.dizitart.no2.collection.FindOptions;\nimport org.dizitart.no2.collection.FindPlan;\nimport org.dizitart.no2.common.Fields;\nimport org.dizitart.no2.common.SortOrder;\nimport org.dizitart.no2.filters.Filter;\nimport org.dizitart.no2.index.IndexDescriptor;\nimport org.junit.Test;\n\nimport java.util.ArrayList;\n\nimport static org.junit.Assert.*;\nimport static org.mockito.Mockito.mock;\n\npublic class FindOptimizerTest {\n    @Test\n    public void testOptimize() {\n        FindOptimizer findOptimizer = new FindOptimizer();\n        Filter filter = mock(Filter.class);\n        FindOptions findOptions = new FindOptions();\n        FindPlan actualOptimizeResult = findOptimizer.optimize(filter, findOptions, new ArrayList<IndexDescriptor>());\n        assertTrue(actualOptimizeResult.getBlockingSortOrder().isEmpty());\n        assertTrue(actualOptimizeResult.getSubPlans().isEmpty());\n        assertNull(actualOptimizeResult.getSkip());\n        assertNull(actualOptimizeResult.getLimit());\n    }\n\n    @Test\n    public void testOptimize2() {\n        FindOptimizer findOptimizer = new FindOptimizer();\n        FindOptions findOptions = new FindOptions();\n        FindPlan actualOptimizeResult = findOptimizer.optimize(null, findOptions, new ArrayList<IndexDescriptor>());\n        assertTrue(actualOptimizeResult.getBlockingSortOrder().isEmpty());\n        assertTrue(actualOptimizeResult.getSubPlans().isEmpty());\n        assertNull(actualOptimizeResult.getSkip());\n        assertNull(actualOptimizeResult.getLimit());\n    }\n\n    @Test\n    public void testOptimize3() {\n        FindOptimizer findOptimizer = new FindOptimizer();\n        Filter filter = mock(Filter.class);\n        FindPlan actualOptimizeResult = findOptimizer.optimize(filter, null, new ArrayList<IndexDescriptor>());\n        assertTrue(actualOptimizeResult.getBlockingSortOrder().isEmpty());\n        assertTrue(actualOptimizeResult.getSubPlans().isEmpty());\n    }\n\n    @Test\n    public void testOptimize4() {\n        FindOptimizer findOptimizer = new FindOptimizer();\n        Filter filter = mock(Filter.class);\n        FindOptions findOptions = FindOptions.orderBy(\"Field Name\", SortOrder.Ascending);\n        FindPlan actualOptimizeResult = findOptimizer.optimize(filter, findOptions, new ArrayList<IndexDescriptor>());\n        assertEquals(1, actualOptimizeResult.getBlockingSortOrder().size());\n        assertTrue(actualOptimizeResult.getSubPlans().isEmpty());\n        assertNull(actualOptimizeResult.getSkip());\n        assertNull(actualOptimizeResult.getLimit());\n    }\n\n    @Test\n    public void testOptimize5() {\n        FindOptimizer findOptimizer = new FindOptimizer();\n        Filter filter = mock(Filter.class);\n        FindOptions findOptions = new FindOptions();\n\n        ArrayList<IndexDescriptor> indexDescriptorList = new ArrayList<IndexDescriptor>();\n        indexDescriptorList.add(new IndexDescriptor(\"Index Type\", new Fields(), \"Collection Name\"));\n        FindPlan actualOptimizeResult = findOptimizer.optimize(filter, findOptions, indexDescriptorList);\n        assertTrue(actualOptimizeResult.getBlockingSortOrder().isEmpty());\n        assertTrue(actualOptimizeResult.getSubPlans().isEmpty());\n        assertNull(actualOptimizeResult.getSkip());\n        assertNull(actualOptimizeResult.getLimit());\n    }\n\n    @Test\n    public void testOptimize6() {\n        FindOptimizer findOptimizer = new FindOptimizer();\n        Filter filter = mock(Filter.class);\n        FindOptions findOptions = new FindOptions();\n\n        Fields fields = new Fields();\n        fields.addField(\"Field\");\n        IndexDescriptor e = new IndexDescriptor(\"Index Type\", fields, \"Collection Name\");\n\n        ArrayList<IndexDescriptor> indexDescriptorList = new ArrayList<IndexDescriptor>();\n        indexDescriptorList.add(e);\n        FindPlan actualOptimizeResult = findOptimizer.optimize(filter, findOptions, indexDescriptorList);\n        assertTrue(actualOptimizeResult.getBlockingSortOrder().isEmpty());\n        assertTrue(actualOptimizeResult.getSubPlans().isEmpty());\n        assertNull(actualOptimizeResult.getSkip());\n        assertNull(actualOptimizeResult.getLimit());\n    }\n}\n\n"

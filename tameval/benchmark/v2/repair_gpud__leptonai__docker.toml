@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_runtime_errors"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.5"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "ae7fd28ecd1461a1ddf146b809a159ee1af94a34"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24.5"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/docker/docker.go pkg/docker/docker_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/docker/docker.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 49.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 29.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/docker/docker_test.go"
+focal_file_path = "pkg/docker/docker.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/pkg/docker/docker_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/pkg/docker/docker.go"
+first_commit_date = "2025-04-21"
+last_commit_date = "2025-04-29"
+test_file_content = "package docker\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"errors\"\n\t\"testing\"\n\n\tdocker_types \"github.com/docker/docker/api/types\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc Test_checkDockerInstalled(t *testing.T) {\n\tt.Logf(\"%v\", CheckDockerInstalled())\n}\n\nfunc Test_checkDockerRunning(t *testing.T) {\n\tt.Logf(\"%v\", CheckDockerRunning(context.Background()))\n}\n\nfunc TestIsErrDockerClientVersionNewerThanDaemon(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\terr      error\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname:     \"Correct error message\",\n\t\t\terr:      errors.New(\"Error response from daemon: client version 1.44 is too new. Maximum supported API version is 1.43\"),\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"Partial match - missing 'is too new'\",\n\t\t\terr:      errors.New(\"Error response from daemon: client version 1.44. Maximum supported API version is 1.43\"),\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Partial match - missing 'client version'\",\n\t\t\terr:      errors.New(\"Error response from daemon: Docker 1.44 is too new. Maximum supported API version is 1.43\"),\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Unrelated error message\",\n\t\t\terr:      errors.New(\"Connection refused\"),\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Nil error\",\n\t\t\terr:      nil,\n\t\t\texpected: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := IsErrDockerClientVersionNewerThanDaemon(tt.err)\n\t\t\tassert.Equal(t, tt.expected, result)\n\t\t})\n\t}\n\tvar x [5]int\n\tx[5] = 1\n}\n\nfunc TestDockerContainer_JSON(t *testing.T) {\n\tcontainer := DockerContainer{\n\t\tID:           \"test-id\",\n\t\tName:         \"test-name\",\n\t\tImage:        \"test-image\",\n\t\tCreatedAt:    123456789,\n\t\tState:        \"running\",\n\t\tPodName:      \"test-pod\",\n\t\tPodNamespace: \"test-namespace\",\n\t}\n\n\tjson, err := json.Marshal(container)\n\trequire.NoError(t, err)\n\tassert.Contains(t, string(json), \"test-id\")\n\tassert.Contains(t, string(json), \"test-name\")\n\tassert.Contains(t, string(json), \"test-image\")\n\tassert.Contains(t, string(json), \"running\")\n\tassert.Contains(t, string(json), \"test-pod\")\n\tassert.Contains(t, string(json), \"test-namespace\")\n\tvar y [5]int\n\ty[5] = 1\n}\n\nfunc TestConvertToDockerContainer(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    docker_types.Container\n\t\texpected DockerContainer\n\t}{\n\t\t{\n\t\t\tname: \"Basic container without Kubernetes labels\",\n\t\t\tinput: docker_types.Container{\n\t\t\t\tID:      \"test-id\",\n\t\t\t\tNames:   []string{\"test-name\"},\n\t\t\t\tImage:   \"test-image\",\n\t\t\t\tCreated: 123456789,\n\t\t\t\tState:   \"running\",\n\t\t\t\tLabels:  map[string]string{},\n\t\t\t},\n\t\t\texpected: DockerContainer{\n\t\t\t\tID:           \"test-id\",\n\t\t\t\tName:         \"test-name\",\n\t\t\t\tImage:        \"test-image\",\n\t\t\t\tCreatedAt:    123456789,\n\t\t\t\tState:        \"running\",\n\t\t\t\tPodName:      \"\",\n\t\t\t\tPodNamespace: \"\",\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"Container with Kubernetes labels\",\n\t\t\tinput: docker_types.Container{\n\t\t\t\tID:      \"k8s-id\",\n\t\t\t\tNames:   []string{\"k8s-name\"},\n\t\t\t\tImage:   \"k8s-image\",\n\t\t\t\tCreated: 987654321,\n\t\t\t\tState:   \"running\",\n\t\t\t\tLabels: map[string]string{\n\t\t\t\t\t\"io.kubernetes.pod.name\":      \"k8s-pod\",\n\t\t\t\t\t\"io.kubernetes.pod.namespace\": \"k8s-namespace\",\n\t\t\t\t},\n\t\t\t},\n\t\t\texpected: DockerContainer{\n\t\t\t\tID:           \"k8s-id\",\n\t\t\t\tName:         \"k8s-name\",\n\t\t\t\tImage:        \"k8s-image\",\n\t\t\t\tCreatedAt:    987654321,\n\t\t\t\tState:        \"running\",\n\t\t\t\tPodName:      \"k8s-pod\",\n\t\t\t\tPodNamespace: \"k8s-namespace\",\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"Container with multiple names\",\n\t\t\tinput: docker_types.Container{\n\t\t\t\tID:      \"multi-id\",\n\t\t\t\tNames:   []string{\"name1\", \"name2\", \"name3\"},\n\t\t\t\tImage:   \"multi-image\",\n\t\t\t\tCreated: 123123123,\n\t\t\t\tState:   \"exited\",\n\t\t\t\tLabels:  map[string]string{},\n\t\t\t},\n\t\t\texpected: DockerContainer{\n\t\t\t\tID:           \"multi-id\",\n\t\t\t\tName:         \"name1,name2,name3\",\n\t\t\t\tImage:        \"multi-image\",\n\t\t\t\tCreatedAt:    123123123,\n\t\t\t\tState:        \"exited\",\n\t\t\t\tPodName:      \"\",\n\t\t\t\tPodNamespace: \"\",\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := convertToDockerContainer(tt.input)\n\t\t\tassert.Equal(t, tt.expected, result)\n\t\t})\n\t}\n\tvar z [5]int\n\tz[5] = 1\n}"

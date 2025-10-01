@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "skynetcap/solanaj"
+sha = "b0f095290e5a1cdd1528bb50615cc56dc0add467"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=TransactionTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.Transaction  -DtargetTests=**.TransactionTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 92.0
+original_coverage = 92.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 27, 28, 29, 30, 40, 41, 42, 52, 53, 54, 63, 64, 73, 77, 78, 80, 82, 84, 85, 86, 89, 90, 91, 99, 100, 103, 104, 106, 108, 109, 110, 111, 113, 115,]
+missed_lines = [ 74, 87, 88,]
+
+[input_info]
+test_file_path = "src/test/java/org/p2p/solanaj/core/TransactionTest.java"
+focal_file_path = "src/main/java/org/p2p/solanaj/core/Transaction.java"
+test_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/test/java/org/p2p/solanaj/core/TransactionTest.java"
+focal_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/main/java/org/p2p/solanaj/core/Transaction.java"
+first_commit_date = "2020-11-02"
+last_commit_date = "2024-09-06"
+test_file_content = "package org.p2p.solanaj.core;\n\nimport org.p2p.solanaj.programs.MemoProgram;\nimport org.p2p.solanaj.programs.SystemProgram;\n\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport java.util.Base64;\nimport java.util.List;\n\nimport org.bitcoinj.core.Base58;\n\npublic class TransactionTest {\n\n    private final static Account signer = new Account(Base58\n            .decode(\"4Z7cXSyeFR8wNGMVXUE1TwtKn5D5Vu7FzEv69dokLv7KrQk7h6pu4LF8ZRR9yQBhc7uSM6RTTZtU1fmaxiNrxXrs\"));\n\n    @Test\n    public void signAndSerialize() {\n        PublicKey fromPublicKey = new PublicKey(\"QqCCvshxtqMAL2CVALqiJB7uEeE5mjSPsseQdDzsRUo\");\n        PublicKey toPublickKey = new PublicKey(\"GrDMoeqMLFjeXQ24H56S1RLgT4R76jsuWCd6SvXyGPQ5\");\n        int lamports = 3000;\n\n        Transaction transaction = new Transaction();\n        transaction.addInstruction(SystemProgram.transfer(fromPublicKey, toPublickKey, lamports));\n        transaction.setRecentBlockHash(\"Eit7RCyhUixAe2hGBS8oqnw59QK3kgMMjfLME5bm9wRn\");\n        transaction.sign(signer);\n        byte[] serializedTransaction = transaction.serialize();\n\n        assertEquals(\n                \"ASdDdWBaKXVRA+6flVFiZokic9gK0+r1JWgwGg/GJAkLSreYrGF4rbTCXNJvyut6K6hupJtm72GztLbWNmRF1Q4BAAEDBhrZ0FOHFUhTft4+JhhJo9+3/QL6vHWyI8jkatuFPQzrerzQ2HXrwm2hsYGjM5s+8qMWlbt6vbxngnO8rc3lqgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAy+KIwZmU8DLmYglP3bPzrlpDaKkGu6VIJJwTOYQmRfUBAgIAAQwCAAAAuAsAAAAAAAA=\",\n                Base64.getEncoder().encodeToString(serializedTransaction));\n    }\n\n    @Test\n    public void transactionBuilderTest() {\n        final String memo = \"Test memo\";\n        final Transaction transaction = new TransactionBuilder()\n                .addInstruction(\n                        MemoProgram.writeUtf8(\n                                signer.getPublicKey(),\n                                memo\n                        )\n                )\n                .setRecentBlockHash(\"Eit7RCyhUixAe2hGBS8oqnw59QK3kgMMjfLME5bm9wRn\")\n                .setSigners(List.of(signer))\n                .build();\n\n        assertEquals(\n                \"AV6w4Af9PSHhNsTSal4vlPF7Su9QXgCVyfDChHImJITLcS5BlNotKFeMoGw87VwjS3eNA2JCL+MEoReynCNbWAoBAAECBhrZ0FOHFUhTft4+JhhJo9+3/QL6vHWyI8jkatuFPQwFSlNQ+F3IgtYUpVZyeIopbd8eq6vQpgZ4iEky9O72oMviiMGZlPAy5mIJT92z865aQ2ipBrulSCScEzmEJkX1AQEBAAlUZXN0IG1lbW8=\",\n                Base64.getEncoder().encodeToString(transaction.serialize())\n        );\n    }\n\n}\n"

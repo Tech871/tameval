@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "redruin1/factorio-draftsman"
+sha = "4a795c6530c6d5ea2571c8a234164da22928a4a1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=draftsman/data/items.py -m pytest -q --junit-xml=test_output.xml test/data/test_items.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target draftsman.data.items --unit-test test.data.test_items --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target draftsman/data/items.py --unit-test test/data/test_items.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 55.0
+original_coverage = 100.0
+mutation_kill_rate = 4.0
+original_mutation_kill_rate = 4.0
+covered_lines = [ 2, 4, 6, 7, 9, 10, 13, 14, 15, 16, 17, 18, 19, 20, 21, 29, 35, 36, 39, 49, 52, 58, 59, 60, 62, 71, 72, 78, 79, 82, 102, 103, 104, 106, 116, 117, 123, 124, 129, 138, 142, 143, 146,]
+missed_lines = [ 166, 167, 170, 173, 176, 177, 181, 182, 183, 187, 188, 189, 194, 195, 205, 206, 215, 229, 230, 233, 234, 238, 248, 249, 250, 252, 262, 263, 268, 269, 270, 274, 275, 280, 289,]
+
+[input_info]
+test_file_path = "test/data/test_items.py"
+focal_file_path = "draftsman/data/items.py"
+test_file_url = "https://github.com/redruin1/factorio-draftsman/blob/4a795c6530c6d5ea2571c8a234164da22928a4a1/test/data/test_items.py"
+focal_file_url = "https://github.com/redruin1/factorio-draftsman/blob/4a795c6530c6d5ea2571c8a234164da22928a4a1/draftsman/data/items.py"
+first_commit_date = "2022-03-05"
+last_commit_date = "2025-07-16"
+test_file_content = "# test_items.py\n\nfrom draftsman.data import items\n\nimport copy\nimport pytest\n\n\nclass TestItemsData:\n    def test_add_item(self):\n        # Clone original so we can return to it afterward\n        # TODO: theres gotta be a better way than this bs\n        orig_raw = copy.deepcopy(items.raw)\n        orig_subgroups = copy.deepcopy(items.subgroups)\n        orig_groups = copy.deepcopy(items.groups)\n\n        # Add item group\n        items.add_group(name=\"new-item-group\")\n        assert \"new-item-group\" in items.groups\n        assert items.groups[\"new-item-group\"] == {\n            \"type\": \"item-group\",\n            \"name\": \"new-item-group\",\n            \"order\": \"\",\n            \"subgroups\": [],\n        }\n\n        # Add item subgroup\n        items.add_subgroup(name=\"new-item-subgroup\", group=\"new-item-group\")\n        assert \"new-item-subgroup\" in items.subgroups\n        assert items.subgroups[\"new-item-subgroup\"] == {\n            \"type\": \"item-subgroup\",\n            \"name\": \"new-item-subgroup\",\n            \"order\": \"\",\n            \"items\": [],\n        }\n        assert (\n            items.subgroups[\"new-item-subgroup\"]\n            in items.groups[\"new-item-group\"][\"subgroups\"]\n        )\n        assert (\n            items.groups[\"new-item-group\"][\"subgroups\"][0]\n            is items.subgroups[\"new-item-subgroup\"]\n        )\n\n        with pytest.raises(TypeError):\n            items.add_subgroup(name=\"fail-new-item-subgroup\", group=\"nonexistant\")\n\n        assert \"nonexistant\" not in items.groups\n        assert \"fail-new-item-subgroup\" not in items.subgroups\n\n        # Add item\n        items.add_item(name=\"new-item\", stack_size=100, subgroup=\"new-item-subgroup\")\n        assert \"new-item\" in items.raw\n        assert items.raw[\"new-item\"] == {\n            \"type\": \"item\",\n            \"name\": \"new-item\",\n            \"stack_size\": 100,\n            \"order\": \"\",\n            \"subgroup\": \"new-item-subgroup\",\n        }\n        assert items.raw[\"new-item\"] in items.subgroups[\"new-item-subgroup\"][\"items\"]\n        assert items.subgroups[\"new-item-subgroup\"][\"items\"][0] is items.raw[\"new-item\"]\n\n        with pytest.raises(TypeError):\n            items.add_item(name=\"fail-new-item\", stack_size=100, subgroup=\"nonexistant\")\n\n        assert \"nonexistant\" not in items.subgroups\n        assert \"fail-new-item\" not in items.raw\n\n        del items.raw[\"new-item\"]\n        del items.subgroups[\"new-item-subgroup\"][\"items\"][0]\n        del items.subgroups[\"new-item-subgroup\"]\n        del items.groups[\"new-item-group\"][\"subgroups\"][0]\n        del items.groups[\"new-item-group\"]\n\n    def test_modify_existing_item(self):\n        pass\n\n    def test_get_stack_size(self):\n        assert items.get_stack_size(\"artillery-shell\") == 1\n        assert items.get_stack_size(\"nuclear-fuel\") == 1\n        assert items.get_stack_size(\"rocket-fuel\") == 20\n        assert items.get_stack_size(\"iron-ore\") == 50\n        assert items.get_stack_size(\"iron-plate\") == 100\n        assert items.get_stack_size(\"electronic-circuit\") == 200\n        assert items.get_stack_size(\"space-science-pack\") == 200\n\n        # TODO: should this raise an error instead?\n        assert items.get_stack_size(\"unknown!\") == None"

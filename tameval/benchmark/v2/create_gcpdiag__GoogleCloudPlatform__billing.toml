@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "Pipfile"
+
+[repo_info]
+repository = "GoogleCloudPlatform/gcpdiag"
+sha = "679c55e8715d535c797fc18cd20cda0ad3fc90ea"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install pipenv && pipenv lock && pipenv install --deploy --system --dev && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=gcpdiag/queries/billing.py -m pytest -q --junit-xml=test_output.xml gcpdiag/queries/billing_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target gcpdiag.queries.billing --unit-test gcpdiag.queries.billing_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target gcpdiag/queries/billing.py --unit-test gcpdiag/queries/billing_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 64.0
+original_coverage = 82.0
+mutation_kill_rate = 24.0
+original_mutation_kill_rate = 24.0
+covered_lines = [ 17, 18, 19, 21, 23, 24, 25, 27, 30, 37, 38, 41, 42, 43, 45, 46, 47, 49, 50, 52, 53, 55, 56, 58, 59, 60, 63, 70, 71, 74, 75, 78, 79, 82, 83, 84, 86, 87, 89, 90, 91, 94, 97, 98, 101, 102, 105, 106, 109, 110, 113, 114, 117, 118, 121, 122, 125, 126, 129, 130, 133, 134, 138, 143, 150, 155, 156, 158, 159, 160, 161, 162, 163, 166, 169, 170, 172, 174, 175, 178, 179, 181, 182, 183, 192, 195, 196, 219, 220, 225, 226, 228, 232, 233, 234, 236, 237, 238, 252, 255, 256,]
+missed_lines = [ 39, 72, 76, 80, 99, 103, 107, 111, 115, 119, 123, 127, 131, 135, 139, 140, 141, 144, 151, 152, 164, 165, 173, 176, 184, 185, 186, 189, 191, 198, 199, 200, 201, 203, 204, 208, 209, 210, 213, 215, 216, 239, 240, 241, 242, 246, 248, 251, 258, 262, 263, 265, 267, 268, 269, 275, 276,]
+
+[input_info]
+test_file_path = "gcpdiag/queries/billing_test.py"
+focal_file_path = "gcpdiag/queries/billing.py"
+test_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/billing_test.py"
+focal_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/billing.py"
+first_commit_date = "2023-12-07"
+last_commit_date = "2025-03-20"
+test_file_content = "# Copyright 2021 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n# Lint as: python3\n\"\"\"Test code in billing.py.\"\"\"\n\nfrom unittest import mock\n\nfrom gcpdiag import models\nfrom gcpdiag.queries import apis_stub, billing\n\nDUMMY_PROJECT_ID = 'gcpdiag-billing1-aaaa'\nDUMMY_BILLING_ACCOUNT_NAME = 'Cloud Billing Support billing account'\nDUMMY_BILLING_ACCOUNT_IS_MASTER = False\nDUMMY_BILLING_ACCOUNT_IS_OPEN = True\nDUMMY_BILLING_ACCOUNT_HAS_PROJECTS = True\nDUMMY_NUMBER_ALL_BILLING_ACCOUNTS = 4\nDUMMY_NUMBER_ALL_PROJECTS = 3\nDUMMY_PROJECT_BILLING_ENABLED = True\nDUMMY_PROJECT_NAME = 'projects/gcpdiag-billing1-aaaa/billingInfo'\nDUMMY_PROJECT_BILLING_ACCOUNT_NAME = 'billingAccounts/005E32-00FAKE-123456'\nDUMMY_COST_INSIGHT_IS_ANOMALY = True\nDUMMY_COST_INSIGHT_FORCASTED_UNITS = '80'\nDUMMY_COST_INSIGHT_FORCASTED_CURRENCY = 'USD'\nDUMMY_COST_INSIGHT_ACTUAL_UNITS = '16'\nDUMMY_COST_INSIGHT_ACTUAL_CURRENCY = 'USD'\nDUMMY_COST_INSIGHT_ANOMALY_TYPE = 'Below'\n\n@mock.patch('gcpdiag.queries.apis.get_api', new=apis_stub.get_api_stub)\nclass TestBilling:\n  \"\"\"Test Billing queries\"\"\"\n\n  def test_get_billing_account(self):\n    context = models.Context(project_id=DUMMY_PROJECT_ID)\n    billing_account = billing.get_billing_account(context.project_id)\n\n    assert billing_account.display_name == DUMMY_BILLING_ACCOUNT_NAME\n    assert billing_account.is_open() == DUMMY_BILLING_ACCOUNT_IS_OPEN\n    assert billing_account.is_master() == DUMMY_BILLING_ACCOUNT_IS_MASTER\n    assert (len(billing_account.list_projects(context))\n            > 0) == DUMMY_BILLING_ACCOUNT_HAS_PROJECTS\n"

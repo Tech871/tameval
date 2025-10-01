@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.4"
+
+[repo_info]
+repository = "google/osv-scalibr"
+sha = "68757353cde699f714e3edbe2ef641c84e737ac6"
+
+[run_info]
+docker_image = "golang:1.23.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out detector/weakcredentials/winlocal/samreg/crypto.go detector/weakcredentials/winlocal/samreg/crypto_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting detector/weakcredentials/winlocal/samreg/crypto.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 71.0
+original_coverage = 81.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 83, 84, 85, 86, 88, 89, 90, 96, 97, 98, 99, 100, 102, 107, 112, 113, 114, 115, 134, 135, 136, 137, 139, 140, 141, 143, 148, 149, 150, 151,]
+missed_lines = [ 103, 104, 105, 108, 109, 110, 120, 121, 122, 123, 124, 125, 127, 128, 129, 144, 145, 146,]
+
+[input_info]
+test_file_path = "detector/weakcredentials/winlocal/samreg/crypto_test.go"
+focal_file_path = "detector/weakcredentials/winlocal/samreg/crypto.go"
+test_file_url = "https://github.com/google/osv-scalibr/blob/68757353cde699f714e3edbe2ef641c84e737ac6/detector/weakcredentials/winlocal/samreg/crypto_test.go"
+focal_file_url = "https://github.com/google/osv-scalibr/blob/68757353cde699f714e3edbe2ef641c84e737ac6/detector/weakcredentials/winlocal/samreg/crypto.go"
+first_commit_date = "2024-11-14"
+last_commit_date = "2025-03-10"
+test_file_content = "// Copyright 2025 Google LLC\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage samreg\n\nimport (\n\t\"slices\"\n\t\"strings\"\n\t\"testing\"\n)\n\n\nfunc TestDecryptAESHash(t *testing.T) {\n\ttests := []struct {\n\t\tname        string\n\t\trid         []byte\n\t\tsyskey      []byte\n\t\thash        []byte\n\t\tsalt        []byte\n\t\twant        []byte\n\t\twantErr     bool\n\t\twantErrText string\n\t}{\n\t\t{\n\t\t\tname:   \"valid_input_decrypts\",\n\t\t\trid:    []byte(\"\\xf4\\x01\\x00\\x00\"),\n\t\t\tsyskey: []byte(\"\\xfc\\xde\\xe8\\x3a\\xc6\\xc1\\x4b\\x28\\xf5\\x26\\x50\\x1f\\xc6\\xe8\\xbb\\xc3\"),\n\t\t\thash:   []byte(\"\\x48\\xf2\\xb6\\x8b\\xd9\\x06\\xa2\\xbd\\xb2\\xaf\\x39\\x1c\\xe2\\x60\\x44\\x56\\x6b\\x80\\x62\\xb6\\x55\\xf4\\x2b\\x05\\x9d\\xfb\\x5c\\x68\\x55\\x4a\\x5b\\xc3\"),\n\t\t\tsalt:   []byte(\"\\xa3\\x28\\x48\\xec\\x7d\\x73\\x12\\xec\\x81\\xeb\\x50\\xd0\\x65\\x09\\x55\\xd4\"),\n\t\t\twant:   []byte(\"\\x58\\xa4\\x78\\x13\\x5a\\x93\\xac\\x3b\\xf0\\x58\\xa5\\xea\\x0e\\x8f\\xdb\\x71\"),\n\t\t},\n\t\t{\n\t\t\tname:   \"empty_hash_returns_empty\",\n\t\t\trid:    []byte(\"\\xf4\\x01\\x00\\x00\"),\n\t\t\tsyskey: []byte(\"\\xfc\\xde\\xe8\\x3a\\xc6\\xc1\\x4b\\x28\\xf5\\x26\\x50\\x1f\\xc6\\xe8\\xbb\\xc3\"),\n\t\t\thash:   []byte(\"\"),\n\t\t\tsalt:   []byte(\"\\xa3\\x28\\x48\\xec\\x7d\\x73\\x12\\xec\\x81\\xeb\\x50\\xd0\\x65\\x09\\x55\\xd4\"),\n\t\t\twant:   []byte(\"\"),\n\t\t},\n\t\t{\n\t\t\tname:        \"empty_syskey_returns_error\",\n\t\t\trid:         []byte(\"\"),\n\t\t\tsyskey:      []byte(\"\"),\n\t\t\thash:        []byte(\"\\x00\"),\n\t\t\twantErr:     true,\n\t\t\twantErrText: \"hash length not aligned with AES block size\",\n\t\t},\n\t\t{\n\t\t\tname:        \"RID_too_short_returns_error\",\n\t\t\trid:         []byte(\"\"),\n\t\t\tsyskey:      []byte(\"\\xfc\\xde\\xe8\\x3a\\xc6\\xc1\\x4b\\x28\\xf5\\x26\\x50\\x1f\\xc6\\xe8\\xbb\\xc3\"),\n\t\t\thash:        []byte(\"\\x48\\xf2\\xb6\\x8b\\xd9\\x06\\xa2\\xbd\\xb2\\xaf\\x39\\x1c\\xe2\\x60\\x44\\x56\\x6b\\x80\\x62\\xb6\\x55\\xf4\\x2b\\x05\\x9d\\xfb\\x5c\\x68\\x55\\x4a\\x5b\\xc3\"),\n\t\t\tsalt:        []byte(\"\\xa3\\x28\\x48\\xec\\x7d\\x73\\x12\\xec\\x81\\xeb\\x50\\xd0\\x65\\x09\\x55\\xd4\"),\n\t\t\twantErr:     true,\n\t\t\twantErrText: errInvalidRIDSize.Error(),\n\t\t},\n\t}\n\n\tfor _, tc := range tests {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\thash, err := decryptAESHash(tc.rid, tc.syskey, tc.hash, tc.salt)\n\t\t\tif (err != nil) != tc.wantErr {\n\t\t\t\tt.Errorf(\"decryptAESHash(...): unexpected error: %v\", err)\n\t\t\t}\n\n\t\t\tif tc.wantErr {\n\t\t\t\tif !strings.Contains(err.Error(), tc.wantErrText) {\n\t\t\t\t\tt.Errorf(\"decryptAESHash(...): unexpected error, got: %v, want: %v\", err, tc.wantErrText)\n\t\t\t\t}\n\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\tif !slices.Equal(hash, tc.want) {\n\t\t\t\tt.Errorf(\"decryptAESHash(...): unexpected result, got: %v, want: %v\", hash, tc.want)\n\t\t\t}\n\t\t})\n\t}\n}\n"

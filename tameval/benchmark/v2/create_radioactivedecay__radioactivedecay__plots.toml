@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "radioactivedecay/radioactivedecay"
+sha = "95f428cc8079e2cc762b6a559fba85c8c5e01500"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=radioactivedecay/plots.py -m pytest -q --junit-xml=test_output.xml tests/test_plots.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target radioactivedecay.plots --unit-test tests.test_plots --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target radioactivedecay/plots.py --unit-test tests/test_plots.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = 67.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 6, 8, 9, 10, 15, 33, 34, 36, 55, 56, 59, 75, 96, 97, 98, 101, 128, 129, 130, 131, 132, 133, 134, 135, 137, 138, 140, 143,]
+missed_lines = [ 197, 199, 200, 201, 202, 203, 204, 210, 212,]
+
+[input_info]
+test_file_path = "tests/test_plots.py"
+focal_file_path = "radioactivedecay/plots.py"
+test_file_url = "https://github.com/radioactivedecay/radioactivedecay/blob/95f428cc8079e2cc762b6a559fba85c8c5e01500/tests/test_plots.py"
+focal_file_url = "https://github.com/radioactivedecay/radioactivedecay/blob/95f428cc8079e2cc762b6a559fba85c8c5e01500/radioactivedecay/plots.py"
+first_commit_date = "2021-01-22"
+last_commit_date = "2025-01-05"
+test_file_content = "\"\"\"\nUnit tests for plots.py functions.\n\"\"\"\n\nimport unittest\n\nimport matplotlib\nimport matplotlib.pyplot as plt\n\nfrom radioactivedecay.plots import (\n    _check_fig_axes,\n    _parse_decay_mode_label,\n    _parse_nuclide_label,\n)\n\n\nclass TestFunctions(unittest.TestCase):\n    \"\"\"\n    Unit tests for plots.py functions.\n    \"\"\"\n\n    def test__parse_nuclide_label(self) -> None:\n        \"\"\"\n        Test the parsing of nuclide strings for node labels.\n        \"\"\"\n\n        self.assertEqual(_parse_nuclide_label(\"H-3\"), \"³H\")\n        self.assertEqual(_parse_nuclide_label(\"Be-7\"), \"⁷Be\")\n        self.assertEqual(_parse_nuclide_label(\"C-10\"), \"¹⁰C\")\n        self.assertEqual(_parse_nuclide_label(\"Ne-19\"), \"¹⁹Ne\")\n        self.assertEqual(_parse_nuclide_label(\"I-118\"), \"¹¹⁸I\")\n        self.assertEqual(_parse_nuclide_label(\"Pd-100\"), \"¹⁰⁰Pd\")\n        self.assertEqual(_parse_nuclide_label(\"Cl-34m\"), \"³⁴ᵐCl\")\n        self.assertEqual(_parse_nuclide_label(\"I-118m\"), \"¹¹⁸ᵐI\")\n        self.assertEqual(_parse_nuclide_label(\"Tb-156m\"), \"¹⁵⁶ᵐTb\")\n        self.assertEqual(_parse_nuclide_label(\"Tb-156n\"), \"¹⁵⁶ⁿTb\")\n        self.assertEqual(_parse_nuclide_label(\"In-129p\"), \"¹²⁹ᵖIn\")\n        self.assertEqual(_parse_nuclide_label(\"Lu-177q\"), \"¹⁷⁷qLu\")\n        self.assertEqual(_parse_nuclide_label(\"Lu-177r\"), \"¹⁷⁷ʳLu\")\n        self.assertEqual(_parse_nuclide_label(\"Lu-174x\"), \"¹⁷⁴ˣLu\")\n        self.assertEqual(_parse_nuclide_label(\"SF\"), \"various\")\n\n    def test__parse_decay_mode_label(self) -> None:\n        \"\"\"\n        Test the parsing of decay mode strings for edge labels.\n        \"\"\"\n\n        self.assertEqual(_parse_decay_mode_label(\"α\"), \"α\")\n        self.assertEqual(_parse_decay_mode_label(\"β+\"), \"β⁺\")\n        self.assertEqual(_parse_decay_mode_label(\"2β+\"), \"2β⁺\")\n        self.assertEqual(_parse_decay_mode_label(\"β+p\"), \"β⁺p\")\n        self.assertEqual(_parse_decay_mode_label(\"β+2p\"), \"β⁺2p\")\n        self.assertEqual(_parse_decay_mode_label(\"β+3p\"), \"β⁺3p\")\n        self.assertEqual(_parse_decay_mode_label(\"β+α\"), \"β⁺α\")\n        self.assertEqual(_parse_decay_mode_label(\"β+SF\"), \"β⁺SF\")\n        self.assertEqual(_parse_decay_mode_label(\"β+ & EC\"), \"β⁺ & EC\")\n        self.assertEqual(_parse_decay_mode_label(\"β-\"), \"β⁻\")\n        self.assertEqual(_parse_decay_mode_label(\"2β-\"), \"2β⁻\")\n        self.assertEqual(_parse_decay_mode_label(\"β-n\"), \"β⁻n\")\n        self.assertEqual(_parse_decay_mode_label(\"β-2n\"), \"β⁻2n\")\n        self.assertEqual(_parse_decay_mode_label(\"β-3n\"), \"β⁻3n\")\n        self.assertEqual(_parse_decay_mode_label(\"β-α\"), \"β⁻α\")\n        self.assertEqual(_parse_decay_mode_label(\"β-d\"), \"β⁻d\")\n        self.assertEqual(_parse_decay_mode_label(\"β-t\"), \"β⁻t\")\n        self.assertEqual(_parse_decay_mode_label(\"β-SF\"), \"β⁻SF\")\n        self.assertEqual(_parse_decay_mode_label(\"EC\"), \"EC\")\n        self.assertEqual(_parse_decay_mode_label(\"ε\"), \"ε\")\n        self.assertEqual(_parse_decay_mode_label(\"e+\"), \"e⁺\")\n        self.assertEqual(_parse_decay_mode_label(\"IT\"), \"IT\")\n        self.assertEqual(_parse_decay_mode_label(\"SF\"), \"SF\")\n        self.assertEqual(_parse_decay_mode_label(\"p\"), \"p\")\n        self.assertEqual(_parse_decay_mode_label(\"2p\"), \"2p\")\n        self.assertEqual(_parse_decay_mode_label(\"n\"), \"n\")\n        self.assertEqual(_parse_decay_mode_label(\"2n\"), \"2n\")\n        self.assertEqual(_parse_decay_mode_label(\"12C\"), \"¹²C\")\n        self.assertEqual(_parse_decay_mode_label(\"14C\"), \"¹⁴C\")\n        self.assertEqual(_parse_decay_mode_label(\"20O\"), \"²⁰O\")\n        self.assertEqual(_parse_decay_mode_label(\"23F\"), \"²³F\")\n        self.assertEqual(_parse_decay_mode_label(\"22Ne\"), \"²²Ne\")\n        self.assertEqual(_parse_decay_mode_label(\"24Ne\"), \"²⁴Ne\")\n        self.assertEqual(_parse_decay_mode_label(\"25Ne\"), \"²⁵Ne\")\n        self.assertEqual(_parse_decay_mode_label(\"26Ne\"), \"²⁶Ne\")\n        self.assertEqual(_parse_decay_mode_label(\"28Mg\"), \"²⁸Mg\")\n        self.assertEqual(_parse_decay_mode_label(\"29Mg\"), \"²⁹Mg\")\n        self.assertEqual(_parse_decay_mode_label(\"30Mg\"), \"³⁰Mg\")\n        self.assertEqual(_parse_decay_mode_label(\"32Si\"), \"³²Si\")\n        self.assertEqual(_parse_decay_mode_label(\"34Si\"), \"³⁴Si\")\n\n    def test__check_fig_axes(self) -> None:\n        \"\"\"\n        Test the parsing of user-defined Matplotlib Figure and Axes objects.\n        \"\"\"\n\n        fig_in, axes_in = plt.subplots()\n        fig, axes = _check_fig_axes(fig_in, axes_in)\n        self.assertIsInstance(fig, matplotlib.figure.Figure)\n        self.assertIsInstance(axes, matplotlib.axes.Axes)\n\n        fig, axes = _check_fig_axes(fig_in, None)\n        self.assertIsInstance(fig, matplotlib.figure.Figure)\n        self.assertIsInstance(axes, matplotlib.axes.Axes)\n\n        fig, axes = _check_fig_axes(None, axes_in)\n        self.assertIsInstance(fig, matplotlib.figure.Figure)\n        self.assertIsInstance(axes, matplotlib.axes.Axes)\n\n        fig, axes = _check_fig_axes(None, None)\n        self.assertIsInstance(fig, matplotlib.figure.Figure)\n        self.assertIsInstance(axes, matplotlib.axes.Axes)\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

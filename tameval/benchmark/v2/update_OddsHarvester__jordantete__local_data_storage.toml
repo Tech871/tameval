@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jordantete/OddsHarvester"
+sha = "4a9c2a492c144b7c68c26841d2f4eaf0cace6b48"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/storage/local_data_storage.py -m pytest -q --junit-xml=test_output.xml tests/storage/test_local_data_storage.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.storage.local_data_storage --unit-test tests.storage.test_local_data_storage --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/storage/local_data_storage.py --unit-test tests/storage/test_local_data_storage.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 81.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 1, 2, 3, 5, 8, 13, 23, 24, 25, 27, 43, 46, 47, 49, 50, 52, 53, 69, 71, 72, 73, 76, 77, 79, 81, 83, 84, 85, 87, 89, 91, 93, 94, 95, 96, 100, 102, 103, 105, 107, 108, 109, 111, 113, 114, 115,]
+missed_lines = [ 44, 57, 58, 60, 62, 63, 64, 65, 67, 97, 98,]
+
+[input_info]
+test_file_path = "tests/storage/test_local_data_storage.py"
+focal_file_path = "src/storage/local_data_storage.py"
+test_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/tests/storage/test_local_data_storage.py"
+focal_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/src/storage/local_data_storage.py"
+first_commit_date = "2025-01-14"
+last_commit_date = "2025-08-17"
+test_file_content = "import csv\nimport json\nfrom unittest.mock import mock_open, patch\n\nimport pytest\n\nfrom src.storage.local_data_storage import LocalDataStorage\nfrom src.storage.storage_format import StorageFormat\n\n\n@pytest.fixture\ndef local_data_storage():\n    return LocalDataStorage(default_file_path=\"test_data\", default_storage_format=StorageFormat.CSV)\n\n\n@pytest.fixture\ndef sample_data():\n    return [{\"team\": \"Team A\", \"odds\": 2.5}, {\"team\": \"Team B\", \"odds\": 1.8}]\n\n\ndef test_initialization(local_data_storage):\n    assert local_data_storage.default_file_path == \"test_data\"\n    assert local_data_storage.default_storage_format == StorageFormat.CSV\n\n\ndef test_save_data_invalid_format(local_data_storage):\n    with pytest.raises(ValueError, match=\"Data must be a dictionary or a list of dictionaries.\"):\n        local_data_storage.save_data(\"invalid_data\")\n\n\ndef test_save_as_csv(local_data_storage, sample_data):\n    mock_file = mock_open()\n\n    with patch(\"builtins.open\", mock_file), patch(\"os.path.getsize\", return_value=0):\n        local_data_storage._save_as_csv(sample_data, \"test_data.csv\")\n\n    # Check if file was opened correctly\n    mock_file.assert_called_once_with(\"test_data.csv\", mode=\"a\", newline=\"\", encoding=\"utf-8\")\n\n    # Validate the written content\n    handle = mock_file()\n    writer = csv.DictWriter(handle, fieldnames=sample_data[0].keys())\n    writer.writeheader()\n    writer.writerows(sample_data)\n    handle.write.assert_called()\n\n\ndef test_save_as_json(local_data_storage, sample_data):\n    mock_file = mock_open()\n\n    with patch(\"builtins.open\", mock_file), patch(\"os.path.exists\", return_value=False):\n        local_data_storage._save_as_json(sample_data, \"test_data.json\")\n\n    # Check if file was opened in write mode\n    mock_file.assert_called_once_with(\"test_data.json\", \"w\", encoding=\"utf-8\")\n\n    # Validate JSON content\n    handle = mock_file()\n    json.dump(sample_data, handle, indent=4)\n    handle.write.assert_called()\n\n\ndef test_save_as_json_existing_data(local_data_storage, sample_data):\n    existing_data = [{\"team\": \"Old Team\", \"odds\": 3.0}]\n    expected_combined_data = existing_data + sample_data\n\n    mock_file = mock_open(read_data=json.dumps(existing_data))\n\n    with patch(\"builtins.open\", mock_file), patch(\"os.path.exists\", return_value=True):\n        local_data_storage._save_as_json(sample_data, \"test_data.json\")\n\n    # Validate the final content of the JSON file\n    handle = mock_file()\n    json.dump(expected_combined_data, handle, indent=4)\n    handle.write.assert_called()\n\n\ndef test_save_data_invalid_format_type(local_data_storage, sample_data):\n    with pytest.raises(ValueError, match=\"Invalid storage format. Supported formats are: csv, json.\"):\n        local_data_storage.save_data(sample_data, storage_format=\"xml\")\n\n\ndef test_ensure_directory_exists(local_data_storage):\n    with patch(\"os.path.exists\", return_value=False), patch(\"os.makedirs\") as mock_makedirs:\n        local_data_storage._ensure_directory_exists(\"data/test_file.csv\")\n\n    mock_makedirs.assert_called_once_with(\"data\")\n\n\ndef test_csv_save_error_handling(local_data_storage, sample_data):\n    with (\n        patch(\"builtins.open\", side_effect=OSError(\"File write error\")),\n        patch.object(local_data_storage.logger, \"error\") as mock_logger,\n    ):\n        with pytest.raises(OSError, match=\"File write error\"):\n            local_data_storage._save_as_csv(sample_data, \"test_data.csv\")\n\n    mock_logger.assert_called()\n\n\ndef test_json_save_error_handling(local_data_storage, sample_data):\n    with (\n        patch(\"builtins.open\", side_effect=OSError(\"File write error\")),\n        patch.object(local_data_storage.logger, \"error\") as mock_logger,\n    ):\n        with pytest.raises(OSError, match=\"File write error\"):\n            local_data_storage._save_as_json(sample_data, \"test_data.json\")\n\n    mock_logger.assert_called()"

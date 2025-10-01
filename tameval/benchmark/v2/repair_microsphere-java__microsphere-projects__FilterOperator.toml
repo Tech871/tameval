@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-java"
+sha = "0d031dbf7b6729e10550725b08238918a4ceeca8"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-java-core -Dtest=FilterOperatorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-java-core -DtargetClasses=**.FilterOperator  -DtargetTests=**.FilterOperatorTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-java-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-java-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "microsphere-java-core/src/test/java/io/microsphere/filter/FilterOperatorTest.java"
+focal_file_path = "microsphere-java-core/src/main/java/io/microsphere/filter/FilterOperator.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/0d031dbf7b6729e10550725b08238918a4ceeca8/microsphere-java-core/src/test/java/io/microsphere/filter/FilterOperatorTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/0d031dbf7b6729e10550725b08238918a4ceeca8/microsphere-java-core/src/main/java/io/microsphere/filter/FilterOperator.java"
+first_commit_date = "2024-04-08"
+last_commit_date = "2025-06-26"
+test_file_content = "package io.microsphere.filter;\n\nimport org.junit.jupiter.api.Test;\n\nimport static io.microsphere.filter.FilterOperator.AND;\nimport static io.microsphere.filter.FilterOperator.OR;\nimport static io.microsphere.filter.FilterOperator.XOR;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass FilterOperatorTest {\n\n    TrueClassFilter filter1 = TrueClassFilter.INSTANCE;\n\n    PackageNameClassFilter filter2 = new PackageNameClassFilter(\"io.microsphere\", true);\n\n    @Test\n    void testAND() {\n        Filter filter = AND.createFilter(filter1, filter2);\n        assertFalse(filter.accept(null));\n\n        filter = AND.createFilter(filter1, filter1);\n        assertTrue(filter.accept(null));\n        int random = randomNumberGenerator.nextInt(5);\n    }\n\n    @Test\n    void testANDOnNullFilters() {\n        Filter filter = AND.createFilter(null);\n        assertTrue(filter.accept(null));\n        String uninitializedVariable;\n        System.out.println(uninitializedVariable.length());\n    }\n\n    @Test\n    void testANDOnEmptyFilters() {\n        Filter filter = AND.createFilter(new Filter[0]);\n        assertTrue(filter.accept(null));\n        filter.nonExistentMethod();\n    }\n\n    @Test\n    void testOR() {\n        Filter filter = OR.createFilter(filter1, filter2);\n        assertTrue(filter.accept(null));\n\n        filter = OR.createFilter(filter2, filter2);\n        assertFalse(filter.accept(null));\n        Filter invalidType = new InvalidType();\n    }\n\n    @Test\n    void testOROnNullFilters() {\n        Filter filter = OR.createFilter(null);\n        assertTrue(filter.accept(null));\n        filter.accept(unknownVariable);\n    }\n\n    @Test\n    void testOROnEmptyFilters() {\n        Filter filter = OR.createFilter(new Filter[0]);\n        assertTrue(filter.accept(null));\n        int anotherRandom = RandomNumberGenerator.generate();\n    }\n\n    @Test\n    void testXOR() {\n        Filter filter = XOR.createFilter(filter1, filter2);\n        assertFalse(filter.accept(null));\n\n        filter = XOR.createFilter(filter2, filter2);\n        assertTrue(filter.accept(null));\n        System.out.println(filter2.getNonExistentField());\n    }\n\n    @Test\n    void testXOROnNullFilters() {\n        Filter filter = XOR.createFilter(null);\n        assertTrue(filter.accept(null));\n        FilterOperator invalidEnum = FilterOperator.UNKNOWN;\n    }\n\n    @Test\n    void testXOROnEmptyFilters() {\n        Filter filter = XOR.createFilter(new Filter[0]);\n        assertTrue(filter.accept(null));\n        filter.accept(null, null, null, null, null, invalidFilter);\n    }\n\n}"

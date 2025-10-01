@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "pkiraly/qa-catalogue"
+sha = "66193841a3a3402c99e7e2392de68536ee11568b"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=EncodedValueTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.EncodedValue  -DtargetTests=**.EncodedValueTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 89.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 91.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/de/gwdg/metadataqa/marc/EncodedValueTest.java"
+focal_file_path = "src/main/java/de/gwdg/metadataqa/marc/EncodedValue.java"
+test_file_url = "https://github.com/pkiraly/qa-catalogue/blob/66193841a3a3402c99e7e2392de68536ee11568b/src/test/java/de/gwdg/metadataqa/marc/EncodedValueTest.java"
+focal_file_url = "https://github.com/pkiraly/qa-catalogue/blob/66193841a3a3402c99e7e2392de68536ee11568b/src/main/java/de/gwdg/metadataqa/marc/EncodedValue.java"
+first_commit_date = "2021-04-27"
+last_commit_date = "2024-03-06"
+test_file_content = "package de.gwdg.metadataqa.marc;\n\nimport org.junit.Test;\n\nimport java.security.InvalidParameterException;\n\nimport static junit.framework.TestCase.assertTrue;\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertFalse;\nimport static org.junit.Assert.assertNotNull;\n\npublic class EncodedValueTest {\n\n  @Test\n  public void testConstructor() {\n    EncodedValue code = new EncodedValue(\"2\", \"Multiple surname\");\n    assertEquals(\"2\", code.getCode());\n    assertEquals(\"Multiple surname\", code.getLabel());\n  }\n\n  @Test\n  public void testBibframeTag() {\n    EncodedValue code = new EncodedValue(\"0\", \"Issue number\");\n    code.setBibframeTag(\"AudioIssueNumber\");\n    assertEquals(\"AudioIssueNumber\", code.getBibframeTag());\n  }\n\n  @Test\n  public void testToString() {\n    EncodedValue code = new EncodedValue(\"0\", \"Issue number\");\n    assertEquals(\"Code{code='0', label='Issue number'}\", code.toString());\n  }\n\n  @Test\n  public void testRange() {\n    EncodedValue code = new EncodedValue(\"001-999\", \"Running time\");\n    assertFalse(code.isRange());\n    code.setRange(true);\n    assertTrue(code.isRange());\n    Range range = code.getRange();\n    assertNotNull(range);\n    assertEquals(\"001-999\", range.getRange());\n    assertFalse(range.isValid(\"0\"));\n    assertFalse(range.isValid(\"1000\"));\n    assertTrue(range.isValid(\"1\"));\n    assertTrue(range.isValid(\"100\"));\n    assertTrue(range.isValid(\"999\"));\n    assertTrue(range.isValid(\"00999\"));\n  }\n\n  @Test(expected = InvalidParameterException.class)\n  public void testInvalidRange() {\n    EncodedValue code = new EncodedValue(\"001999\", \"Running time\");\n    code.setRange(true);\n  }\n\n  @Test\n  public void testInvalidRangeValue() {\n    EncodedValue code = new EncodedValue(\"001-999\", \"Running time\");\n    code.setRange(true);\n    assertFalse(code.getRange().isValid(\"a\"));\n  }\n\n  @Test\n  public void testRegex() {\n    EncodedValue code = new EncodedValue(\"^\\\\d+$\", \"Running time\");\n    assertFalse(code.isRegex());\n    code.setRegex(true);\n    assertTrue(code.isRegex());\n  }\n}"

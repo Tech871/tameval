@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "datageartech/datagear"
+sha = "0cde3799fad38f74d53c73e087b0e3296237e466"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl datagear-analysis -Dtest=JsonValueDataSetTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl datagear-analysis -DtargetClasses=**.JsonValueDataSet  -DtargetTests=**.JsonValueDataSetTest  -DoutputFormats=XML"
+coverage_report_path = "datagear-analysis/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "datagear-analysis/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 64.0
+original_coverage = 64.0
+mutation_kill_rate = 67.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 48, 49, 50, 54, 55, 56, 72, 78, 79,]
+missed_lines = [ 43, 44, 60, 65, 66,]
+
+[input_info]
+test_file_path = "datagear-analysis/src/test/java/org/datagear/analysis/support/JsonValueDataSetTest.java"
+focal_file_path = "datagear-analysis/src/main/java/org/datagear/analysis/support/JsonValueDataSet.java"
+test_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-analysis/src/test/java/org/datagear/analysis/support/JsonValueDataSetTest.java"
+focal_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-analysis/src/main/java/org/datagear/analysis/support/JsonValueDataSet.java"
+first_commit_date = "2020-08-05"
+last_commit_date = "2024-07-02"
+test_file_content = "/*\n * Copyright 2018-present datagear.tech\n *\n * This file is part of DataGear.\n *\n * DataGear is free software: you can redistribute it and/or modify it under the terms of\n * the GNU Lesser General Public License as published by the Free Software Foundation,\n * either version 3 of the License, or (at your option) any later version.\n *\n * DataGear is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;\n * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n * See the GNU Lesser General Public License for more details.\n *\n * You should have received a copy of the GNU Lesser General Public License along with DataGear.\n * If not, see <https://www.gnu.org/licenses/>.\n */\n\npackage org.datagear.analysis.support;\n\nimport static org.junit.Assert.assertEquals;\n\nimport java.util.ArrayList;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nimport org.datagear.analysis.DataSetParam;\nimport org.datagear.analysis.DataSetField;\nimport org.datagear.analysis.DataSetQuery;\nimport org.datagear.analysis.DataSetResult;\nimport org.junit.Test;\n\n/**\n * {@linkplain JsonValueDataSet}单元测试类。\n * \n * @author datagear@163.com\n *\n */\npublic class JsonValueDataSetTest\n{\n\t@Test\n\tpublic void getResultTest_hasParam()\n\t{\n\t\tList<DataSetField> fields = new ArrayList<>();\n\t\tfields.add(new DataSetField(\"name\", DataSetField.DataType.STRING));\n\t\tfields.add(new DataSetField(\"value\", DataSetField.DataType.NUMBER));\n\t\tfields.add(new DataSetField(\"size\", DataSetField.DataType.NUMBER));\n\n\t\tList<DataSetParam> params = new ArrayList<>();\n\t\tparams.add(new DataSetParam(\"size\", DataSetParam.DataType.NUMBER, true));\n\n\t\tJsonValueDataSet dataSet = new JsonValueDataSet(JsonValueDataSet.class.getSimpleName(),\n\t\t\t\tJsonValueDataSet.class.getSimpleName(), fields, \"[ { name:'aaa', value: 11, size: ${size} } ]\");\n\t\tdataSet.setParams(params);\n\n\t\tMap<String, Object> paramValues = new HashMap<>();\n\t\tparamValues.put(\"size\", 12);\n\n\t\tDataSetResult result = dataSet.getResult(DataSetQuery.valueOf(paramValues));\n\t\t@SuppressWarnings(\"unchecked\")\n\t\tList<Map<String, Object>> data = (List<Map<String, Object>>) result.getData();\n\n\t\t{\n\t\t\tassertEquals(1, data.size());\n\n\t\t\t{\n\t\t\t\tMap<String, Object> row = data.get(0);\n\n\t\t\t\tassertEquals(\"aaa\", row.get(\"name\"));\n\t\t\t\tassertEquals(11, ((Number) row.get(\"value\")).intValue());\n\t\t\t\tassertEquals(12, ((Number) row.get(\"size\")).intValue());\n\t\t\t}\n\t\t}\n\t}\n\n\t@Test\n\tpublic void getResultTest_hasParam_convertFieldValue()\n\t{\n\t\tList<DataSetField> fields = new ArrayList<>();\n\t\tfields.add(new DataSetField(\"name\", DataSetField.DataType.STRING));\n\t\tfields.add(new DataSetField(\"value\", DataSetField.DataType.NUMBER));\n\t\tfields.add(new DataSetField(\"size\", DataSetField.DataType.STRING));\n\n\t\tList<DataSetParam> params = new ArrayList<>();\n\t\tparams.add(new DataSetParam(\"size\", DataSetParam.DataType.NUMBER, true));\n\n\t\tJsonValueDataSet dataSet = new JsonValueDataSet(JsonValueDataSet.class.getSimpleName(),\n\t\t\t\tJsonValueDataSet.class.getSimpleName(), fields, \"[ { name:'aaa', value: 11, size: ${size} } ]\");\n\t\tdataSet.setParams(params);\n\n\t\tMap<String, Object> paramValues = new HashMap<>();\n\t\tparamValues.put(\"size\", 12);\n\n\t\tDataSetResult result = dataSet.getResult(DataSetQuery.valueOf(paramValues));\n\t\t@SuppressWarnings(\"unchecked\")\n\t\tList<Map<String, Object>> data = (List<Map<String, Object>>) result.getData();\n\n\t\t{\n\t\t\tassertEquals(1, data.size());\n\n\t\t\t{\n\t\t\t\tMap<String, Object> row = data.get(0);\n\n\t\t\t\tassertEquals(\"aaa\", row.get(\"name\"));\n\t\t\t\tassertEquals(11, ((Number) row.get(\"value\")).intValue());\n\t\t\t\tassertEquals(\"12\", row.get(\"size\"));\n\t\t\t}\n\t\t}\n\t}\n\n\t@Test\n\tpublic void resolveTest_hasParam()\n\t{\n\t\tString name = \"aaa---\\\"---\\\\---\\r---\\n\";\n\t\tString nameEscape = \"aaa---\\\\\\\"---\\\\\\\\---\\\\r---\\\\n\";\n\n\t\tList<DataSetParam> params = new ArrayList<>();\n\t\tparams.add(new DataSetParam(\"name\", DataSetParam.DataType.STRING, true));\n\t\tparams.add(new DataSetParam(\"size\", DataSetParam.DataType.NUMBER, true));\n\n\t\tJsonValueDataSet dataSet = new JsonValueDataSet(JsonValueDataSet.class.getSimpleName(),\n\t\t\t\tJsonValueDataSet.class.getSimpleName(), \"[ { name:\\\"${name}\\\", value: 11, size: ${size} } ]\");\n\t\tdataSet.setParams(params);\n\n\t\tMap<String, Object> paramValues = new HashMap<>();\n\t\tparamValues.put(\"name\", name);\n\t\tparamValues.put(\"size\", 12);\n\n\t\tTemplateResolvedDataSetResult result = dataSet.resolve(DataSetQuery.valueOf(paramValues));\n\t\tList<DataSetField> fields = result.getFields();\n\t\t@SuppressWarnings(\"unchecked\")\n\t\tList<Map<String, Object>> data = (List<Map<String, Object>>) result.getResult().getData();\n\n\t\tassertEquals(\"[ { name:\\\"\" + nameEscape + \"\\\", value: 11, size: 12 } ]\", result.getTemplateResult());\n\n\t\t{\n\t\t\tassertEquals(3, fields.size());\n\n\t\t\t{\n\t\t\t\tDataSetField field = fields.get(0);\n\t\t\t\tassertEquals(\"name\", field.getName());\n\t\t\t\tassertEquals(DataSetField.DataType.STRING, field.getType());\n\t\t\t}\n\n\t\t\t{\n\t\t\t\tDataSetField property = fields.get(1);\n\t\t\t\tassertEquals(\"value\", property.getName());\n\t\t\t\tassertEquals(DataSetField.DataType.NUMBER, property.getType());\n\t\t\t}\n\n\t\t\t{\n\t\t\t\tDataSetField field = fields.get(2);\n\t\t\t\tassertEquals(\"size\", field.getName());\n\t\t\t\tassertEquals(DataSetField.DataType.NUMBER, field.getType());\n\t\t\t}\n\t\t}\n\n\t\t{\n\t\t\tassertEquals(1, data.size());\n\n\t\t\t{\n\t\t\t\tMap<String, Object> row = data.get(0);\n\n\t\t\t\tassertEquals(name, row.get(\"name\"));\n\t\t\t\tassertEquals(11, ((Number) row.get(\"value\")).intValue());\n\t\t\t\tassertEquals(12, ((Number) row.get(\"size\")).intValue());\n\t\t\t}\n\t\t}\n\t}\n}\n"

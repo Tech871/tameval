@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.9"
+
+[repo_info]
+repository = "moov-io/watchman"
+sha = "22bcf074a0d10f741353e4e6ee37e1403825a6bc"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/sources/csl_uk/download_uk.go pkg/sources/csl_uk/download_uk_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/sources/csl_uk/download_uk.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 67.0
+original_coverage = 67.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 26, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 38, 39, 40, 44, 45, 46, 47, 48, 55, 56, 62, 63, 64, 65, 66, 67, 72, 77, 82, 87, 88, 89, 90, 91, 95,]
+missed_lines = [ 41, 42, 43, 57, 58, 59, 68, 69, 70, 73, 74, 75, 78, 79, 80, 83, 84, 85,]
+
+[input_info]
+test_file_path = "pkg/sources/csl_uk/download_uk_test.go"
+focal_file_path = "pkg/sources/csl_uk/download_uk.go"
+test_file_url = "https://github.com/moov-io/watchman/blob/22bcf074a0d10f741353e4e6ee37e1403825a6bc/pkg/sources/csl_uk/download_uk_test.go"
+focal_file_url = "https://github.com/moov-io/watchman/blob/22bcf074a0d10f741353e4e6ee37e1403825a6bc/pkg/sources/csl_uk/download_uk.go"
+first_commit_date = "2025-02-27"
+last_commit_date = "2025-02-27"
+test_file_content = "// Copyright The Moov Authors\n// Use of this source code is governed by an Apache License\n// license that can be found in the LICENSE file.\n\npackage csl_uk\n\nimport (\n\t\"context\"\n\t\"io\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/moov-io/base/log\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestCSLDownload(t *testing.T) {\n\tif testing.Short() {\n\t\treturn\n\t}\n\n\tfiles, err := DownloadCSL(context.Background(), log.NewNopLogger(), \"\")\n\trequire.NoError(t, err)\n\trequire.Len(t, files, 1)\n\n\tfor filename := range files {\n\t\tif !strings.EqualFold(\"ConList.csv\", filepath.Base(filename)) {\n\t\t\tt.Errorf(\"unknown file %s\", filename)\n\t\t}\n\t}\n}\n\nfunc TestCSLDownload_initialDir(t *testing.T) {\n\tdir, err := os.MkdirTemp(\"\", \"iniital-dir\")\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer os.RemoveAll(dir)\n\n\tmk := func(t *testing.T, name string, body string) {\n\t\tpath := filepath.Join(dir, name)\n\t\tif err := os.WriteFile(path, []byte(body), 0600); err != nil {\n\t\t\tt.Fatalf(\"writing %s: %v\", path, err)\n\t\t}\n\t}\n\n\t// create each file\n\tmk(t, \"ConList.csv\", \"file=ConList.csv\")\n\n\tfile, err := DownloadCSL(context.Background(), log.NewNopLogger(), dir)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif len(file) == 0 {\n\t\tt.Fatal(\"no UK CSL file\")\n\t}\n\n\tfor fn, fd := range file {\n\t\tif strings.EqualFold(\"ConList.csv\", filepath.Base(fn)) {\n\t\t\tbs, err := io.ReadAll(fd)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\t\t\tif v := string(bs); v != \"file=ConList.csv\" {\n\t\t\t\tt.Errorf(\"ConList.csv: %v\", v)\n\t\t\t}\n\t\t} else {\n\t\t\tt.Fatalf(\"unknown file: %v\", file)\n\t\t}\n\t}\n}\n\nfunc TestUKSanctionsListIndex(t *testing.T) {\n\tif testing.Short() {\n\t\treturn\n\t}\n\n\tlogger := log.NewTestLogger()\n\tfoundURL, err := fetchLatestUKSanctionsListURL(context.Background(), logger, \"\")\n\trequire.NoError(t, err)\n\n\trequire.Contains(t, foundURL, \"UK_Sanctions_List.ods\")\n}\n\nfunc TestUKSanctionsListDownload(t *testing.T) {\n\tif testing.Short() {\n\t\treturn\n\t}\n\n\tlogger := log.NewTestLogger()\n\tfiles, err := DownloadSanctionsList(context.Background(), logger, \"\")\n\trequire.NoError(t, err)\n\trequire.Len(t, files, 1)\n\n\tfor filename := range files {\n\t\tif !strings.EqualFold(\"UK_Sanctions_List.ods\", filepath.Base(filename)) {\n\t\t\tt.Errorf(\"unknown file %s\", filename)\n\t\t}\n\t}\n}\n\nfunc TestUKSanctionsListDownload_initialDir(t *testing.T) {\n\tdir, err := os.MkdirTemp(\"\", \"iniital-dir\")\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer os.RemoveAll(dir)\n\n\tmk := func(t *testing.T, name string, body string) {\n\t\tpath := filepath.Join(dir, name)\n\t\tif err := os.WriteFile(path, []byte(body), 0600); err != nil {\n\t\t\tt.Fatalf(\"writing %s: %v\", path, err)\n\t\t}\n\t}\n\n\t// create each file\n\tmk(t, \"UK_Sanctions_List.ods\", \"file=UK_Sanctions_List.ods\")\n\n\tfile, err := DownloadSanctionsList(context.Background(), log.NewNopLogger(), dir)\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\n\tif len(file) == 0 {\n\t\tt.Fatal(\"no UK Sanctions List file\")\n\t}\n\n\tfor fn, fd := range file {\n\t\tif strings.EqualFold(\"UK_Sanctions_List.ods\", filepath.Base(fn)) {\n\t\t\t_, err := io.ReadAll(fd)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\t\t\t// if v := string(bs); v != \"file=UK_Sanctions_List.ods\" {\n\t\t\t// \tt.Errorf(\"UK_Sanctions_List.ods: %v\", v)\n\t\t\t// }\n\t\t} else {\n\t\t\tt.Fatalf(\"unknown file: %v\", file)\n\t\t}\n\t}\n}\n"

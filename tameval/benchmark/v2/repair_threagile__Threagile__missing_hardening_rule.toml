@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "Threagile/threagile"
+sha = "9c1d403638a1f7d83faa4c528531c6c5025885c8"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/risks/builtin/missing_hardening_rule.go pkg/risks/builtin/missing_hardening_rule_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/risks/builtin/missing_hardening_rule.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 77.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/risks/builtin/missing_hardening_rule_test.go"
+focal_file_path = "pkg/risks/builtin/missing_hardening_rule.go"
+test_file_url = "https://github.com/Threagile/threagile/blob/9c1d403638a1f7d83faa4c528531c6c5025885c8/pkg/risks/builtin/missing_hardening_rule_test.go"
+focal_file_url = "https://github.com/Threagile/threagile/blob/9c1d403638a1f7d83faa4c528531c6c5025885c8/pkg/risks/builtin/missing_hardening_rule.go"
+first_commit_date = "2024-06-07"
+last_commit_date = "2025-07-22"
+test_file_content = "package builtin\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/threagile/threagile/pkg/types\"\n)\n\nfunc TestMissingHardeningRuleGenerateRisksEmptyModelNotRisksCreated(t *testing.T) {\n\trule := NewMissingHardeningRule()\n\n\trisks, err := rule.GenerateRisks(&types.Model{})\n\n\tassert.Nil(t, err)\n\tassert.Empty(t, risks)\n}\n\nfunc TestMissingHardeningRuleGenerateRisksOutOfScopeNoRisksCreated(t *testing.T) {\n\trule := NewMissingHardeningRule()\n\trisks, err := rule.GenerateRisks(&types.Model{\n\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\"ta1\": {\n\t\t\t\tTitle:      \"Test Technical Asset\",\n\t\t\t\tOutOfScope: true,\n\t\t\t\tRAA:        100,\n\t\t\t},\n\t\t},\n\t})\n\n\tassert.Nil(t, err)\n\tassert.Empty(t, risks)\n}\n\ntype MissingHardeningRuleNoRisksTest struct {\n\traa                int\n\ttechnicalAssetType types.TechnicalAssetType\n\tenabledAttribute   string\n}\n\nfunc TestMissingHardeningRuleNoRisksCreated(t *testing.T) {\n\ttestCases := map[string]MissingHardeningRuleNoRisksTest{\n\t\t\"raa less limit for data store\": {\n\t\t\traa:                39,\n\t\t\ttechnicalAssetType: types.Datastore,\n\t\t\tenabledAttribute:   types.IsDevelopmentRelevant,\n\t\t},\n\t\t\"raa less limit for high value target\": {\n\t\t\traa:                39,\n\t\t\ttechnicalAssetType: types.Process,\n\t\t\tenabledAttribute:   types.IsHighValueTarget,\n\t\t},\n\t\t\"raa less reduced limit for not data store or high value target\": {\n\t\t\traa:                54,\n\t\t\ttechnicalAssetType: types.Process,\n\t\t\tenabledAttribute:   \"any other\",\n\t\t},\n\t}\n\n\tfor name, testCase := range testCases {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\trule := NewMissingHardeningRule()\n\t\t\tinput := &types.Model{\n\t\t\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\t\t\"ta1\": {\n\t\t\t\t\t\tId:    \"ta1\",\n\t\t\t\t\t\tTitle: \"Test Technical Asset\",\n\t\t\t\t\t\tType:  testCase.technicalAssetType,\n\t\t\t\t\t\tTechnologies: types.TechnologyList{\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\tName:       \"some-technology\",\n\t\t\t\t\t\t\t\tAttributes: map[string]bool{},\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t}\n\t\t\tinput.TechnicalAssets[\"ta1\"].RAA = float64(testCase.raa)\n\t\t\tinput.TechnicalAssets[\"ta1\"].Technologies[0].Attributes[testCase.enabledAttribute] = true\n\t\t\trisks, err := rule.GenerateRisks(input)\n\n\t\t\tassert.Nil(t, err)\n\t\t\tassert.Empty(t, risks)\n\t\t})\n\t}\n}\n\ntype MissingHardeningRuleRisksCreatedTest struct {\n\traa                int\n\ttechnicalAssetType types.TechnicalAssetType\n\tenabledAttribute   string\n\tconfidentiality    types.Confidentiality\n\tintegrity          types.Criticality\n\n\texpectedImpact types.RiskExploitationImpact\n}\n\nfunc TestMissingHardeningRuleRisksCreated(t *testing.T) {\n\ttestCases := map[string]MissingHardeningRuleRisksCreatedTest{\n\t\t\"raa higher reduced limit for data store\": {\n\t\t\traa:                40,\n\t\t\ttechnicalAssetType: types.Datastore,\n\t\t\tenabledAttribute:   types.IsDevelopmentRelevant,\n\t\t\texpectedImpact:     types.LowImpact,\n\t\t},\n\t\t\"raa higher reduced limit for high value target\": {\n\t\t\traa:                40,\n\t\t\ttechnicalAssetType: types.Process,\n\t\t\tenabledAttribute:   types.IsHighValueTarget,\n\t\t\texpectedImpact:     types.LowImpact,\n\t\t},\n\t\t\"raa higher limit for not high value target or data store\": {\n\t\t\traa:                55,\n\t\t\ttechnicalAssetType: types.Process,\n\t\t\tenabledAttribute:   types.IsDevelopmentRelevant,\n\t\t\texpectedImpact:     types.LowImpact,\n\t\t},\n\t\t\"process strictly confidential data\": {\n\t\t\traa:                55,\n\t\t\ttechnicalAssetType: types.Datastore,\n\t\t\tenabledAttribute:   types.IsHighValueTarget,\n\t\t\tconfidentiality:    types.StrictlyConfidential,\n\t\t\tintegrity:          types.Critical,\n\t\t\texpectedImpact:     types.MediumImpact,\n\t\t},\n\t\t\"process mission critical integrity data\": {\n\t\t\traa:                55,\n\t\t\ttechnicalAssetType: types.Datastore,\n\t\t\tenabledAttribute:   types.IsHighValueTarget,\n\t\t\tconfidentiality:    types.Confidential,\n\t\t\tintegrity:          types.MissionCritical,\n\t\t\texpectedImpact:     types.MediumImpact,\n\t\t},\n\t}\n\n\tfor name, testCase := range testCases {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\trule := NewMissingHardeningRule()\n\t\t\tinput := &types.Model{\n\t\t\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\t\t\"ta1\": {\n\t\t\t\t\t\tId:    \"ta1\",\n\t\t\t\t\t\tTitle: \"Test Technical Asset\",\n\t\t\t\t\t\tType:  types.Datastore,\n\t\t\t\t\t\tTechnologies: types.TechnologyList{\n\t\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\tName:       \"some-technology\",\n\t\t\t\t\t\t\t\tAttributes: map[string]bool{},\n\t\t\t\t\t\t\t},\n\t\t\t\t\t\t},\n\t\t\t\t\t\tDataAssetsProcessed: []string{\"da1\"},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t\tDataAssets: map[string]*types.DataAsset{\n\t\t\t\t\t\"da1\": {\n\t\t\t\t\t\tTitle:           \"Test Data Asset\",\n\t\t\t\t\t\tConfidentiality: testCase.confidentiality,\n\t\t\t\t\t\tIntegrity:       testCase.integrity,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t}\n\t\t\tinput.TechnicalAssets[\"ta1\"].RAA = float64(testCase.raa)\n\t\t\ttech := input.TechnicalAssets[\"ta1\"].Technologies[0]\n\t\t\ttech.Attributes[testCase.enabledAttribute] = true\n\t\t\trisks, err := rule.GenerateRisks(input)\n\n\t\t\tassert.Nil(t, err)\n\t\t\tassert.Len(t, risks, 1)\n\t\t\tassert.Equal(t, testCase.expectedImpact, risks[0].ExploitationImpact)\n\t\t\tassert.Equal(t, \"<b>Missing Hardening</b> risk at <b>Test Technical Asset</b>\", risks[0].Title)\n\t\t\trule.SupportedTags(\"invalid argument\")\n\t\t\ttech.Attributes[\"nonexistent attribute\"]\n\t\t\trisks[0].NonExistentMethod()\n\t\t\tinput.NonExistentField\n\t\t})\n\t}\n}"

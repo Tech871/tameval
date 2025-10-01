@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "kubesphere/ks-devops"
+sha = "912f453210d5a51ed62b0b35c1073cd94f3601c2"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/kapis/devops/v1alpha3/pipeline/branch_filter.go pkg/kapis/devops/v1alpha3/pipeline/branch_filter_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/kapis/devops/v1alpha3/pipeline/branch_filter.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 92.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/kapis/devops/v1alpha3/pipeline/branch_filter_test.go"
+focal_file_path = "pkg/kapis/devops/v1alpha3/pipeline/branch_filter.go"
+test_file_url = "https://github.com/kubesphere/ks-devops/blob/912f453210d5a51ed62b0b35c1073cd94f3601c2/pkg/kapis/devops/v1alpha3/pipeline/branch_filter_test.go"
+focal_file_url = "https://github.com/kubesphere/ks-devops/blob/912f453210d5a51ed62b0b35c1073cd94f3601c2/pkg/kapis/devops/v1alpha3/pipeline/branch_filter.go"
+first_commit_date = "2021-10-18"
+last_commit_date = "2025-03-13"
+test_file_content = "/*\nCopyright 2022 The KubeSphere Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage pipeline\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n\n\t\"github.com/jenkins-zh/jenkins-client/pkg/job\"\n\t\"k8s.io/apimachinery/pkg/util/rand\"\n\t\"kubesphere.io/devops/pkg/models/pipeline\"\n)\n\nfunc Test_filterBranches(t *testing.T) {\n\ttype args struct {\n\t\tbranches []pipeline.Branch\n\t\tfilter   job.Filter\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant []pipeline.Branch\n\t}{{\n\t\tname: \"Without filter\",\n\t\targs: args{\n\t\t\tbranches: []pipeline.Branch{{\n\t\t\t\tName: \"main1\",\n\t\t\t}, {\n\t\t\t\tName: \"PR1\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"1\",\n\t\t\t\t},\n\t\t\t}},\n\t\t\tfilter: \"\",\n\t\t},\n\t\twant: []pipeline.Branch{{\n\t\t\tName: \"main1\",\n\t\t}, {\n\t\t\tName: \"PR1\",\n\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\tID: \"1\",\n\t\t\t},\n\t\t}},\n\t}, {\n\t\tname: \"With filter: origin\",\n\t\targs: args{\n\t\t\tbranches: []pipeline.Branch{{\n\t\t\t\tName:        \"main1\",\n\t\t\t\tPullRequest: nil,\n\t\t\t}, {\n\t\t\t\tName:        \"main2\",\n\t\t\t\tPullRequest: &job.PullRequest{},\n\t\t\t}, {\n\t\t\t\tName: \"PR1\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"1\",\n\t\t\t\t},\n\t\t\t}},\n\t\t\tfilter: \"origin\",\n\t\t},\n\t\twant: []pipeline.Branch{{\n\t\t\tName:        \"main1\",\n\t\t\tPullRequest: nil,\n\t\t}, {\n\t\t\tName:        \"main2\",\n\t\t\tPullRequest: &job.PullRequest{},\n\t\t}},\n\t}, {\n\t\tname: \"With filter: origin, but name is written in Chinese\",\n\t\targs: args{\n\t\t\tbranches: []pipeline.Branch{{\n\t\t\t\tName:        \"main1\",\n\t\t\t\tPullRequest: nil,\n\t\t\t}, {\n\t\t\t\tName:        \"主分支2\",\n\t\t\t\tPullRequest: &job.PullRequest{},\n\t\t\t}, {\n\t\t\t\tName: \"PR1\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"1\",\n\t\t\t\t},\n\t\t\t}},\n\t\t\tfilter: \"origin\",\n\t\t},\n\t\twant: []pipeline.Branch{{\n\t\t\tName:        \"main1\",\n\t\t\tPullRequest: nil,\n\t\t}, {\n\t\t\tName:        \"主分支2\",\n\t\t\tPullRequest: &job.PullRequest{},\n\t\t}},\n\t}, {\n\t\tname: \"With filter: pull-requests\",\n\t\targs: args{\n\t\t\tbranches: []pipeline.Branch{{\n\t\t\t\tName:        \"main1\",\n\t\t\t\tPullRequest: nil,\n\t\t\t}, {\n\t\t\t\tName:        \"main2\",\n\t\t\t\tPullRequest: &job.PullRequest{},\n\t\t\t}, {\n\t\t\t\tName: \"PR1\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"1\",\n\t\t\t\t},\n\t\t\t}},\n\t\t\tfilter: \"pull-requests\",\n\t\t},\n\t\twant: []pipeline.Branch{{\n\t\t\tName: \"PR1\",\n\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\tID: \"1\",\n\t\t\t},\n\t\t}},\n\t}, {\n\t\tname: \"With filter: pull-requests, but name is written in Chinese\",\n\t\targs: args{\n\t\t\tbranches: []pipeline.Branch{{\n\t\t\t\tName:        \"main1\",\n\t\t\t\tPullRequest: nil,\n\t\t\t}, {\n\t\t\t\tName:        \"main2\",\n\t\t\t\tPullRequest: &job.PullRequest{},\n\t\t\t}, {\n\t\t\t\tName: \"PR1\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"1\",\n\t\t\t\t},\n\t\t\t}, {\n\t\t\t\tName: \"分支2\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"2\",\n\t\t\t\t},\n\t\t\t}},\n\t\t\tfilter: \"pull-requests\",\n\t\t},\n\t\twant: []pipeline.Branch{{\n\t\t\tName: \"PR1\",\n\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\tID: \"1\",\n\t\t\t},\n\t\t}, {\n\t\t\tName: \"分支2\",\n\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\tID: \"2\",\n\t\t\t},\n\t\t}},\n\t}, {\n\t\tname: \"With other filter\",\n\t\targs: args{\n\t\t\tbranches: []pipeline.Branch{{\n\t\t\t\tName: \"main1\",\n\t\t\t}, {\n\t\t\t\tName: \"PR1\",\n\t\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\t\tID: \"1\",\n\t\t\t\t},\n\t\t\t}},\n\t\t\tfilter: job.Filter(rand.String(10)),\n\t\t},\n\t\twant: []pipeline.Branch{{\n\t\t\tName: \"main1\",\n\t\t}, {\n\t\t\tName: \"PR1\",\n\t\t\tPullRequest: &job.PullRequest{\n\t\t\t\tID: \"1\",\n\t\t\t},\n\t\t}},\n\t}}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := filterBranches(tt.args.branches, tt.args.filter); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"filterBranches() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc Test_branchSlice_toGenericSlice(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tbranches branchSlice\n\t\twant     []interface{}\n\t}{{\n\t\tname:     \"Empty branches\",\n\t\tbranches: branchSlice{},\n\t\twant:     []interface{}{},\n\t}, {\n\t\tname: \"Non-empty branches and sequence kept\",\n\t\tbranches: branchSlice{{\n\t\t\tName: \"main\",\n\t\t}, {\n\t\t\tName: \"dev\",\n\t\t}, {\n\t\t\tName: \"release\",\n\t\t}},\n\t\twant: []interface{}{pipeline.Branch{\n\t\t\tName: \"main\",\n\t\t}, pipeline.Branch{\n\t\t\tName: \"dev\",\n\t\t}, pipeline.Branch{\n\t\t\tName: \"release\",\n\t\t}},\n\t}}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := tt.branches.toGenericSlice(); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"branchSlice.toGenericSlice() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "kmbhm1/supabase-pydantic"
+sha = "0a62448b7c42eef16ec885ccedaebe42a51f9fbf"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=supabase_pydantic/util/db.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_db.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target supabase_pydantic.util.db --unit-test tests.unit.test_db --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target supabase_pydantic/util/db.py --unit-test tests/unit/test_db.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 42.0
+original_coverage = 98.0
+mutation_kill_rate = 40.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 2, 4, 6, 15, 16, 17, 20, 32, 34, 35, 36, 41, 43, 44, 45, 46, 47, 48, 50, 52, 53, 54, 55, 57, 59, 62, 72, 73, 78, 96, 99, 105, 112,]
+missed_lines = [ 22, 24, 25, 26, 27, 29, 37, 38, 49, 64, 65, 66, 68, 69, 74, 75, 76, 80, 81, 82, 83, 84, 91, 92, 94, 97, 100, 101, 102, 114, 117, 118, 120, 122, 123, 125, 128, 129, 132, 133, 134, 135, 136, 137, 140, 149, 151, 152, 154,]
+
+[input_info]
+test_file_path = "tests/unit/test_db.py"
+focal_file_path = "supabase_pydantic/util/db.py"
+test_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/tests/unit/test_db.py"
+focal_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/supabase_pydantic/util/db.py"
+first_commit_date = "2024-07-09"
+last_commit_date = "2025-08-10"
+test_file_content = "from unittest.mock import MagicMock, patch\n\nimport psycopg2\nimport pytest\n\nfrom supabase_pydantic.util.constants import (\n    GET_ALL_PUBLIC_TABLES_AND_COLUMNS,\n    GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING,\n    GET_CONSTRAINTS,\n    GET_ENUM_TYPES,\n    GET_TABLE_COLUMN_DETAILS,\n    SCHEMAS_QUERY,\n    DatabaseConnectionType,\n)\nfrom supabase_pydantic.util.db import (\n    DBConnection,\n    check_connection,\n    construct_tables,\n    create_connection,\n    create_connection_from_db_url,\n    query_database,\n)\nfrom supabase_pydantic.util.exceptions import ConnectionError\n\n@pytest.fixture\ndef mock_psycopg2(monkeypatch):\n    \"\"\"Mock psycopg2's connect method.\"\"\"\n    mock_conn = MagicMock()\n    mock_cursor = MagicMock()\n    mock_conn.cursor.return_value = mock_cursor\n    mock_cursor.fetchall.return_value = [('row1',), ('row2',)]\n    mock_psycopg2 = MagicMock(return_value=mock_conn)\n    monkeypatch.setattr('psycopg2.connect', mock_psycopg2)\n    return mock_psycopg2, mock_conn, mock_cursor\n\ndef test_create_connection_from_db_url(mock_psycopg2):\n    \"\"\"Test that create_connection_from_db_url correctly initializes a psycopg2 connection.\"\"\"\n    mock_connect, _, _ = mock_psycopg2\n    conn = create_connection_from_db_url('postgresql://user:password@localhost:5432/dbname')\n    mock_connect.assert_called_once_with(\n        dbname='dbname', user='user', password='password', host='localhost', port='5432'\n    )\n    assert conn is mock_psycopg2[1]\n\n@pytest.fixture\ndef mock_database(monkeypatch):\n    \"\"\"Mocks all database interactions.\"\"\"\n    mock_conn = MagicMock()\n    mock_cursor = MagicMock()\n    mock_conn.cursor.return_value = mock_cursor\n    mock_cursor.fetchall.side_effect = [\n        [('table1', 'column1', 'type1')],  # Simulated response for table and column details\n        [('table1', 'column1', 'fk_table1', 'fk_column1')],  # Simulated foreign key details\n        [('constraint1', 'type1', 'details1')],  # Simulated constraints details\n        [('table1', 'column1', 'enum1')],  # Simulated response for enum types\n        [('table1', 'column1', 'enum1', 'enum2')],  # Simulated response for enum type mapping to columns\n    ]\n    mock_create_conn = MagicMock(return_value=mock_conn)\n    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)\n    mock_check_conn = MagicMock(return_value=True)\n    monkeypatch.setattr('supabase_pydantic.util.db.check_connection', mock_check_conn)\n    return mock_create_conn, mock_conn, mock_cursor\n\n@pytest.fixture\ndef mock_construct_table_info(monkeypatch):\n    # Mock construct_table_info and configure a return value\n    mock_function = MagicMock(return_value={'info': 'sample data'})\n    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)\n    return mock_function\n\n@pytest.fixture\ndef mock_query_database(monkeypatch):\n    def mock_query(conn, query, params=()):\n        if query == SCHEMAS_QUERY:\n            return [('public',)]\n        elif query == GET_ALL_PUBLIC_TABLES_AND_COLUMNS:\n            return [('column1', 'column2')]\n        elif query == GET_TABLE_COLUMN_DETAILS:\n            return [('fk_column1', 'fk_column2')]\n        elif query == GET_CONSTRAINTS:\n            return [('constraint1', 'constraint2')]\n        elif query == GET_ENUM_TYPES:\n            return [('enum1', 'enum2')]\n        elif query == GET_COLUMN_TO_USER_DEFINED_TYPE_MAPPING:\n            return [('mapping1', 'mapping2')]\n        return []\n\n    monkeypatch.setattr('supabase_pydantic.util.db.query_database', mock_query)\n\ndef test_construct_tables_local_failure(mock_database):\n    \"\"\"Test failure due to invalid connection parameters.\"\"\"\n    with pytest.raises(AssertionError):\n        construct_tables(DatabaseConnectionType.LOCAL)\n\ndef test_construct_tables_db_url_failure(mock_database):\n    \"\"\"Test failure due to invalid connection parameters.\"\"\"\n    with pytest.raises(AssertionError):\n        construct_tables(DatabaseConnectionType.DB_URL)\n\n@pytest.fixture\ndef mock_construct_table_info_raises_exception(monkeypatch):\n    # Mock construct_table_info and configure it to raise an exception\n    mock_function = MagicMock(side_effect=Exception('Failed to construct table info'))\n    monkeypatch.setattr('supabase_pydantic.util.db.construct_table_info', mock_function)\n    return mock_function\n\n@pytest.fixture\ndef mock_create_connection(monkeypatch):\n    mock_conn = MagicMock()\n    mock_create_conn = MagicMock(return_value=mock_conn)\n    monkeypatch.setattr('supabase_pydantic.util.db.create_connection', mock_create_conn)\n    return mock_create_conn\n"

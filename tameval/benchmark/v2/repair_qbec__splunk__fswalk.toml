@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "splunk/qbec"
+sha = "57f20857bab8d25c968757a7e07bd83847c97e7b"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/fswalk/fswalk.go internal/fswalk/fswalk_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/fswalk/fswalk.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 97.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 91.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/fswalk/fswalk_test.go"
+focal_file_path = "internal/fswalk/fswalk.go"
+test_file_url = "https://github.com/splunk/qbec/blob/57f20857bab8d25c968757a7e07bd83847c97e7b/internal/fswalk/fswalk_test.go"
+focal_file_url = "https://github.com/splunk/qbec/blob/57f20857bab8d25c968757a7e07bd83847c97e7b/internal/fswalk/fswalk.go"
+first_commit_date = "2021-06-27"
+last_commit_date = "2025-04-14"
+test_file_content = "\n\npackage fswalk\n\n\ntype proc struct {\n\textensions []string\n\terrorsFor  []string\n\tseenFiles  []string\n}\n\nfunc (p *proc) Matches(path string, file fs.FileInfo, userSpecified bool) bool {\n\tif userSpecified {\n\t\treturn true\n\t}\n\tfor _, e := range p.extensions {\n\t\tif strings.HasSuffix(path, e) {\n\t\t\treturn true\n\t\t}\n\t}\n\treturn false\n}\nfunc (p *proc) Process(path string, file fs.FileInfo) error {\n\tp.seenFiles = append(p.seenFiles, path)\n\tif file.IsDir() {\n\t\treturn fmt.Errorf(\"processor got a dir\")\n\t}\n\tsort.Strings(p.seenFiles)\n\tfor _, e := range p.errorsFor {\n\t\tif strings.HasSuffix(path, e) {\n\t\t\treturn fmt.Errorf(\"error processing %s\", path)\n\t\t}\n\t}\n\treturn nil\n}\n\nfunc TestProcess(t *testing.T) {\n\ttests := []struct {\n\t\tname            string\n\t\tp               *proc\n\t\tspecified       []string\n\t\texclusions      []string\n\t\tcontinueOnError bool\n\t\tassertFn        func(t *testing.T, p *proc, err error)\n\t}{\n\t\t{\n\t\t\tname: \"happy\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t},\n\t\t\tspecified: []string{\"testdata\"},\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.Equal(t, 3, len(p.seenFiles))\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"happy-specified\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t},\n\t\t\tspecified: []string{\"testdata\", \"testdata/0.txt\"},\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.Equal(t, 4, len(p.seenFiles))\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"errors no continue\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t\terrorsFor:  []string{\"1.jsonnet\", \"2.jsonnet\"},\n\t\t\t},\n\t\t\tspecified: []string{\"testdata\"},\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.Error(t, err)\n\t\t\t\tassert.Equal(t, 1, len(p.seenFiles))\n\t\t\t\tassert.Contains(t, err.Error(), \"error processing\")\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"errors continue\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t\terrorsFor:  []string{\"1.jsonnet\", \"2.jsonnet\"},\n\t\t\t},\n\t\t\tspecified:       []string{\"testdata\"},\n\t\t\tcontinueOnError: true,\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.Error(t, err)\n\t\t\t\tassert.Equal(t, 3, len(p.seenFiles))\n\t\t\t\tassert.Contains(t, err.Error(), \"2 errors encountered\")\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"single error continue\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t\terrorsFor:  []string{\"1.jsonnet\"},\n\t\t\t},\n\t\t\tspecified:       []string{\"testdata\"},\n\t\t\tcontinueOnError: true,\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.Error(t, err)\n\t\t\t\tassert.Equal(t, 3, len(p.seenFiles))\n\t\t\t\tassert.Contains(t, err.Error(), \"1 error encountered\")\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"exclude dir\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t},\n\t\t\tspecified:  []string{\"testdata\"},\n\t\t\texclusions: []string{filepath.Join(\"testdata\", \"dir2\")},\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.Equal(t, 2, len(p.seenFiles))\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"exclude file\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t},\n\t\t\tspecified:  []string{\"testdata\"},\n\t\t\texclusions: []string{filepath.Join(\"**\", \"1a.libsonnet\")},\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.Equal(t, 2, len(p.seenFiles))\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"bad args\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t},\n\t\t\tspecified:       []string{\"not-present\"},\n\t\t\tcontinueOnError: true,\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.Error(t, err)\n\t\t\t\tassert.Equal(t, 0, len(p.seenFiles))\n\t\t\t\tassert.IsType(t, &os.PathError{}, err)\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"bad pattern\",\n\t\t\tp: &proc{\n\t\t\t\textensions: []string{\".libsonnet\", \".jsonnet\"},\n\t\t\t},\n\t\t\tspecified:       []string{\"testdata\"},\n\t\t\texclusions:      []string{\"[1-2.txt\"},\n\t\t\tcontinueOnError: true,\n\t\t\tassertFn: func(t *testing.T, p *proc, err error) {\n\t\t\t\trequire.Error(t, err)\n\t\t\t\tassert.Equal(t, 0, len(p.seenFiles))\n\t\t\t\tassert.Equal(t, \"init options: exclude [1-2.txt: syntax error in pattern\", err.Error())\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, test := range tests {\n\t\tt.Run(test.name, func(t *testing.T) {\n\t\t\terr := Process(test.specified, Options{ContinueOnError: test.continueOnError, Exclusions: test.exclusions, VerboseWalk: true}, test.p)\n\t\t\ttest.assertFn(t, test.p, err)\n\t\t})\n\t}\n}\n\nfunc TestFlags(t *testing.T) {\n\tfs := pflag.NewFlagSet(\"foo\", pflag.ContinueOnError)\n\tfn := AddExclusions(fs)\n\terr := fs.Parse([]string{\"--exclude\", \"foo\", \"-x\", \"bar\"})\n\trequire.NoError(t, err)\n\tassert.EqualValues(t, []string{\"foo\", \"bar\"}, fn())\n}"

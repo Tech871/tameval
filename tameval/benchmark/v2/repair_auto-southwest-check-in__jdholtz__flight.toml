@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jdholtz/auto-southwest-check-in"
+sha = "08010e2aaea522c42913addf8ffdc5485b06ddb7"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=lib/flight.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_flight.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target lib.flight --unit-test tests.unit.test_flight --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target lib/flight.py --unit-test tests/unit/test_flight.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 88.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 2, 3, 4, 5, 6, 7, 9, 11, 14, 21, 22, 23, 24, 25, 26, 29, 33, 35, 36, 37, 39, 47, 57, 58, 59, 60, 61, 63, 64, 65, 66, 68, 69, 71, 72, 73, 75, 76, 78, 84, 85, 87, 89, 92,]
+missed_lines = [ 41, 48, 49, 52, 54, 55,]
+
+[input_info]
+test_file_path = "tests/unit/test_flight.py"
+focal_file_path = "lib/flight.py"
+test_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/tests/unit/test_flight.py"
+focal_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/lib/flight.py"
+first_commit_date = "2021-12-22"
+last_commit_date = "2025-01-03"
+test_file_content = "import zoneinfo\nfrom datetime import datetime, timezone\nfrom pathlib import Path\nfrom typing import Any\nfrom unittest import mock\n\nimport pytest\nfrom pytest_mock import MockerFixture\n\nfrom lib.flight import Flight\n\n\nclass TestFlight:\n    @pytest.fixture(autouse=True)\n    def _set_up_flight(self) -> None:\n        flight_info = {\n            \"departureAirport\": {\"name\": None, \"code\": \"DAL\"},\n            \"arrivalAirport\": {\"name\": None, \"country\": None},\n            \"departureDate\": \"1971-06-18\",\n            \"departureTime\": \"07:00\",\n            \"flights\": [{\"number\": \"WN100\"}],\n        }\n        with mock.patch.object(Flight, \"_set_flight_time\"):\n            self.flight = Flight(flight_info, {}, \"test_num\")\n            self.flight.departure_time = datetime(1971, 6, 18, 12)\n            self.flight._local_departure_time = datetime(1971, 6, 18, 7)\n\n    @pytest.mark.parametrize((\"country\", \"is_international\"), [(None, False), (\"Mexico\", True)])\n    def test_flight_is_international_when_country_is_specified(\n        self, mocker: MockerFixture, country: str, is_international: bool\n    ) -> None:\n        mocker.patch.object(Flight, \"_set_flight_time\")\n        flight_info = {\n            \"departureAirport\": {\"name\": None},\n            \"arrivalAirport\": {\"name\": None, \"country\": country},\n            \"departureTime\": None,\n            \"flights\": [{\"number\": \"WN100\"}],\n        }\n        flight = Flight(flight_info, {}, \"\")\n\n\n    def test_flights_with_the_same_flight_numbers_and_departure_times_are_equal(\n        self, mocker: MockerFixture\n    ) -> None:\n        mocker.patch.object(Flight, \"_set_flight_time\")\n        flight_info = {\n            \"departureAirport\": {\"name\": None},\n            \"arrivalAirport\": {\"name\": None, \"country\": None},\n            \"departureTime\": None,\n            \"flights\": [{\"number\": \"WN100\"}],\n        }\n        flight1 = Flight(flight_info, {}, \"\")\n        flight2 = Flight(flight_info, {}, \"\")\n\n        flight1.departure_time = datetime(1999, 1, 1, 8, 59)\n        flight2.departure_time = datetime(1999, 1, 1, 8, 59)\n\n\n    @pytest.mark.parametrize(\n        (\"flight_info\", \"departure_time\"),\n        [\n            (\n                {\n                    \"departureAirport\": {\"name\": None},\n                    \"arrivalAirport\": {\"name\": None, \"country\": None},\n                    \"departureTime\": None,\n                    \"flights\": [{\"number\": \"WN101\"}],\n                },\n                datetime(1999, 1, 1, 8, 59),\n            ),\n            (\n                {\n                    \"departureAirport\": {\"name\": None},\n                    \"arrivalAirport\": {\"name\": None, \"country\": None},\n                    \"departureTime\": None,\n                    \"flights\": [{\"number\": \"WN100\"}],\n                },\n                datetime(1999, 1, 1, 9, 59),\n            ),\n        ],\n    )\n    def test_flights_with_different_flight_numbers_or_departure_times_are_not_equal(\n        self, mocker: MockerFixture, flight_info: dict[str, Any], departure_time: datetime\n    ) -> None:\n        mocker.patch.object(Flight, \"_set_flight_time\")\n        new_flight = Flight(flight_info, {}, \"\")\n        new_flight.departure_time = departure_time\n\n\n    @pytest.mark.parametrize(\n        (\"twenty_four_hr\", \"expected_time\"), [(True, \"13:59\"), (False, \"1:59 PM\")]\n    )\n    def test_get_display_time_formats_time_correctly(\n        self, twenty_four_hr: bool, expected_time: str\n    ) -> None:\n        tz = zoneinfo.ZoneInfo(\"Asia/Calcutta\")\n        self.flight._local_departure_time = datetime(1999, 12, 31, 13, 59, tzinfo=tz)\n\n    def test_set_flight_time_sets_the_correct_time(self, mocker: MockerFixture) -> None:\n        mock_get_airport_tz = mocker.patch.object(\n            Flight, \"_get_airport_timezone\", return_value=\"Asia/Calcutta\"\n        )\n        mock_convert_to_utc = mocker.patch.object(Flight, \"_convert_to_utc\", return_value=\"18:29\")\n\n        flight_info = {\n            \"departureDate\": \"12-31-99\",\n            \"departureTime\": \"23:59\",\n            \"departureAirport\": {\"code\": \"999\"},\n        }\n        self.flight._set_flight_time(flight_info)\n\n\n    def test_get_airport_timezone_returns_the_correct_timezone(self, mocker: MockerFixture) -> None:\n        mocker.patch.object(Path, \"read_text\")\n        mocker.patch(\"json.loads\", return_value={\"test_code\": \"Asia/Calcutta\"})\n        tz = self.flight._get_airport_timezone(\"test_code\")\n\n    def test_convert_to_utc_converts_local_time_to_utc(self) -> None:\n        tz = zoneinfo.ZoneInfo(\"Asia/Calcutta\")\n        utc_flight_time = self.flight._convert_to_utc(\"1999-12-31 23:59\", tz)\n\n\n    @pytest.mark.parametrize(\n        (\"numbers\", \"expected_num\"),\n        [([\"WN100\"], \"100\"), ([\"WN100\", \"WN101\"], \"100\\u200b/\\u200b101\")],\n    )\n    def test_get_flight_number_creates_flight_number_correctly(\n        self, numbers: list[str], expected_num: str\n    ) -> None:\n        flights = [{\"number\": num} for num in numbers]"

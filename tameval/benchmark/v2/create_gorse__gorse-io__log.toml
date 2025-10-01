@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "gorse-io/gorse"
+sha = "260d55d158caa8c3bbbcbec93e574370e5be477e"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out base/log/log.go base/log/log_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting base/log/log.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 59.0
+original_coverage = 59.0
+mutation_kill_rate = 45.0
+original_mutation_kill_rate = 45.0
+covered_lines = [ 37, 38, 39, 40, 45, 46, 65, 66, 67, 83, 84, 85, 86, 87, 88, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 119, 120, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142,]
+missed_lines = [ 41, 42, 47, 48, 50, 51, 52, 54, 55, 56, 57, 58, 59, 60, 69, 70, 71, 73, 74, 75, 76, 77, 78, 79, 146, 147, 148, 152, 153, 154, 156, 157, 158, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169,]
+
+[input_info]
+test_file_path = "base/log/log_test.go"
+focal_file_path = "base/log/log.go"
+test_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/base/log/log_test.go"
+focal_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/base/log/log.go"
+first_commit_date = "2022-05-19"
+last_commit_date = "2025-03-01"
+test_file_content = "// Copyright 2022 gorse Project Authors\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n// http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage log\n\nimport (\n\t\"github.com/spf13/pflag\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"os\"\n\t\"testing\"\n)\n\nfunc TestSetDevelopmentLogger(t *testing.T) {\n\ttemp, err := os.MkdirTemp(\"\", \"gorse\")\n\tassert.NoError(t, err)\n\tflagSet := pflag.NewFlagSet(\"test\", pflag.ContinueOnError)\n\tAddFlags(flagSet)\n\t// set existed path\n\terr = flagSet.Set(\"log-path\", temp+\"/gorse.log\")\n\tassert.NoError(t, err)\n\tSetLogger(flagSet, true)\n\tLogger().Debug(\"test\")\n\tassert.FileExists(t, temp+\"/gorse.log\")\n\t// set non-existed path\n\terr = flagSet.Set(\"log-path\", temp+\"/gorse/gorse.log\")\n\tassert.NoError(t, err)\n\tSetLogger(flagSet, true)\n\tLogger().Debug(\"test\")\n\tassert.FileExists(t, temp+\"/gorse/gorse.log\")\n}\n\nfunc TestSetProductionLogger(t *testing.T) {\n\ttemp, err := os.MkdirTemp(\"\", \"gorse\")\n\tassert.NoError(t, err)\n\tflagSet := pflag.NewFlagSet(\"test\", pflag.ContinueOnError)\n\tAddFlags(flagSet)\n\t// set existed path\n\terr = flagSet.Set(\"log-path\", temp+\"/gorse.log\")\n\tassert.NoError(t, err)\n\tSetLogger(flagSet, false)\n\tLogger().Info(\"test\")\n\tassert.FileExists(t, temp+\"/gorse.log\")\n\t// set non-existed path\n\terr = flagSet.Set(\"log-path\", temp+\"/gorse/gorse.log\")\n\tassert.NoError(t, err)\n\tSetLogger(flagSet, false)\n\tLogger().Info(\"test\")\n\tassert.FileExists(t, temp+\"/gorse/gorse.log\")\n}\n\nfunc TestRedactDBURL(t *testing.T) {\n\tassert.Equal(t, \"mysql://xxxxx:xxxxxxxxxx@tcp(localhost:3306)/gorse?parseTime=true\", RedactDBURL(\"mysql://gorse:gorse_pass@tcp(localhost:3306)/gorse?parseTime=true\"))\n\tassert.Equal(t, \"postgres://xxx:xxxxxx@1.2.3.4:5432/mydb?sslmode=verify-full\", RedactDBURL(\"postgres://bob:secret@1.2.3.4:5432/mydb?sslmode=verify-full\"))\n\tassert.Equal(t, \"mysql://gorse:gorse_pass@tcp(localhost:3306) gorse?parseTime=true\", RedactDBURL(\"mysql://gorse:gorse_pass@tcp(localhost:3306) gorse?parseTime=true\"))\n\tassert.Equal(t, \"postgres://bob:secret@1.2.3.4:5432 mydb?sslmode=verify-full\", RedactDBURL(\"postgres://bob:secret@1.2.3.4:5432 mydb?sslmode=verify-full\"))\n}\n"

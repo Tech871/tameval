@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "baalimago/clai"
+sha = "b45e13a52986e12878bc2314022787173f3c7c4b"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/setup/mcp_parser.go internal/setup/mcp_parser_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/setup/mcp_parser.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 73.0
+original_coverage = 73.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 33.0
+covered_lines = [ 26, 27, 28, 37, 38, 39, 40, 41, 42, 43, 44, 49, 50, 53, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 73, 74, 75, 76, 77, 80, 81, 82, 83, 90, 94, 95, 96, 99,]
+missed_lines = [ 29, 30, 31, 33, 34, 35, 45, 46, 47, 85, 86, 87, 91, 92, 93,]
+
+[input_info]
+test_file_path = "internal/setup/mcp_parser_test.go"
+focal_file_path = "internal/setup/mcp_parser.go"
+test_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/setup/mcp_parser_test.go"
+focal_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/setup/mcp_parser.go"
+first_commit_date = "2025-06-22"
+last_commit_date = "2025-06-22"
+test_file_content = "package setup\n\nimport (\n\t\"encoding/json\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"slices\"\n\t\"testing\"\n\n\t\"github.com/baalimago/clai/internal/tools\"\n)\n\nfunc TestValidateMcpServerConfig(t *testing.T) {\n\ttests := []struct {\n\t\tname        string\n\t\tconfig      string\n\t\texpectError bool\n\t}{\n\t\t{\n\t\t\tname:        \"empty config\",\n\t\t\tconfig:      \"\",\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname:        \"invalid JSON\",\n\t\t\tconfig:      `{\"invalid\": json}`,\n\t\t\texpectError: true,\n\t\t},\n\t\t{\n\t\t\tname: \"valid config\",\n\t\t\tconfig: `{\n\t\t\t\t\"mcpServers\": {\n\t\t\t\t\t\"browsermcp\": {\n\t\t\t\t\t\t\"command\": \"npx\",\n\t\t\t\t\t\t\"args\": [\"@browsermcp/mcp@latest\"]\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}`,\n\t\t\texpectError: false,\n\t\t},\n\t\t{\n\t\t\tname: \"missing command\",\n\t\t\tconfig: `{\n\t\t\t\t\"mcpServers\": {\n\t\t\t\t\t\"test\": {\n\t\t\t\t\t\t\"args\": [\"something\"]\n\t\t\t\t\t}\n\t\t\t\t}\n\t\t\t}`,\n\t\t\texpectError: true,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\terr := ValidateMcpServerConfig(tt.config)\n\t\t\tif tt.expectError && err == nil {\n\t\t\t\tt.Error(\"expected error but got none\")\n\t\t\t}\n\t\t\tif !tt.expectError && err != nil {\n\t\t\t\tt.Errorf(\"unexpected error: %v\", err)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestConvertToInternalFormat(t *testing.T) {\n\texternal := McpServerExternal{\n\t\tCommand: \"npx\",\n\t\tArgs:    []string{\"@browsermcp/mcp@latest\"},\n\t\tEnv:     map[string]string{\"NODE_ENV\": \"production\"},\n\t}\n\n\tinternal := convertToInternalFormat(external)\n\n\tif internal.Command != \"npx\" {\n\t\tt.Errorf(\"expected command 'npx', got '%s'\", internal.Command)\n\t}\n\tif len(internal.Args) != 1 || internal.Args[0] != \"@browsermcp/mcp@latest\" {\n\t\tt.Errorf(\"expected args ['@browsermcp/mcp@latest'], got %v\", internal.Args)\n\t}\n\tif internal.Env[\"NODE_ENV\"] != \"production\" {\n\t\tt.Errorf(\"expected env NODE_ENV=production, got %v\", internal.Env)\n\t}\n}\n\nfunc TestConvertToInternalFormatNilEnv(t *testing.T) {\n\texternal := McpServerExternal{\n\t\tCommand: \"echo\",\n\t\tArgs:    []string{\"hello\"},\n\t}\n\n\tinternal := convertToInternalFormat(external)\n\n\tif internal.Env == nil {\n\t\tt.Error(\"expected env to be initialized as empty map\")\n\t}\n}\n\nfunc TestParseAndAddMcpServer(t *testing.T) {\n\ttempDir := t.TempDir()\n\n\tconfig := `{\n\t\t\"mcpServers\": {\n\t\t\t\"browsermcp\": {\n\t\t\t\t\"command\": \"npx\",\n\t\t\t\t\"args\": [\"@browsermcp/mcp@latest\"]\n\t\t\t},\n\t\t\t\"filesystem\": {\n\t\t\t\t\"command\": \"npx\",\n\t\t\t\t\"args\": [\"-y\", \"@modelcontextprotocol/server-filesystem\", \"/tmp\"],\n\t\t\t\t\"env\": {\"DEBUG\": \"true\"}\n\t\t\t}\n\t\t}\n\t}`\n\n\tgot, err := ParseAndAddMcpServer(tempDir, config)\n\tif err != nil {\n\t\tt.Fatalf(\"unexpected error: %v\", err)\n\t}\n\twant := []string{\"browsermcp\", \"filesystem\"}\n\tbothOk := true\n\tfor _, k := range want {\n\t\tif !slices.Contains(got, k) {\n\t\t\tbothOk = false\n\t\t}\n\t}\n\tif !bothOk {\n\t\tt.Fatalf(\"expected: %v, to have: %v\", got, want)\n\t}\n\n\t// Check that files were created\n\tbrowsermcpPath := filepath.Join(tempDir, \"browsermcp.json\")\n\tfilesystemPath := filepath.Join(tempDir, \"filesystem.json\")\n\n\tif _, statErr := os.Stat(browsermcpPath); os.IsNotExist(statErr) {\n\t\tt.Error(\"browsermcp.json was not created\")\n\t}\n\tif _, statErr := os.Stat(filesystemPath); os.IsNotExist(statErr) {\n\t\tt.Error(\"filesystem.json was not created\")\n\t}\n\n\t// Verify content of one file\n\tdata, err := os.ReadFile(browsermcpPath)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to read browsermcp.json: %v\", err)\n\t}\n\n\tvar server tools.McpServer\n\tif err := json.Unmarshal(data, &server); err != nil {\n\t\tt.Fatalf(\"failed to unmarshal server config: %v\", err)\n\t}\n\n\tif server.Command != \"npx\" {\n\t\tt.Errorf(\"expected command 'npx', got '%s'\", server.Command)\n\t}\n}\n"

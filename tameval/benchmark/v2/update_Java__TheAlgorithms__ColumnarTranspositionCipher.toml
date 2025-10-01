@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "TheAlgorithms/Java"
+sha = "16345cba6db8657bf4b83fc7392920aa00a3e170"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ColumnarTranspositionCipherTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ColumnarTranspositionCipher  -DtargetTests=**.ColumnarTranspositionCipherTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 81.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/thealgorithms/ciphers/ColumnarTranspositionCipherTest.java"
+focal_file_path = "src/main/java/com/thealgorithms/ciphers/ColumnarTranspositionCipher.java"
+test_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/test/java/com/thealgorithms/ciphers/ColumnarTranspositionCipherTest.java"
+focal_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/main/java/com/thealgorithms/ciphers/ColumnarTranspositionCipher.java"
+first_commit_date = "2021-11-12"
+last_commit_date = "2024-10-09"
+test_file_content = "package com.thealgorithms.ciphers;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertNotEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\n\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\npublic class ColumnarTranspositionCipherTest {\n    private String keyword;\n    private String plaintext;\n\n    @BeforeEach\n    public void setUp() {\n        keyword = \"keyword\";\n        plaintext = \"This is a test message for Columnar Transposition Cipher\";\n    }\n\n    @Test\n    public void testEncryption() {\n        String encryptedText = ColumnarTranspositionCipher.encrpyter(plaintext, keyword);\n        assertNotNull(encryptedText, \"The encrypted text should not be null.\");\n        assertFalse(encryptedText.isEmpty(), \"The encrypted text should not be empty.\");\n        // Check if the encrypted text is different from the plaintext\n        assertNotEquals(plaintext, encryptedText, \"The encrypted text should be different from the plaintext.\");\n    }\n\n    @Test\n    public void testDecryption() {\n        String encryptedText = ColumnarTranspositionCipher.encrpyter(plaintext, keyword);\n        String decryptedText = ColumnarTranspositionCipher.decrypter();\n\n        assertEquals(plaintext.replaceAll(\" \", \"\"), decryptedText.replaceAll(\" \", \"\"), \"The decrypted text should match the original plaintext, ignoring spaces.\");\n        assertEquals(encryptedText, ColumnarTranspositionCipher.encrpyter(plaintext, keyword), \"The encrypted text should be the same when encrypted again.\");\n    }\n\n    @Test\n    public void testLongPlainText() {\n        String longText = \"This is a significantly longer piece of text to test the encryption and decryption capabilities of the Columnar Transposition Cipher. It should handle long strings gracefully.\";\n        String encryptedText = ColumnarTranspositionCipher.encrpyter(longText, keyword);\n        String decryptedText = ColumnarTranspositionCipher.decrypter();\n        assertEquals(longText.replaceAll(\" \", \"\"), decryptedText.replaceAll(\" \", \"\"), \"The decrypted text should match the original long plaintext, ignoring spaces.\");\n        assertEquals(encryptedText, ColumnarTranspositionCipher.encrpyter(longText, keyword), \"The encrypted text should be the same when encrypted again.\");\n    }\n}"

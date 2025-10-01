@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "siyul-park/uniflow"
+sha = "9a8c580db91d1ea6f709f700a463153d8aedf829"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugins/ctrl/pkg/node/retry.go plugins/ctrl/pkg/node/retry_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugins/ctrl/pkg/node/retry.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 92.0
+original_coverage = 92.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 33, 34, 35, 36, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 55, 56, 57, 58, 63, 64, 65, 66, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 103, 104, 111, 112, 115, 116, 117, 118, 119, 123, 124, 125, 126, 127, 128,]
+missed_lines = [ 59, 67, 68, 108, 109, 110,]
+
+[input_info]
+test_file_path = "plugins/ctrl/pkg/node/retry_test.go"
+focal_file_path = "plugins/ctrl/pkg/node/retry.go"
+test_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/retry_test.go"
+focal_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/retry.go"
+first_commit_date = "2025-04-28"
+last_commit_date = "2025-06-01"
+test_file_content = "package node\n\nimport (\n\t\"context\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/go-faker/faker/v4\"\n\t\"github.com/pkg/errors\"\n\t\"github.com/siyul-park/uniflow/pkg/node\"\n\t\"github.com/siyul-park/uniflow/pkg/packet\"\n\t\"github.com/siyul-park/uniflow/pkg/port\"\n\t\"github.com/siyul-park/uniflow/pkg/process\"\n\t\"github.com/siyul-park/uniflow/pkg/types\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestRetryNodeCodec_Compile(t *testing.T) {\n\tcodec := NewRetryNodeCodec()\n\n\tspec := &RetryNodeSpec{\n\t\tThreshold: 0,\n\t}\n\n\tn, err := codec.Compile(spec)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\nfunc TestNewRetryNode(t *testing.T) {\n\tn := NewRetryNode(0)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\nfunc TestRetryNode_Port(t *testing.T) {\n\tn := NewRetryNode(0)\n\tdefer n.Close()\n\n\trequire.NotNil(t, n.In(node.PortIn))\n\trequire.NotNil(t, n.Out(node.PortOut))\n}\n\nfunc TestRetryNode_SendAndReceive(t *testing.T) {\n\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\tdefer cancel()\n\n\tlimit := 2\n\n\tn1 := NewRetryNode(limit)\n\tdefer n1.Close()\n\n\tcount := 0\n\tn2 := node.NewOneToOneNode(func(_ *process.Process, inPck *packet.Packet) (*packet.Packet, *packet.Packet) {\n\t\tcount += 1\n\t\treturn nil, packet.New(types.NewError(errors.New(faker.Sentence())))\n\t})\n\tdefer n2.Close()\n\n\tn1.Out(node.PortOut).Link(n2.In(node.PortIn))\n\n\tin := port.NewOut()\n\tin.Link(n1.In(node.PortIn))\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\n\tinWriter := in.Open(proc)\n\n\tinPayload := types.NewString(faker.UUIDHyphenated())\n\tinPck := packet.New(inPayload)\n\n\tinWriter.Write(inPck)\n\n\tselect {\n\tcase outPck := <-inWriter.Receive():\n\t\trequire.Equal(t, limit+1, count)\n\t\trequire.IsType(t, outPck.Payload(), types.NewError(nil))\n\tcase <-ctx.Done():\n\t\trequire.Fail(t, ctx.Err().Error())\n\t}\n}\n\nfunc TestRetryNode_SendAndReceiveAlt(t *testing.T) {\n\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\tdefer cancel()\n\n\tretryLimit := 2\n\n\tretryNode := NewRetryNode(retryLimit)\n\tdefer retryNode.Close()\n\n\tpacketCount := 0\n\toneToOneNode := node.NewOneToOneNode(func(_ *process.Process, inPacket *packet.Packet) (*packet.Packet, *packet.Packet) {\n\t\tpacketCount++\n\t\treturn nil, packet.New(types.NewError(errors.New(faker.Sentence())))\n\t})\n\tdefer oneToOneNode.Close()\n\n\tretryNode.Out(node.PortOut).Link(oneToOneNode.In(node.PortIn))\n\n\tinputPort := port.NewOut()\n\tinputPort.Link(retryNode.In(node.PortIn))\n\n\tprocessInstance := process.New()\n\tdefer processInstance.Exit(nil)\n\n\twriter := inputPort.Open(processInstance)\n\n\tpayload := types.NewString(faker.UUIDHyphenated())\n\tpacketToSend := packet.New(payload)\n\n\twriter.Write(packetToSend)\n\n\tselect {\n\tcase receivedPacket := <-writer.Receive():\n\t\trequire.Equal(t, retryLimit+1, packetCount)\n\t\trequire.IsType(t, receivedPacket.Payload(), types.NewError(nil))\n\tcase <-ctx.Done():\n\t\trequire.Fail(t, ctx.Err().Error())\n\t}\n}\n\nfunc BenchmarkRetryNode_SendAndReceive(b *testing.B) {\n\tn1 := NewRetryNode(1)\n\tdefer n1.Close()\n\n\tn2 := node.NewOneToOneNode(func(_ *process.Process, inPck *packet.Packet) (*packet.Packet, *packet.Packet) {\n\t\treturn nil, packet.New(types.NewError(errors.New(faker.Sentence())))\n\t})\n\tdefer n2.Close()\n\n\tn1.Out(node.PortOut).Link(n2.In(node.PortIn))\n\n\tin := port.NewOut()\n\tin.Link(n1.In(node.PortIn))\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\n\tinWriter := in.Open(proc)\n\n\tinPayload := types.NewString(faker.UUIDHyphenated())\n\tinPck := packet.New(inPayload)\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tinWriter.Write(inPck)\n\t\t<-inWriter.Receive()\n\t}\n}\n\nfunc BenchmarkRetryNode_SendAndReceiveAlt(b *testing.B) {\n\tretryNode := NewRetryNode(1)\n\tdefer retryNode.Close()\n\n\toneToOneNode := node.NewOneToOneNode(func(_ *process.Process, inPacket *packet.Packet) (*packet.Packet, *packet.Packet) {\n\t\treturn nil, packet.New(types.NewError(errors.New(faker.Sentence())))\n\t})\n\tdefer oneToOneNode.Close()\n\n\tretryNode.Out(node.PortOut).Link(oneToOneNode.In(node.PortIn))\n\n\tinputPort := port.NewOut()\n\tinputPort.Link(retryNode.In(node.PortIn))\n\n\tprocessInstance := process.New()\n\tdefer processInstance.Exit(nil)\n\n\twriter := inputPort.Open(processInstance)\n\n\tpayload := types.NewString(faker.UUIDHyphenated())\n\tpacketToSend := packet.New(payload)\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\twriter.Write(packetToSend)\n\t\t<-writer.Receive()\n\t}\n}"

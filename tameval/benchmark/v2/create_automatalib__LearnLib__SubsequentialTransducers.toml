@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "LearnLib/automatalib"
+sha = "125bd7267571158b87da3e5dbe92f505ce1729a5"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl util -Dtest=SubsequentialTransducersTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl util -DtargetClasses=**.SubsequentialTransducers  -DtargetTests=**.SubsequentialTransducersTest  -DoutputFormats=XML"
+coverage_report_path = "util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 77.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 37, 109, 111, 112, 114, 116, 131, 132, 133, 134, 136, 138, 139, 140, 142, 144, 145, 146, 152, 154, 155, 156, 159, 160, 162, 163, 164, 166, 168, 194, 195, 196, 199, 200, 203, 205, 211, 213, 214, 215, 217, 218, 219, 221, 222, 223, 225, 226, 228, 235, 237, 238, 239, 240, 242, 244,]
+missed_lines = [ 72, 108, 118, 119, 121, 122, 123, 124, 125, 126, 128, 147, 148, 150, 157, 170, 201,]
+
+[input_info]
+test_file_path = "util/src/test/java/net/automatalib/util/automaton/transducer/SubsequentialTransducersTest.java"
+focal_file_path = "util/src/main/java/net/automatalib/util/automaton/transducer/SubsequentialTransducers.java"
+test_file_url = "https://github.com/LearnLib/automatalib/blob/125bd7267571158b87da3e5dbe92f505ce1729a5/util/src/test/java/net/automatalib/util/automaton/transducer/SubsequentialTransducersTest.java"
+focal_file_url = "https://github.com/LearnLib/automatalib/blob/125bd7267571158b87da3e5dbe92f505ce1729a5/util/src/main/java/net/automatalib/util/automaton/transducer/SubsequentialTransducers.java"
+first_commit_date = "2023-10-10"
+last_commit_date = "2025-01-07"
+test_file_content = "/* Copyright (C) 2013-2025 TU Dortmund University\n * This file is part of AutomataLib <https://automatalib.net>.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage net.automatalib.util.automaton.transducer;\n\nimport net.automatalib.alphabet.Alphabet;\nimport net.automatalib.alphabet.impl.Alphabets;\nimport net.automatalib.automaton.transducer.impl.CompactSST;\nimport net.automatalib.util.automaton.Automata;\nimport net.automatalib.word.Word;\nimport org.testng.Assert;\nimport org.testng.annotations.Test;\n\npublic class SubsequentialTransducersTest {\n\n    private static final Alphabet<Character> INPUTS = Alphabets.characters('a', 'c');\n\n\n    @Test\n    public void testPartialModel() {\n\n        final CompactSST<Character, Character> sst = new CompactSST<>(INPUTS);\n\n        final int s1 = sst.addInitialState(Word.fromLetter('x'));\n        final int s2 = sst.addState(Word.fromLetter('x'));\n        final int s3 = sst.addState(Word.fromLetter('x'));\n\n        sst.setTransition(s1, (Character) 'a', s2, Word.fromLetter('x'));\n        sst.setTransition(s1, (Character) 'b', s2, Word.fromLetter('y'));\n        sst.setTransition(s1, (Character) 'c', s2, Word.fromLetter('z'));\n\n        sst.setTransition(s2, (Character) 'a', s3, Word.fromLetter('x'));\n        sst.setTransition(s2, (Character) 'b', s3, Word.fromLetter('y'));\n        sst.setTransition(s2, (Character) 'c', s3, Word.fromLetter('z'));\n\n        final CompactSST<Character, Character> osst =\n                SubsequentialTransducers.toOnwardSST(sst, INPUTS, new CompactSST<>(INPUTS), false);\n\n        Assert.assertTrue(SubsequentialTransducers.isOnwardSST(osst, INPUTS));\n\n        final CompactSST<Character, Character> expected = new CompactSST<>(INPUTS);\n\n        final int e1 = expected.addInitialState(Word.fromLetter('x'));\n        final int e2 = expected.addState(Word.fromLetter('x'));\n        final int e3 = expected.addState(Word.epsilon());\n\n        expected.setTransition(e1, (Character) 'a', e2, Word.fromLetter('x'));\n        expected.setTransition(e1, (Character) 'b', e2, Word.fromLetter('y'));\n        expected.setTransition(e1, (Character) 'c', e2, Word.fromLetter('z'));\n\n        expected.setTransition(e2, (Character) 'a', e3, Word.fromString(\"xx\"));\n        expected.setTransition(e2, (Character) 'b', e3, Word.fromString(\"yx\"));\n        expected.setTransition(e2, (Character) 'c', e3, Word.fromString(\"zx\"));\n\n        Assert.assertTrue(Automata.testEquivalence(expected, osst, INPUTS));\n    }\n\n\n}\n"

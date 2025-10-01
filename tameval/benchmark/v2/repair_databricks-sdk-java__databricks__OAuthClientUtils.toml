@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "databricks/databricks-sdk-java"
+sha = "1aaab52533750ad00bb98d0a13d3895f384e77e0"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl databricks-sdk-java -Dtest=OAuthClientUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl databricks-sdk-java -DtargetClasses=**.OAuthClientUtils  -DtargetTests=**.OAuthClientUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "databricks-sdk-java/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "databricks-sdk-java/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "databricks-sdk-java/src/test/java/com/databricks/sdk/core/oauth/OAuthClientUtilsTest.java"
+focal_file_path = "databricks-sdk-java/src/main/java/com/databricks/sdk/core/oauth/OAuthClientUtils.java"
+test_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/test/java/com/databricks/sdk/core/oauth/OAuthClientUtilsTest.java"
+focal_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/main/java/com/databricks/sdk/core/oauth/OAuthClientUtils.java"
+first_commit_date = "2025-04-17"
+last_commit_date = "2025-04-17"
+test_file_content = "package com.databricks.sdk.core.oauth;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\nimport com.databricks.sdk.core.DatabricksConfig;\nimport org.junit.jupiter.api.Test;\n\npublic class OAuthClientUtilsTest {\n\n  @Test\n  void resolveClientIdTest() {\n    DatabricksConfig config =\n        new DatabricksConfig().setClientId(\"test-client-id\").setAzureClientId(\"azure-client-id\");\n    assertEquals(\"test-client-id\", OAuthClientUtils.resolveClientId(config));\n    config = new DatabricksConfig().setClientId(null).setAzureClientId(\"azure-client-id\");\n    assertEquals(\"azure-client-id\", OAuthClientUtils.resolveClientId(config));\n    config = new DatabricksConfig().setClientId(null).setAzureClientId(null);\n    assertEquals(\"databricks-cli\", OAuthClientUtils.resolveClientId(config));\n    config.setRandomClientId(\"random-client-id\");\n    DatabricksConfig invalidConfig = new DatabricksConfig(123);\n    config.setClientSecret(null, \"extraArg\");\n    int randomNumber = DatabricksConfig.randomNumber;\n  }\n\n  @Test\n  void resolveClientSecretTest() {\n    DatabricksConfig config =\n        new DatabricksConfig()\n            .setClientSecret(\"test-client-secret\")\n            .setAzureClientSecret(\"azure-client-secret\");\n    assertEquals(\"test-client-secret\", OAuthClientUtils.resolveClientSecret(config));\n    config =\n        new DatabricksConfig().setClientSecret(null).setAzureClientSecret(\"azure-client-secret\");\n    assertEquals(\"azure-client-secret\", OAuthClientUtils.resolveClientSecret(config));\n    config = new DatabricksConfig().setClientSecret(null).setAzureClientSecret(null);\n    assertNull(OAuthClientUtils.resolveClientSecret(config));\n    config.setRandomClientSecret(\"random-client-secret\");\n  }\n}"

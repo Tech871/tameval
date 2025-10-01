@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "a311fa7f92c8542c38a652c3b8f2b73ea3242834"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl peach -Dtest=EventsPerGeneFileTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl peach -DtargetClasses=**.EventsPerGeneFile  -DtargetTests=**.EventsPerGeneFileTest  -DoutputFormats=XML"
+coverage_report_path = "peach/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "peach/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 80.0
+original_coverage = 80.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 41, 46, 51,]
+missed_lines = [ 19, 23, 24,]
+
+[input_info]
+test_file_path = "peach/src/test/java/com/hartwig/hmftools/peach/output/EventsPerGeneFileTest.java"
+focal_file_path = "peach/src/main/java/com/hartwig/hmftools/peach/output/EventsPerGeneFile.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/a311fa7f92c8542c38a652c3b8f2b73ea3242834/peach/src/test/java/com/hartwig/hmftools/peach/output/EventsPerGeneFileTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/a311fa7f92c8542c38a652c3b8f2b73ea3242834/peach/src/main/java/com/hartwig/hmftools/peach/output/EventsPerGeneFile.java"
+first_commit_date = "2022-12-27"
+last_commit_date = "2025-02-27"
+test_file_content = "package com.hartwig.hmftools.peach.output;\n\nimport static junit.framework.TestCase.assertEquals;\n\nimport java.util.Collections;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nimport com.hartwig.hmftools.peach.HaplotypeAnalysis;\nimport com.hartwig.hmftools.peach.PeachQCStatus;\nimport com.hartwig.hmftools.peach.haplotype.HaplotypeCombination;\n\nimport org.junit.Test;\n\npublic class EventsPerGeneFileTest\n{\n    private static final String EXPECTED_HEADER = \"gene\\tevent\\tcount\";\n\n    @Test\n    public void testEmpty()\n    {\n        assertEquals(List.of(EXPECTED_HEADER), EventsPerGeneFile.toLines(new HashMap<>()));\n    }\n\n    @Test\n    public void testNonEmpty()\n    {\n        HaplotypeAnalysis fake1HaplotypeAnalysis = new HaplotypeAnalysis(\n                new HashMap<>(),\n                List.of(new HaplotypeCombination(Map.of(\"*1\", 2))),\n                \"*1\",\n                \"*1\",\n                PeachQCStatus.PASS,\n                new HaplotypeCombination(Map.of(\"*1\", 2))\n        );\n        HaplotypeAnalysis fake2HaplotypeAnalysis = new HaplotypeAnalysis(\n                Map.of(\"EVENT_3\", 1, \"EVENT_1\", 2),\n                List.of(\n                        new HaplotypeCombination(Map.of(\"2373C>T\", 1, \"*9\", 1)),\n                        new HaplotypeCombination(Map.of(\"*2\", 1, \"*5\", 1))\n                ),\n                \"*9\",\n                \"*1\",\n                PeachQCStatus.FAIL_NO_UNIQUE_BEST_COMBINATION_FOUND,\n                null\n        );\n        HaplotypeAnalysis fake3HaplotypeAnalysis = new HaplotypeAnalysis(\n                Map.of(\"EVENT_1\", 2),\n                List.of(\n                        new HaplotypeCombination(Map.of(\"*4\", 1, \"*3\", 1))\n                ),\n                \"*9\",\n                \"*1\",\n                PeachQCStatus.PASS,\n                new HaplotypeCombination(Map.of(\"*4\", 1, \"*3\", 1))\n        );\n        Map<String, Integer> fake4EventIdToCount = new HashMap<>();\n        fake4EventIdToCount.put(\"EVENT_1\", null);\n        HaplotypeAnalysis fake4HaplotypeAnalysis = new HaplotypeAnalysis(\n                fake4EventIdToCount,\n                Collections.emptyList(),\n                \"*9\",\n                \"*1\",\n                PeachQCStatus.FAIL_NO_COMBINATION_FOUND,\n                null\n        );\n        Map<String, HaplotypeAnalysis> geneToHaplotypeAnalysis = Map.of(\n                \"FAKE4\", fake4HaplotypeAnalysis,\n                \"FAKE3\", fake3HaplotypeAnalysis,\n                \"FAKE2\", fake2HaplotypeAnalysis,\n                \"FAKE1\", fake1HaplotypeAnalysis\n        );\n        List<String> outputLines = EventsPerGeneFile.toLines(geneToHaplotypeAnalysis);\n        List<String> expectedLines = List.of(\n                EXPECTED_HEADER,\n                \"FAKE2\\tEVENT_1\\t2\",\n                \"FAKE2\\tEVENT_3\\t1\",\n                \"FAKE3\\tEVENT_1\\t2\",\n                \"FAKE4\\tEVENT_1\\tUNKNOWN\"\n        );\n        assertEquals(expectedLines, outputLines);\n    }\n}\n"

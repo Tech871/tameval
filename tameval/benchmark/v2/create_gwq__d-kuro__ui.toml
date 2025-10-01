@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "d-kuro/gwq"
+sha = "7fad1c9ddcea371f8f51c70758439d4c94e5de70"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/ui/ui.go internal/ui/ui_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/ui/ui.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 41.0
+original_coverage = 77.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 62.0
+covered_lines = [ 31, 32, 33, 34, 35, 36, 39, 45, 46, 47, 48, 49, 50, 51, 52, 55, 58, 59, 60, 62, 66, 67, 68, 69, 70, 71, 72, 99, 100, 101, 102, 103, 167, 168, 169, 170, 175, 176, 177, 178, 179, 183, 188, 189, 190, 191, 192, 193, 204, 205, 206, 207, 208, 209, 210, 211, 212, 214, 215,]
+missed_lines = [ 21, 22, 23, 26, 27, 28, 40, 41, 42, 43, 56, 57, 63, 64, 65, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 85, 86, 87, 88, 89, 93, 94, 95, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 125, 126, 127, 128, 129, 130, 133, 134, 135, 139, 140, 141, 144, 145, 146, 149, 150, 151, 154, 155, 156, 159, 160, 161, 162, 163, 171, 184, 185, 186, 194, 195, 196, 197, 198, 199,]
+
+[input_info]
+test_file_path = "internal/ui/ui_test.go"
+focal_file_path = "internal/ui/ui.go"
+test_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/ui/ui_test.go"
+focal_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/ui/ui.go"
+first_commit_date = "2025-05-26"
+last_commit_date = "2025-06-14"
+test_file_content = "package ui\n\nimport (\n\t\"encoding/json\"\n\t\"io\"\n\t\"os\"\n\t\"strings\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/d-kuro/gwq/pkg/models\"\n)\n\n\n\nfunc TestPrintWorktreesVerbose(t *testing.T) {\n\t// Capture stdout\n\toldStdout := os.Stdout\n\tr, w, _ := os.Pipe()\n\tos.Stdout = w\n\n\tworktrees := []models.Worktree{\n\t\t{\n\t\t\tPath:       \"/path/to/main\",\n\t\t\tBranch:     \"main\",\n\t\t\tCommitHash: \"abc123def456789\",\n\t\t\tIsMain:     true,\n\t\t\tCreatedAt:  time.Now(),\n\t\t},\n\t}\n\n\tp := New(&models.UIConfig{})\n\tp.PrintWorktrees(worktrees, true)\n\t_ = w.Close()\n\tout, _ := io.ReadAll(r)\n\toutput := string(out)\n\tos.Stdout = oldStdout\n\n\t// Verify verbose output\n\tif !strings.Contains(output, \"COMMIT\") {\n\t\tt.Error(\"Verbose output should contain COMMIT header\")\n\t}\n\tif !strings.Contains(output, \"CREATED\") {\n\t\tt.Error(\"Verbose output should contain CREATED header\")\n\t}\n\tif !strings.Contains(output, \"TYPE\") {\n\t\tt.Error(\"Verbose output should contain TYPE header\")\n\t}\n\tif !strings.Contains(output, \"abc123de\") {\n\t\tt.Error(\"Verbose output should contain truncated commit hash\")\n\t}\n\tif !strings.Contains(output, \"main\") {\n\t\tt.Error(\"Verbose output should contain worktree type\")\n\t}\n}\n\n\nfunc TestPrintWorktreesJSON(t *testing.T) {\n\t// Capture stdout\n\toldStdout := os.Stdout\n\tr, w, _ := os.Pipe()\n\tos.Stdout = w\n\n\tnow := time.Now().Truncate(time.Second)\n\tworktrees := []models.Worktree{\n\t\t{\n\t\t\tPath:       \"/path/to/main\",\n\t\t\tBranch:     \"main\",\n\t\t\tCommitHash: \"abc123\",\n\t\t\tIsMain:     true,\n\t\t\tCreatedAt:  now,\n\t\t},\n\t}\n\n\tp := New(&models.UIConfig{})\n\terr := p.PrintWorktreesJSON(worktrees)\n\tif err != nil {\n\t\tt.Fatalf(\"PrintWorktreesJSON() error = %v\", err)\n\t}\n\n\t_ = w.Close()\n\tout, _ := io.ReadAll(r)\n\tos.Stdout = oldStdout\n\n\t// Verify JSON output\n\tvar decoded []models.Worktree\n\tif err := json.Unmarshal(out, &decoded); err != nil {\n\t\tt.Fatalf(\"Failed to unmarshal JSON output: %v\", err)\n\t}\n\n\tif len(decoded) != 1 {\n\t\tt.Errorf(\"Expected 1 worktree in JSON, got %d\", len(decoded))\n\t}\n\n\tif decoded[0].Path != worktrees[0].Path {\n\t\tt.Errorf(\"JSON worktree path = %s, want %s\", decoded[0].Path, worktrees[0].Path)\n\t}\n}\n\n\n\n\n\n\n\nfunc TestTruncateMessage(t *testing.T) {\n\tp := &Printer{}\n\n\ttests := []struct {\n\t\tmessage  string\n\t\tmaxLen   int\n\t\texpected string\n\t}{\n\t\t{\"This is a very long commit message that should be truncated\", 20, \"This is a very lo...\"},\n\t\t{\"Short message\", 20, \"Short message\"},\n\t\t{\"20CharactersExactly!\", 20, \"20CharactersExactly!\"},\n\t\t{\"21 characters message\", 20, \"21 characters mes...\"},\n\t\t{\"\", 10, \"\"},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.message, func(t *testing.T) {\n\t\t\tresult := p.truncateMessage(tt.message, tt.maxLen)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"truncateMessage(%s, %d) = %s, want %s\", tt.message, tt.maxLen, result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n\n\n\nfunc TestPrintConfigRecursiveWithPrefix(t *testing.T) {\n\t// Capture stdout\n\toldStdout := os.Stdout\n\tr, w, _ := os.Pipe()\n\tos.Stdout = w\n\n\tp := &Printer{}\n\n\t// Test with initial prefix\n\tdata := map[string]interface{}{\n\t\t\"key\": \"value\",\n\t}\n\n\tp.printConfigRecursive(\"prefix\", data)\n\t_ = w.Close()\n\tout, _ := io.ReadAll(r)\n\toutput := string(out)\n\tos.Stdout = oldStdout\n\n\texpected := \"prefix.key = value\\n\"\n\tif output != expected {\n\t\tt.Errorf(\"printConfigRecursive() output = %q, want %q\", output, expected)\n\t}\n}\n"

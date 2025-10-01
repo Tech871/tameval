@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pymeasure/pymeasure"
+sha = "03452744481f5dd366eb1ee3764bff3995e384d1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=pymeasure/instruments/keithley/keithley2510.py -m pytest -q --junit-xml=test_output.xml tests/instruments/keithley/test_keithley2510.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target pymeasure.instruments.keithley.keithley2510 --unit-test tests.instruments.keithley.test_keithley2510 --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target pymeasure/instruments/keithley/keithley2510.py --unit-test tests/instruments/keithley/test_keithley2510.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 72.0
+original_coverage = 72.0
+mutation_kill_rate = 24.0
+original_mutation_kill_rate = 24.0
+covered_lines = [ 24, 26, 27, 30, 35, 36, 40, 51, 62, 67, 72, 79, 90, 99, 108, 109, 112, 114, 115, 116, 120, 128, 136, 144, 145, 148, 150, 151, 152, 156, 158, 160, 162, 164, 166, 168, 170, 172, 190,]
+missed_lines = [ 182, 184, 185, 186, 188, 208, 209, 211, 213, 214, 216, 217, 219, 220, 222,]
+
+[input_info]
+test_file_path = "tests/instruments/keithley/test_keithley2510.py"
+focal_file_path = "pymeasure/instruments/keithley/keithley2510.py"
+test_file_url = "https://github.com/pymeasure/pymeasure/blob/03452744481f5dd366eb1ee3764bff3995e384d1/tests/instruments/keithley/test_keithley2510.py"
+focal_file_url = "https://github.com/pymeasure/pymeasure/blob/03452744481f5dd366eb1ee3764bff3995e384d1/pymeasure/instruments/keithley/keithley2510.py"
+first_commit_date = "2025-01-25"
+last_commit_date = "2025-07-22"
+test_file_content = "from pymeasure.test import expected_protocol\nfrom pymeasure.instruments.keithley.keithley2510 import Keithley2510\n\n\ndef test_init():\n    with expected_protocol(Keithley2510, []):\n        pass\n\n\ndef test_enable_source():\n    with expected_protocol(Keithley2510, [(b\"OUTPUT ON\", None)]) as inst:\n        inst.enable_source()\n\n\ndef test_turn_on_source():\n    with expected_protocol(Keithley2510, [(b\"OUTPUT ON\", None)]) as inst:\n        inst.write(\"OUTPUT ON\")\n\n\ndef test_disable_source():\n    with expected_protocol(Keithley2510, [(b\"OUTPUT OFF\", None)]) as inst:\n        inst.disable_source()\n\n\ndef test_temperature_setpoint_setter():\n    with expected_protocol(Keithley2510, [(b\":SOURce:TEMPerature 50\", None)]) as inst:\n        inst.temperature_setpoint = 50\n\n\ndef test_set_temperature_setpoint():\n    with expected_protocol(Keithley2510, [(b\":SOURce:TEMPerature 75\", None)]) as inst:\n        inst.write(\":SOURce:TEMPerature 75\")\n\n\ndef test_temperature_measurement():\n    with expected_protocol(Keithley2510, [(b\":MEASure:TEMPerature?\", b\"23.4\\n\")]) as inst:\n        assert inst.temperature == 23.4\n\n\ndef test_measure_temperature():\n    with expected_protocol(Keithley2510, [(b\":MEASure:TEMPerature?\", b\"23.4\\n\")]) as inst:\n        assert float(inst.ask(\":MEASure:TEMPerature?\")) == 23.4\n\n\ndef test_current_measurement():\n    with expected_protocol(Keithley2510, [(b\":MEASure:CURRent?\", b\"0.02\\n\")]) as inst:\n        assert inst.current == 0.02\n\n\ndef test_voltage_measurement():\n    with expected_protocol(Keithley2510, [(b\":MEASure:VOLTage?\", b\"3.3\\n\")]) as inst:\n        assert inst.voltage == 3.3\n\n\ndef test_temperature_protection_enable():\n    with expected_protocol(\n        Keithley2510, [(b\":SOURce:TEMPerature:PROTection:STATe ON\", None)]\n    ) as inst:\n        inst.enable_temperature_protection()\n\n\ndef test_activate_temperature_protection():\n    with expected_protocol(\n        Keithley2510, [(b\":SOURce:TEMPerature:PROTection:STATe ON\", None)]\n    ) as inst:\n        inst.write(\":SOURce:TEMPerature:PROTection:STATe ON\")\n\n\ndef test_temperature_protection_disable():\n    with expected_protocol(\n        Keithley2510, [(b\":SOURce:TEMPerature:PROTection:STATe OFF\", None)]\n    ) as inst:\n        inst.disable_temperature_protection()\n\n\ndef test_temperature_protection_range():\n    with expected_protocol(\n        Keithley2510,\n        [\n            (b\":SOURce:TEMPerature:PROTection:LOW 5\", None),\n            (b\":SOURce:TEMPerature:PROTection:HIGH 100\", None),\n            (b\":SOURce:TEMPerature:PROTection:LOW?\", b\"5\\n\"),\n            (b\":SOURce:TEMPerature:PROTection:HIGH?\", b\"100\\n\"),\n        ],\n    ) as inst:\n        inst.temperature_protection_range = (5, 100)\n        assert inst.temperature_protection_range == (5, 100)\n\n\ndef test_temperature_pid():\n    with expected_protocol(\n        Keithley2510,\n        [\n            (b\":SOURce:TEMPerature:LCONstants:GAIN 1\", None),\n            (b\":SOURce:TEMPerature:LCONstants:INTegral 2\", None),\n            (b\":SOURce:TEMPerature:LCONstants:DERivative 3\", None),\n            (b\":SOURce:TEMPerature:LCONstants:GAIN?\", 1),\n            (b\":SOURce:TEMPerature:LCONstants:INTegral?\", 2),\n            (b\":SOURce:TEMPerature:LCONstants:DERivative?\", 3),\n        ],\n    ) as inst:\n        inst.temperature_pid = (1, 2, 3)\n        assert inst.temperature_pid == (1, 2, 3)"

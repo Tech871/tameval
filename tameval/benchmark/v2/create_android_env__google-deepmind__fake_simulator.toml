@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-deepmind/android_env"
+sha = "827047088b9e932f29a951d734962bf855587521"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_env/components/simulators/fake/fake_simulator.py -m pytest -q --junit-xml=test_output.xml android_env/components/simulators/fake/fake_simulator_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_env.components.simulators.fake.fake_simulator --unit-test android_env.components.simulators.fake.fake_simulator_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_env/components/simulators/fake/fake_simulator.py --unit-test android_env/components/simulators/fake/fake_simulator_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 55.0
+original_coverage = 92.0
+mutation_kill_rate = 68.0
+original_mutation_kill_rate = 68.0
+covered_lines = [ 17, 18, 19, 21, 22, 23, 24, 25, 26, 29, 32, 43, 47, 50, 62, 65, 69, 72, 76, 79, 105, 108, 110, 111, 112, 114, 117, 118, 120, 123, 126, 127, 129, 130, 132, 135,]
+missed_lines = [ 33, 40, 41, 45, 48, 51, 52, 53, 55, 56, 58, 59, 66, 67, 70, 73, 87, 90, 91, 94, 95, 98, 99, 102, 115, 121, 124, 133, 136,]
+
+[input_info]
+test_file_path = "android_env/components/simulators/fake/fake_simulator_test.py"
+focal_file_path = "android_env/components/simulators/fake/fake_simulator.py"
+test_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/components/simulators/fake/fake_simulator_test.py"
+focal_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/components/simulators/fake/fake_simulator.py"
+first_commit_date = "2021-10-05"
+last_commit_date = "2025-06-02"
+test_file_content = "# coding=utf-8\n# Copyright 2025 DeepMind Technologies Limited.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for fake_simulator.\"\"\"\n\nimport re\nfrom absl.testing import absltest\nfrom android_env.components import config_classes\nfrom android_env.components.simulators.fake import fake_simulator\nimport numpy as np\n\nclass FakeSimulatorTest(absltest.TestCase):\n\n  def test_device_name(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))\n    )\n    self.assertEqual(simulator.adb_device_name(), 'fake_simulator')\n\n  def test_send_touch(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(screen_dimensions=(320, 480))\n    )\n    simulator.launch()\n    simulator.send_touch([(0, 1, True, 0)])\n    simulator.send_touch([(0, 1, False, 0)])\n    # No assertions, we just want to ensure that `send_touch()` can be called\n    # without crashing anything.\n\nif __name__ == '__main__':\n  absltest.main()\n"

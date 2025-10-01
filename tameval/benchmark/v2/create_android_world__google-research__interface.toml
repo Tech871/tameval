@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-research/android_world"
+sha = "05afc97ecab2ad235e2fc2a40e740f0102a3bcbc"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_world/env/interface.py -m pytest -q --junit-xml=test_output.xml android_world/env/interface_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_world.env.interface --unit-test android_world.env.interface_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_world/env/interface.py --unit-test android_world/env/interface_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 72.0
+original_coverage = 74.0
+mutation_kill_rate = 38.0
+original_mutation_kill_rate = 38.0
+covered_lines = [ 16, 17, 18, 19, 21, 22, 23, 24, 25, 26, 27, 28, 29, 32, 40, 41, 52, 53, 54, 55, 57, 58, 72, 81, 82, 83, 86, 87, 94, 95, 113, 116, 117, 136, 137, 140, 141, 142, 145, 146, 147, 150, 151, 152, 165, 166, 169, 170, 171, 174, 175, 178, 179, 180, 187, 188, 189, 198, 212, 215, 217, 220, 221, 226, 228, 229, 232, 239, 242, 260, 261, 262, 265, 266, 267, 269, 270, 271, 273, 274, 275, 276, 281, 282, 283, 284, 285, 286, 289, 291, 296, 313, 319, 327, 332, 333, 340, 341, 344, 345, 348, 354, 355, 358, 359,]
+missed_lines = [ 34, 66, 69, 200, 230, 233, 234, 235, 237, 240, 263, 278, 279, 292, 293, 294, 297, 298, 299, 300, 301, 302, 304, 305, 306, 315, 320, 330, 334, 335, 336, 338, 342, 346, 349, 350, 351, 352, 356, 360,]
+
+[input_info]
+test_file_path = "android_world/env/interface_test.py"
+focal_file_path = "android_world/env/interface.py"
+test_file_url = "https://github.com/google-research/android_world/blob/05afc97ecab2ad235e2fc2a40e740f0102a3bcbc/android_world/env/interface_test.py"
+focal_file_url = "https://github.com/google-research/android_world/blob/05afc97ecab2ad235e2fc2a40e740f0102a3bcbc/android_world/env/interface.py"
+first_commit_date = "2024-05-16"
+last_commit_date = "2025-06-02"
+test_file_content = "# Copyright 2025 The android_world Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\nfrom unittest import mock\n\nfrom absl.testing import absltest\nfrom android_world.env import interface\nfrom android_world.env import representation_utils\nimport numpy as np\n\nclass InterfaceTest(absltest.TestCase):\n\n  @mock.patch(\"time.sleep\", return_value=None)\n  def test_ui_stability_true(self, unused_mocked_time_sleep):\n    stable_ui_elements = [representation_utils.UIElement(text=\"StableElement\")]\n    states = [\n        interface.State(\n            ui_elements=stable_ui_elements,\n            pixels=np.empty([1, 2, 3]),\n            forest=None,\n        )\n        for _ in range(4)\n    ]\n    env = interface.AsyncAndroidEnv(mock.MagicMock())\n    env._get_state = mock.MagicMock(side_effect=states)\n\n    self.assertEqual(\n        env._get_stable_state(\n            stability_threshold=3, sleep_duration=0.1, timeout=1\n        ),\n        states[2],\n    )\n\nif __name__ == \"__main__\":\n  absltest.main()\n"

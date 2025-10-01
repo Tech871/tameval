@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "armadaproject/armada"
+sha = "5765dcb8fc87b811dfe3cdf254e04c6587afa142"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/executor/podchecks/failedpodchecks/pod_status_checks.go internal/executor/podchecks/failedpodchecks/pod_status_checks_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/executor/podchecks/failedpodchecks/pod_status_checks.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 89.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/executor/podchecks/failedpodchecks/pod_status_checks_test.go"
+focal_file_path = "internal/executor/podchecks/failedpodchecks/pod_status_checks.go"
+test_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/executor/podchecks/failedpodchecks/pod_status_checks_test.go"
+focal_file_url = "https://github.com/armadaproject/armada/blob/5765dcb8fc87b811dfe3cdf254e04c6587afa142/internal/executor/podchecks/failedpodchecks/pod_status_checks.go"
+first_commit_date = "2025-01-20"
+last_commit_date = "2025-01-20"
+test_file_content = "package failedpodchecks\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\tv1 \"k8s.io/api/core/v1\"\n\n\t\"github.com/armadaproject/armada/internal/executor/configuration/podchecks\"\n)\n\nfunc TestPodStatusChecker_IsRetryable(t *testing.T) {\n\ttests := map[string]struct {\n\t\tinput          *v1.Pod\n\t\tchecks         []podchecks.PodStatusCheck\n\t\texpectedResult bool\n\t\texpectMessage  bool\n\t}{\n\t\t\"empty checks\": {\n\t\t\tinput:          makePodWithMessageAndReason(\"message\", \"reason\"),\n\t\t\texpectedResult: false,\n\t\t\texpectMessage:  false,\n\t\t},\n\t\t\"matches message on regex\": {\n\t\t\tinput:          makePodWithMessageAndReason(\"message\", \"reason\"),\n\t\t\tchecks:         []podchecks.PodStatusCheck{{Regexp: \"mess.*\"}},\n\t\t\texpectedResult: true,\n\t\t\texpectMessage:  true,\n\t\t},\n\t\t\"matches on reason if supplied\": {\n\t\t\tinput:          makePodWithMessageAndReason(\"message\", \"reason\"),\n\t\t\tchecks:         []podchecks.PodStatusCheck{{Regexp: \"mess.*\", Reason: \"reason\"}},\n\t\t\texpectedResult: true,\n\t\t\texpectMessage:  true,\n\t\t},\n\t\t\"matches on reason if supplied - no match\": {\n\t\t\tinput:          makePodWithMessageAndReason(\"message\", \"reason\"),\n\t\t\tchecks:         []podchecks.PodStatusCheck{{Regexp: \"mess.*\", Reason: \"reason2\"}},\n\t\t\texpectedResult: false,\n\t\t\texpectMessage:  false,\n\t\t},\n\t\t\"multiple checks - no match\": {\n\t\t\tinput: makePodWithMessageAndReason(\"message\", \"reason\"),\n\t\t\tchecks: []podchecks.PodStatusCheck{\n\t\t\t\t{Regexp: \"reas.*\", Reason: \"\"},\n\t\t\t\t{Regexp: \"reas.*\", Reason: \"reason\"},\n\t\t\t\t{Regexp: \"mess.*\", Reason: \"reason2\"},\n\t\t\t},\n\t\t\texpectedResult: false,\n\t\t\texpectMessage:  false,\n\t\t},\n\t\t\"multiple checks - match\": {\n\t\t\tinput: makePodWithMessageAndReason(\"message\", \"reason\"),\n\t\t\tchecks: []podchecks.PodStatusCheck{\n\t\t\t\t{Regexp: \"reas.*\", Reason: \"\"},\n\t\t\t\t{Regexp: \"reas.*\", Reason: \"reason\"},\n\t\t\t\t{Regexp: \"mess.*\", Reason: \"\"},\n\t\t\t},\n\t\t\texpectedResult: true,\n\t\t\texpectMessage:  true,\n\t\t},\n\t}\n\n\tfor name, tc := range tests {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\tchecker, err := NewPodStatusChecker(tc.checks)\n\t\t\trequire.NoError(t, err)\n\n\t\t\tisRetryable, message := checker.IsRetryable(tc.input)\n\n\t\t\tassert.Equal(t, tc.expectedResult, isRetryable)\n\t\t\tif tc.expectMessage {\n\t\t\t\tassert.NotEmpty(t, message)\n\t\t\t} else {\n\t\t\t\tassert.Empty(t, message)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestPodStatusChecker_Initialisation(t *testing.T) {\n\t_, err := NewPodStatusChecker([]podchecks.PodStatusCheck{})\n\tassert.NoError(t, err)\n\t_, err = NewPodStatusChecker([]podchecks.PodStatusCheck{{Regexp: \".*\"}})\n\tassert.NoError(t, err)\n\t_, err = NewPodStatusChecker([]podchecks.PodStatusCheck{{Regexp: \"[\"}})\n\tassert.Error(t, err)\n\t_, err = NewPodStatusChecker(\"invalid argument type\")\n\tassert.Error(t, err)\n\t\n\t_, err = NewPodStatusChecker(5)\n\tassert.Error(t, err)\n\t\n\t_, err = NewPodStatusChecker(nil, \"extra argument\")\n\tassert.Error(t, err)\n\t\n\t_, err = NewPodStatusChecker()\n\tassert.Error(t, err)\n\t\n\t_, err = NewPodStatusChecker([]string{\"not a PodStatusCheck\"})\n\tassert.Error(t, err)\n}\n\nfunc makePodWithMessageAndReason(message string, reason string) *v1.Pod {\n\treturn &v1.Pod{Status: v1.PodStatus{\n\t\tMessage: message,\n\t\tReason:  reason,\n\t}}\n}"

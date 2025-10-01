@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-java"
+sha = "0d031dbf7b6729e10550725b08238918a4ceeca8"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-java-core -Dtest=MultiValueConverterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-java-core -DtargetClasses=**.MultiValueConverter  -DtargetTests=**.MultiValueConverterTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-java-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-java-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 54.0
+original_coverage = 92.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 73, 74, 75, 76, 77, 78, 79,]
+missed_lines = [ 62, 83, 84, 85, 86, 88,]
+
+[input_info]
+test_file_path = "microsphere-java-core/src/test/java/io/microsphere/convert/multiple/MultiValueConverterTest.java"
+focal_file_path = "microsphere-java-core/src/main/java/io/microsphere/convert/multiple/MultiValueConverter.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/0d031dbf7b6729e10550725b08238918a4ceeca8/microsphere-java-core/src/test/java/io/microsphere/convert/multiple/MultiValueConverterTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/0d031dbf7b6729e10550725b08238918a4ceeca8/microsphere-java-core/src/main/java/io/microsphere/convert/multiple/MultiValueConverter.java"
+first_commit_date = "2024-04-08"
+last_commit_date = "2024-04-08"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.microsphere.convert.multiple;\n\nimport org.junit.jupiter.api.Test;\n\nimport java.lang.reflect.Array;\nimport java.util.Collection;\nimport java.util.Deque;\nimport java.util.List;\nimport java.util.NavigableSet;\nimport java.util.Queue;\nimport java.util.Set;\nimport java.util.concurrent.BlockingDeque;\nimport java.util.concurrent.BlockingQueue;\nimport java.util.concurrent.TransferQueue;\n\nimport static io.microsphere.collection.SetUtils.ofSet;\nimport static io.microsphere.convert.multiple.MultiValueConverter.convertIfPossible;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\n/**\n * {@link MultiValueConverter} Test\n *\n * @since 1.0.0\n */\nclass MultiValueConverterTest {\n\n    @Test\n    void testFind() {\n        MultiValueConverter converter = MultiValueConverter.find(String.class, String[].class);\n        assertEquals(StringToArrayConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, BlockingDeque.class);\n        assertEquals(StringToBlockingDequeConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, BlockingQueue.class);\n        assertEquals(StringToBlockingQueueConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, Collection.class);\n        assertEquals(StringToCollectionConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, Deque.class);\n        assertEquals(StringToDequeConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, List.class);\n        assertEquals(StringToListConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, NavigableSet.class);\n        assertEquals(StringToNavigableSetConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, Queue.class);\n        assertEquals(StringToQueueConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, Set.class);\n        assertEquals(StringToSetConverter.class, converter.getClass());\n\n        converter = MultiValueConverter.find(String.class, TransferQueue.class);\n        assertEquals(StringToTransferQueueConverter.class, converter.getClass());\n    }\n\n}\n"

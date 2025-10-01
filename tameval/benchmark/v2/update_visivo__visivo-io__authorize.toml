@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "visivo-io/visivo"
+sha = "65f80739da9eae151e990b6d21751f8d904c80e9"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=visivo/commands/authorize.py -m pytest -q --junit-xml=test_output.xml tests/commands/test_authorize.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target visivo.commands.authorize --unit-test tests.commands.test_authorize --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target visivo/commands/authorize.py --unit-test tests/commands/test_authorize.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 85.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/commands/test_authorize.py"
+focal_file_path = "visivo/commands/authorize.py"
+test_file_url = "https://github.com/visivo-io/visivo/blob/65f80739da9eae151e990b6d21751f8d904c80e9/tests/commands/test_authorize.py"
+focal_file_url = "https://github.com/visivo-io/visivo/blob/65f80739da9eae151e990b6d21751f8d904c80e9/visivo/commands/authorize.py"
+first_commit_date = "2025-02-18"
+last_commit_date = "2025-06-24"
+test_file_content = "import threading\nimport time\nfrom click.testing import CliRunner\nimport pytest\n\nfrom visivo.logging.logger import Logger\nfrom visivo.tokens.server import token_received_event, run_flask_server\nfrom visivo.tokens.web_utils import open_url\nfrom visivo.commands.authorize import authorize\n\n\n@pytest.fixture(autouse=True)\ndef dummy_run_server(monkeypatch):\n    \"\"\"\n    Patch run_flask_server so that it does nothing.\n    This prevents starting any live server.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.tokens.server.run_flask_server\", lambda **kwargs: None)\n    monkeypatch.setattr(\"visivo.commands.authorize.run_flask_server\", lambda **kwargs: None)\n\n\n@pytest.fixture(autouse=True)\ndef dummy_open_url(monkeypatch):\n    \"\"\"\n    Patch open_url so that it always returns True,\n    simulating a successful browser open without actually opening a browser.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.tokens.web_utils.open_url\", lambda url: True)\n    monkeypatch.setattr(\"visivo.commands.authorize.open_url\", lambda url: True)\n\n\n@pytest.fixture(autouse=True)\ndef dummy_spinner(monkeypatch):\n    \"\"\"\n    Patch Logger.instance().spinner with a dummy that does nothing.\n    \"\"\"\n\n    class DummySpinner:\n        def stop(self):\n            pass\n\n        def start(self):\n            pass\n\n    monkeypatch.setattr(Logger.instance(), \"spinner\", DummySpinner())\n\n\n@pytest.fixture(autouse=True)\ndef mock_webbrowser_open(monkeypatch):\n    \"\"\"\n    Mock webbrowser.open for all tests in this file.\n    If you want to test the actual opening of a browser, you can comment out this fixture.\n    \"\"\"\n    monkeypatch.setattr(\"webbrowser.open\", lambda url, new=0, autoraise=True: True)\n\n\n@pytest.fixture(autouse=True)\ndef reset_token_event():\n    token_received_event.clear()\n    yield\n    token_received_event.clear()\n\n\n@pytest.fixture(autouse=True)\ndef mock_file_writes(monkeypatch):\n    \"\"\"\n    Patch the token storage function so that it does nothing.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.tokens.server.validate_and_store_token\", lambda token: None)\n\n\ndef test_authorize_successful_callback(monkeypatch):\n    \"\"\"\n    Test that when no token exists the authorize command completes normally.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.commands.authorize.get_existing_token\", lambda: None)\n    monkeypatch.setattr(token_received_event, \"wait\", lambda timeout=None: True)\n\n    runner = CliRunner()\n    result = runner.invoke(authorize, [\"--host\", \"http://localhost:3030\"])\n\n    assert result.exit_code == 0\n    assert \"Waiting for visivo token response\" in result.output\n\n\ndef test_authorize_timeout_cancel(monkeypatch):\n    \"\"\"\n    Test the case where a token already exists and no callback is received.\n    The command prompts to add a new token, then later asks if the user wants\n    to cancel. We simulate a timeout by forcing token_received_event.wait to always return False.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.commands.authorize.get_existing_token\", lambda: \"abc1234567\")\n    monkeypatch.setattr(token_received_event, \"wait\", lambda timeout=None: False)\n\n    runner = CliRunner()\n    result = runner.invoke(authorize, [\"--host\", \"http://localhost:3030\"], input=\"y\\ny\\n\")\n    expected = \"Authorization cancelled. No token received.\"\n    assert expected in result.output\n\n\ndef test_authorize_existing_token_no_overwrite(monkeypatch):\n    \"\"\"\n    Test the case where a token already exists and the user opts not to\n    overwrite it. The command should cancel authorization immediately.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.commands.authorize.get_existing_token\", lambda: \"abc1234567\")\n\n    runner = CliRunner()\n    result = runner.invoke(authorize, [\"--host\", \"http://localhost:3030\"], input=\"n\\n\")\n\n    expected = \"Authorization cancelled. Using the existing token.\"\n    assert expected in result.output\n\n\ndef test_authorize_existing_token_overwrite(monkeypatch):\n    \"\"\"\n    Test the case where a token already exists and the user opts to add a new token.\n    In this case the command should continue to wait for a callback.\n    \"\"\"\n    monkeypatch.setattr(\"visivo.commands.authorize.get_existing_token\", lambda: \"abc1234567\")\n    monkeypatch.setattr(token_received_event, \"wait\", lambda timeout=None: True)\n\n    runner = CliRunner()\n    result = runner.invoke(authorize, [\"--host\", \"http://localhost:3030\"], input=\"y\\n\")\n\n    assert result.exit_code == 0\n    assert \"Waiting for visivo token response\" in result.output"

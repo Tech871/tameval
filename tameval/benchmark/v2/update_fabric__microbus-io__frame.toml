@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "microbus-io/fabric"
+sha = "55cc62f52e58a2f8386b6086061b17a7d133fea3"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out frame/frame.go frame/frame_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting frame/frame.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 55.0
+original_coverage = 61.0
+mutation_kill_rate = 45.0
+original_mutation_kill_rate = 48.0
+covered_lines = [ 65, 66, 67, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 90, 91, 92, 93, 96, 148, 149, 150, 154, 155, 156, 157, 158, 159, 160, 161, 178, 179, 180, 183, 184, 185, 186, 187, 188, 192, 193, 194, 197, 198, 199, 200, 201, 202, 206, 207, 208, 211, 212, 213, 214, 215, 216, 220, 221, 222, 223, 224, 225, 229, 233, 234, 235, 236, 237, 238, 242, 243, 244, 247, 248, 249, 250, 251, 252, 256, 257, 258, 259, 260, 261, 265, 269, 270, 271, 272, 273, 274, 279, 280, 281, 282, 283, 284, 288, 293, 294, 295, 296, 297, 298, 299, 304, 305, 306, 310, 311, 312, 313, 314, 315, 320, 321, 322, 323, 324, 325, 329, 333, 337, 342, 343, 344, 345, 346, 347, 400, 401, 402, 403, 404, 405, 406, 407, 408, 409, 410, 412, 413, 414, 415, 416, 417, 418, 419, 420, 421, 422, 423, 424, 425, 428, 429, 430, 431, 433,]
+missed_lines = [ 68, 69, 86, 87, 88, 89, 100, 101, 102, 107, 108, 109, 113, 114, 115, 119, 120, 121, 125, 126, 127, 128, 129, 130, 134, 135, 136, 139, 140, 141, 142, 143, 144, 166, 167, 168, 169, 170, 171, 172, 173, 174, 226, 227, 228, 262, 263, 264, 285, 286, 287, 326, 327, 328, 330, 331, 332, 334, 335, 336, 354, 355, 356, 357, 358, 359, 360, 367, 368, 369, 370, 371, 372, 379, 380, 381, 382, 386, 387, 388, 391, 392, 393, 394, 395, 396, 437, 438, 439, 440, 441, 442, 447, 448, 449, 453, 454, 455, 456, 457, 458, 462, 463, 464, 465, 466, 467, 468, 469, 470, 471, 472, 473, 474, 479, 480, 481, 482, 483, 484, 485, 486, 487, 488, 497, 498, 499, 500, 501, 502, 503, 504, 506, 507, 508, 509, 510,]
+
+[input_info]
+test_file_path = "frame/frame_test.go"
+focal_file_path = "frame/frame.go"
+test_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/frame/frame_test.go"
+focal_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/frame/frame.go"
+first_commit_date = "2022-09-25"
+last_commit_date = "2025-07-12"
+test_file_content = "/*\nCopyright (c) 2023-2024 Microbus LLC and various contributors\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage frame\n\nimport (\n\t\"context\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"strings\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/microbus-io/testarossa\"\n)\n\nfunc TestFrame_Of(t *testing.T) {\n\tt.Parallel()\n\n\t// http.Request\n\thttpRequest, err := http.NewRequest(\"GET\", \"https://www.example.com\", nil)\n\ttestarossa.NoError(t, err)\n\thttpRequest.Header.Set(HeaderMsgId, \"123\")\n\ttestarossa.Equal(t, \"123\", Of(httpRequest).MessageID())\n\n\t// httptest.ResponseRecorder and http.Response\n\thttpRecorder := httptest.NewRecorder()\n\thttpRecorder.Header().Set(HeaderMsgId, \"123\")\n\ttestarossa.Equal(t, \"123\", Of(httpRecorder).MessageID())\n\thttpResponse := httpRecorder.Result()\n\ttestarossa.Equal(t, \"123\", Of(httpResponse).MessageID())\n\n\t// http.Header\n\thdr := make(http.Header)\n\thdr.Set(HeaderMsgId, \"123\")\n\ttestarossa.Equal(t, \"123\", Of(hdr).MessageID())\n\n\t// context.Context\n\tctx := context.WithValue(context.Background(), contextKey, hdr)\n\ttestarossa.Equal(t, \"123\", Of(ctx).MessageID())\n\n\t// Empty context.Context should not panic\n\ttestarossa.Equal(t, \"\", Of(context.Background()).MessageID())\n}\n\nfunc TestFrame_GetSet(t *testing.T) {\n\tt.Parallel()\n\n\tf := Of(make(http.Header))\n\n\ttestarossa.Equal(t, \"\", f.OpCode())\n\tf.SetOpCode(OpCodeError)\n\ttestarossa.Equal(t, OpCodeError, f.OpCode())\n\tf.SetOpCode(\"\")\n\ttestarossa.Equal(t, \"\", f.OpCode())\n\n\ttestarossa.Zero(t, f.CallDepth())\n\tf.SetCallDepth(123)\n\ttestarossa.Equal(t, 123, f.CallDepth())\n\tf.SetCallDepth(0)\n\ttestarossa.Zero(t, f.CallDepth())\n\n\ttestarossa.Equal(t, \"\", f.FromHost())\n\tf.SetFromHost(\"www.example.com\")\n\ttestarossa.Equal(t, \"www.example.com\", f.FromHost())\n\tf.SetFromHost(\"\")\n\ttestarossa.Equal(t, \"\", f.FromHost())\n\n\ttestarossa.Equal(t, \"\", f.FromID())\n\tf.SetFromID(\"1234567890\")\n\ttestarossa.Equal(t, \"1234567890\", f.FromID())\n\tf.SetFromID(\"\")\n\ttestarossa.Equal(t, \"\", f.FromID())\n\n\ttestarossa.Zero(t, f.FromVersion())\n\tf.SetFromVersion(12345)\n\ttestarossa.Equal(t, 12345, f.FromVersion())\n\tf.SetFromVersion(0)\n\ttestarossa.Zero(t, f.FromVersion())\n\n\ttestarossa.Equal(t, \"\", f.MessageID())\n\tf.SetMessageID(\"1234567890\")\n\ttestarossa.Equal(t, \"1234567890\", f.MessageID())\n\tf.SetMessageID(\"\")\n\ttestarossa.Equal(t, \"\", f.MessageID())\n\n\tbudget := f.TimeBudget()\n\ttestarossa.Equal(t, time.Duration(0), budget)\n\tf.SetTimeBudget(123 * time.Second)\n\tbudget = f.TimeBudget()\n\ttestarossa.Equal(t, 123*time.Second, budget)\n\tf.SetTimeBudget(0)\n\tbudget = f.TimeBudget()\n\ttestarossa.Equal(t, time.Duration(0), budget)\n\n\ttestarossa.Equal(t, \"\", f.Queue())\n\tf.SetQueue(\"1234567890\")\n\ttestarossa.Equal(t, \"1234567890\", f.Queue())\n\tf.SetQueue(\"\")\n\ttestarossa.Equal(t, \"\", f.Queue())\n\n\tfi, fm := f.Fragment()\n\ttestarossa.Equal(t, 1, fi)\n\ttestarossa.Equal(t, 1, fm)\n\tf.SetFragment(2, 5)\n\tfi, fm = f.Fragment()\n\ttestarossa.Equal(t, fi, 2)\n\ttestarossa.Equal(t, fm, 5)\n\tf.SetFragment(0, 0)\n\tfi, fm = f.Fragment()\n\ttestarossa.Equal(t, fi, 1)\n\ttestarossa.Equal(t, fm, 1)\n}\n\nfunc TestFrame_XForwarded(t *testing.T) {\n\thttpRequest, err := http.NewRequest(\"GET\", \"https://www.example.com\", nil)\n\ttestarossa.NoError(t, err)\n\tframe := Of(httpRequest)\n\ttestarossa.Equal(t, \"\", frame.XForwardedBaseURL())\n\n\thttpRequest.Header.Set(\"X-Forwarded-Proto\", \"https\")\n\thttpRequest.Header.Set(\"X-Forwarded-Host\", \"www.proxy.com\")\n\thttpRequest.Header.Set(\"X-Forwarded-Prefix\", \"/example\")\n\ttestarossa.Equal(t, \"https://www.proxy.com/example\", frame.XForwardedBaseURL())\n\n\thttpRequest.Header.Set(\"X-Forwarded-Prefix\", \"/example/\")\n\ttestarossa.Equal(t, \"https://www.proxy.com/example\", frame.XForwardedBaseURL())\n}\n\nfunc TestFrame_Languages(t *testing.T) {\n\ttestCases := []string{\n\t\t\"\", \"\",\n\t\t\"en\", \"en\",\n\t\t\"EN\", \"EN\",\n\t\t\"da, en-gb;q=0.8, en;q=0.7\", \"da,en-gb,en\",\n\t\t\"da, en-gb;q=0.7, en;q=0.8\", \"da,en,en-gb\",\n\t\t\"da,en-gb;q=0.7,en;q=0.8\", \"da,en,en-gb\",\n\t\t\" en ;q=1   , es ; q = 0.5 \", \"en,es\",\n\t}\n\th := http.Header{}\n\tfor i := 0; i < len(testCases); i += 2 {\n\t\th.Set(\"Accept-Language\", testCases[i])\n\t\tlangs := Of(h).Languages()\n\t\tvar expected []string\n\t\tif testCases[i+1] != \"\" {\n\t\t\texpected = strings.Split(testCases[i+1], \",\")\n\t\t}\n\t\ttestarossa.SliceEqual(t, expected, langs)\n\t}\n}"

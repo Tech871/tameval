@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.4"
+
+[repo_info]
+repository = "google/osv-scalibr"
+sha = "68757353cde699f714e3edbe2ef641c84e737ac6"
+
+[run_info]
+docker_image = "golang:1.23.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out extractor/standalone/windows/dismpatch/dismparser/dism_parser.go extractor/standalone/windows/dismpatch/dismparser/dism_parser_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting extractor/standalone/windows/dismpatch/dismparser/dism_parser.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 83.0
+original_coverage = 83.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 40, 41, 42, 43, 48, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 76, 77, 78, 80, 83, 84, 85, 86, 87,]
+missed_lines = [ 44, 45, 46, 49, 50, 51, 88,]
+
+[input_info]
+test_file_path = "extractor/standalone/windows/dismpatch/dismparser/dism_parser_test.go"
+focal_file_path = "extractor/standalone/windows/dismpatch/dismparser/dism_parser.go"
+test_file_url = "https://github.com/google/osv-scalibr/blob/68757353cde699f714e3edbe2ef641c84e737ac6/extractor/standalone/windows/dismpatch/dismparser/dism_parser_test.go"
+focal_file_url = "https://github.com/google/osv-scalibr/blob/68757353cde699f714e3edbe2ef641c84e737ac6/extractor/standalone/windows/dismpatch/dismparser/dism_parser.go"
+first_commit_date = "2024-05-29"
+last_commit_date = "2025-01-23"
+test_file_content = "// Copyright 2025 Google LLC\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//      http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage dismparser\n\nimport (\n\t\"os\"\n\t\"testing\"\n\n\t\"github.com/google/go-cmp/cmp\"\n)\n\nfunc TestParse(t *testing.T) {\n\tcontent, err := os.ReadFile(\"testdata/dism_testdata.txt\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read testdata: %v\", err)\n\t}\n\n\tpkgs, imgVersion, err := Parse(string(content))\n\tif err != nil {\n\t\tt.Errorf(\"Error while parsing the output: %v\", err)\n\t}\n\n\tif imgVersion != \"10.0.17763.3406\" {\n\t\tt.Errorf(\"Parse, ImageVersion: Got: %v, Want: %v\", imgVersion, \"10.0.17763.3406\")\n\t}\n\n\twant := []DismPkg{\n\t\t{\n\t\t\tPackageIdentity: \"Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1\",\n\t\t\tPackageVersion:  \"10.0.17763.1\",\n\t\t\tState:           \"Installed\",\n\t\t\tReleaseType:     \"Feature Pack\",\n\t\t\tInstallTime:     \"9/15/2018 9:08 AM\",\n\t\t},\n\t\t{\n\t\t\tPackageIdentity: \"Package_for_KB4470788~31bf3856ad364e35~amd64~~17763.164.1.1\",\n\t\t\tPackageVersion:  \"17763.164.1.1\",\n\t\t\tState:           \"Installed\",\n\t\t\tReleaseType:     \"Security Update\",\n\t\t\tInstallTime:     \"3/12/2019 6:27 AM\",\n\t\t},\n\t\t{\n\t\t\tPackageIdentity: \"Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.3406.1.5\",\n\t\t\tPackageVersion:  \"17763.3406.1.5\",\n\t\t\tState:           \"Installed\",\n\t\t\tReleaseType:     \"Security Update\",\n\t\t\tInstallTime:     \"9/13/2022 11:06 PM\",\n\t\t},\n\t\t{\n\t\t\tPackageIdentity: \"Package_for_RollupFix~31bf3856ad364e35~amd64~~17763.379.1.11\",\n\t\t\tPackageVersion:  \"17763.379.1.11\",\n\t\t\tState:           \"Superseded\",\n\t\t\tReleaseType:     \"Security Update\",\n\t\t\tInstallTime:     \"3/12/2019 6:31 AM\",\n\t\t},\n\t\t{\n\t\t\tPackageIdentity: \"Package_for_ServicingStack_3232~31bf3856ad364e35~amd64~~17763.3232.1.1\",\n\t\t\tPackageVersion:  \"17763.3232.1.1\",\n\t\t\tState:           \"Installed\",\n\t\t\tReleaseType:     \"Update\",\n\t\t\tInstallTime:     \"9/13/2022 10:46 PM\",\n\t\t},\n\t\t{\n\t\t\tPackageIdentity: \"Microsoft-Windows-WordPad-FoD-Package~31bf3856ad364e35~wow64~en-US~10.0.19041.1\",\n\t\t\tPackageVersion:  \"10.0.19041.1\",\n\t\t\tState:           \"Installed\",\n\t\t\tReleaseType:     \"OnDemand Pack\",\n\t\t\tInstallTime:     \"12/7/2019 9:51 AM\",\n\t\t},\n\t}\n\n\tif diff := cmp.Diff(want, pkgs); diff != \"\" {\n\t\tt.Errorf(\"Parse: Diff = %v\", diff)\n\t}\n}\n\nfunc TestFindVersion(t *testing.T) {\n\ttype test struct {\n\t\tinput string\n\t\twant  string\n\t}\n\n\ttests := []test{\n\t\t{\n\t\t\tinput: \"Microsoft-Windows-FodMetadata-Package~31bf3856ad364e35~amd64~~10.0.17763.1\",\n\t\t\twant:  \"10.0.17763.1\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.input, func(t *testing.T) {\n\t\t\tgot := findVersion(tt.input)\n\t\t\tif got != tt.want {\n\t\t\t\tt.Errorf(\"findVersion: Got: %v, Want: %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestParseError(t *testing.T) {\n\tcontent, err := os.ReadFile(\"testdata/err_testdata.txt\")\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read testdata: %v\", err)\n\t}\n\n\t_, _, err = Parse(string(content))\n\tif err == nil || err.Error() != \"Could not parse DISM output successfully\" {\n\t\tt.Errorf(\"Parse: Want: %v, Got: %v\", \"Could not parse DISM output successfully\", err)\n\t}\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.4"
+
+[repo_info]
+repository = "asdf-vm/asdf"
+sha = "74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f"
+
+[run_info]
+docker_image = "golang:1.23.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/toolversions/toolversions.go internal/toolversions/toolversions_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/toolversions/toolversions.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 48.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 27, 28, 33, 34, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 56, 61, 66, 67, 68, 69, 70, 73, 113, 114, 115, 116, 117, 119, 120, 121, 124, 125, 126, 127, 128, 132, 207, 208, 209, 222, 223, 224, 225, 226, 227, 228, 231, 237, 238, 239, 240, 241, 242, 243, 246, 249, 250, 251, 253, 254, 255, 259, 264, 265, 266, 267,]
+missed_lines = [ 29, 30, 31, 78, 79, 80, 81, 82, 84, 85, 90, 91, 92, 93, 94, 96, 97, 102, 103, 104, 105, 106, 108, 138, 139, 140, 141, 142, 143, 144, 145, 148, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 169, 170, 171, 173, 177, 178, 179, 180, 181, 185, 186, 187, 188, 189, 190, 191, 192, 198, 199, 200, 201, 202, 203, 211, 212, 213, 214, 215, 216, 219, 256, 257, 258, 261,]
+
+[input_info]
+test_file_path = "internal/toolversions/toolversions_test.go"
+focal_file_path = "internal/toolversions/toolversions.go"
+test_file_url = "https://github.com/asdf-vm/asdf/blob/74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f/internal/toolversions/toolversions_test.go"
+focal_file_url = "https://github.com/asdf-vm/asdf/blob/74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f/internal/toolversions/toolversions.go"
+first_commit_date = "2024-12-18"
+last_commit_date = "2025-01-14"
+test_file_content = "package toolversions\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\n\nfunc TestWriteToolVersionsToFile(t *testing.T) {\n\ttoolVersions := ToolVersions{Name: \"lua\", Versions: []string{\"1.2.3\"}}\n\n\tt.Run(\"writes new file when it does not exist\", func(t *testing.T) {\n\t\tpath := filepath.Join(t.TempDir(), \".tool-versions\")\n\t\tassert.Nil(t, WriteToolVersionsToFile(path, []ToolVersions{toolVersions}))\n\n\t\tfileContents, err := os.ReadFile(path)\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, string(fileContents), \"lua 1.2.3\\n\")\n\t})\n\n\tt.Run(\"writes new line to end of file when version not already set\", func(t *testing.T) {\n\t\tpath := filepath.Join(t.TempDir(), \".tool-versions\")\n\t\tassert.Nil(t, os.WriteFile(path, []byte(\"test 1.2.3\"), 0o666))\n\t\tassert.Nil(t, WriteToolVersionsToFile(path, []ToolVersions{toolVersions}))\n\n\t\tfileContents, err := os.ReadFile(path)\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, string(fileContents), \"test 1.2.3\\nlua 1.2.3\\n\")\n\t})\n\n\tt.Run(\"updates existing line when tool already has one or more versions set\", func(t *testing.T) {\n\t\tpath := filepath.Join(t.TempDir(), \".tool-versions\")\n\t\tassert.Nil(t, os.WriteFile(path, []byte(\"lua 1.1.1\"), 0o666))\n\t\tassert.Nil(t, WriteToolVersionsToFile(path, []ToolVersions{toolVersions}))\n\n\t\tfileContents, err := os.ReadFile(path)\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, string(fileContents), \"lua 1.2.3\\n\")\n\t})\n}\n\n\n\nfunc TestUnique(t *testing.T) {\n\tt.Run(\"returns unique slice of tool versions when tool appears multiple times in slice\", func(t *testing.T) {\n\t\tgot := Unique([]ToolVersions{\n\t\t\t{Name: \"foo\", Versions: []string{\"1\"}},\n\t\t\t{Name: \"foo\", Versions: []string{\"2\"}},\n\t\t})\n\n\t\twant := []ToolVersions{\n\t\t\t{Name: \"foo\", Versions: []string{\"1\", \"2\"}},\n\t\t}\n\n\t\tassert.Equal(t, got, want)\n\t})\n\n\tt.Run(\"returns unique slice of tool versions when given slice with multiple tools\", func(t *testing.T) {\n\t\tgot := Unique([]ToolVersions{\n\t\t\t{Name: \"foo\", Versions: []string{\"1\"}},\n\t\t\t{Name: \"bar\", Versions: []string{\"2\"}},\n\t\t\t{Name: \"foo\", Versions: []string{\"2\"}},\n\t\t\t{Name: \"bar\", Versions: []string{\"2\"}},\n\t\t})\n\n\t\twant := []ToolVersions{\n\t\t\t{Name: \"foo\", Versions: []string{\"1\", \"2\"}},\n\t\t\t{Name: \"bar\", Versions: []string{\"2\"}},\n\t\t}\n\n\t\tassert.Equal(t, got, want)\n\t})\n}\n\n\nfunc TestGetAllToolsAndVersionsInContent(t *testing.T) {\n\ttests := []struct {\n\t\tdesc  string\n\t\tinput string\n\t\twant  []ToolVersions\n\t}{\n\t\t{\n\t\t\tdesc:  \"returns empty list with found true and no error when empty content\",\n\t\t\tinput: \"\",\n\t\t\twant:  []ToolVersions(nil),\n\t\t},\n\t\t{\n\t\t\tdesc:  \"returns list with one tool when single tool in content\",\n\t\t\tinput: \"lua 5.4.5 5.4.6\",\n\t\t\twant:  []ToolVersions{{Name: \"lua\", Versions: []string{\"5.4.5\", \"5.4.6\"}}},\n\t\t},\n\t\t{\n\t\t\tdesc:  \"returns list with multiple tools when multiple tools in content\",\n\t\t\tinput: \"lua 5.4.5 5.4.6\\nruby 2.0.0\",\n\t\t\twant: []ToolVersions{\n\t\t\t\t{Name: \"lua\", Versions: []string{\"5.4.5\", \"5.4.6\"}},\n\t\t\t\t{Name: \"ruby\", Versions: []string{\"2.0.0\"}},\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.desc, func(t *testing.T) {\n\t\t\ttoolsAndVersions := getAllToolsAndVersionsInContent(tt.input)\n\t\t\tif len(tt.want) == 0 {\n\t\t\t\tassert.Empty(t, toolsAndVersions)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tassert.Equal(t, tt.want, toolsAndVersions)\n\t\t})\n\t}\n}\n\n\n\n\n\n\nfunc BenchmarkUnique(b *testing.B) {\n\tversions := []ToolVersions{\n\t\t{Name: \"foo\", Versions: []string{\"1\"}},\n\t\t{Name: \"bar\", Versions: []string{\"2\"}},\n\t\t{Name: \"foo\", Versions: []string{\"2\"}},\n\t\t{Name: \"bar\", Versions: []string{\"2\"}},\n\t}\n\n\tfor i := 0; i < b.N; i++ {\n\t\tUnique(versions)\n\t}\n}\n"

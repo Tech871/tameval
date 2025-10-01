@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "algolia/cli"
+sha = "a9ed61086d651e010e3b7ab8c736464e72c4bb78"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/cmd/crawler/crawl/crawl.go pkg/cmd/crawler/crawl/crawl_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/cmd/crawler/crawl/crawl.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 55.0
+original_coverage = 92.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78,]
+missed_lines = [ 61, 62, 63, 65, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 101, 102, 103, 104, 105, 106, 107, 108, 109, 111,]
+
+[input_info]
+test_file_path = "pkg/cmd/crawler/crawl/crawl_test.go"
+focal_file_path = "pkg/cmd/crawler/crawl/crawl.go"
+test_file_url = "https://github.com/algolia/cli/blob/a9ed61086d651e010e3b7ab8c736464e72c4bb78/pkg/cmd/crawler/crawl/crawl_test.go"
+focal_file_url = "https://github.com/algolia/cli/blob/a9ed61086d651e010e3b7ab8c736464e72c4bb78/pkg/cmd/crawler/crawl/crawl.go"
+first_commit_date = "2023-09-19"
+last_commit_date = "2025-03-18"
+test_file_content = "package crawl\n\nimport (\n\t\"testing\"\n\n\t\"github.com/google/shlex\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/algolia/cli/pkg/cmdutil\"\n\t\"github.com/algolia/cli/pkg/iostreams\"\n)\n\nfunc TestNewCrawlCmd(t *testing.T) {\n\ttests := []struct {\n\t\tname      string\n\t\ttty       bool\n\t\tcli       string\n\t\twantsErr  bool\n\t\twantsOpts CrawlOptions\n\t}{\n\t\t{\n\t\t\tname:     \"single URL, no save, without tty\",\n\t\t\tcli:      \"my-crawler --urls http://example.com\",\n\t\t\ttty:      false,\n\t\t\twantsErr: false,\n\t\t\twantsOpts: CrawlOptions{\n\t\t\t\tID:   \"my-crawler\",\n\t\t\t\tURLs: []string{\"http://example.com\"},\n\t\t\t\tSave: false,\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname:     \"single URL, no save, with tty\",\n\t\t\tcli:      \"my-crawler --urls http://example.com\",\n\t\t\ttty:      true,\n\t\t\twantsErr: false,\n\t\t\twantsOpts: CrawlOptions{\n\t\t\t\tID:   \"my-crawler\",\n\t\t\t\tURLs: []string{\"http://example.com\"},\n\t\t\t\tSave: false,\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname:     \"single URL, save, without tty\",\n\t\t\tcli:      \"my-crawler --urls http://example.com --save\",\n\t\t\ttty:      false,\n\t\t\twantsErr: false,\n\t\t\twantsOpts: CrawlOptions{\n\t\t\t\tID:   \"my-crawler\",\n\t\t\t\tURLs: []string{\"http://example.com\"},\n\t\t\t\tSave: true,\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple URLs, no save, without tty\",\n\t\t\tcli:      \"my-crawler --urls http://example.com,http://example.com/doc\",\n\t\t\ttty:      false,\n\t\t\twantsErr: false,\n\t\t\twantsOpts: CrawlOptions{\n\t\t\t\tID:   \"my-crawler\",\n\t\t\t\tURLs: []string{\"http://example.com\", \"http://example.com/doc\"},\n\t\t\t\tSave: false,\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tio, _, stdout, stderr := iostreams.Test()\n\t\t\tif tt.tty {\n\t\t\t\tio.SetStdinTTY(tt.tty)\n\t\t\t\tio.SetStdoutTTY(tt.tty)\n\t\t\t}\n\n\t\t\tf := &cmdutil.Factory{\n\t\t\t\tIOStreams: io,\n\t\t\t}\n\n\t\t\tvar opts *CrawlOptions\n\t\t\tcmd := NewCrawlCmd(f, func(o *CrawlOptions) error {\n\t\t\t\topts = o\n\t\t\t\treturn nil\n\t\t\t})\n\n\t\t\targs, err := shlex.Split(tt.cli)\n\t\t\trequire.NoError(t, err)\n\t\t\tcmd.SetArgs(args)\n\t\t\t_, err = cmd.ExecuteC()\n\t\t\tif tt.wantsErr {\n\t\t\t\tassert.Error(t, err)\n\t\t\t\treturn\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t}\n\n\t\t\tassert.Equal(t, \"\", stdout.String())\n\t\t\tassert.Equal(t, \"\", stderr.String())\n\n\t\t\tassert.Equal(t, tt.wantsOpts.ID, opts.ID)\n\t\t\tassert.Equal(t, tt.wantsOpts.URLs, opts.URLs)\n\t\t})\n\t}\n}\n"

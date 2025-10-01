@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "fox-it/dissect.target"
+sha = "12306a3a840971af7da3dbd338527eb3360dbbd9"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=dissect/target/helpers/docs.py -m pytest -q --junit-xml=test_output.xml tests/helpers/test_docs.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target dissect.target.helpers.docs --unit-test tests.helpers.test_docs --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target dissect/target/helpers/docs.py --unit-test tests/helpers/test_docs.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 72.0
+original_coverage = 78.0
+mutation_kill_rate = 23.0
+original_mutation_kill_rate = 23.0
+covered_lines = [ 0, 1, 2, 3, 5, 7, 9, 16, 18, 21, 26, 29, 30, 31, 34, 36, 37, 38, 39, 41, 42, 46, 49, 50, 51, 52, 53, 54, 56, 57, 58, 61, 63, 65, 67, 68, 71, 79, 105, 107, 108, 109, 112, 114, 116, 120, 127, 128, 130, 133, 136, 138, 140, 141, 145, 148, 149, 151, 152, 154,]
+missed_lines = [ 72, 73, 74, 75, 76, 82, 84, 85, 86, 89, 91, 94, 95, 100, 101, 102, 118, 121, 122, 123, 125, 131, 143,]
+
+[input_info]
+test_file_path = "tests/helpers/test_docs.py"
+focal_file_path = "dissect/target/helpers/docs.py"
+test_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/tests/helpers/test_docs.py"
+focal_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/dissect/target/helpers/docs.py"
+first_commit_date = "2022-07-20"
+last_commit_date = "2025-01-30"
+test_file_content = "from dissect.target.helpers import docs\nfrom dissect.target.plugins.apps.webserver.iis import IISLogsPlugin\n\n\ndef get_nonempty_lines_set(paragraph: str) -> set[str]:\n    return set(filter(None, (line.strip() for line in paragraph.splitlines())))\n\n\n\n\ndef test_docs_plugin_functions_desc() -> None:\n    functions_short_desc = docs.get_plugin_functions_desc(IISLogsPlugin, with_docstrings=False)\n\n    assert functions_short_desc\n    desc_lines = functions_short_desc.splitlines()\n\n    assert len(desc_lines) == 2\n    assert \"iis.logs\" in functions_short_desc\n    assert \"Return contents of IIS (v7 and above) log files.\" in functions_short_desc\n    assert \"output: records\" in functions_short_desc\n\n    functions_long_desc = docs.get_plugin_functions_desc(IISLogsPlugin, with_docstrings=True)\n\n    assert functions_long_desc\n\n    lines_bag = get_nonempty_lines_set(functions_long_desc)\n\n    assert \"Return contents of IIS (v7 and above) log files.\" in lines_bag\n    assert \"Supported log formats: IIS, W3C.\" in lines_bag\n"

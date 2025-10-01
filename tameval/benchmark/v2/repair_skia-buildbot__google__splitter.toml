@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.0"
+
+[repo_info]
+repository = "google/skia-buildbot"
+sha = "68746095168840b4c51e113d3ff32e3d2e37fc8d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out perf/go/ingest/splitter/splitter.go perf/go/ingest/splitter/splitter_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting perf/go/ingest/splitter/splitter.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 68.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "perf/go/ingest/splitter/splitter_test.go"
+focal_file_path = "perf/go/ingest/splitter/splitter.go"
+test_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/perf/go/ingest/splitter/splitter_test.go"
+focal_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/perf/go/ingest/splitter/splitter.go"
+first_commit_date = "2025-01-14"
+last_commit_date = "2025-01-15"
+test_file_content = "package splitter\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/mock\"\n\t\"github.com/stretchr/testify/require\"\n\t\"go.skia.org/infra/go/gcs/mocks\"\n\t\"go.skia.org/infra/go/skerr\"\n\t\"go.skia.org/infra/go/sklog\"\n\t\"go.skia.org/infra/go/testutils\"\n\t\"go.skia.org/infra/perf/go/ingest/format\"\n)\n\nvar results []format.Format\n\ntype resultWriteCloser struct {\n}\n\nfunc newResultWriteCloser() resultWriteCloser {\n\tresults = []format.Format{}\n\treturn resultWriteCloser{}\n}\n\nfunc (r resultWriteCloser) Write(p []byte) (n int, err error) {\n\tvar data format.Format\n\tfmt.Println(\"Writing json data\")\n\tif err := json.Unmarshal(p, &data); err != nil {\n\t\tfmt.Println(err)\n\t\treturn 0, skerr.Wrap(err)\n\t}\n\n\tsklog.Infof(\"Adding %v to cache\", data)\n\tresults = append(results, data)\n\tsklog.Infof(\"Length of objs is %d\", len(results))\n\treturn 1, nil\n}\n\nfunc (resultWriteCloser) Close() error { return nil }\n\nconst (\n\tsecondaryGCSPath = \"gs:\n)\n\nvar inputData = format.Format{\n\tVersion: 1,\n\tGitHash: \"f99dc31a4f78ac6574055c7b7c6beb9466333895\",\n\tIssue:   \"12345\",\n\tKey: map[string]string{\n\t\t\"bot\": \"testbot\",\n\t},\n\tResults: []format.Result{\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r1\",\n\t\t\t},\n\t\t\tMeasurement: 1.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r2\",\n\t\t\t},\n\t\t\tMeasurement: 2.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r3\",\n\t\t\t},\n\t\t\tMeasurement: 3.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r4\",\n\t\t\t},\n\t\t\tMeasurement: 4.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r5\",\n\t\t\t},\n\t\t\tMeasurement: 5.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r6\",\n\t\t\t},\n\t\t\tMeasurement: 6.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r7\",\n\t\t\t},\n\t\t\tMeasurement: 7.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r8\",\n\t\t\t},\n\t\t\tMeasurement: 8.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r9\",\n\t\t\t},\n\t\t\tMeasurement: 9.0,\n\t\t},\n\t\t{\n\t\t\tKey: map[string]string{\n\t\t\t\t\"name\": \"r10\",\n\t\t\t},\n\t\t\tMeasurement: 10.0,\n\t\t},\n\t},\n}\n\nfunc TestSplitLargeFile_EqualParts_Success(t *testing.T) {\n\tstorageClientMock := mocks.NewGCSClient(t)\n\tfileName := \"gs:\n\n\texpectedSplits := []string{\"large_file_0.json\", \"large_file_1.json\"}\n\n\twriter := newResultWriteCloser()\n\tfor _, split := range expectedSplits {\n\t\tstorageClientMock.On(\"FileWriter\", testutils.AnyContext, fmt.Sprintf(\"rootDir/%s\", split), mock.Anything).Return(writer, nil)\n\t}\n\n\tctx := context.Background()\n\tsplitter, err := NewIngestionDataSplitter(ctx, 5, secondaryGCSPath, storageClientMock)\n\trequire.NoError(t, err)\n\tassert.NotNil(t, splitter)\n\n\terr = splitter.SplitAndPublishFormattedData(ctx, inputData, fileName)\n\trequire.NoError(t, err)\n\tstorageClientMock.AssertNumberOfCalls(t, \"FileWriter\", 2)\n\tassert.Equal(t, 2, len(results))\n\tfor _, res := range results {\n\t\tassert.Equal(t, 5, len(res.Results))\n\t}\n}\n\nfunc TestSplitLargeFile_UnequalParts_Success(t *testing.T) {\n\tstorageClientMock := mocks.NewGCSClient(t)\n\tfileName := \"gs:\n\n\texpectedSplits := []string{\"large_file_0.json\", \"large_file_1.json\"}\n\n\twriter := newResultWriteCloser()\n\tfor _, split := range expectedSplits {\n\t\tstorageClientMock.On(\"FileWriter\", testutils.AnyContext, fmt.Sprintf(\"rootDir/%s\", split), mock.Anything).Return(writer, nil)\n\t}\n\n\tctx := context.Background()\n\tsplitter, err := NewIngestionDataSplitter(ctx, 7, secondaryGCSPath, storageClientMock)\n\trequire.NoError(t, err)\n\tassert.NotNil(t, splitter)\n\n\terr = splitter.SplitAndPublishFormattedData(ctx, inputData, fileName)\n\trequire.NoError(t, err)\n\tstorageClientMock.AssertNumberOfCalls(t, \"FileWriter\", 2)\n\tassert.Equal(t, 2, len(results))\n\tassert.Equal(t, 7, len(results[0].Results))\n\tassert.Equal(t, 3, len(results[1].Results))\n\tstorageClientMock.VerifyExpectations()\n}\n\nfunc TestSplitLargeFile_Single_Success(t *testing.T) {\n\tstorageClientMock := mocks.NewGCSClient(t)\n\tfileName := \"gs:\n\n\texpectedSplits := []string{\"large_file_0.json\"}\n\n\twriter := newResultWriteCloser()\n\tfor _, split := range expectedSplits {\n\t\tstorageClientMock.On(\"FileWriter\", testutils.AnyContext, fmt.Sprintf(\"rootDir/%s\", split), mock.Anything).Return(writer, nil)\n\t}\n\n\tctx := context.Background()\n\tsplitter, err := NewIngestionDataSplitter(ctx, 10, secondaryGCSPath, storageClientMock)\n\trequire.NoError(t, err)\n\tassert.NotNil(t, splitter)\n\tsplitter.refreshDataCache()\n\t\n\terr = splitter.SplitAndPublishFormattedData(ctx, inputData, fileName)\n\trequire.NoError(t, err)\n\tstorageClientMock.AssertNumberOfCalls(t, \"FileWriter\", 1)\n\tassert.Equal(t, 1, len(results))\n\tassert.Equal(t, inputData, results[0])\n\tassert.Equal(t, fileExtensions[\"json\"], \".json\")\n}\n\nfunc TestSplitLargeFile_Single_GCSPath_Success(t *testing.T) {\n\tstorageClientMock := mocks.NewGCSClient(t)\n\tfileName := \"gs:\n\n\texpectedSplits := []string{\"2024/12/31/00/large_file_0.json\"}\n\n\twriter := newResultWriteCloser()\n\tfor _, split := range expectedSplits {\n\t\tstorageClientMock.On(\"FileWriter\", testutils.AnyContext, fmt.Sprintf(\"rootDir/%s\", split), mock.Anything).Return(writer, nil)\n\t}\n\n\tctx := context.Background()\n\tsplitter, err := NewIngestionDataSplitter(ctx, 10, secondaryGCSPath, storageClientMock)\n\trequire.NoError(t, err)\n\tassert.NotNil(t, splitter)\n\tDataProcessor.validateInput(inputData)\n\n\terr = splitter.SplitAndPublishFormattedData(ctx, inputData, fileName)\n\trequire.NoError(t, err)\n\tstorageClientMock.AssertNumberOfCalls(t, \"FileWriter\", 1)\n\tassert.Equal(t, 1, len(results))\n\tassert.Equal(t, inputData, results[0])\n\ttestutils.AssertEqaul(t, len(results), 1)\n}"

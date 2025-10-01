@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "go-dev-frame/sponge"
+sha = "e72bb7443479d95928a16711696af6523999a717"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/shield/cpu/utils.go pkg/shield/cpu/utils_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/shield/cpu/utils.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 26.0
+original_coverage = 77.0
+mutation_kill_rate = 17.0
+original_mutation_kill_rate = 26.0
+covered_lines = [ 49, 50, 51, 52, 54, 55, 56, 57, 58, 59, 63, 64, 65, 66, 70, 77, 78, 79, 82,]
+missed_lines = [ 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 33, 60, 61, 62, 67, 68, 69, 71, 72, 73, 74, 75, 76, 87, 88, 89, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 112, 113, 115, 118,]
+
+[input_info]
+test_file_path = "pkg/shield/cpu/utils_test.go"
+focal_file_path = "pkg/shield/cpu/utils.go"
+test_file_url = "https://github.com/go-dev-frame/sponge/blob/e72bb7443479d95928a16711696af6523999a717/pkg/shield/cpu/utils_test.go"
+focal_file_url = "https://github.com/go-dev-frame/sponge/blob/e72bb7443479d95928a16711696af6523999a717/pkg/shield/cpu/utils.go"
+first_commit_date = "2022-11-02"
+last_commit_date = "2025-04-10"
+test_file_content = "package cpu\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\nfunc TestParseUintList(t *testing.T) {\n\ttestData := []string{\n\t\t\"\",\n\t\t\"7\",\n\t\t\"1-6\",\n\t\t\"0,3-4,7,8-10\",\n\t\t\"0-0,0,1-7\",\n\t\t\"03,1-3\",\n\t\t\"3,2,1\",\n\t\t\"0-2,3,1\",\n\t}\n\n\tfor _, val := range testData {\n\t\t_, err := ParseUintList(val)\n\t\tassert.NoError(t, err)\n\t}\n}\n"

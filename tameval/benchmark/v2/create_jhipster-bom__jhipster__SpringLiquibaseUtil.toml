@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "jhipster/jhipster-bom"
+sha = "7bdb0f60cf4739f065e4501400404b5f70b2ad9b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl jhipster-framework -Dtest=SpringLiquibaseUtilTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl jhipster-framework -DtargetClasses=**.SpringLiquibaseUtil  -DtargetTests=**.SpringLiquibaseUtilTest  -DoutputFormats=XML"
+coverage_report_path = "jhipster-framework/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "jhipster-framework/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 36.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 88, 89, 90, 91, 92, 96, 104, 107, 108,]
+missed_lines = [ 58, 59, 60, 61, 62, 64, 65, 66, 94, 105, 110, 114, 115, 116, 117, 121,]
+
+[input_info]
+test_file_path = "jhipster-framework/src/test/java/tech/jhipster/config/liquibase/SpringLiquibaseUtilTest.java"
+focal_file_path = "jhipster-framework/src/main/java/tech/jhipster/config/liquibase/SpringLiquibaseUtil.java"
+test_file_url = "https://github.com/jhipster/jhipster-bom/blob/7bdb0f60cf4739f065e4501400404b5f70b2ad9b/jhipster-framework/src/test/java/tech/jhipster/config/liquibase/SpringLiquibaseUtilTest.java"
+focal_file_url = "https://github.com/jhipster/jhipster-bom/blob/7bdb0f60cf4739f065e4501400404b5f70b2ad9b/jhipster-framework/src/main/java/tech/jhipster/config/liquibase/SpringLiquibaseUtil.java"
+first_commit_date = "2020-10-28"
+last_commit_date = "2024-12-31"
+test_file_content = "/*\n * Copyright 2016-2025 the original author or authors from the JHipster project.\n *\n * This file is part of the JHipster project, see https://www.jhipster.tech/\n * for more information.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage tech.jhipster.config.liquibase;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.assertj.core.api.InstanceOfAssertFactories.type;\n\nimport com.zaxxer.hikari.HikariDataSource;\nimport javax.sql.DataSource;\nimport liquibase.integration.spring.SpringLiquibase;\nimport org.junit.jupiter.api.Test;\nimport org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;\nimport org.springframework.boot.autoconfigure.liquibase.DataSourceClosingSpringLiquibase;\nimport org.springframework.boot.autoconfigure.liquibase.LiquibaseProperties;\nimport org.springframework.boot.jdbc.DataSourceBuilder;\n\nclass SpringLiquibaseUtilTest {\n\n\n\n\n\n    @Test\n    void createAsyncSpringLiquibaseFromNormalDataSource() {\n        DataSource liquibaseDatasource = null;\n        LiquibaseProperties liquibaseProperties = new LiquibaseProperties();\n        DataSource normalDataSource = DataSourceBuilder.create().url(\"jdbc:h2:mem:normal\").username(\"sa\").build();\n        DataSourceProperties dataSourceProperties = null;\n\n        AsyncSpringLiquibase liquibase = SpringLiquibaseUtil.createAsyncSpringLiquibase(\n            null,\n            null,\n            liquibaseDatasource,\n            liquibaseProperties,\n            normalDataSource,\n            dataSourceProperties\n        );\n        assertThat(liquibase.getDataSource())\n            .isEqualTo(normalDataSource)\n            .asInstanceOf(type(HikariDataSource.class))\n            .hasFieldOrPropertyWithValue(\"jdbcUrl\", \"jdbc:h2:mem:normal\")\n            .hasFieldOrPropertyWithValue(\"username\", \"sa\")\n            .hasFieldOrPropertyWithValue(\"password\", null);\n    }\n\n}\n"

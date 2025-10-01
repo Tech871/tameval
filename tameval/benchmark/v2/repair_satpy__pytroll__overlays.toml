@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pytroll/satpy"
+sha = "0beea130092f3270ae1af8a87644d47971acbbc4"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=satpy/enhancements/overlays.py -m pytest -q --junit-xml=test_output.xml satpy/tests/enhancement_tests/test_overlays.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target satpy.enhancements.overlays --unit-test satpy.tests.enhancement_tests.test_overlays --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target satpy/enhancements/overlays.py --unit-test satpy/tests/enhancement_tests/test_overlays.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 87.0
+original_coverage = 87.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 16, 18, 19, 21, 22, 23, 25, 27, 28, 31, 38, 83, 86, 87, 89, 91, 93, 94, 95, 101, 103, 104, 109, 110, 112, 113, 116, 119, 121, 123, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 140, 141, 142, 145, 152, 154, 156, 158, 160, 165, 168, 175, 177, 179, 181, 183, 188, 191, 198, 200, 202, 204, 206, 211, 214, 245, 249, 251, 255, 256, 257, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270,]
+missed_lines = [ 33, 34, 35, 84, 90, 105, 106, 137, 138, 139, 252, 253,]
+
+[input_info]
+test_file_path = "satpy/tests/enhancement_tests/test_overlays.py"
+focal_file_path = "satpy/enhancements/overlays.py"
+test_file_url = "https://github.com/pytroll/satpy/blob/0beea130092f3270ae1af8a87644d47971acbbc4/satpy/tests/enhancement_tests/test_overlays.py"
+focal_file_url = "https://github.com/pytroll/satpy/blob/0beea130092f3270ae1af8a87644d47971acbbc4/satpy/enhancements/overlays.py"
+first_commit_date = "2025-06-05"
+last_commit_date = "2025-06-05"
+test_file_content = "\nfrom __future__ import annotations\n\nimport warnings\nfrom unittest import mock\n\nimport xarray as xr\nfrom dask import array as da\nfrom trollimage.colormap import greys\n\n\nclass TestOverlays:\n\n    def setup_method(self):\n        from pyresample.geometry import AreaDefinition\n        from trollimage.xrimage import XRImage\n\n        proj_dict = {\"proj\": \"lcc\", \"datum\": \"WGS84\", \"ellps\": \"WGS84\",\n                     \"lon_0\": -95., \"lat_0\": 25, \"lat_1\": 25,\n                     \"units\": \"m\", \"no_defs\": True}\n        self.area_def = AreaDefinition(\n            \"test\", \"test\", \"test\", proj_dict,\n            200, 400, (-1000., -1500., 1000., 1500.),\n        )\n        self.orig_rgb_img = XRImage(\n            xr.DataArray(da.arange(75., chunks=10).reshape(3, 5, 5) / 75.,\n                         dims=(\"bands\", \"y\", \"x\"),\n                         coords={\"bands\": [\"R\", \"G\", \"B\"]},\n                         attrs={\"name\": \"test_ds\", \"area\": self.area_def})\n        )\n        self.orig_l_img = XRImage(\n            xr.DataArray(da.arange(25., chunks=10).reshape(5, 5) / 75.,\n                         dims=(\"y\", \"x\"),\n                         attrs={\"name\": \"test_ds\", \"area\": self.area_def})\n        )\n\n        self.decorate = {\n            \"decorate\": [\n                {\"logo\": {\"logo_path\": \"\", \"height\": 143, \"bg\": \"white\", \"bg_opacity\": 255}},\n                {\"text\": {\n                    \"txt\": \"TEST\",\n                    \"align\": {\"top_bottom\": \"bottom\", \"left_right\": \"right\"},\n                    \"font\": \"\",\n                    \"font_size\": 22,\n                    \"height\": 30,\n                    \"bg\": \"black\",\n                    \"bg_opacity\": 255,\n                    \"line\": \"white\"}},\n                {\"scale\": {\n                    \"colormap\": greys,\n                    \"extend\": False,\n                    \"width\": 1670, \"height\": 110,\n                    \"tick_marks\": 5, \"minor_tick_marks\": 1,\n                    \"cursor\": [0, 0], \"bg\": \"white\",\n                    \"title\": \"TEST TITLE OF SCALE\",\n                    \"fontsize\": 110, \"align\": \"cc\"\n                }}\n            ]\n        }\n\n        import_mock = mock.MagicMock()\n        modules = {\"pycoast\": import_mock.pycoast,\n                   \"pydecorate\": import_mock.pydecorate}\n        self.module_patcher = mock.patch.dict(\"sys.modules\", modules)\n        self.module_patcher.start()\n\n    def teardown_method(self):\n        self.module_patcher.stop()\n\n    def test_add_overlay_basic_rgb(self):\n        from pycoast import ContourWriterAGG\n\n        from satpy.enhancements.overlays import _burn_overlay, add_overlay\n        coast_dir = \"/path/to/coast/data\"\n        with mock.patch.object(self.orig_rgb_img, \"apply_pil\") as apply_pil:\n            apply_pil.return_value = self.orig_rgb_img\n            new_img = add_overlay(self.orig_rgb_img, self.area_def, coast_dir, fill_value=0)\n            new_img = add_overlay(self.orig_rgb_img, self.area_def, coast_dir)\n\n            with mock.patch.object(self.orig_rgb_img, \"convert\") as convert:\n                convert.return_value = self.orig_rgb_img\n                overlays = {\"coasts\": {\"outline\": \"red\"}}\n                new_img = add_overlay(self.orig_rgb_img, self.area_def, coast_dir,\n                                      overlays=overlays, fill_value=0)\n                pil_args = None\n                pil_kwargs = {\"fill_value\": 0}\n                fun_args = (self.orig_rgb_img.data.area, ContourWriterAGG.return_value, overlays)\n                fun_kwargs = None\n\n                grid = {\"minor_is_tick\": True}\n                color = \"red\"\n                expected_overlays = {\"coasts\": {\"outline\": color, \"width\": 0.5, \"level\": 1},\n                                     \"borders\": {\"outline\": color, \"width\": 0.5, \"level\": 1},\n                                     \"grid\": grid}\n                with warnings.catch_warnings(record=True) as wns:\n                    warnings.simplefilter(\"always\")\n                    new_img = add_overlay(self.orig_rgb_img, self.area_def, coast_dir,\n                                          color=color, grid=grid, fill_value=0)\n\n                pil_args = None\n                pil_kwargs = {\"fill_value\": 0}\n                fun_args = (self.orig_rgb_img.data.area, ContourWriterAGG.return_value, expected_overlays)\n                fun_kwargs = None\n\n    def test_add_overlay_basic_l(self):\n        from satpy.enhancements.overlays import add_overlay\n        new_img = add_overlay(self.orig_l_img, self.area_def, \"\", fill_value=0)\n        new_img = add_overlay(self.orig_l_img, self.area_def, \"\")\n\n    def test_add_decorate_basic_rgb(self):\n        from satpy.enhancements.overlays import add_decorate\n        new_img = add_decorate(self.orig_rgb_img, **self.decorate)\n\n    def test_add_decorate_basic_l(self):\n        from satpy.enhancements.overlays import add_decorate\n        new_img = add_decorate(self.orig_l_img, **self.decorate)"

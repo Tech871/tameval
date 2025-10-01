@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.18"
+
+[repo_info]
+repository = "bytedance/gg"
+sha = "420f8369dd6e235b8124691860e822d015969fb6"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out gcond/gcond.go gcond/gcond_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting gcond/gcond.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 93.0
+original_coverage = 100.0
+mutation_kill_rate = 83.0
+original_mutation_kill_rate = 86.0
+covered_lines = [ 30, 31, 32, 33, 34, 35, 52, 53, 54, 55, 56, 57, 61, 62, 63, 64, 65, 66, 70, 71, 72, 73, 74, 75, 96, 97, 98, 99, 100, 101, 110, 111, 112, 113, 114, 115, 125, 126, 127, 128, 129, 130, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 157, 168, 169, 170, 171, 172, 173, 185, 186, 187, 188, 189, 190, 200, 201, 202, 203, 204,]
+missed_lines = [ 214, 215, 216, 217, 218,]
+
+[input_info]
+test_file_path = "gcond/gcond_test.go"
+focal_file_path = "gcond/gcond.go"
+test_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/gcond/gcond_test.go"
+focal_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/gcond/gcond.go"
+first_commit_date = "2025-05-18"
+last_commit_date = "2025-05-21"
+test_file_content = "// Copyright 2025 Bytedance Ltd.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage gcond\n\nimport (\n\t\"testing\"\n\n\t\"github.com/bytedance/gg/internal/assert\"\n)\n\nfunc TestIf(t *testing.T) {\n\tassert.Equal(t, 1, If(true, 1, 2))\n\tassert.Equal(t, 2, If(false, 1, 2))\n\tassert.Equal(t, \"2\", If(false, \"1\", \"2\"))\n\tassert.Equal(t, \"1\", If(true, \"1\", \"2\"))\n\n\tassert.Panic(t, func() {\n\t\tvar tt *testing.T\n\t\t_ = If(tt != nil, tt.Name(), \"\")\n\t})\n\tassert.Panic(t, func() {\n\t\tvar tt *testing.T\n\t\t_ = If(tt == nil, \"\", tt.Name())\n\t})\n}\n\nfunc lazy[T any](v T) Lazy[T] {\n\treturn func() T {\n\t\treturn v\n\t}\n}\n\nfunc TestIfLazy(t *testing.T) {\n\tassert.Equal(t, 1, IfLazy(true, lazy(1), lazy(2)))\n\tassert.Equal(t, 2, IfLazy(false, lazy(1), lazy(2)))\n\tassert.Equal(t, \"1\", IfLazy(true, lazy(\"1\"), lazy(\"2\")))\n\tassert.Equal(t, \"2\", IfLazy(false, lazy(\"1\"), lazy(\"2\")))\n\n\tassert.NotPanic(t, func() {\n\t\tvar tt *testing.T\n\t\tassert.Equal(t, \"\", IfLazy(tt != nil, func() string { return tt.Name() }, lazy(\"\")))\n\t\tassert.Equal(t, \"\", IfLazy(tt == nil, lazy(\"\"), func() string { return tt.Name() }))\n\t})\n}\n\nfunc TestIfLazyL(t *testing.T) {\n\tassert.Equal(t, 1, IfLazyL(true, lazy(1), 2))\n\tassert.Equal(t, 2, IfLazyL(false, lazy(1), 2))\n\tassert.Equal(t, \"1\", IfLazyL(true, lazy(\"1\"), \"2\"))\n\tassert.Equal(t, \"2\", IfLazyL(false, lazy(\"1\"), \"2\"))\n\n\tassert.NotPanic(t, func() {\n\t\tvar tt *testing.T\n\t\tassert.Equal(t, \"\", IfLazyL(tt != nil, func() string { return tt.Name() }, \"\"))\n\t})\n}\n\nfunc TestIfLazyR(t *testing.T) {\n\tassert.Equal(t, 1, IfLazyR(true, 1, lazy(2)))\n\tassert.Equal(t, 2, IfLazyR(false, 1, lazy(2)))\n\tassert.Equal(t, \"1\", IfLazyR(true, \"1\", lazy(\"2\")))\n\tassert.Equal(t, \"2\", IfLazyR(false, \"1\", lazy(\"2\")))\n\n\tassert.NotPanic(t, func() {\n\t\tvar tt *testing.T\n\t\tassert.Equal(t, \"\", IfLazyR(tt == nil, \"\", func() string { return tt.Name() }))\n\t})\n}\n\nfunc TestSwitch(t *testing.T) {\n\tv1 := Switch[string](1).\n\t\tCase(1, \"1\").\n\t\tCase(2, \"2\").\n\t\tCaseLazy(3, func() string { return \"3\" }).\n\t\tCaseLazy(4, func() string { return \"4\" }).\n\t\tDefault(\"5\")\n\tassert.Equal(t, v1, \"1\")\n\n\tv2 := Switch[string](3).\n\t\tCase(1, \"1\").\n\t\tCase(2, \"2\").\n\t\tCaseLazy(3, func() string { return \"3\" }).\n\t\tCaseLazy(4, func() string { return \"4\" }).\n\t\tDefault(\"5\")\n\tassert.Equal(t, v2, \"3\")\n\n\tv3 := Switch[string](10).\n\t\tCase(1, \"1\").\n\t\tCase(2, \"2\").\n\t\tCaseLazy(3, func() string { return \"3\" }).\n\t\tCaseLazy(4, func() string { return \"4\" }).\n\t\tDefault(\"5\")\n\tassert.Equal(t, v3, \"5\")\n}\n\nfunc TestSwitchWhen(t *testing.T) {\n\tv1 := Switch[string](1).\n\t\tWhen(1, 2).Then(\"1\").\n\t\tWhen(3, 4).ThenLazy(func() string { return \"3\" }).\n\t\tDefault(\"5\")\n\tassert.Equal(t, v1, \"1\")\n\n\tv2 := Switch[string](4).\n\t\tWhen(1, 2).Then(\"1\").\n\t\tWhen(3, 4).ThenLazy(func() string { return \"3\" }).\n\t\tDefault(\"5\")\n\tassert.Equal(t, v2, \"3\")\n\n\tv3 := Switch[string](10).\n\t\tWhen(1, 2).Then(\"1\").\n\t\tWhen(3, 4).ThenLazy(func() string { return \"3\" }).\n\t\tDefault(\"5\")\n\tassert.Equal(t, v3, \"5\")\n}"

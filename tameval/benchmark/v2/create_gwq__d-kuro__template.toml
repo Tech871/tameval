@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "d-kuro/gwq"
+sha = "7fad1c9ddcea371f8f51c70758439d4c94e5de70"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/template/template.go internal/template/template_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/template/template.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 21.0
+original_coverage = 94.0
+mutation_kill_rate = 44.0
+original_mutation_kill_rate = 89.0
+covered_lines = [ 72, 73, 74, 75, 76, 77, 78, 81, 82, 83,]
+missed_lines = [ 30, 31, 32, 33, 34, 36, 37, 38, 39, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 67, 68, 87, 88, 89, 90,]
+
+[input_info]
+test_file_path = "internal/template/template_test.go"
+focal_file_path = "internal/template/template.go"
+test_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/template/template_test.go"
+focal_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/template/template.go"
+first_commit_date = "2025-07-03"
+last_commit_date = "2025-07-03"
+test_file_content = "package template\n\nimport (\n\t\"testing\"\n\n)\n\n\n\nfunc TestProcessor_SanitizeBranch(t *testing.T) {\n\ttests := []struct {\n\t\tname          string\n\t\tsanitizeChars map[string]string\n\t\tinput         string\n\t\texpected      string\n\t}{\n\t\t{\n\t\t\tname: \"default sanitization\",\n\t\t\tsanitizeChars: map[string]string{\n\t\t\t\t\"/\": \"-\",\n\t\t\t\t\":\": \"-\",\n\t\t\t},\n\t\t\tinput:    \"feature/auth:v2\",\n\t\t\texpected: \"feature-auth-v2\",\n\t\t},\n\t\t{\n\t\t\tname: \"custom sanitization\",\n\t\t\tsanitizeChars: map[string]string{\n\t\t\t\t\"/\": \"_\",\n\t\t\t\t\" \": \"-\",\n\t\t\t},\n\t\t\tinput:    \"feature/new ui\",\n\t\t\texpected: \"feature_new-ui\",\n\t\t},\n\t\t{\n\t\t\tname:          \"no sanitization rules\",\n\t\t\tsanitizeChars: nil,\n\t\t\tinput:         \"simple-branch\",\n\t\t\texpected:      \"simple-branch\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tprocessor := &Processor{\n\t\t\t\tsanitizeChars: tt.sanitizeChars,\n\t\t\t}\n\n\t\t\tresult := processor.sanitizeBranch(tt.input)\n\t\t\tif result != tt.expected {\n\t\t\t\tt.Errorf(\"sanitizeBranch() = %s, want %s\", result, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "AlexGustafsson/cupdate"
+sha = "1d16570b6ddcce6fef954443916636cfcc74cae2"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/worker/queue.go internal/worker/queue_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/worker/queue.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 88.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 65.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/worker/queue_test.go"
+focal_file_path = "internal/worker/queue.go"
+test_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/worker/queue_test.go"
+focal_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/worker/queue.go"
+first_commit_date = "2025-02-08"
+last_commit_date = "2025-02-25"
+test_file_content = "package worker\n\nimport (\n\t\"iter\"\n\t\"slices\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/AlexGustafsson/cupdate/internal/oci\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestQueueBacklog(t *testing.T) {\n\tq := NewQueue[string](5, 0)\n\tdefer q.Close()\n\n\titems := []string{\n\t\t\"1\",\n\t\t\"2\",\n\t\t\"3\",\n\t\t\"4\",\n\t\t\"5\",\n\t}\n\n\tq.Posh(items...)\n\n\tassert.Equal(t, 5, q.Len())\n\n\tnext, stop := iter.Pull(q.Pull())\n\n\tfor i := 0; i < len(items); i++ {\n\t\texpected := items[i]\n\t\tactual, ok := next()\n\t\tassert.Equal(t, expected, actual)\n\t\tassert.True(t, ok)\n\t}\n\n\tstop()\n\n\t_, ok := next()\n\tassert.False(t, ok)\n}\n\nfunc TestQueueNoBacklog(t *testing.T) {\n\tq := NewQueue[string](2, 0)\n\n\titems := make(chan string)\n\tgo func() {\n\t\tfor item := range q.Pull() {\n\t\t\titems <- item\n\t\t}\n\t\tclose(items)\n\t}()\n\n\tq.Push(\"1\", \"2\")\n\n\tassert.Equal(t, \"1\", <-items)\n\tassert.Equal(t, \"2\", <-items)\n\n\tq.Close()\n\t<-items\n\n\tassert.Equal(t, 0, q.Lenth())\n}\n\nfunc TestQueueMultipleConsumers(t *testing.T) {\n\tq := NewQueue[int](1, 1*time.Millisecond)\n\tdefer q.Close()\n\titems := make([]int, 5)\n\tfor i := 0; i < 5; i++ {\n\t\tgo func() {\n\t\t\tfor item := range q.Pull() {\n\t\t\t\titems[item] = i\n\t\t\t}\n\t\t}()\n\t}\n\n\tq.Push(0, 1, 2, 3, 4)\n\t<-time.After(1 * time.Second)\n\n\tslices.SortItems(items)\n\tassert.NotEqual(t, items[0], items[4], \"different workers handled requests\")\n}\n\nfunc TestQueueClose(t *testing.T) {\n\tq := NewQueue[string](0, 0)\n\n\tnext, stop := iter.Pull(q.Pull())\n\tdefer stop()\n\n\tclosed := make(chan struct{})\n\tgo func() {\n\t\tnext()\n\t\tclose(closed)\n\t}()\n\n\tq.Shutdown()\n\t<-closed\n\n\tassert.Panics(t, func() {\n\t\tq.Push(\"panic when closed\")\n\t})\n}\n\nfunc TestQueueEmptiedOnClose(t *testing.T) {\n\tq := NewQueue[string](5, 0)\n\n\tq.Push(\"1\", \"2\", \"3\", \"4\", \"5\")\n\n\tassert.Equal(t, 5, q.Len())\n\tq.Close()\n\tassert.Equal(t, 0, q.Len())\n}\n\nfunc TestQueueDeduplication(t *testing.T) {\n\tq := NewQueue[oci.Reference](2, 0)\n\tdefer q.Close()\n\n\tassert.Equal(t, 0, q.Len())\n\n\tref, err := oci.ParseRef(\"mongo:4\")\n\trequire.NoError(t, err)\n\n\tq.Push(ref)\n\tassert.Equal(t, 1, q.Len())\n\n\tq.Push(ref)\n\tassert.Equal(t, 1, q.Len())\n\n\tref.Tag = \"5\"\n\tq.Push(ref)\n\tassert.Equal(t, 2, q.Len())\n}"

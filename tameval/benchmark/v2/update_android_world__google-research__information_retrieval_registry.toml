@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-research/android_world"
+sha = "05afc97ecab2ad235e2fc2a40e740f0102a3bcbc"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_world/task_evals/information_retrieval/information_retrieval_registry.py -m pytest -q --junit-xml=test_output.xml android_world/task_evals/information_retrieval/information_retrieval_registry_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_world.task_evals.information_retrieval.information_retrieval_registry --unit-test android_world.task_evals.information_retrieval.information_retrieval_registry_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_world/task_evals/information_retrieval/information_retrieval_registry.py --unit-test android_world/task_evals/information_retrieval/information_retrieval_registry_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 39.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 50.0
+covered_lines = [ 21, 22, 23, 24, 25, 26, 27, 29, 31, 32, 41, 44, 45, 50, 61, 74,]
+missed_lines = [ 48, 51, 52, 53, 56, 57, 58, 59, 66, 67, 68, 69, 70, 71, 72, 89, 90, 91, 92, 93, 96, 98, 99, 100, 102,]
+
+[input_info]
+test_file_path = "android_world/task_evals/information_retrieval/information_retrieval_registry_test.py"
+focal_file_path = "android_world/task_evals/information_retrieval/information_retrieval_registry.py"
+test_file_url = "https://github.com/google-research/android_world/blob/05afc97ecab2ad235e2fc2a40e740f0102a3bcbc/android_world/task_evals/information_retrieval/information_retrieval_registry_test.py"
+focal_file_url = "https://github.com/google-research/android_world/blob/05afc97ecab2ad235e2fc2a40e740f0102a3bcbc/android_world/task_evals/information_retrieval/information_retrieval_registry.py"
+first_commit_date = "2024-05-16"
+last_commit_date = "2025-06-02"
+test_file_content = "# Copyright 2024 The android_world Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\nfrom absl.testing import absltest\nfrom android_world.task_evals.information_retrieval import information_retrieval_registry\n\n\nclass InformationRetrievalRegistryTest(absltest.TestCase):\n\n  def test_read_in_tasks(self):\n    tasks = information_retrieval_registry._read_tasks()\n    self.assertNotEmpty(list(tasks.tasks))\n    for task in tasks.tasks:\n      self.assertNotEmpty(task.name)\n      self.assertNotEmpty(task.prompt)\n\n  def test_registry(self):\n    tasks = information_retrieval_registry._read_tasks()\n    registry = information_retrieval_registry.TASK_REGISTRY\n    for task in tasks.tasks:\n      task_class = registry[task.name]\n      self.assertIn(task.name, registry)\n      self.assertEqual(task.name, task_class.__name__)\n      self.assertEqual(\n          task_class(task_class.generate_random_params()).task_template,\n          task,\n      )\n\n\nif __name__ == \"__main__\":\n  absltest.main()"

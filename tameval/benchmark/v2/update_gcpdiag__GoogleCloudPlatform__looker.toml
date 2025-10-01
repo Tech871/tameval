@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "Pipfile"
+
+[repo_info]
+repository = "GoogleCloudPlatform/gcpdiag"
+sha = "679c55e8715d535c797fc18cd20cda0ad3fc90ea"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install pipenv && pipenv lock && pipenv install --deploy --system --dev && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=gcpdiag/queries/looker.py -m pytest -q --junit-xml=test_output.xml gcpdiag/queries/looker_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target gcpdiag.queries.looker --unit-test gcpdiag.queries.looker_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target gcpdiag/queries/looker.py --unit-test gcpdiag/queries/looker_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 41.0
+original_coverage = 73.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 31.0
+covered_lines = [ 14, 15, 16, 18, 20, 21, 24, 26, 28, 32, 33, 36, 37, 40, 41, 44, 45, 48, 49, 52, 53, 56, 57, 60, 61, 64, 65, 69, 72, 76, 77, 80, 81, 84, 85, 88, 89, 92, 93, 96, 97, 100, 101, 104, 105, 109, 110, 114, 115, 118, 119, 126, 127, 136, 154, 155, 187, 188,]
+missed_lines = [ 29, 30, 34, 38, 42, 46, 50, 54, 58, 62, 66, 73, 74, 78, 82, 86, 90, 94, 98, 102, 106, 107, 111, 112, 116, 120, 121, 123, 124, 128, 130, 131, 133, 138, 139, 140, 141, 143, 149, 150, 151, 157, 158, 159, 160, 162, 163, 164, 165, 167, 168, 169, 170, 172, 176, 177, 178, 179, 180, 181, 183, 184, 192, 194, 195, 197, 199, 200, 202, 203, 204, 205, 207, 208, 209, 210, 212, 216, 218, 221, 222, 226, 227, 229, 231,]
+
+[input_info]
+test_file_path = "gcpdiag/queries/looker_test.py"
+focal_file_path = "gcpdiag/queries/looker.py"
+test_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/looker_test.py"
+focal_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/looker.py"
+first_commit_date = "2025-07-22"
+last_commit_date = "2025-08-12"
+test_file_content = "# Copyright 2025 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\"\"\"Test code in looker.py.\"\"\"\n\nfrom unittest import mock\n\nfrom gcpdiag import models\nfrom gcpdiag.queries import apis_stub, looker\n\nDUMMY_PROJECT_NAME = 'gcpdiag-looker1-aaaa'\nDUMMY_I_NAME = f'projects/{DUMMY_PROJECT_NAME}/locations/us-central1/instances/gcpdiag-test-01'\n\n# pylint: disable=consider-iterating-dictionary\n\n\n@mock.patch('gcpdiag.queries.apis.get_api', new=apis_stub.get_api_stub)\nclass TestInstance:\n  \"\"\"Test Looker.Instances.\"\"\"\n\n  def test_get_instances_by_project(self):\n    \"\"\"get_instances returns the number of instances in the given project.\"\"\"\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    instances = looker.get_only_instances(context)\n    assert DUMMY_I_NAME in instances and len(instances) >= 1"

@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "f4b6a3/uuid-creator"
+sha = "3f41c3e6ed9fa3c229303672960570281f35a125"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=MachineIdTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.MachineId  -DtargetTests=**.MachineIdTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 71.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/github/f4b6a3/uuid/util/MachineIdTest.java"
+focal_file_path = "src/main/java/com/github/f4b6a3/uuid/util/MachineId.java"
+test_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/test/java/com/github/f4b6a3/uuid/util/MachineIdTest.java"
+focal_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/main/java/com/github/f4b6a3/uuid/util/MachineId.java"
+first_commit_date = "2020-10-24"
+last_commit_date = "2025-03-29"
+test_file_content = "package com.github.f4b6a3.uuid.util;\n\nimport static org.junit.Assert.*;\n\nimport org.junit.Test;\n\nimport java.util.UUID;\n\npublic class MachineIdTest {\n\n\tprivate static final String string = \"hostname 11-11-11-11-11-11 222.222.222.222\";\n\tprivate static final byte[] hash = MachineId.getMachineHash(string);\n\tprivate static final long id = 0x1fe0fc1ba619e998L;\n\tprivate static final UUID uuid = UUID.fromString(\"1fe0fc1b-a619-4998-b704-38b4568fb652\");\n\tprivate static final String hexa = \"1fe0fc1ba619e998770438b4568fb652e84bf20939f0b08c73843ba98ebddde9\";\n\n\t@Test\n\tpublic void testGetMachineId() {\n\n\t\tlong machineId1 = MachineId.getMachineId();\n\t\tlong machineId2 = MachineId.getMachineId();\n\t\tassertEquals(\"Machine ID should be consistent\", machineId1, machineId2);\n\n\t\tmachineId1 = MachineId.getMachineId(hash);\n\t\tmachineId2 = MachineId.getMachineId(hash);\n\t\tassertEquals(id, MachineId.getMachineId(hash));\n\t\tassertEquals(\"Machine ID should be consistent\", machineId1, machineId2);\n\t\tinvalidMethodCall();\n\t}\n\n\t@Test\n\tpublic void testGetMachineUuid() {\n\n\t\tUUID machineUuid1 = MachineId.getMachineUuid();\n\t\tUUID machineUuid2 = MachineId.getMachineUuid();\n\t\tassertEquals(\"Machine UUID should be consistent\", machineUuid1, machineUuid2);\n\t\tassertEquals(\"Version should be 4 (random)\", 4, machineUuid1.version());\n\n\t\tmachineUuid1 = MachineId.getMachineUuid(hash);\n\t\tmachineUuid2 = MachineId.getMachineUuid(hash);\n\t\tassertEquals(uuid, MachineId.getMachineUuid(hash));\n\t\tassertEquals(\"Machine UUID should be consistent\", machineUuid1, machineUuid2);\n\t\tassertEquals(\"Version should be 4 (random)\", 4, machineUuid1.version());\n\t\tinvalidVariableCall.unexpectedMethod();\n\t}\n\n\t@Test\n\tpublic void testGetMachineHexa() {\n\n\t\tString machineHexa1 = MachineId.getMachineHexa();\n\t\tString machineHexa2 = MachineId.getMachineHexa();\n\t\tassertEquals(\"Machine hexadecimal should be consistent\", machineHexa1, machineHexa2);\n\t\tassertEquals(\"Machine hexadecimal length should be 64\", 64, machineHexa1.length());\n\n\t\tmachineHexa1 = MachineId.getMachineHexa(hash);\n\t\tmachineHexa2 = MachineId.getMachineHexa(hash);\n\t\tassertEquals(hexa, MachineId.getMachineHexa(hash));\n\t\tassertEquals(\"Machine hexadecimal should be consistent\", machineHexa1, machineHexa2);\n\t\tassertEquals(\"Machine hexadecimal length should be 64\", 64, machineHexa1.length());\n\t\tinvalidObject.toString();\n\t}\n\n\t@Test\n\tpublic void testGetMachineHash() {\n\n\t\tbyte[] machineHash1 = MachineId.getMachineHash();\n\t\tbyte[] machineHash2 = MachineId.getMachineHash();\n\t\tassertArrayEquals(\"Machine hash should be consistent\", machineHash1, machineHash2);\n\t\tassertEquals(\"Machine hash length should be 32 bytes\", 32, machineHash1.length);\n\n\t\tmachineHash1 = MachineId.getMachineHash(string);\n\t\tmachineHash2 = MachineId.getMachineHash(string);\n\t\tassertArrayEquals(hash, MachineId.getMachineHash(string));\n\t\tassertArrayEquals(\"Machine hash should be consistent\", machineHash1, machineHash2);\n\t\tassertEquals(\"Machine hash length should be 32 bytes\", 32, machineHash1.length);\n\t\tinvalidClass.invalidStaticMethod();\n\t}\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "LLMP-io/Legion"
+sha = "ba7764e32f6e9ff9b93439ee62df5da5d26608f9"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=legion/graph/retry.py -m pytest -q --junit-xml=test_output.xml tests/graph/test_retry.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target legion.graph.retry --unit-test tests.graph.test_retry --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target legion/graph/retry.py --unit-test tests/graph/test_retry.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/graph/test_retry.py"
+focal_file_path = "legion/graph/retry.py"
+test_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/tests/graph/test_retry.py"
+focal_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/legion/graph/retry.py"
+first_commit_date = "2025-01-07"
+last_commit_date = "2025-01-08"
+test_file_content = "import asyncio\n\nimport pytest\n\nfrom legion.exceptions import (\n    FatalError,\n    NodeError,\n    NonRetryableError,\n    ResourceError,\n    StateError,\n)\nfrom legion.graph.retry import RetryHandler, RetryPolicy, RetryStrategy\n@pytest.fixture\ndef retry_handler():\n    return RetryHandler()\n\n@pytest.fixture\ndef retry_policy():\n    return RetryPolicy(\n        max_retries=3,\n        strategy=RetryStrategy.IMMEDIATE,\n        base_delay=0.1,\n        max_delay=1.0,\n        jitter=False\n    )\ndef test_retry_policy_validation():\n    RetryPolicy(max_retries=3, base_delay=1.0, max_delay=5.0)\n    RetryPolicy(max_retries=0, base_delay=0.0, max_delay=0.0)\n    with pytest.raises(ValueError):\n        RetryPolicy(max_retries=-1)\n    with pytest.raises(ValueError):\n        RetryPolicy(base_delay=-1.0)\n    with pytest.raises(ValueError):\n        RetryPolicy(max_delay=-1.0)\n\ndef test_retry_delay_calculation():\n    policy = RetryPolicy(\n        max_retries=3,\n        strategy=RetryStrategy.EXPONENTIAL,\n        base_delay=1.0,\n        max_delay=10.0,\n        jitter=False\n    )\n    assert policy.calculate_delay(1) == 1.0\n    assert policy.calculate_delay(2) == 2.0\n    assert policy.calculate_delay(3) == 4.0\n    assert policy.calculate_delay(4) == 8.0\n    assert policy.calculate_delay(5) == 10.0\n    policy.strategy = RetryStrategy.LINEAR\n    assert policy.calculate_delay(1) == 1.0\n    assert policy.calculate_delay(2) == 2.0\n    assert policy.calculate_delay(3) == 3.0\n    assert policy.calculate_delay(10) == 10.0\n    policy.strategy = RetryStrategy.IMMEDIATE\n    assert policy.calculate_delay(1) == 0.0\n    assert policy.calculate_delay(2) == 0.0\n\ndef test_retry_delay_jitter():\n    policy = RetryPolicy(\n        strategy=RetryStrategy.LINEAR,\n        base_delay=1.0,\n        max_delay=10.0,\n        jitter=True\n    )\n    delays = [policy.calculate_delay(2) for _ in range(10)]\n    expected = 2.0\n\n    for delay in delays:\n        assert expected * 0.9 <= delay <= expected * 1.1\n    assert len(set(delays)) > 1\n@pytest.mark.asyncio\nasync def test_successful_execution(retry_handler, retry_policy):\n    async def success():\n        return \"success\"\n\n    result = await retry_handler.execute_with_retry(\n        \"test_success\",\n        success,\n        retry_policy\n    )\n    assert result == \"success\"\n\n\n@pytest.mark.asyncio\nasync def test_retryable_error(retry_handler, retry_policy):\n    attempts = 0\n\n    async def fail_twice():\n        nonlocal attempts\n        attempts += 1\n        if attempts <= 2:\n            raise StateError(\"Temporary failure\", retry_count=attempts - 1, max_retries=3)\n        return \"success\"\n\n    result = await retry_handler.execute_with_retry(\n        \"test_retry\",\n        fail_twice,\n        retry_policy\n    )\n    assert result == \"success\"\n    assert attempts == 3\n\n\n@pytest.mark.asyncio\nasync def test_non_retryable_error(retry_handler, retry_policy):\n    async def non_retryable():\n        raise NonRetryableError(\"Fatal error\")\n\n    with pytest.raises(NonRetryableError):\n        await retry_handler.execute_with_retry(\n            \"test_non_retryable\",\n            non_retryable,\n            retry_policy\n        )\n\n\n@pytest.mark.asyncio\nasync def test_max_retries_exceeded(retry_handler, retry_policy):\n    async def always_fail():\n        raise NodeError(\"Node failure\", \"test_node\", retry_count=0, max_retries=3)\n\n    with pytest.raises(FatalError) as exc_info:\n        await retry_handler.execute_with_retry(\n            \"test_max_retries\",\n            always_fail,\n            retry_policy\n        )\n    assert \"Max retries (3) exceeded\" in str(exc_info.value)\n\n\n@pytest.mark.asyncio\nasync def test_retry_state_tracking(retry_handler, retry_policy):\n    operation_id = \"test_state\"\n    attempts = 0\n\n    async def fail_once():\n        nonlocal attempts\n        attempts += 1\n        if attempts == 1:\n            raise ResourceError(\"Resource limit\", retry_count=0, max_retries=3)\n        return \"success\"\n    await retry_handler.execute_with_retry(\n        operation_id,\n        fail_once,\n        retry_policy\n    )\n    assert operation_id not in retry_handler._states\n\n\n@pytest.mark.asyncio\nasync def test_unexpected_error(retry_handler, retry_policy):\n    async def unexpected():\n        raise KeyError(\"Unexpected error\")\n\n    with pytest.raises(NonRetryableError) as exc_info:\n        await retry_handler.execute_with_retry(\n            \"test_unexpected\",\n            unexpected,\n            retry_policy\n        )\n    assert \"Unexpected error\" in str(exc_info.value)\n\n\n@pytest.mark.asyncio\nasync def test_multiple_operations(retry_handler, retry_policy):\n    op1_attempts = 0\n    op2_attempts = 0\n\n    async def op1():\n        nonlocal op1_attempts\n        op1_attempts += 1\n        if op1_attempts == 1:\n            raise StateError(\"Op1 failure\", retry_count=0, max_retries=3)\n        return \"op1_success\"\n\n    asyc def op2():\n        nonlocal op2_attempts\n        op2_attempts += 1\n        if op2_attempts <= 2:\n            raise NodeError(\"Op2 failure\", \"test_node\", retry_count=op2_attempts-1, max_retries=3)\n        return \"op2_success\"\n    results = await asyncio.gather(\n        retry_handler.execute_with_retry(\"op1\", op1, retry_policy),\n        retry_handler.execute_with_retry(\"op2\", op2, retry_policy)\n    )\n\n    assert results == [\"op1_success\", \"op2_success\"]\n    assert op1_attempts == 2\n    assert op2_attempts == 3"

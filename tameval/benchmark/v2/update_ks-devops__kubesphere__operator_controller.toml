@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "kubesphere/ks-devops"
+sha = "912f453210d5a51ed62b0b35c1073cd94f3601c2"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out controllers/addon/operator_controller.go controllers/addon/operator_controller_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting controllers/addon/operator_controller.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 72.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 58.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "controllers/addon/operator_controller_test.go"
+focal_file_path = "controllers/addon/operator_controller.go"
+test_file_url = "https://github.com/kubesphere/ks-devops/blob/912f453210d5a51ed62b0b35c1073cd94f3601c2/controllers/addon/operator_controller_test.go"
+focal_file_url = "https://github.com/kubesphere/ks-devops/blob/912f453210d5a51ed62b0b35c1073cd94f3601c2/controllers/addon/operator_controller.go"
+first_commit_date = "2022-02-07"
+last_commit_date = "2025-03-13"
+test_file_content = "/*\nCopyright 2022 The KubeSphere Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage addon\n\nimport (\n\t\"context\"\n\t\"github.com/go-logr/logr\"\n\t\"github.com/stretchr/testify/assert\"\n\tv1 \"k8s.io/api/core/v1\"\n\tmetav1 \"k8s.io/apimachinery/pkg/apis/meta/v1\"\n\t\"k8s.io/apimachinery/pkg/types\"\n\t\"kubesphere.io/devops/pkg/api/devops/v1alpha3\"\n\t\"sigs.k8s.io/controller-runtime/pkg/client\"\n\t\"sigs.k8s.io/controller-runtime/pkg/client/fake\"\n\t\"testing\"\n)\n\nfunc Test_getStrategyName(t *testing.T) {\n\ttype args struct {\n\t\toperatorName string\n\t\tkind         string\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant string\n\t}{{\n\t\tname: \"have upper case\",\n\t\targs: args{\n\t\t\toperatorName: \"Name\",\n\t\t\tkind:         \"Kind\",\n\t\t},\n\t\twant: \"kind-name\",\n\t}}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := getStrategyName(tt.args.operatorName, tt.args.kind); got != tt.want {\n\t\t\t\tt.Errorf(\"getStrategyName() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestOperatorCRDReconciler_operatorsHandle(t *testing.T) {\n\tschema, err := v1alpha3.SchemeBuilder.Register().Build()\n\tassert.Nil(t, err)\n\n\ttype fields struct {\n\t\tClient client.Client\n\t\tlog    logr.Logger\n\t}\n\ttype args struct {\n\t\tname    string\n\t\tversion string\n\t}\n\ttests := []struct {\n\t\tname    string\n\t\tfields  fields\n\t\targs    args\n\t\twantErr bool\n\t\tverify  func(t *testing.T, c client.Client)\n\t}{{\n\t\tname: \"not support operator\",\n\t\tfields: fields{\n\t\t\tClient: fake.NewFakeClientWithScheme(schema),\n\t\t\tlog:    logr.Discard(),\n\t\t},\n\t\targs: args{\n\t\t\tname:    \"fake\",\n\t\t\tversion: \"devops.kubesphere.io/v1alpha1\",\n\t\t},\n\t\twantErr: false,\n\t\tverify:  func(t *testing.T, c client.Client) {},\n\t}, {\n\t\tname: \"normal case\",\n\t\tfields: fields{\n\t\t\tClient: fake.NewFakeClientWithScheme(schema),\n\t\t\tlog:    logr.Discard(),\n\t\t},\n\t\targs: args{\n\t\t\tname:    \"ReleaserController\",\n\t\t\tversion: \"devops.kubesphere.io/v1alpha1\",\n\t\t},\n\t\twantErr: false,\n\t\tverify: func(t *testing.T, c client.Client) {\n\t\t\tresult := &v1alpha3.AddonStrategy{}\n\t\t\terr := c.Get(context.TODO(), types.NamespacedName{\n\t\t\t\tName: \"simple-operator-releasercontroller\",\n\t\t\t}, result)\n\t\t\tassert.Nil(t, err)\n\t\t\tassert.NotNil(t, result)\n\t\t\tassert.Equal(t, v1alpha3.AddonInstallStrategy(\"simple-operator\"), result.Spec.Type)\n\t\t\tassert.Equal(t, \"ReleaserController\", result.Spec.SimpleOperator.Kind)\n\t\t\tassert.Equal(t, \"devops.kubesphere.io/v1alpha1\", result.Spec.SimpleOperator.APIVersion)\n\t\t},\n\t}, {\n\t\tname: \"update the existing\",\n\t\tfields: fields{\n\t\t\tClient: fake.NewFakeClientWithScheme(schema, &v1alpha3.AddonStrategy{\n\t\t\t\tObjectMeta: metav1.ObjectMeta{\n\t\t\t\t\tName: \"simple-operator-releasercontroller\",\n\t\t\t\t},\n\t\t\t\tSpec: v1alpha3.AddStrategySpec{\n\t\t\t\t\tType: v1alpha3.AddonInstallStrategySimpleOperator,\n\t\t\t\t\tSimpleOperator: v1.ObjectReference{\n\t\t\t\t\t\tKind:       \"ReleaserController\",\n\t\t\t\t\t\tAPIVersion: \"devops.kubesphere.io/v1\",\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t}),\n\t\t\tlog: logr.Discard(),\n\t\t},\n\t\targs: args{\n\t\t\tname:    \"ReleaserController\",\n\t\t\tversion: \"devops.kubesphere.io/v1alpha1\",\n\t\t},\n\t\twantErr: false,\n\t\tverify: func(t *testing.T, c client.Client) {\n\t\t\tresult := &v1alpha3.AddonStrategy{}\n\t\t\terr := c.Get(context.TODO(), types.NamespacedName{\n\t\t\t\tName: \"simple-operator-releasercontroller\",\n\t\t\t}, result)\n\t\t\tassert.Nil(t, err)\n\t\t\tassert.NotNil(t, result)\n\t\t\tassert.True(t, result.Spec.Available)\n\t\t\tassert.Equal(t, v1alpha3.AddonInstallStrategy(\"simple-operator\"), result.Spec.Type)\n\t\t\tassert.Equal(t, \"ReleaserController\", result.Spec.SimpleOperator.Kind)\n\t\t\tassert.Equal(t, \"devops.kubesphere.io/v1alpha1\", result.Spec.SimpleOperator.APIVersion)\n\t\t},\n\t}}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tr := &OperatorCRDReconciler{\n\t\t\t\tClient: tt.fields.Client,\n\t\t\t\tlog:    tt.fields.log,\n\t\t\t}\n\t\t\tif err := r.operatorsHandle(tt.args.name, tt.args.version); (err != nil) != tt.wantErr {\n\t\t\t\tt.Errorf(\"operatorsHandle() error = %v, wantErr %v\", err, tt.wantErr)\n\t\t\t}\n\t\t\ttt.verify(t, tt.fields.Client)\n\t\t})\n\t}\n}\n\nfunc Test_operatorSupport(t *testing.T) {\n\ttype args struct {\n\t\tname string\n\t}\n\ttests := []struct {\n\t\tname        string\n\t\targs        args\n\t\twantSupport bool\n\t}{{\n\t\tname: \"supported: ReleaserController\",\n\t\targs: args{\n\t\t\tname: \"ReleaserController\",\n\t\t},\n\t\twantSupport: true,\n\t}, {\n\t\tname: \"supported: fake\",\n\t\targs: args{\n\t\t\tname: \"fake\",\n\t\t},\n\t\twantSupport: false,\n\t}}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tassert.Equalf(t, tt.wantSupport, operatorSupport(tt.args.name), \"operatorSupport(%v)\", tt.args.name)\n\t\t})\n\t}\n}"

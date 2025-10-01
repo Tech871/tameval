@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "cf5a04582d11c4040e39fda2c39fe0c4ebb7470f"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/progress/progress.go internal/progress/progress_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/progress/progress.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 46.0
+original_coverage = 46.0
+mutation_kill_rate = 27.0
+original_mutation_kill_rate = 27.0
+covered_lines = [ 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 87, 88, 89, 90, 91, 92, 93, 94, 100, 101, 102, 104, 105, 106, 107, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 125, 126, 127, 133, 134, 135, 136, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 180, 181, 185, 186, 187, 188, 189, 190, 191, 192, 193, 196, 200, 203, 204, 205, 206, 207,]
+missed_lines = [ 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 75, 76, 77, 79, 80, 81, 83, 84, 85, 96, 97, 98, 108, 109, 110, 129, 130, 131, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 170, 171, 172, 173, 174, 176, 177, 178, 182, 183, 184, 197, 198, 199, 211, 212, 213, 214, 216, 217, 218, 219, 220, 221, 222, 223, 226, 227, 228, 230, 231, 232, 233, 234, 235, 236, 237, 238, 241, 242, 243, 244, 245, 246,]
+
+[input_info]
+test_file_path = "internal/progress/progress_test.go"
+focal_file_path = "internal/progress/progress.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/cf5a04582d11c4040e39fda2c39fe0c4ebb7470f/internal/progress/progress_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/cf5a04582d11c4040e39fda2c39fe0c4ebb7470f/internal/progress/progress.go"
+first_commit_date = "2022-05-04"
+last_commit_date = "2025-02-07"
+test_file_content = "/*\n * © 2022 Snyk Limited All rights reserved.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage progress\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\n\t\"github.com/snyk/snyk-ls/internal/types\"\n)\n\nfunc TestBeginProgress(t *testing.T) {\n\tchannel := make(chan types.ProgressParams, 100000)\n\tcancelChannel := make(chan bool, 1)\n\tprogress := NewTestTracker(channel, cancelChannel)\n\n\tprogress.BeginWithMessage(\"title\", \"message\")\n\n\tassert.Equal(\n\t\tt,\n\t\ttypes.ProgressParams{\n\t\t\tToken: progress.token,\n\t\t\tValue: types.WorkDoneProgressBegin{\n\t\t\t\tWorkDoneProgressKind: types.WorkDoneProgressKind{Kind: \"begin\"},\n\t\t\t\tTitle:                \"title\",\n\t\t\t\tCancellable:          true,\n\t\t\t\tMessage:              \"message\",\n\t\t\t\tPercentage:           1,\n\t\t\t},\n\t\t},\n\t\t<-channel,\n\t)\n}\n\nfunc TestReportProgress(t *testing.T) {\n\toutput := types.ProgressParams{\n\t\tToken: \"token\",\n\t\tValue: types.WorkDoneProgressReport{\n\t\t\tWorkDoneProgressKind: types.WorkDoneProgressKind{Kind: \"report\"},\n\t\t\tPercentage:           10,\n\t\t},\n\t}\n\tchannel := make(chan types.ProgressParams, 2)\n\tprogress := NewTestTracker(channel, nil)\n\n\tworkProgressReport := output.Value.(types.WorkDoneProgressReport)\n\tprogress.Report(workProgressReport.Percentage)\n\n\tassert.Equal(t, output, <-channel)\n}\n\nfunc TestEndProgress(t *testing.T) {\n\toutput := types.ProgressParams{\n\t\tToken: \"token\",\n\t\tValue: types.WorkDoneProgressEnd{\n\t\t\tWorkDoneProgressKind: types.WorkDoneProgressKind{Kind: \"end\"},\n\t\t\tMessage:              \"end message\",\n\t\t},\n\t}\n\n\tchannel := make(chan types.ProgressParams, 2)\n\tprogress := NewTestTracker(channel, nil)\n\n\tworkProgressEnd := output.Value.(types.WorkDoneProgressEnd)\n\tprogress.EndWithMessage(workProgressEnd.Message)\n\n\tassert.Equal(t, output, <-channel)\n}\n\nfunc TestEndProgressTwice(t *testing.T) {\n\toutput := types.ProgressParams{\n\t\tValue: types.WorkDoneProgressEnd{\n\t\t\tWorkDoneProgressKind: types.WorkDoneProgressKind{Kind: \"end\"},\n\t\t\tMessage:              \"end message\",\n\t\t},\n\t}\n\n\tchannel := make(chan types.ProgressParams, 2)\n\tprogress := NewTestTracker(channel, nil)\n\n\tworkProgressEnd := output.Value.(types.WorkDoneProgressEnd)\n\tprogress.EndWithMessage(workProgressEnd.Message)\n\n\tassert.Panics(t, func() {\n\t\tprogress.EndWithMessage(workProgressEnd.Message)\n\t})\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "tcheeric/nostr-java"
+sha = "19abaa18c086511e89c968e069c43797f55aac2d"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nostr-java-api -Dtest=NIP02Test && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nostr-java-api -DtargetClasses=**.NIP02  -DtargetTests=**.NIP02Test  -DoutputFormats=XML"
+coverage_report_path = "nostr-java-api/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nostr-java-api/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 77.0
+original_coverage = 77.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 22, 23, 26, 27, 28, 37, 38, 40, 41, 50,]
+missed_lines = [ 21, 36, 49,]
+
+[input_info]
+test_file_path = "nostr-java-api/src/test/java/nostr/api/unit/NIP02Test.java"
+focal_file_path = "nostr-java-api/src/main/java/nostr/api/NIP02.java"
+test_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-api/src/test/java/nostr/api/unit/NIP02Test.java"
+focal_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-api/src/main/java/nostr/api/NIP02.java"
+first_commit_date = "2023-07-18"
+last_commit_date = "2025-07-31"
+test_file_content = "package nostr.api.unit;\n\nimport nostr.api.NIP02;\nimport nostr.config.Constants;\nimport nostr.event.BaseTag;\nimport nostr.event.tag.PubKeyTag;\nimport nostr.id.Identity;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\npublic class NIP02Test {\n\n    private Identity sender;\n    private NIP02 nip02;\n\n    @BeforeEach\n    void setUp() {\n        sender = Identity.generateRandomIdentity();\n        nip02 = new NIP02(sender);\n    }\n\n    @Test\n    void testCreateContactListEvent() {\n        List<BaseTag> tags = new ArrayList<>();\n        tags.add(new PubKeyTag(sender.getPublicKey()));\n        nip02.createContactListEvent(new ArrayList<>(tags));\n        assertNotNull(nip02.getEvent(), \"Event should be created\");\n        assertEquals(Constants.Kind.CONTACT_LIST, nip02.getEvent().getKind(), \"Kind should be CONTACT_LIST\");\n    }\n\n    @Test\n    void testAddContactTag() {\n        BaseTag pTag = new PubKeyTag(sender.getPublicKey());\n        nip02.createContactListEvent(new ArrayList<>());\n        nip02.addContactTag(pTag);\n        assertTrue(\n                nip02.getEvent().getTags().stream()\n                        .anyMatch(t -> t.getCode().equals(Constants.Tag.PUBKEY_CODE)),\n                \"Contact tag should be added\"\n        );\n    }\n\n    @Test\n    void testAddContactTagWithPublicKey() {\n        nip02.createContactListEvent(new ArrayList<>());\n        nip02.addContactTag(sender.getPublicKey());\n        assertTrue(\n                nip02.getEvent().getTags().stream()\n                        .anyMatch(t -> t.getCode().equals(Constants.Tag.PUBKEY_CODE)),\n                \"Contact tag from public key should be added\"\n        );\n    }\n\n    @Test\n    void testAddContactTagThrowsException() {\n        nip02.createContactListEvent(new ArrayList<>());\n        BaseTag invalidTag = BaseTag.create(\"x\", \"invalid\");\n        assertThrows(IllegalArgumentException.class, () -> nip02.addContactTag(invalidTag),\n                \"Should throw if added tag is not a 'p' tag\");\n    }\n}"

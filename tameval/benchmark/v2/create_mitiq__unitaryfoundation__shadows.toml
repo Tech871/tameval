@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "unitaryfoundation/mitiq"
+sha = "3d4516eb01e0c82220a829bbf570ac537143b5a5"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mitiq/shadows/shadows.py -m pytest -q --junit-xml=test_output.xml mitiq/shadows/tests/test_shadows.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mitiq.shadows.shadows --unit-test mitiq.shadows.tests.test_shadows --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mitiq/shadows/shadows.py --unit-test mitiq/shadows/tests/test_shadows.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 90.0
+original_coverage = 90.0
+mutation_kill_rate = 90.0
+original_mutation_kill_rate = 90.0
+covered_lines = [ 6, 7, 9, 10, 11, 13, 14, 15, 20, 23, 66, 67, 72, 77, 84, 86, 93, 95, 100, 136, 138, 146, 152, 155, 184, 189, 190, 191, 194, 195, 196, 197, 199, 200, 206, 207,]
+missed_lines = [ 68, 73, 78, 137,]
+
+[input_info]
+test_file_path = "mitiq/shadows/tests/test_shadows.py"
+focal_file_path = "mitiq/shadows/shadows.py"
+test_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/shadows/tests/test_shadows.py"
+focal_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/shadows/shadows.py"
+first_commit_date = "2023-08-16"
+last_commit_date = "2025-06-07"
+test_file_content = "# Copyright (C) Unitary Foundation\n#\n# This source code is licensed under the GPL license (v3) found in the\n# LICENSE file in the root directory of this source tree.\n\n\"\"\"Test classical shadow estimation process.\"\"\"\n\nfrom numbers import Number\n\nimport cirq\n\nimport mitiq\nfrom mitiq import MeasurementResult\nfrom mitiq.interface.mitiq_cirq.cirq_utils import (\n    sample_bitstrings as cirq_sample_bitstrings,\n)\nfrom mitiq.shadows.shadows import (\n    classical_post_processing,\n    pauli_twirling_calibrate,\n    shadow_quantum_processing,\n)\n\n# define a fully entangled state\nnum_qubits: int = 2\nqubits = cirq.LineQubit.range(num_qubits)\ncircuit = cirq.Circuit([cirq.H(q) for q in qubits])\ncircuit.append(cirq.CNOT(qubits[0], qubits[1]))\nobservables = [mitiq.PauliString(\"X\", support=(i,)) for i in range(num_qubits)]\n\n\ndef executor(\n    circuit: cirq.Circuit,\n) -> MeasurementResult:\n    return cirq_sample_bitstrings(\n        circuit,\n        noise_level=(0,),\n        shots=1,\n        sampler=cirq.Simulator(),\n    )\n\n\ndef test_pauli_twirling_calibrate():\n    # Call the function with valid inputs\n    result = pauli_twirling_calibrate(\n        qubits=qubits, executor=executor, num_total_measurements_calibration=2\n    )\n\n    # Check that the dictionary contains the correct number of entries\n    assert len(result) <= 2**num_qubits\n\n    for value in result.values():\n        assert isinstance(value, Number)\n\n    # Call shadow_quantum_processing to get shadow_outcomes\n    shadow_outcomes = ([\"11\", \"00\"], [\"ZZ\", \"XX\"])\n\n    # Call the function with valid inputs\n    result = pauli_twirling_calibrate(\n        zero_state_shadow_outcomes=shadow_outcomes,\n        num_total_measurements_calibration=2,\n    )\n\n    # Check that the dictionary contains the correct number of entries\n    assert len(result) <= 2**num_qubits\n\n    for value in result.values():\n        assert isinstance(value, Number)\n\n\ndef test_shadow_quantum_processing():\n    # Call the function with valid inputs\n    result = shadow_quantum_processing(\n        circuit, executor, num_total_measurements_shadow=10\n    )\n\n    # Check that the result is a tuple\n    assert isinstance(result, tuple), f\"Expected a tuple, got {type(result)}\"\n\n    # Check that the tuple contains two lists\n    assert (\n        len(result) == 2\n    ), f\"Expected two lists in the tuple, got {len(result)}\"\n    assert isinstance(result[0], list)\n    assert isinstance(result[1], list)\n\n\ndef test_classical_post_processing():\n    # Call shadow_quantum_processing to get shadow_outcomes\n    shadow_outcomes = ([\"11\", \"00\"], [\"ZZ\", \"XX\"])\n\n    # Call pauli_twirling_calibrate to get calibration_results\n    calibration_results = {\"00\": 1, \"01\": 1 / 3, \"10\": 1 / 3, \"11\": 1 / 9}\n\n    # Call the function with valid inputs and state_reconstruction=True\n    result = classical_post_processing(\n        shadow_outcomes, state_reconstruction=True\n    )\n\n    # Check that the result is a dictionary\n    assert isinstance(\n        result, dict\n    ), f\"Expected a dictionary, got {type(result)}\"\n\n    # Check that the dictionary contains the expected keys\n    assert \"reconstructed_state\" in result\n\n    # Call the function with valid inputs and observables provided\n    result = classical_post_processing(\n        shadow_outcomes, observables=observables\n    )\n    result_cal = classical_post_processing(\n        shadow_outcomes,\n        calibration_results=calibration_results,\n        observables=observables,\n        k_shadows=1,\n    )\n    # Check that the result is a dictionary\n    assert isinstance(result, dict)\n    assert result_cal == result\n\n    # Check that the dictionary contains the expected keys\n    for obs in observables:\n        assert str(obs) in result\n        assert isinstance(result[str(obs)], float)\n"

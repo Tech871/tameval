@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "milvus-io/milvus"
+sha = "16efcda5c46748062abcfe563f70e1e2e53d0da1"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/parser/planparserv2/pattern_match.go internal/parser/planparserv2/pattern_match_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/parser/planparserv2/pattern_match.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/parser/planparserv2/pattern_match_test.go"
+focal_file_path = "internal/parser/planparserv2/pattern_match.go"
+test_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/internal/parser/planparserv2/pattern_match_test.go"
+focal_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/internal/parser/planparserv2/pattern_match.go"
+first_commit_date = "2022-05-07"
+last_commit_date = "2025-02-28"
+test_file_content = "package planparserv2\n\nimport (\n\t\"testing\"\n\n\t\"github.com/milvus-io/milvus/pkg/v2/proto/planpb\"\n)\n\nfunc Test_hasWildcards(t *testing.T) {\n\ttype args struct {\n\t\tpattern string\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant bool\n\t}{\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"no-wildcards\",\n\t\t\t},\n\t\t\twant: false,\n\t\t},\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"has\\\\%\",\n\t\t\t},\n\t\t\twant: false,\n\t\t},\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"%\",\n\t\t\t},\n\t\t\twant: true,\n\t\t},\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"has%\",\n\t\t\t},\n\t\t\twant: true,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := hasWildcards(tt.args.pattern); got != tt.want {\n\t\t\t\tt.Errorf(\"hasWildcards(%s) = %v, want %v\", tt.args.pattern, got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc Test_findLocOfLastWildcard(t *testing.T) {\n\ttype args struct {\n\t\tpattern string\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant int\n\t}{\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"no-wildcards\",\n\t\t\t},\n\t\t\twant: 11,\n\t\t},\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"only\\\\%\",\n\t\t\t},\n\t\t\twant: 5,\n\t\t},\n\t\t{\n\t\t\targs: args{\n\t\t\t\tpattern: \"prefix%%\",\n\t\t\t},\n\t\t\twant: 5,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := findLastNotOfWildcards(tt.args.pattern); got != tt.want {\n\t\t\t\tt.Errorf(\"findLastNotOfWildcards(%s) = %v, want %v\", tt.args.pattern, got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc Test_translatePatternMatch(t *testing.T) {\n\ttype args struct {\n\t\tpattern string\n\t}\n\ttests := []struct {\n\t\tname        string\n\t\targs        args\n\t\twantOp      planpb.OpType\n\t\twantOperand string\n\t\twantErr     bool\n\t}{\n\t\t{\n\t\t\targs:        args{pattern: \"prefix%\"},\n\t\t\twantOp:      planpb.OpType_PrefixMatch,\n\t\t\twantOperand: \"prefix\",\n\t\t\twantErr:     false,\n\t\t},\n\t\t{\n\t\t\targs:        args{pattern: \"equal\"},\n\t\t\twantOp:      planpb.OpType_Equal,\n\t\t\twantOperand: \"equal\",\n\t\t\twantErr:     false,\n\t\t},\n\t\t{\n\t\t\targs:        args{pattern: \"%%%%%%\"},\n\t\t\twantOp:      planpb.OpType_PrefixMatch,\n\t\t\twantOperand: \"\",\n\t\t\twantErr:     false,\n\t\t},\n\t\t{\n\t\t\targs:        args{pattern: \"prefix%suffix\"},\n\t\t\twantOp:      planpb.OpType_Match,\n\t\t\twantOperand: \"prefix%suffix\",\n\t\t\twantErr:     false,\n\t\t},\n\t\t{\n\t\t\targs:        args{pattern: \"_0\"},\n\t\t\twantOp:      planpb.OpType_Match,\n\t\t\twantOperand: \"_0\",\n\t\t\twantErr:     false,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgotOp, gotOperand, err := translatePatternMatch(tt.args.pattern)\n\t\t\tif (err != nil) != tt.wantErr {\n\t\t\t\tt.Errorf(\"translatePatternMatch(%s) error = %v, wantErr %v\", tt.args.pattern, err, tt.wantErr)\n\t\t\t\treturn\n\t\t\t}\n\t\t\tif gotOp != tt.wantOp {\n\t\t\t\tt.Errorf(\"translatePatternMatch(%s) gotOp = %v, want %v\", tt.args.pattern, gotOp, tt.wantOp)\n\t\t\t}\n\t\t\tif gotOperand != tt.wantOperand {\n\t\t\t\tt.Errorf(\"translatePatternMatch(%s) gotOperand = %v, want %v\", tt.args.pattern, gotOperand, tt.wantOperand)\n\t\t\t}\n\t\t})\n\t}\n}"

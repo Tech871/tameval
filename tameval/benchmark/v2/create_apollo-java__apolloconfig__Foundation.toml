@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apolloconfig/apollo-java"
+sha = "d8115d920ae21a1300827661492b5e776853258f"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl apollo-core -Dtest=FoundationTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl apollo-core -DtargetClasses=**.Foundation  -DtargetTests=**.FoundationTest  -DoutputFormats=XML"
+coverage_report_path = "apollo-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "apollo-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 38.0
+original_coverage = 44.0
+mutation_kill_rate = 12.0
+original_mutation_kill_rate = 38.0
+covered_lines = [ 29, 30, 36, 37, 41, 43, 44, 45, 46, 48, 51, 79,]
+missed_lines = [ 27, 52, 53, 54, 55, 61, 62, 63, 64, 70, 71, 72, 73, 80, 81, 82, 88, 89, 90, 91,]
+
+[input_info]
+test_file_path = "apollo-core/src/test/java/com/ctrip/framework/foundation/FoundationTest.java"
+focal_file_path = "apollo-core/src/main/java/com/ctrip/framework/foundation/Foundation.java"
+test_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-core/src/test/java/com/ctrip/framework/foundation/FoundationTest.java"
+focal_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-core/src/main/java/com/ctrip/framework/foundation/Foundation.java"
+first_commit_date = "2022-10-02"
+last_commit_date = "2024-01-21"
+test_file_content = "/*\n * Copyright 2022 Apollo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\npackage com.ctrip.framework.foundation;\n\nimport static org.junit.Assert.assertTrue;\n\nimport com.ctrip.framework.foundation.Foundation;\nimport com.ctrip.framework.foundation.internals.provider.DefaultApplicationProvider;\nimport com.ctrip.framework.foundation.internals.provider.DefaultServerProvider;\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class FoundationTest {\n\n\n   @Test\n   public void testServer() {\n      assertTrue(Foundation.server() instanceof DefaultServerProvider);\n   }\n\n\n}\n"

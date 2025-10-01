@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "nom-tam-fits/nom-tam-fits"
+sha = "ef5e60895f98eaba44b4220e64407394b05f44ff"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=BitpixTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.Bitpix  -DtargetTests=**.BitpixTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 42.0
+original_coverage = 52.0
+mutation_kill_rate = 21.0
+original_mutation_kill_rate = 30.0
+covered_lines = [ 50, 52, 55, 58, 61, 64, 67, 69, 107, 108, 109, 110, 111, 169, 178, 216, 219, 222, 225, 228, 231, 234, 235, 255, 256, 258, 259, 261, 262, 264, 265, 267, 268, 270, 271, 273,]
+missed_lines = [ 119, 131, 144, 156, 187, 198, 217, 220, 223, 226, 229, 232, 238, 293, 312, 332, 333, 334, 355, 356, 363, 364, 366, 367, 368, 369, 370, 371, 372, 373, 376, 377, 378, 382, 384, 386, 388, 390, 392, 394, 396, 413, 415, 417, 419, 421, 423, 425, 427,]
+
+[input_info]
+test_file_path = "src/test/java/nom/tam/fits/BitpixTest.java"
+focal_file_path = "src/main/java/nom/tam/fits/header/Bitpix.java"
+test_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/test/java/nom/tam/fits/BitpixTest.java"
+focal_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/main/java/nom/tam/fits/header/Bitpix.java"
+first_commit_date = "2021-10-16"
+last_commit_date = "2024-01-15"
+test_file_content = "package nom.tam.fits;\n\n/*\n * #%L\n * nom.tam FITS library\n * %%\n * Copyright (C) 1996 - 2021 nom-tam-fits\n * %%\n * This is free and unencumbered software released into the public domain.\n *\n * Anyone is free to copy, modify, publish, use, compile, sell, or\n * distribute this software, either in source code form or as a compiled\n * binary, for any purpose, commercial or non-commercial, and by any\n * means.\n *\n * In jurisdictions that recognize copyright laws, the author or authors\n * of this software dedicate any and all copyright interest in the\n * software to the public domain. We make this dedication for the benefit\n * of the public at large and to the detriment of our heirs and\n * successors. We intend this dedication to be an overt act of\n * relinquishment in perpetuity of all present and future rights to this\n * software under copyright law.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR\n * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,\n * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR\n * OTHER DEALINGS IN THE SOFTWARE.\n * #L%\n */\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertNotNull;\n\nimport java.math.BigDecimal;\nimport java.math.BigInteger;\n\nimport org.junit.Test;\n\nimport nom.tam.fits.header.Bitpix;\n\npublic class BitpixTest {\n\n    @Test\n    public void testByteID() throws Exception {\n        assertEquals('B', Bitpix.BYTE.getArrayID());\n    }\n\n    @Test\n    public void testShortID() throws Exception {\n        assertEquals('S', Bitpix.SHORT.getArrayID());\n    }\n\n    @Test\n    public void testIntID() throws Exception {\n        assertEquals('I', Bitpix.INTEGER.getArrayID());\n    }\n\n    @Test\n    public void testLongID() throws Exception {\n        assertEquals('J', Bitpix.LONG.getArrayID());\n    }\n\n    @Test\n    public void testFloatID() throws Exception {\n        assertEquals('F', Bitpix.FLOAT.getArrayID());\n    }\n\n    @Test\n    public void testDoubleID() throws Exception {\n        assertEquals('D', Bitpix.DOUBLE.getArrayID());\n    }\n\n    @Test\n    public void testByteDescription() throws Exception {\n        assertNotNull(Bitpix.BYTE.getDescription());\n        assertEquals(Bitpix.BYTE.getDescription(), HeaderCard.sanitize(Bitpix.BYTE.getDescription()));\n    }\n\n    @Test\n    public void testShortDescription() throws Exception {\n        assertNotNull(Bitpix.SHORT.getDescription());\n        assertEquals(Bitpix.SHORT.getDescription(), HeaderCard.sanitize(Bitpix.SHORT.getDescription()));\n    }\n\n    @Test\n    public void testIntDescription() throws Exception {\n        assertNotNull(Bitpix.INTEGER.getDescription());\n        assertEquals(Bitpix.INTEGER.getDescription(), HeaderCard.sanitize(Bitpix.INTEGER.getDescription()));\n    }\n\n    @Test\n    public void testLongDescription() throws Exception {\n        assertNotNull(Bitpix.LONG.getDescription());\n        assertEquals(Bitpix.LONG.getDescription(), HeaderCard.sanitize(Bitpix.LONG.getDescription()));\n    }\n\n    @Test\n    public void testFloatDescription() throws Exception {\n        assertNotNull(Bitpix.FLOAT.getDescription());\n        assertEquals(Bitpix.FLOAT.getDescription(), HeaderCard.sanitize(Bitpix.FLOAT.getDescription()));\n    }\n\n    @Test\n    public void testDoubleDescription() throws Exception {\n        assertNotNull(Bitpix.DOUBLE.getDescription());\n        assertEquals(Bitpix.DOUBLE.getDescription(), HeaderCard.sanitize(Bitpix.DOUBLE.getDescription()));\n    }\n\n    @Test\n    public void testByteObject() throws Exception {\n        assertEquals(Bitpix.BYTE, Bitpix.forNumberType(Byte.class));\n    }\n\n    @Test\n    public void testShortObject() throws Exception {\n        assertEquals(Bitpix.SHORT, Bitpix.forNumberType(Short.class));\n    }\n\n    @Test\n    public void testIntObject() throws Exception {\n        assertEquals(Bitpix.INTEGER, Bitpix.forNumberType(Integer.class));\n    }\n\n    @Test\n    public void testLongObject() throws Exception {\n        assertEquals(Bitpix.LONG, Bitpix.forNumberType(Long.class));\n    }\n\n    @Test\n    public void testFloatObject() throws Exception {\n        assertEquals(Bitpix.FLOAT, Bitpix.forNumberType(Float.class));\n    }\n\n    @Test\n    public void testDoubleObject() throws Exception {\n        assertEquals(Bitpix.DOUBLE, Bitpix.forNumberType(Double.class));\n    }\n\n    @Test(expected = FitsException.class)\n    public void testInvalidPrimitiveType() throws Exception {\n        FitsFactory.setAllowHeaderRepairs(false);\n        Bitpix.forPrimitiveType(Object.class);\n    }\n\n    @Test(expected = FitsException.class)\n    public void testInvalidNumberType1() throws Exception {\n        Bitpix.forNumberType(BigInteger.class);\n    }\n\n    @Test(expected = FitsException.class)\n    public void testInvalidNumberType2() throws Exception {\n        Bitpix.forNumberType(BigDecimal.class);\n    }\n\n}"

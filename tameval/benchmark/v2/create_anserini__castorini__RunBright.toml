@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "castorini/anserini"
+sha = "a9ec58ac9208f0246e39a39d7d8c95a431b45b56"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=RunBrightTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.RunBright  -DtargetTests=**.RunBrightTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 30, 31, 34, 35, 36, 37, 38, 40, 41, 42, 46, 47, 48, 54, 55, 56, 57, 60, 61,]
+missed_lines = [ 27,]
+
+[input_info]
+test_file_path = "src/test/java/io/anserini/repro/RunBrightTest.java"
+focal_file_path = "src/main/java/io/anserini/reproduce/RunBright.java"
+test_file_url = "https://github.com/castorini/anserini/blob/a9ec58ac9208f0246e39a39d7d8c95a431b45b56/src/test/java/io/anserini/repro/RunBrightTest.java"
+focal_file_url = "https://github.com/castorini/anserini/blob/a9ec58ac9208f0246e39a39d7d8c95a431b45b56/src/main/java/io/anserini/reproduce/RunBright.java"
+first_commit_date = "2025-08-05"
+last_commit_date = "2025-08-05"
+test_file_content = "/*\n * Anserini: A Lucene toolkit for reproducible information retrieval research\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage io.anserini.repro;\n\nimport io.anserini.reproduce.RunBright;\nimport org.junit.Test;\n\nimport java.io.ByteArrayOutputStream;\nimport java.io.PrintStream;\n\nimport static org.junit.Assert.assertTrue;\n\npublic class RunBrightTest {\n  private final ByteArrayOutputStream out = new ByteArrayOutputStream();\n  private final ByteArrayOutputStream err = new ByteArrayOutputStream();\n  private PrintStream saveOut;\n  private PrintStream saveErr;\n\n  private void redirectStderr() {\n    saveErr = System.err;\n    err.reset();\n    System.setErr(new PrintStream(err));\n  }\n\n  private void restoreStderr() {\n    System.setErr(saveErr);\n  }\n\n  private void redirectStdout() {\n    saveOut = System.out;\n    out.reset();\n    System.setOut(new PrintStream(out));\n  }\n\n  private void restoreStdout() {\n    System.setOut(saveOut);\n  }\n\n  @Test\n  public void testInvalidOption() throws Exception {\n    redirectStderr();\n\n    String[] args = new String[] {\"-dry\"};\n    RunBright.main(args);\n\n    assertTrue(err.toString().startsWith(\"\\\"-dry\\\" is not a valid option\"));\n    restoreStderr();\n  }\n\n  @Test\n  public void test1() throws Exception {\n    redirectStdout();\n\n    String[] args = new String[] {\"-dryRun\"};\n    RunBright.main(args);\n\n    assertTrue(out.toString().startsWith(\"# Running condition\"));\n    restoreStdout();\n  }\n\n\n  @Test\n  public void test2() throws Exception {\n    redirectStdout();\n\n    String[] args = new String[] {\"-dryRun\", \"-printCommands\"};\n    RunBright.main(args);\n\n    assertTrue(out.toString().startsWith(\"# Running condition\"));\n    assertTrue(out.toString().contains(\"Retrieval command\"));\n    assertTrue(out.toString().contains(\"Eval command\"));\n\n    restoreStdout();\n  }\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "Traego/scaled-mcp"
+sha = "53eccfe963832dc64cc9f82f559c0b8a01170c81"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/utils/json_rpc_helpers.go pkg/utils/json_rpc_helpers_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/utils/json_rpc_helpers.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 100.0
+mutation_kill_rate = 80.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 71, 72, 73, 74, 75,]
+missed_lines = [ 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 36, 37, 38, 39, 40,]
+
+[input_info]
+test_file_path = "pkg/utils/json_rpc_helpers_test.go"
+focal_file_path = "pkg/utils/json_rpc_helpers.go"
+test_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/pkg/utils/json_rpc_helpers_test.go"
+focal_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/pkg/utils/json_rpc_helpers.go"
+first_commit_date = "2025-04-11"
+last_commit_date = "2025-04-11"
+test_file_content = "package utils\n\nimport (\n\t\"encoding/json\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"github.com/traego/scaled-mcp/pkg/proto/mcppb\"\n)\n\n\nfunc TestCreateErrorResponse(t *testing.T) {\n\ttestCases := []struct {\n\t\tname        string\n\t\trequest     *mcppb.JsonRpcRequest\n\t\tcode        int32\n\t\tmessage     string\n\t\tdata        interface{}\n\t\texpectedRes *mcppb.JsonRpcResponse\n\t}{\n\t\t{\n\t\t\tname: \"with string ID and no data\",\n\t\t\trequest: &mcppb.JsonRpcRequest{\n\t\t\t\tJsonrpc: \"2.0\",\n\t\t\t\tId: &mcppb.JsonRpcRequest_StringId{\n\t\t\t\t\tStringId: \"test-id\",\n\t\t\t\t},\n\t\t\t\tMethod: \"test/method\",\n\t\t\t},\n\t\t\tcode:    -32600,\n\t\t\tmessage: \"Invalid request\",\n\t\t\tdata:    nil,\n\t\t\texpectedRes: &mcppb.JsonRpcResponse{\n\t\t\t\tJsonrpc: \"2.0\",\n\t\t\t\tId: &mcppb.JsonRpcResponse_StringId{\n\t\t\t\t\tStringId: \"test-id\",\n\t\t\t\t},\n\t\t\t\tResponse: &mcppb.JsonRpcResponse_Error{\n\t\t\t\t\tError: &mcppb.JsonRpcError{\n\t\t\t\t\t\tCode:    -32600,\n\t\t\t\t\t\tMessage: \"Invalid request\",\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"with int ID and no data\",\n\t\t\trequest: &mcppb.JsonRpcRequest{\n\t\t\t\tJsonrpc: \"2.0\",\n\t\t\t\tId: &mcppb.JsonRpcRequest_IntId{\n\t\t\t\t\tIntId: 42,\n\t\t\t\t},\n\t\t\t\tMethod: \"test/method\",\n\t\t\t},\n\t\t\tcode:    -32601,\n\t\t\tmessage: \"Method not found\",\n\t\t\tdata:    nil,\n\t\t\texpectedRes: &mcppb.JsonRpcResponse{\n\t\t\t\tJsonrpc: \"2.0\",\n\t\t\t\tId: &mcppb.JsonRpcResponse_IntId{\n\t\t\t\t\tIntId: 42,\n\t\t\t\t},\n\t\t\t\tResponse: &mcppb.JsonRpcResponse_Error{\n\t\t\t\t\tError: &mcppb.JsonRpcError{\n\t\t\t\t\t\tCode:    -32601,\n\t\t\t\t\t\tMessage: \"Method not found\",\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"with string ID and data\",\n\t\t\trequest: &mcppb.JsonRpcRequest{\n\t\t\t\tJsonrpc: \"2.0\",\n\t\t\t\tId: &mcppb.JsonRpcRequest_StringId{\n\t\t\t\t\tStringId: \"test-id\",\n\t\t\t\t},\n\t\t\t\tMethod: \"test/method\",\n\t\t\t},\n\t\t\tcode:    -32602,\n\t\t\tmessage: \"Invalid params\",\n\t\t\tdata: map[string]interface{}{\n\t\t\t\t\"missing\": \"param1\",\n\t\t\t\t\"details\": \"Required parameter is missing\",\n\t\t\t},\n\t\t\texpectedRes: &mcppb.JsonRpcResponse{\n\t\t\t\tJsonrpc: \"2.0\",\n\t\t\t\tId: &mcppb.JsonRpcResponse_StringId{\n\t\t\t\t\tStringId: \"test-id\",\n\t\t\t\t},\n\t\t\t\tResponse: &mcppb.JsonRpcResponse_Error{\n\t\t\t\t\tError: &mcppb.JsonRpcError{\n\t\t\t\t\t\tCode:     -32602,\n\t\t\t\t\t\tMessage:  \"Invalid params\",\n\t\t\t\t\t\tDataJson: `{\"details\":\"Required parameter is missing\",\"missing\":\"param1\"}`,\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\t// Call the function\n\t\t\tresponse := CreateErrorResponse(tc.request, tc.code, tc.message, tc.data)\n\n\t\t\t// Verify the response\n\t\t\tassert.Equal(t, tc.expectedRes.Jsonrpc, response.Jsonrpc)\n\n\t\t\t// Check ID based on type\n\t\t\tswitch id := tc.expectedRes.Id.(type) {\n\t\t\tcase *mcppb.JsonRpcResponse_StringId:\n\t\t\t\tassert.Equal(t, id.StringId, response.GetStringId())\n\t\t\tcase *mcppb.JsonRpcResponse_IntId:\n\t\t\t\tassert.Equal(t, id.IntId, response.GetIntId())\n\t\t\t}\n\n\t\t\t// Check error\n\t\t\tassert.Equal(t, tc.expectedRes.GetError().Code, response.GetError().Code)\n\t\t\tassert.Equal(t, tc.expectedRes.GetError().Message, response.GetError().Message)\n\n\t\t\t// If data is provided, check it matches\n\t\t\tif tc.data != nil {\n\t\t\t\t// Parse both JSON strings to compare the actual data\n\t\t\t\tvar expectedData, actualData map[string]interface{}\n\t\t\t\terr := json.Unmarshal([]byte(tc.expectedRes.GetError().DataJson), &expectedData)\n\t\t\t\trequire.NoError(t, err)\n\n\t\t\t\terr = json.Unmarshal([]byte(response.GetError().DataJson), &actualData)\n\t\t\t\trequire.NoError(t, err)\n\n\t\t\t\tassert.Equal(t, expectedData, actualData)\n\t\t\t} else {\n\t\t\t\tassert.Empty(t, response.GetError().DataJson)\n\t\t\t}\n\t\t})\n\t}\n}\n"

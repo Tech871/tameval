@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dromara/disjob"
+sha = "b5eb98544c8fc8fde39354d89a24f8d935b3ff20"
+bench_version = 1
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl disjob-common -Dtest=NodePathTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl disjob-common -DtargetClasses=**.NodePath  -DtargetTests=**.NodePathTest  -DoutputFormats=XML"
+coverage_report_path = "disjob-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "disjob-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 57.0
+original_coverage = 57.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 34, 36, 40, 41, 42, 45, 46, 47, 50, 51, 52, 53,]
+missed_lines = [ 57, 62, 63, 65, 71, 72, 73, 76, 81,]
+
+[input_info]
+test_file_path = "disjob-common/src/test/java/cn/ponfee/disjob/common/tree/NodePathTest.java"
+focal_file_path = "disjob-common/src/main/java/cn/ponfee/disjob/common/tree/NodePath.java"
+test_file_url = "https://github.com/dromara/disjob/blob/b5eb98544c8fc8fde39354d89a24f8d935b3ff20/disjob-common/src/test/java/cn/ponfee/disjob/common/tree/NodePathTest.java"
+focal_file_url = "https://github.com/dromara/disjob/blob/b5eb98544c8fc8fde39354d89a24f8d935b3ff20/disjob-common/src/main/java/cn/ponfee/disjob/common/tree/NodePath.java"
+first_commit_date = "2023-05-03"
+last_commit_date = "2025-01-08"
+test_file_content = "/*\n * Copyright 2022-2024 Ponfee (http://www.ponfee.cn/)\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     https://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage cn.ponfee.disjob.common.tree;\n\nimport cn.ponfee.disjob.common.util.Comparators;\nimport cn.ponfee.disjob.common.util.Jsons;\nimport com.fasterxml.jackson.core.type.TypeReference;\nimport lombok.*;\nimport org.json.JSONException;\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\nimport org.skyscreamer.jsonassert.JSONAssert;\nimport org.skyscreamer.jsonassert.JSONCompareMode;\n\nimport javax.annotation.Nonnull;\nimport java.util.Arrays;\nimport java.util.LinkedHashMap;\nimport java.util.Objects;\n\n/**\n * NodePath test\n *\n * @author Ponfee\n */\npublic class NodePathTest {\n\n    static TypeReference<NodePath<JsonId>> LIST_STRING = new TypeReference<NodePath<JsonId>>() { };\n\n    @Test\n    public void testNew() {\n        Assertions.assertEquals(\"[]\", new NodePath<>().toString());\n        Assertions.assertEquals(\"[1]\", new NodePath<>(1).toString());\n        Assertions.assertEquals(\"[1, 2, 3]\", new NodePath<>(1, 2, 3).toString());\n        Assertions.assertEquals(\"[1, 2, 3]\", new NodePath<>(Arrays.asList(1, 2, 3)).toString());\n        Assertions.assertEquals(\"[1]\", new NodePath<>(new NodePath<>(), 1).toString());\n        Assertions.assertEquals(\"[0, 1, 2]\", new NodePath<>(new NodePath<>(0, 1), 2).toString());\n    }\n\n    @Test\n    public void testJson() throws JSONException {\n        JsonId root = new JsonId(null, \"root\", 0);\n        JsonId parent = new JsonId(root, \"parent\", 1);\n        JsonId child = new JsonId(parent, \"child\", 1);\n        NodePath<JsonId> npRoot = new NodePath<>(root);\n        NodePath<JsonId> npParent = new NodePath<>(root, parent);\n        NodePath<JsonId> npChild = new NodePath<>(npParent, child);\n\n        Assertions.assertEquals(\"[root, parent, child]\", child.toNodePath(JsonId::getName).toString());\n\n        String jsonRoot = Jsons.toJson(npRoot);\n        Assertions.assertEquals(\"[{\\\"name\\\":\\\"root\\\",\\\"orders\\\":0}]\", jsonRoot);\n\n        NodePath rootPath1 = Jsons.fromJson(jsonRoot, NodePath.class);\n        Assertions.assertEquals(LinkedHashMap.class, rootPath1.get(0).getClass());\n        Assertions.assertEquals(\"root\", ((LinkedHashMap) rootPath1.get(0)).get(\"name\"));\n\n        NodePath<JsonId> rootPath2 = Jsons.fromJson(jsonRoot, LIST_STRING);\n        Assertions.assertEquals(JsonId.class, rootPath2.get(0).getClass());\n        Assertions.assertEquals(\"root\", rootPath2.get(0).getName());\n\n        Wrapper wrapper1 = new Wrapper(npChild);\n        String jsonWrapper = Jsons.toJson(wrapper1);\n        JSONAssert.assertEquals(\"{\\\"value\\\":[{\\\"name\\\":\\\"root\\\",\\\"orders\\\":0},{\\\"parent\\\":{\\\"name\\\":\\\"root\\\",\\\"orders\\\":0},\\\"name\\\":\\\"parent\\\",\\\"orders\\\":1},{\\\"parent\\\":{\\\"parent\\\":{\\\"name\\\":\\\"root\\\",\\\"orders\\\":0},\\\"name\\\":\\\"parent\\\",\\\"orders\\\":1},\\\"name\\\":\\\"child\\\",\\\"orders\\\":1}]}\", jsonWrapper, JSONCompareMode.NON_EXTENSIBLE);\n        Wrapper wrapper2 = Jsons.fromJson(jsonWrapper, Wrapper.class);\n        Assertions.assertEquals(JsonId.class, wrapper2.getValue().get(0).getClass());\n        Assertions.assertEquals(\"root\", wrapper2.getValue().get(0).getName());\n        Assertions.assertEquals(\"parent\", wrapper2.getValue().get(1).getName());\n        Assertions.assertEquals(\"child\", wrapper2.getValue().get(2).getName());\n    }\n\n    @Data\n    @AllArgsConstructor\n    @NoArgsConstructor\n    public static class Wrapper {\n        private NodePath<JsonId> value;\n    }\n\n    @Getter\n    @Setter\n    public static class JsonId extends NodeId<JsonId> {\n        private static final long serialVersionUID = -6344204521700761391L;\n\n        private String name;\n        private int orders;\n\n        public JsonId() {\n            super(null);\n        }\n\n        public JsonId(JsonId parent, @Nonnull String name, int orders) {\n            super(parent);\n            this.name = Objects.requireNonNull(name);\n            this.orders = orders;\n        }\n\n        @Override\n        public int hashCode() {\n            return 31 * super.hashCode() + Objects.hashCode(name);\n        }\n\n        @Override\n        public boolean equals(Object obj) {\n            return super.equals(obj)\n                && Objects.equals(this.name, ((JsonId) obj).name);\n        }\n\n        @Override\n        public int compareTo(@Nonnull JsonId that) {\n            int compared = super.compareTo(that);\n            if (compared != 0) {\n                return compared;\n            }\n            compared = Integer.compare(this.orders, that.orders);\n            if (compared != 0) {\n                return compared;\n            }\n            return Comparators.compareNullsFirst(this.name, that.name);\n        }\n    }\n\n}\n"

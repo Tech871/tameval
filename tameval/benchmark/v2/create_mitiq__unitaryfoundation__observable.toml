@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "unitaryfoundation/mitiq"
+sha = "3d4516eb01e0c82220a829bbf570ac537143b5a5"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mitiq/observable/observable.py -m pytest -q --junit-xml=test_output.xml mitiq/observable/tests/test_observable.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mitiq.observable.observable --unit-test mitiq.observable.tests.test_observable --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mitiq/observable/observable.py --unit-test mitiq/observable/tests/test_observable.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 88.0
+original_coverage = 97.0
+mutation_kill_rate = 86.0
+original_mutation_kill_rate = 95.0
+covered_lines = [ 5, 6, 7, 8, 9, 11, 12, 13, 15, 16, 19, 27, 28, 29, 30, 31, 33, 34, 57, 58, 61, 63, 65, 66, 69, 70, 71, 73, 74, 77, 80, 81, 82, 83, 92, 93, 94, 97, 98, 101, 102, 103, 105, 120, 122, 123, 124, 126, 127, 128, 129, 130, 131, 132, 133, 135, 136, 138, 139, 141, 154, 156, 170, 171, 172, 174, 175, 176, 178, 180, 196, 198, 200, 203, 208, 211, 213, 214, 215, 220, 224, 227, 228, 231, 239, 242, 243, 244, 245,]
+missed_lines = [ 47, 48, 49, 50, 55, 59, 67, 75, 90, 95, 99, 225,]
+
+[input_info]
+test_file_path = "mitiq/observable/tests/test_observable.py"
+focal_file_path = "mitiq/observable/observable.py"
+test_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/observable/tests/test_observable.py"
+focal_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/observable/observable.py"
+first_commit_date = "2021-08-11"
+last_commit_date = "2025-06-07"
+test_file_content = "# Copyright (C) Unitary Foundation\n#\n# This source code is licensed under the GPL license (v3) found in the\n# LICENSE file in the root directory of this source tree.\n\nimport functools\n\nimport cirq\nimport numpy as np\nimport pytest\n\nfrom mitiq import MeasurementResult\nfrom mitiq.interface.mitiq_cirq.cirq_utils import (\n    compute_density_matrix,\n    sample_bitstrings,\n)\nfrom mitiq.observable.observable import Observable\nfrom mitiq.observable.pauli import PauliString, PauliStringCollection\nfrom mitiq.utils import _equal\n\n# Basis rotations to measure Pauli X and Y.\nxrotation = cirq.SingleQubitCliffordGate.Y_nsqrt\nyrotation = cirq.SingleQubitCliffordGate.X_sqrt\n\n# Pauli matrices.\nimat = np.identity(2)\nxmat = cirq.unitary(cirq.X)\nzmat = cirq.unitary(cirq.Z)\n\ndef test_observable_measure_in_needs_one_circuit_z():\n    pauli1 = PauliString(spec=\"ZI\")\n    pauli2 = PauliString(spec=\"IZ\")\n    pauli3 = PauliString(spec=\"ZZ\")\n    obs = Observable(pauli1, pauli2, pauli3)\n\n    qubits = cirq.LineQubit.range(2)\n    circuit = cirq.testing.random_circuit(qubits, 3, 1, random_state=1)\n\n    measures_obs_circuits = obs.measure_in(circuit)\n    assert len(measures_obs_circuits) == 1\n\n    expected = circuit + cirq.measure(*qubits)\n    assert _equal(\n        measures_obs_circuits[0],\n        expected,\n        require_qubit_equality=True,\n        require_measurement_equality=True,\n    )\n\ndef test_observable_expectation_from_measurements_one_pauli_string():\n    obs = Observable(PauliString(spec=\"Z\"))\n\n    measurements = MeasurementResult(\n        [[0], [0], [0], [0], [0], [0], [0], [0], [0], [0]]\n    )\n    expectation = obs._expectation_from_measurements([measurements])\n    assert np.isclose(expectation, 1.0)\n\n    measurements = MeasurementResult(\n        [[1], [1], [1], [1], [1], [1], [1], [1], [1], [1]]\n    )\n    expectation = obs._expectation_from_measurements([measurements])\n    assert np.isclose(expectation, -1.0)\n\n    measurements = MeasurementResult(\n        [[0], [1], [0], [1], [0], [1], [0], [1], [0], [1]]\n    )\n    expectation = obs._expectation_from_measurements([measurements])\n    assert np.isclose(expectation, 0.0)\n\n@pytest.mark.parametrize(\"n\", range(1, 3 + 1))\n@pytest.mark.parametrize(\n    \"executor\", (sample_bitstrings, compute_density_matrix)\n)\ndef test_observable_expectation_one_circuit(n, executor):\n    executor = functools.partial(executor, noise_level=(0,))\n\n    qubits = cirq.LineQubit.range(n)\n    obs = Observable(PauliString(spec=\"X\" * n))\n    circuit = cirq.Circuit(cirq.H.on_each(qubits))\n\n    expectation = obs.expectation(circuit, executor)\n    assert np.isclose(expectation, 1.0)\n\n@pytest.mark.parametrize(\n    \"executor\", (sample_bitstrings, compute_density_matrix)\n)\ndef test_observable_expectation_supported_qubits(executor):\n    executor = functools.partial(executor, noise_level=(0,))\n\n    a, b, c = cirq.LineQubit.range(3)\n    circuit = cirq.Circuit(cirq.I(a), cirq.X.on(b), cirq.H.on(c))\n\n    # <Z0> = 1.\n    obs = Observable(PauliString(spec=\"Z\", support=(0,)))\n    assert np.isclose(obs.expectation(circuit, executor), 1.0)\n\n    # <Z1> = -1.\n    obs = Observable(PauliString(spec=\"Z\", support=(1,)))\n    assert np.isclose(obs.expectation(circuit, executor), -1.0)\n\n    # <Z2> = 0.\n    obs = Observable(PauliString(spec=\"Z\", support=(2,)))\n    assert np.isclose(obs.expectation(circuit, executor), 0.0, atol=5e-2)\n\ndef test_observable_multiplication_2():\n    YXXYZ = PauliString(\"YXXYZ\", 0.3)\n    ZYIZX = PauliString(\"ZYIZX\", 0.7)\n    IZZXY = PauliString(\"IZZXY\", 0.1)\n    YZIXZ = PauliString(\"YZIXZ\", 0.2)\n    XZYII = PauliString(\"XZYII\", -0.4)\n    YYZXI = PauliString(\"YYZXI\", 0.7)\n    IIXYZ = PauliString(\"IIXYZ\", 0.7)\n    ZYXIZ = PauliString(\"ZYXIZ\", 0.1)\n    YIZXI = PauliString(\"YIZXI\", 0.2)\n    pauli_strings_1 = [YXXYZ, ZYIZX, IZZXY, YZIXZ, XZYII]\n    pauli_strings_2 = [YYZXI, IIXYZ, ZYXIZ, YIZXI]\n    obs1 = Observable(*pauli_strings_1)\n    obs2 = Observable(*pauli_strings_2)\n    l3 = [p1 * p2 for p1 in pauli_strings_1 for p2 in pauli_strings_2]\n    correct_obs = Observable(*l3)\n    assert obs1 * obs2 == correct_obs\n\ndef test_scalar_multiplication():\n    YXXYZ = PauliString(\"YXXYZ\", 0.3)\n    obs = Observable(YXXYZ)\n    assert obs * 2.0 == Observable(YXXYZ * 2.0)\n    assert 2.0 * obs == Observable(YXXYZ * 2.0)\n"

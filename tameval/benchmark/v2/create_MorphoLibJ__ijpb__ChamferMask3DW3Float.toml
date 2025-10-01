@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ijpb/MorphoLibJ"
+sha = "7d691dff36baa0bbca6fd17f71c93d8414b75b17"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ChamferMask3DW3FloatTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ChamferMask3DW3Float  -DtargetTests=**.ChamferMask3DW3FloatTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 53.0
+original_coverage = 97.0
+mutation_kill_rate = 38.0
+original_mutation_kill_rate = 75.0
+covered_lines = [ 63, 64, 68, 73, 74, 75, 133, 136, 137, 138, 139, 140, 141, 142, 143, 144, 147, 148, 149, 150, 152, 159, 162, 163, 164, 165, 166, 167, 168, 169, 170, 173, 174, 175, 176, 178, 184,]
+missed_lines = [ 66, 70, 81, 84, 85, 86, 87, 88, 89, 90, 91, 92, 95, 96, 97, 98, 100, 107, 110, 111, 112, 113, 114, 115, 116, 117, 118, 121, 122, 123, 124, 126, 190,]
+
+[input_info]
+test_file_path = "src/test/java/inra/ijpb/binary/distmap/ChamferMask3DW3FloatTest.java"
+focal_file_path = "src/main/java/inra/ijpb/binary/distmap/ChamferMask3DW3Float.java"
+test_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/test/java/inra/ijpb/binary/distmap/ChamferMask3DW3FloatTest.java"
+focal_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/main/java/inra/ijpb/binary/distmap/ChamferMask3DW3Float.java"
+first_commit_date = "2021-10-15"
+last_commit_date = "2024-07-23"
+test_file_content = "/*-\n * #%L\n * Mathematical morphology library and plugins for ImageJ/Fiji.\n * %%\n * Copyright (C) 2014 - 2024 INRA.\n * %%\n * This program is free software: you can redistribute it and/or modify\n * it under the terms of the GNU Lesser General Public License as\n * published by the Free Software Foundation, either version 3 of the\n * License, or (at your option) any later version.\n * \n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Lesser Public License for more details.\n * \n * You should have received a copy of the GNU General Lesser Public\n * License along with this program.  If not, see\n * <http://www.gnu.org/licenses/lgpl-3.0.html>.\n * #L%\n */\n/**\n * \n */\npackage inra.ijpb.binary.distmap;\n\nimport static org.junit.Assert.*;\n\nimport org.junit.Test;\n\nimport ij.ImageStack;\n\n/**\n * @author dlegland\n *\n */\npublic class ChamferMask3DW3FloatTest\n{\n\t@Test\n\tpublic void testDistanceMap_FromCenter_Float()\n\t{\n\t\t// create 3D image containing a cube \n\t\tImageStack image = ImageStack.create(11, 11, 11, 8);\n\t\tfor (int z = 0; z < 11; z++)\n\t\t{\n\t\t\tfor (int y = 0; y < 11; y++)\n\t\t\t{\n\t\t\t\tfor (int x = 0; x < 11; x++)\n\t\t\t\t{\n\t\t\t\t\timage.setVoxel(x, y, z, 255);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\t\timage.setVoxel(5, 5, 5, 0);\n\n\t\tChamferMask3D mask = ChamferMask3D.QUASI_EUCLIDEAN;\n\t\tDistanceTransform3D algo = new ChamferDistanceTransform3DFloat(mask, true);\n\t\t\n\t\tImageStack result = algo.distanceMap(image);\n\t\tassertEquals(32, result.getBitDepth());\n\t\t\n\t\t// orthogonal neighbors\n\t\tassertEquals(1.0, result.getVoxel(4, 5, 5), 0.1);\n\t\tassertEquals(1.0, result.getVoxel(6, 5, 5), 0.1);\n\t\tassertEquals(1.0, result.getVoxel(5, 4, 5), 0.1);\n\t\tassertEquals(1.0, result.getVoxel(5, 6, 5), 0.1);\n\t\tassertEquals(1.0, result.getVoxel(5, 5, 4), 0.1);\n\t\tassertEquals(1.0, result.getVoxel(5, 5, 6), 0.1);\n\n\t\t// square-diagonal neighbors\n\t\tassertEquals(Math.sqrt(2), result.getVoxel(4, 4, 5), 0.1);\n\t\tassertEquals(Math.sqrt(2), result.getVoxel(6, 6, 5), 0.1);\n\t\tassertEquals(Math.sqrt(2), result.getVoxel(4, 5, 4), 0.1);\n\t\tassertEquals(Math.sqrt(2), result.getVoxel(6, 5, 6), 0.1);\n\t\tassertEquals(Math.sqrt(2), result.getVoxel(4, 5, 4), 0.1);\n\t\tassertEquals(Math.sqrt(2), result.getVoxel(6, 5, 6), 0.1);\n\n\t\t// cube-diagonal neighbors\n\t\tassertEquals(Math.sqrt(3), result.getVoxel(4, 4, 4), 0.1);\n\t\tassertEquals(Math.sqrt(3), result.getVoxel(6, 6, 6), 0.1);\n\t\tassertEquals(Math.sqrt(3), result.getVoxel(4, 4, 6), 0.1);\n\t\tassertEquals(Math.sqrt(3), result.getVoxel(4, 6, 4), 0.1);\n\t\tassertEquals(Math.sqrt(3), result.getVoxel(6, 4, 4), 0.1);\n\n\t\t// Test some voxels at the cube corners\n\t\tdouble exp = 5.0 * Math.sqrt(3);\n\t\tassertEquals(exp, result.getVoxel( 0,  0,  0), .01);\n\t\tassertEquals(exp, result.getVoxel(10,  0,  0), .01);\n\t\tassertEquals(exp, result.getVoxel( 0, 10,  0), .01);\n\t\tassertEquals(exp, result.getVoxel(10, 10,  0), .01);\n\t\tassertEquals(exp, result.getVoxel( 0,  0, 10), .01);\n\t\tassertEquals(exp, result.getVoxel(10,  0, 10), .01);\n\t\tassertEquals(exp, result.getVoxel( 0, 10, 10), .01);\n\t\tassertEquals(exp, result.getVoxel(10, 10, 10), .01);\n\t}\n\t\n}\n"

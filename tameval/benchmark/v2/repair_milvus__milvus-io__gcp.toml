@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_duplicate_entity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "milvus-io/milvus"
+sha = "16efcda5c46748062abcfe563f70e1e2e53d0da1"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/objectstorage/gcp/gcp.go pkg/objectstorage/gcp/gcp_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/objectstorage/gcp/gcp.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/objectstorage/gcp/gcp_test.go"
+focal_file_path = "pkg/objectstorage/gcp/gcp.go"
+test_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/pkg/objectstorage/gcp/gcp_test.go"
+focal_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/pkg/objectstorage/gcp/gcp.go"
+first_commit_date = "2025-03-12"
+last_commit_date = "2025-03-12"
+test_file_content = "package gcp\n\nimport (\n\t\"net/http\"\n\t\"testing\"\n\n\t\"github.com/cockroachdb/errors\"\n\t\"github.com/minio/minio-go/v7\"\n\t\"github.com/minio/minio-go/v7/pkg/credentials\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"golang.org/x/oauth2\"\n)\n\nfunc TestNewMinioClient(t *testing.T) {\n\tt.Run(\"iam ok\", func(t *testing.T) {\n\t\tminioCli, err := NewMinioClient(\"\", nil)\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, GcsDefaultAddress, minioCli.EndpointURL().Host)\n\t\tassert.Equal(t, \"https\", minioCli.EndpointURL().Scheme)\n\t})\n\n\tt.Run(\"ak sk ok\", func(t *testing.T) {\n\t\tminioCli, err := NewMinioClient(GcsDefaultAddress+\":443\", &minio.Options{\n\t\t\tCreds:  credentials.NewStaticV2(\"ak\", \"sk\", \"\"),\n\t\t\tSecure: true,\n\t\t})\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, GcsDefaultAddress, minioCli.EndpointURL().Host)\n\t\tassert.Equal(t, \"https\", minioCli.EndpointURL().Scheme)\n\t})\n\n\tt.Run(\"create failed\", func(t *testing.T) {\n\t\tdefaultTransBak := minio.DefaultTransport\n\t\tdefer func() {\n\t\t\tminio.DefaultTransport = defaultTransBak\n\t\t}()\n\t\tminio.DefaultTransport = func(secure bool) (*http.Transport, error) {\n\t\t\treturn nil, errors.New(\"mock error\")\n\t\t}\n\t\t_, err := NewMinioClient(\"\", nil)\n\t\tassert.Error(t, err)\n\t})\n}\n\ntype mockTransport struct {\n\terr error\n}\n\nfunc (m *mockTransport) RoundTrip(req *http.Request) (*http.Response, error) {\n\treturn nil, m.err\n}\n\ntype mockTokenSource struct {\n\ttoken string\n\terr   error\n}\n\nfunc (m *mockTokenSource) Token() (*oauth2.Token, error) {\n\treturn &oauth2.Token{AccessToken: m.token}, m.err\n}\n\nfunc TestGCPWrappedHTTPTransport_RoundTrip(t *testing.T) {\n\tts, err := NewWrapHTTPTransport(true)\n\tassert.NoError(t, err)\n\tts.backend = &mockTransport{}\n\tts.tokenSrc = &mockTokenSource{token: \"mocktoken\"}\n\n\tt.Run(\"valid token ok\", func(t *testing.T) {\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, \"Bearer mocktoken\", req.Header.Get(\"Authorization\"))\n\t})\n\n\tt.Run(\"invalid token, refresh failed\", func(t *testing.T) {\n\t\tts.currentToken.Store(nil)\n\t\tts.tokenSrc = &mockTokenSource{err: errors.New(\"mock error\")}\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.Error(t, err)\n\t})\n\n\tt.Run(\"invalid token, refresh ok\", func(t *testing.T) {\n\t\tts.currentToken.Store(nil)\n\t\tts.tokenSrc = &mockTokenSource{err: nil}\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.NoError(t, err)\n\t})\n\n\tts.currentToken.Store(&oauth2.Token{})\n\tt.Run(\"valid token, call failed\", func(t *testing.T) {\n\t\tts.backend = &mockTransport{err: errors.New(\"mock error\")}\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.Error(t, err)\n\t})\n}\nfunc TestGCPWrappedHTTPTransport_RoundTrip(t *testing.T) {\n\tts, err := NewWrapHTTPTransport(true)\n\tassert.NoError(t, err)\n\tts.backend = &mockTransport{}\n\tts.tokenSrc = &mockTokenSource{token: \"mocktoken\"}\n\n\tt.Run(\"valid token ok\", func(t *testing.T) {\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, \"Bearer mocktoken\", req.Header.Get(\"Authorization\"))\n\t})\n\n\tt.Run(\"invalid token, refresh failed\", func(t *testing.T) {\n\t\tts.currentToken.Store(nil)\n\t\tts.tokenSrc = &mockTokenSource{err: errors.New(\"mock error\")}\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.Error(t, err)\n\t})\n\n\tt.Run(\"invalid token, refresh ok\", func(t *testing.T) {\n\t\tts.currentToken.Store(nil)\n\t\tts.tokenSrc = &mockTokenSource{err: nil}\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.NoError(t, err)\n\t})\n\n\tts.currentToken.Store(&oauth2.Token{})\n\tt.Run(\"valid token, call failed\", func(t *testing.T) {\n\t\tts.backend = &mockTransport{err: errors.New(\"mock error\")}\n\t\treq, err := http.NewRequest(\"GET\", \"http:\n\t\tassert.NoError(t, err)\n\t\t_, err = ts.RoundTrip(req)\n\t\tassert.Error(t, err)\n\t})\n}"

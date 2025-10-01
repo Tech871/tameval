@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "reflex-dev/reflex"
+sha = "7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=reflex/vars/object.py -m pytest -q --junit-xml=test_output.xml tests/units/vars/test_object.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target reflex.vars.object --unit-test tests.units.vars.test_object --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target reflex/vars/object.py --unit-test tests/units/vars/test_object.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 54.0
+original_coverage = 55.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 2, 4, 5, 6, 7, 8, 9, 19, 21, 22, 23, 31, 41, 42, 44, 46, 47, 49, 51, 54, 77, 80, 96, 104, 120, 136, 144, 146, 154, 218, 237, 307, 319, 320, 322, 324, 326, 328, 333, 334, 340, 343, 355, 360, 363, 365, 374, 383, 384, 401, 420, 428, 429, 444, 445, 469, 470, 490, 491, 511, 512, 532, 533, 552, 557, 560, 563, 565, 566, 576, 577, 595, 604, 605,]
+missed_lines = [ 55, 57, 58, 66, 67, 68, 70, 71, 72, 74, 86, 102, 110, 126, 142, 152, 163, 227, 229, 232, 233, 234, 235, 247, 249, 250, 252, 254, 335, 339, 341, 352, 371, 372, 380, 381, 390, 410, 411, 412, 413, 414, 415, 416, 417, 418, 426, 435, 461, 479, 480, 484, 500, 501, 505, 521, 522, 526, 543, 572, 573, 574, 615,]
+
+[input_info]
+test_file_path = "tests/units/vars/test_object.py"
+focal_file_path = "reflex/vars/object.py"
+test_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/tests/units/vars/test_object.py"
+focal_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/reflex/vars/object.py"
+first_commit_date = "2024-09-13"
+last_commit_date = "2025-05-29"
+test_file_content = "import dataclasses\nfrom collections.abc import Sequence\n\nimport pytest\nfrom sqlalchemy.orm import DeclarativeBase, Mapped, MappedAsDataclass, mapped_column\nfrom typing_extensions import assert_type\n\nimport reflex as rx\nfrom reflex.utils.types import GenericType\nfrom reflex.vars.base import Var\nfrom reflex.vars.object import LiteralObjectVar, ObjectVar\nfrom reflex.vars.sequence import ArrayVar\n\nclass Bare:\n    \"\"\"A bare class with a single attribute.\"\"\"\n\n    quantity: int = 0\n\n@rx.serializer\ndef serialize_bare(obj: Bare) -> dict:\n    \"\"\"A serializer for the bare class.\n\n    Args:\n        obj: The object to serialize.\n\n    Returns:\n        A dictionary with the quantity attribute.\n    \"\"\"\n    return {\"quantity\": obj.quantity}\n\nclass Base(rx.Base):\n    \"\"\"A reflex base class with a single attribute.\"\"\"\n\n    quantity: int = 0\n\nclass SqlaBase(DeclarativeBase, MappedAsDataclass):\n    \"\"\"Sqlalchemy declarative mapping base class.\"\"\"\n\nclass SqlaModel(SqlaBase):\n    \"\"\"A sqlalchemy model with a single attribute.\"\"\"\n\n    __tablename__: str = \"sqla_model\"\n\n    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True, init=False)\n    quantity: Mapped[int] = mapped_column(default=0)\n\n@dataclasses.dataclass\nclass Dataclass:\n    \"\"\"A dataclass with a single attribute.\"\"\"\n\n    quantity: int = 0\n\nclass ObjectState(rx.State):\n    \"\"\"A reflex state with bare, base and sqlalchemy base vars.\"\"\"\n\n    bare: rx.Field[Bare] = rx.field(Bare())\n    bare_optional: rx.Field[Bare | None] = rx.field(None)\n    base: rx.Field[Base] = rx.field(Base())\n    base_optional: rx.Field[Base | None] = rx.field(None)\n    sqlamodel: rx.Field[SqlaModel] = rx.field(SqlaModel())\n    sqlamodel_optional: rx.Field[SqlaModel | None] = rx.field(None)\n    dataclass: rx.Field[Dataclass] = rx.field(Dataclass())\n    dataclass_optional: rx.Field[Dataclass | None] = rx.field(None)\n\n    base_list: rx.Field[list[Base]] = rx.field([Base()])\n\n@pytest.mark.parametrize(\"type_\", [Base, Bare, SqlaModel, Dataclass])\ndef test_state(type_: GenericType) -> None:\n    attr_name = type_.__name__.lower()\n    var = getattr(ObjectState, attr_name)\n    assert var._var_type is type_\n\n    quantity = var.quantity\n    assert quantity._var_type is int\n"

@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "moov-io/watchman"
+sha = "ed1ee906eb5f48a569690b07f81f039d5cf75b3b"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/indices/indices.go internal/indices/indices_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/indices/indices.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 45.0
+original_coverage = 45.0
+mutation_kill_rate = 40.0
+original_mutation_kill_rate = 40.0
+covered_lines = [ 7, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 35, 50, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 68, 69, 70, 71, 72, 73, 77, 78,]
+missed_lines = [ 8, 9, 10, 11, 12, 13, 36, 37, 38, 41, 42, 43, 44, 45, 46, 51, 52, 53, 82, 83, 84, 85, 88, 89, 90, 91, 92, 96, 97, 98, 99, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 120,]
+
+[input_info]
+test_file_path = "internal/indices/indices_test.go"
+focal_file_path = "internal/indices/indices.go"
+test_file_url = "https://github.com/moov-io/watchman/blob/ed1ee906eb5f48a569690b07f81f039d5cf75b3b/internal/indices/indices_test.go"
+focal_file_url = "https://github.com/moov-io/watchman/blob/ed1ee906eb5f48a569690b07f81f039d5cf75b3b/internal/indices/indices.go"
+first_commit_date = "2025-01-10"
+last_commit_date = "2025-01-15"
+test_file_content = "package indices\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestNewIndicies(t *testing.T) {\n\tindices := New(122, 5)\n\trequire.Len(t, indices, 6)\n\n\texpected := []int{0, 25, 50, 74, 98, 122}\n\trequire.Equal(t, expected, indices)\n}\n\nfunc TestProcessSlice(t *testing.T) {\n\tinput := []int{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}\n\n\toriginalInput := make([]int, len(input))\n\tcopy(originalInput, input)\n\trequire.Equal(t, input, originalInput)\n\n\tfn := func(in int) string {\n\t\treturn fmt.Sprintf(\"%d\", in*5)\n\t}\n\texpected := []string{\"5\", \"10\", \"15\", \"20\", \"25\", \"30\", \"35\", \"40\", \"45\", \"50\"}\n\n\trequire.ElementsMatch(t, expected, ProcessSlice(input, 3, fn))\n\trequire.Equal(t, originalInput, input) // input is unchanged\n\n\trequire.ElementsMatch(t, expected, ProcessSlice(input, 7, fn))\n\trequire.Equal(t, originalInput, input) // input is unchanged\n\n\trequire.ElementsMatch(t, expected, ProcessSlice(input, 10, fn))\n\trequire.Equal(t, originalInput, input) // input is unchanged\n}\n"

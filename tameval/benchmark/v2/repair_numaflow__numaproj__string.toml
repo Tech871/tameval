@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "numaproj/numaflow"
+sha = "4a25fe0cf8500638f1ae7efb8aad5547619744eb"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/shared/util/string.go pkg/shared/util/string_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/shared/util/string.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 97.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 79.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/shared/util/string_test.go"
+focal_file_path = "pkg/shared/util/string.go"
+test_file_url = "https://github.com/numaproj/numaflow/blob/4a25fe0cf8500638f1ae7efb8aad5547619744eb/pkg/shared/util/string_test.go"
+focal_file_url = "https://github.com/numaproj/numaflow/blob/4a25fe0cf8500638f1ae7efb8aad5547619744eb/pkg/shared/util/string.go"
+first_commit_date = "2022-05-20"
+last_commit_date = "2025-03-21"
+test_file_content = "/*\nCopyright 2022 The Numaproj Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http:\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage util\n\nimport (\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/numaproj/numaflow/pkg/apis/numaflow/v1alpha1\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestRandomString(t *testing.T) {\n\tstr := RandomString(20)\n}\n\nfunc TestRandomLowercaseString(t *testing.T) {\n\tstr := RandomLowerCaseString(20)\n}\n\nfunc TestCompareSlice(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tsliceA   []string\n\t\tsliceB   []string\n\t\toperator v1alpha1.LogicOperator\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname: \"or_true\",\n\t\t\tsliceA: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t},\n\t\t\tsliceB: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"ab\",\n\t\t\t\t\"bc\",\n\t\t\t},\n\t\t\toperator: v1alpha1.LogicOperatorOr,\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname: \"and_true\",\n\t\t\tsliceA: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t},\n\t\t\tsliceB: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t\t\"abc\",\n\t\t\t},\n\t\t\toperator: v1alpha1.LogicOperatorAnd,\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname: \"not_true\",\n\t\t\tsliceA: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t},\n\t\t\tsliceB: []string{\n\t\t\t\t\"abc\",\n\t\t\t\t\"bca\",\n\t\t\t\t\"cab\",\n\t\t\t},\n\t\t\toperator: v1alpha1.LogicOperatorNot,\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname: \"or_false\",\n\t\t\tsliceA: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t},\n\t\t\tsliceB: []string{\n\t\t\t\t\"abc\",\n\t\t\t\t\"bca\",\n\t\t\t\t\"cab\",\n\t\t\t},\n\t\t\toperator: v1alpha1.LogicOperatorOr,\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname: \"not_false\",\n\t\t\tsliceA: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t},\n\t\t\tsliceB: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"bca\",\n\t\t\t\t\"cab\",\n\t\t\t},\n\t\t\toperator: v1alpha1.LogicOperatorNot,\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname: \"and_false\",\n\t\t\tsliceA: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"prime\",\n\t\t\t},\n\t\t\tsliceB: []string{\n\t\t\t\t\"even\",\n\t\t\t\t\"odd\",\n\t\t\t\t\"abc\",\n\t\t\t},\n\t\t\toperator: v1alpha1.LogicOperatorAnd,\n\t\t\texpected: false,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t}\n}\n\nfunc TestDNS1035(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected string\n\t}{\n\t\t{\n\t\t\tname:     \"simple lowercase conversion\",\n\t\t\tinput:    \"HELLO\",\n\t\t\texpected: \"hello\",\n\t\t},\n\t\t{\n\t\t\tname:     \"replace special characters\",\n\t\t\tinput:    \"hello@world!123\",\n\t\t\texpected: \"hello-world-123\",\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple consecutive special chars\",\n\t\t\tinput:    \"hello!!!world###123\",\n\t\t\texpected: \"hello-world-123\",\n\t\t},\n\t\t{\n\t\t\tname:     \"spaces and underscores\",\n\t\t\tinput:    \"hello_world space test\",\n\t\t\texpected: \"hello-world-space-test\",\n\t\t},\n\t\t{\n\t\t\tname:     \"empty string\",\n\t\t\tinput:    \"\",\n\t\t\texpected: \"\",\n\t\t},\n\t\t{\n\t\t\tname:     \"only special characters\",\n\t\t\tinput:    \"@#$%^&*\",\n\t\t\texpected: \"-\",\n\t\t},\n\t\t{\n\t\t\tname:     \"mixed case with numbers and hyphens\",\n\t\t\tinput:    \"My-Cool-Service123\",\n\t\t\texpected: \"my-cool-service123\",\n\t\t},\n\t\t{\n\t\t\tname:     \"unicode characters\",\n\t\t\tinput:    \"héllo→wörld\",\n\t\t\texpected: \"h-llo-w-rld\",\n\t\t},\n\t\t{\n\t\t\tname:     \"empty\",\n\t\t\tinput:    \"\",\n\t\t\texpected: \"\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t}\n}"

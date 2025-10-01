@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "adorsys/xs2a"
+sha = "0433f7f22022c8f2b17b835a11a13e5cd33f29a6"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl xs2a-impl -Dtest=RequestValidationInterceptorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl xs2a-impl -DtargetClasses=**.RequestValidationInterceptor  -DtargetTests=**.RequestValidationInterceptorTest  -DoutputFormats=XML"
+coverage_report_path = "xs2a-impl/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "xs2a-impl/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 38.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 46, 54, 60, 62, 76,]
+missed_lines = [ 63, 64, 66, 67, 69, 71, 72, 73,]
+
+[input_info]
+test_file_path = "xs2a-impl/src/test/java/de/adorsys/psd2/xs2a/web/interceptor/validator/RequestValidationInterceptorTest.java"
+focal_file_path = "xs2a-impl/src/main/java/de/adorsys/psd2/xs2a/web/interceptor/validator/RequestValidationInterceptor.java"
+test_file_url = "https://github.com/adorsys/xs2a/blob/0433f7f22022c8f2b17b835a11a13e5cd33f29a6/xs2a-impl/src/test/java/de/adorsys/psd2/xs2a/web/interceptor/validator/RequestValidationInterceptorTest.java"
+focal_file_url = "https://github.com/adorsys/xs2a/blob/0433f7f22022c8f2b17b835a11a13e5cd33f29a6/xs2a-impl/src/main/java/de/adorsys/psd2/xs2a/web/interceptor/validator/RequestValidationInterceptor.java"
+first_commit_date = "2020-02-06"
+last_commit_date = "2024-02-01"
+test_file_content = "/*\n * Copyright 2018-2024 adorsys GmbH & Co KG\n *\n * This program is free software: you can redistribute it and/or modify it\n * under the terms of the GNU Affero General Public License as published\n * by the Free Software Foundation, either version 3 of the License, or (at\n * your option) any later version. This program is distributed in the hope that\n * it will be useful, but WITHOUT ANY WARRANTY; without even the implied\n * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n * See the GNU Affero General Public License for more details.\n *\n * You should have received a copy of the GNU Affero General Public License\n * along with this program. If not, see https://www.gnu.org/licenses/.\n *\n * This project is also available under a separate commercial license. You can\n * contact us at sales@adorsys.com.\n */\n\npackage de.adorsys.psd2.xs2a.web.interceptor.validator;\n\nimport de.adorsys.psd2.xs2a.core.domain.TppMessageInformation;\nimport de.adorsys.psd2.xs2a.core.error.MessageError;\nimport de.adorsys.psd2.xs2a.core.error.MessageErrorCode;\nimport de.adorsys.psd2.xs2a.web.validator.DefaultMethodValidatorImpl;\nimport de.adorsys.psd2.xs2a.web.validator.ErrorBuildingService;\nimport de.adorsys.psd2.xs2a.web.validator.MethodValidator;\nimport de.adorsys.psd2.xs2a.web.validator.MethodValidatorController;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.ArgumentCaptor;\nimport org.mockito.InjectMocks;\nimport org.mockito.Mock;\nimport org.mockito.Spy;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.springframework.web.method.HandlerMethod;\n\nimport jakarta.servlet.http.HttpServletRequest;\nimport jakarta.servlet.http.HttpServletResponse;\nimport java.io.IOException;\nimport java.lang.reflect.Method;\nimport java.util.ArrayList;\n\nimport static de.adorsys.psd2.xs2a.core.error.MessageErrorCode.FORMAT_ERROR;\nimport static org.junit.jupiter.api.Assertions.*;\nimport static org.mockito.Mockito.*;\n\n@ExtendWith(MockitoExtension.class)\nclass RequestValidationInterceptorTest {\n    private static final String METHOD_NAME = \"publicMethod\";\n\n    @InjectMocks\n    private RequestValidationInterceptor interceptor;\n\n    @Mock\n    private DefaultMethodValidatorImpl defaultMethodValidator;\n    @Mock\n    private ErrorBuildingService errorBuildingService;\n    @Spy\n    private MethodValidatorController methodValidatorController = new MethodValidatorController(new ArrayList<>(), defaultMethodValidator);\n    @Mock\n    private HttpServletRequest request;\n    @Mock\n    private HttpServletResponse response;\n    @Mock\n    private HandlerMethod handler;\n\n    private MethodValidator methodValidator;\n\n    @BeforeEach\n    void setUp() {\n        methodValidator = new MethodValidator() {\n            @Override\n            public String getMethodName() {\n                return METHOD_NAME;\n            }\n\n            @Override\n            public MessageError validate(HttpServletRequest request, MessageError messageError) {\n                messageError.addTppMessage(TppMessageInformation.of(FORMAT_ERROR));\n                return messageError;\n            }\n        };\n    }\n\n    public String publicMethod() {\n        return \"OK\";\n    }\n\n    @Test\n    void preHandle_instanceOf_incorrectFormat() throws IOException {\n        assertTrue(interceptor.preHandle(request, response, null));\n\n        verify(errorBuildingService, never()).buildFormatErrorResponse(eq(response), any(MessageError.class));\n    }\n\n\n}\n"

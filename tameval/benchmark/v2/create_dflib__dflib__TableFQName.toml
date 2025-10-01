@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dflib/dflib"
+sha = "793212415a7486ca3cdbb7c6496f69acf4e0aa3d"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl dflib-jdbc -Dtest=TableFQNameTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl dflib-jdbc -DtargetClasses=**.TableFQName  -DtargetTests=**.TableFQNameTest  -DoutputFormats=XML"
+coverage_report_path = "dflib-jdbc/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "dflib-jdbc/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 50.0
+original_coverage = 50.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 13, 16, 17, 20, 24, 28, 32, 58, 59, 62, 64, 65, 66, 67, 75,]
+missed_lines = [ 14, 15, 36, 40, 44, 48, 52, 70, 81, 82, 83, 86, 87, 90, 91,]
+
+[input_info]
+test_file_path = "dflib-jdbc/src/test/java/org/dflib/jdbc/connector/metadata/TableFQNameTest.java"
+focal_file_path = "dflib-jdbc/src/main/java/org/dflib/jdbc/connector/metadata/TableFQName.java"
+test_file_url = "https://github.com/dflib/dflib/blob/793212415a7486ca3cdbb7c6496f69acf4e0aa3d/dflib-jdbc/src/test/java/org/dflib/jdbc/connector/metadata/TableFQNameTest.java"
+focal_file_url = "https://github.com/dflib/dflib/blob/793212415a7486ca3cdbb7c6496f69acf4e0aa3d/dflib-jdbc/src/main/java/org/dflib/jdbc/connector/metadata/TableFQName.java"
+first_commit_date = "2024-01-02"
+last_commit_date = "2024-10-13"
+test_file_content = "package org.dflib.jdbc.connector.metadata;\n\nimport org.dflib.jdbc.connector.metadata.TableFQName;\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\npublic class TableFQNameTest {\n\n    @Test\n    public void equals_CatalogSchemaName() {\n\n        TableFQName n1 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s1\", \"t1\");\n        TableFQName n2 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s1\", \"t1\");\n        TableFQName n3 = TableFQName.forCatalogSchemaAndName(\"c2\", \"s1\", \"t1\");\n        TableFQName n4 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s2\", \"t1\");\n        TableFQName n5 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s1\", \"t2\");\n\n        assertEquals(n1, n1);\n        assertEquals(n1, n2);\n        assertNotEquals(n1, n3);\n        assertNotEquals(n1, n4);\n        assertNotEquals(n1, n5);\n    }\n\n    @Test\n    public void equals_CatalogName() {\n\n        TableFQName n1 = TableFQName.forCatalogAndName(\"c1\", \"t1\");\n        TableFQName n2 = TableFQName.forCatalogAndName(\"c1\", \"t1\");\n        TableFQName n3 = TableFQName.forCatalogAndName(\"c2\", \"t1\");\n        TableFQName n4 = TableFQName.forCatalogAndName(\"c1\", \"t2\");\n\n        assertEquals(n1, n1);\n        assertEquals(n1, n2);\n        assertNotEquals(n1, n3);\n        assertNotEquals(n1, n4);\n    }\n\n    @Test\n    public void equals_SchemaName() {\n\n        TableFQName n1 = TableFQName.forSchemaAndName(\"s1\", \"t1\");\n        TableFQName n2 = TableFQName.forSchemaAndName(\"s1\", \"t1\");\n        TableFQName n3 = TableFQName.forSchemaAndName(\"s2\", \"t1\");\n        TableFQName n4 = TableFQName.forSchemaAndName(\"s1\", \"t2\");\n\n        assertEquals(n1, n1);\n        assertEquals(n1, n2);\n        assertNotEquals(n1, n3);\n        assertNotEquals(n1, n4);\n    }\n\n    @Test\n    public void equals_Name() {\n\n        TableFQName n1 = TableFQName.forName(\"t1\");\n        TableFQName n2 = TableFQName.forName(\"t1\");\n        TableFQName n3 = TableFQName.forName(\"t2\");\n\n        assertEquals(n1, n1);\n        assertEquals(n1, n2);\n        assertNotEquals(n1, n3);\n    }\n\n    @Test\n    public void hashCode_CatalogSchemaName() {\n\n        TableFQName n1 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s1\", \"t1\");\n        TableFQName n2 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s1\", \"t1\");\n        TableFQName n3 = TableFQName.forCatalogSchemaAndName(\"c2\", \"s1\", \"t1\");\n        TableFQName n4 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s2\", \"t1\");\n        TableFQName n5 = TableFQName.forCatalogSchemaAndName(\"c1\", \"s1\", \"t2\");\n\n        assertEquals(n1.hashCode(), n1.hashCode());\n        assertEquals(n1.hashCode(), n2.hashCode());\n        assertNotEquals(n1.hashCode(), n3.hashCode());\n        assertNotEquals(n1.hashCode(), n4.hashCode());\n        assertNotEquals(n1.hashCode(), n5.hashCode());\n    }\n\n    @Test\n    public void hashCode_CatalogName() {\n\n        TableFQName n1 = TableFQName.forCatalogAndName(\"c1\", \"t1\");\n        TableFQName n2 = TableFQName.forCatalogAndName(\"c1\", \"t1\");\n        TableFQName n3 = TableFQName.forCatalogAndName(\"c2\", \"t1\");\n        TableFQName n4 = TableFQName.forCatalogAndName(\"c1\", \"t2\");\n\n        assertEquals(n1.hashCode(), n1.hashCode());\n        assertEquals(n1.hashCode(), n2.hashCode());\n        assertNotEquals(n1.hashCode(), n3.hashCode());\n        assertNotEquals(n1.hashCode(), n4.hashCode());\n    }\n\n    @Test\n    public void hashCode_SchemaName() {\n\n        TableFQName n1 = TableFQName.forSchemaAndName(\"s1\", \"t1\");\n        TableFQName n2 = TableFQName.forSchemaAndName(\"s1\", \"t1\");\n        TableFQName n3 = TableFQName.forSchemaAndName(\"s2\", \"t1\");\n        TableFQName n4 = TableFQName.forSchemaAndName(\"s1\", \"t2\");\n\n        assertEquals(n1.hashCode(), n1.hashCode());\n        assertEquals(n1.hashCode(), n2.hashCode());\n        assertNotEquals(n1.hashCode(), n3.hashCode());\n        assertNotEquals(n1.hashCode(), n4.hashCode());\n    }\n\n    @Test\n    public void hashCode_Name() {\n\n        TableFQName n1 = TableFQName.forName(\"t1\");\n        TableFQName n2 = TableFQName.forName(\"t1\");\n        TableFQName n3 = TableFQName.forName(\"t2\");\n\n        assertEquals(n1.hashCode(), n1.hashCode());\n        assertEquals(n1.hashCode(), n2.hashCode());\n        assertNotEquals(n1.hashCode(), n3.hashCode());\n    }\n\n}\n"

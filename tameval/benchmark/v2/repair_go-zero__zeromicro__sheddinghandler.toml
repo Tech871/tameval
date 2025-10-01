@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "zeromicro/go-zero"
+sha = "6edfce63e396883d83ee74ceba2e0d9d11f0626d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out rest/handler/sheddinghandler.go rest/handler/sheddinghandler_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting rest/handler/sheddinghandler.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 50.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "rest/handler/sheddinghandler_test.go"
+focal_file_path = "rest/handler/sheddinghandler.go"
+test_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/rest/handler/sheddinghandler_test.go"
+focal_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/rest/handler/sheddinghandler.go"
+first_commit_date = "2020-07-31"
+last_commit_date = "2025-01-28"
+test_file_content = "package handler\n\n\nfunc TestSheddingHandlerAccept(t *testing.T) {\n\tmetrics := stat.NewMetrics(\"unit-test\")\n\tshedder := mockShedder{\n\t\tallow: true,\n\t}\n\tsheddingHandler := SheddingHandler(shedder, metrics)\n\thandler := sheddingHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.Header().Set(\"X-Test\", \"test\")\n\t\t_, err := w.Write([]byte(\"content\"))\n\t\tassert.Nil(t, err)\n\t}))\n\n\treq := httptest.NewRequest(http.MethodGet, \"http:\n\treq.Header.Set(\"X-Test\", \"test\")\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusOK, resp.Code)\n\tassert.Equal(t, \"test\", resp.Header().Get(\"X-Test\"))\n\tassert.Equal(t, \"content\", resp.Body.String())\n}\n\nfunc TestSheddingHandlerFail(t *testing.T) {\n\tmetrics := stat.NewMetrics(\"unit-test\")\n\tshedder := mockShedder{\n\t\tallow: true,\n\t}\n\tsheddingHandler := SheddingHandler(shedder, metrics)\n\thandler := sheddingHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusServiceUnavailable)\n\t}))\n\n\treq := httptest.NewRequest(http.MethodGet, \"http:\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusServiceUnavailable, resp.Code)\n}\n\nfunc TestSheddingHandlerReject(t *testing.T) {\n\tmetrics := stat.NewMetrics(\"unit-test\")\n\tshedder := mockShedder{\n\t\tallow: false,\n\t}\n\tsheddingHandler := SheddingHandler(shedder, metrics)\n\thandler := sheddingHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t}))\n\n\treq := httptest.NewRequest(http.MethodGet, \"http:\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusServiceUnavailable, resp.Code)\n}\n\nfunc TestSheddingHandlerNoShedding(t *testing.T) {\n\tmetrics := stat.NewMetrics(\"unit-test\")\n\tsheddingHandler := SheddingHandler(nil, metrics)\n\thandler := sheddingHandler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tw.WriteHeader(http.StatusOK)\n\t}))\n\n\treq := httptest.NewRequest(http.MethodGet, \"http:\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusOK, resp.Code)\n}\n\ntype mockShedder struct {\n\tallow bool\n}\n\nfunc (s mockShedder) Allow() (load.Promise, error) {\n\tif s.allow {\n\t\treturn mockPromise{}, nil\n\t}\n\n\treturn nil, load.ErrServiceOverloaded\n}\n\ntype mockPromise struct{}\n\nfunc (p mockPromise) Pass() {\n}\n\nfunc (p mockPromise) Fail() {\n}"

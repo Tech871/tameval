@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pytorch/captum"
+sha = "aff7603051094012c9cf1a739a0538c38a6986b2"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=captum/insights/attr_vis/features.py -m pytest -q --junit-xml=test_output.xml tests/insights/test_features.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target captum.insights.attr_vis.features --unit-test tests.insights.test_features --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target captum/insights/attr_vis/features.py --unit-test tests/insights/test_features.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = 88.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 3, 4, 5, 6, 7, 9, 10, 11, 12, 13, 16, 19, 20, 21, 22, 23, 24, 25, 26, 29, 38, 68, 70, 72, 73, 75, 76, 80, 84, 91, 119, 126, 127, 128, 131, 132, 135, 140, 143, 151, 152, 154, 163, 170, 209, 216, 217, 218, 221, 222, 223, 225, 227, 228, 229, 233, 234, 236, 237, 246, 255, 264, 270, 272, 273, 274, 277, 278, 279, 282, 283, 285, 287, 288, 297, 298, 308, 315, 316, 317, 320, 321,]
+missed_lines = [ 77, 81, 133, 230,]
+
+[input_info]
+test_file_path = "tests/insights/test_features.py"
+focal_file_path = "captum/insights/attr_vis/features.py"
+test_file_url = "https://github.com/pytorch/captum/blob/aff7603051094012c9cf1a739a0538c38a6986b2/tests/insights/test_features.py"
+focal_file_url = "https://github.com/pytorch/captum/blob/aff7603051094012c9cf1a739a0538c38a6986b2/captum/insights/attr_vis/features.py"
+first_commit_date = "2020-07-07"
+last_commit_date = "2025-06-27"
+test_file_content = "# pyre-unsafe\nfrom unittest.mock import patch\n\nimport torch\nfrom captum.insights.attr_vis.features import (\n    _convert_figure_base64,\n    EmptyFeature,\n    FeatureOutput,\n    GeneralFeature,\n    ImageFeature,\n    TextFeature,\n)\nfrom captum.testing.helpers import BaseTest\nfrom matplotlib.figure import Figure\n\n\nclass TestTextFeature(BaseTest):\n    FEATURE_NAME = \"question\"\n\n    def test_text_feature_returns_text_as_visualization_type(self) -> None:\n        feature = TextFeature(\n            name=self.FEATURE_NAME,\n            baseline_transforms=None,\n            input_transforms=None,\n            visualization_transform=None,\n        )\n        self.assertEqual(feature.visualization_type(), \"text\")\n\n    def test_text_feature_uses_visualization_transform_if_provided(self) -> None:\n        input_data = torch.rand(2, 2)\n        transformed_data = torch.rand(1, 1)\n\n        def mock_transform(data):\n            return transformed_data\n\n        feature = TextFeature(\n            name=self.FEATURE_NAME,\n            baseline_transforms=None,\n            input_transforms=None,\n            visualization_transform=mock_transform,\n        )\n\n        feature_output = feature.visualize(\n            attribution=torch.rand(1, 1), data=input_data, contribution_frac=1.0\n        )\n\n        # has transformed data\n        self.assertEqual(feature_output.base, transformed_data)\n\n        feature = TextFeature(\n            name=self.FEATURE_NAME,\n            baseline_transforms=None,\n            input_transforms=None,\n            visualization_transform=None,\n        )\n\n        feature_output = feature.visualize(\n            attribution=torch.rand(1, 1), data=input_data, contribution_frac=1.0\n        )\n\n        # has original data\n        self.assertIs(feature_output.base, input_data)\n\n    def test_text_feature_generates_correct_visualization_output(self) -> None:\n        attribution = torch.tensor([0.1, 0.2, 0.3, 0.4])\n        input_data = torch.rand(1, 2)\n        expected_modified = [100 * x for x in (attribution / attribution.max())]\n        contribution_frac = torch.rand(1).item()\n\n        feature = TextFeature(\n            name=self.FEATURE_NAME,\n            baseline_transforms=None,\n            input_transforms=None,\n            visualization_transform=None,\n        )\n\n        feature_output = feature.visualize(attribution, input_data, contribution_frac)\n        expected_feature_output = FeatureOutput(\n            name=self.FEATURE_NAME,\n            base=input_data,\n            modified=expected_modified,\n            type=\"text\",\n            contribution=contribution_frac,\n        )\n\n        self.assertEqual(expected_feature_output, feature_output)\n\n\nclass TestEmptyFeature(BaseTest):\n    def test_empty_feature_should_generate_fixed_output(self) -> None:\n        feature = EmptyFeature()\n        contribution = torch.rand(1).item()\n        expected_output = FeatureOutput(\n            name=\"empty\",\n            base=None,\n            modified=None,\n            type=\"empty\",\n            contribution=contribution,\n        )\n\n        self.assertEqual(expected_output, feature.visualize(None, None, contribution))\n\n\nclass TestImageFeature(BaseTest):\n    def test_image_feature_generates_correct_ouput(self) -> None:\n        attribution = torch.zeros(1, 3, 4, 4)\n        data = torch.ones(1, 3, 4, 4)\n        contribution = 1.0\n        name = \"photo\"\n\n        orig_fig = Figure(figsize=(4, 4))\n        attr_fig = Figure(figsize=(4, 4))\n\n        def mock_viz_attr(*args, **kwargs):\n            if kwargs[\"method\"] == \"original_image\":\n                return orig_fig, None\n            else:\n                return attr_fig, None\n\n        feature = ImageFeature(\n            name=name,\n            baseline_transforms=None,\n            input_transforms=None,\n            visualization_transform=None,\n        )\n\n        with patch(\n            \"captum.attr._utils.visualization.visualize_image_attr\", mock_viz_attr\n        ):\n            feature_output = feature.visualize(attribution, data, contribution)\n            expected_feature_output = FeatureOutput(\n                name=name,\n                base=_convert_figure_base64(orig_fig),\n                modified=_convert_figure_base64(attr_fig),\n                type=\"image\",\n                contribution=contribution,\n            )\n\n            self.assertEqual(expected_feature_output, feature_output)\n\n\nclass TestGeneralFeature(BaseTest):\n    def test_general_feature_generates_correct_output(self) -> None:\n        name = \"general_feature\"\n        categories = [\"cat1\", \"cat2\", \"cat3\", \"cat4\"]\n        attribution = torch.Tensor(1, 4)\n        attribution.fill_(0.5)\n        data = torch.rand(1, 4)\n        contribution = torch.rand(1).item()\n        attr_squeezed = attribution.squeeze(0)\n\n        expected_modified = [\n            x * 100 for x in (attr_squeezed / attr_squeezed.norm()).tolist()\n        ]\n        expected_base = [\n            f\"{c}: {d:.2f}\" for c, d in zip(categories, data.squeeze().tolist())\n        ]\n\n        feature = GeneralFeature(name, categories)\n\n        feature_output = feature.visualize(\n            attribution=attribution, data=data, contribution_frac=contribution\n        )\n\n        expected_feature_output = FeatureOutput(\n            name=name,\n            base=expected_base,\n            modified=expected_modified,\n            type=\"general\",\n            contribution=contribution,\n        )\n\n        self.assertEqual(expected_feature_output, feature_output)\n"

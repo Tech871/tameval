@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ijpb/MorphoLibJ"
+sha = "7d691dff36baa0bbca6fd17f71c93d8414b75b17"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ChamferMask3DW4Test && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ChamferMask3DW4  -DtargetTests=**.ChamferMask3DW4Test  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 25.0
+original_mutation_kill_rate = 75.0
+covered_lines = [ 69, 70, 71, 72, 73, 74, 100, 103, 104, 105, 106, 109, 110, 111, 112, 113, 114, 115, 116, 117, 120, 121, 122, 123, 124, 125, 126, 127, 131, 132, 133, 134, 136, 143, 146, 147, 148, 149, 152, 153, 154, 155, 156, 157, 158, 159, 160, 163, 164, 165, 166, 167, 168, 169, 170, 173, 174, 175, 176, 178, 184,]
+missed_lines = [ 85, 86, 88, 90, 91, 92, 93, 94,]
+
+[input_info]
+test_file_path = "src/test/java/inra/ijpb/binary/distmap/ChamferMask3DW4Test.java"
+focal_file_path = "src/main/java/inra/ijpb/binary/distmap/ChamferMask3DW4.java"
+test_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/test/java/inra/ijpb/binary/distmap/ChamferMask3DW4Test.java"
+focal_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/main/java/inra/ijpb/binary/distmap/ChamferMask3DW4.java"
+first_commit_date = "2021-10-15"
+last_commit_date = "2024-07-23"
+test_file_content = "/*-\n * #%L\n * Mathematical morphology library and plugins for ImageJ/Fiji.\n * %%\n * Copyright (C) 2014 - 2024 INRA.\n * %%\n * This program is free software: you can redistribute it and/or modify\n * it under the terms of the GNU Lesser General Public License as\n * published by the Free Software Foundation, either version 3 of the\n * License, or (at your option) any later version.\n * \n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Lesser Public License for more details.\n * \n * You should have received a copy of the GNU General Lesser Public\n * License along with this program.  If not, see\n * <http://www.gnu.org/licenses/lgpl-3.0.html>.\n * #L%\n */\n/**\n * \n */\npackage inra.ijpb.binary.distmap;\n\nimport static org.junit.Assert.*;\n\nimport org.junit.Test;\n\nimport ij.ImageStack;\n\n/**\n * @author dlegland\n *\n */\npublic class ChamferMask3DW4Test\n{\n\t@Test\n\tpublic void testDistanceMap()\n\t{\n\t\t// create 3D image containing a cube \n\t\tImageStack image = ImageStack.create(20, 20, 20, 8);\n\t\tfor (int z = 2; z < 19; z++)\n\t\t{\n\t\t\tfor (int y = 2; y < 19; y++)\n\t\t\t{\n\t\t\t\tfor (int x = 2; x < 19; x++)\n\t\t\t\t{\n\t\t\t\t\timage.setVoxel(x, y, z, 255);\n\t\t\t\t}\n\t\t\t}\n\t\t}\n\n\t\tChamferMask3D mask = new ChamferMask3DW4(3, 4, 5, 7);\n\t\tDistanceTransform3D algo = new ChamferDistanceTransform3DShort(mask, true);\n\t\t\n\t\tImageStack result = algo.distanceMap(image);\n\t\tassertEquals(16, result.getBitDepth());\n\t\t\n//\t\tSystem.out.println(\"result:\");\n//\t\tfor (int x = 0; x < 100; x++)\n//\t\t{\n//\t\t\tSystem.out.print(((int)result.getVoxel(x, 50, 50)) + \" \");\n//\t\t}\n\t\tdouble middle = result.getVoxel(10, 10, 10);\n\t\tassertEquals(9, middle, .1);\n\t}\n\n}\n"

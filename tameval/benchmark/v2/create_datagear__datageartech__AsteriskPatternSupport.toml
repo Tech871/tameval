@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "datageartech/datagear"
+sha = "0cde3799fad38f74d53c73e087b0e3296237e466"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl datagear-util -Dtest=AsteriskPatternSupportTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl datagear-util -DtargetClasses=**.AsteriskPatternSupport  -DtargetTests=**.AsteriskPatternSupportTest  -DoutputFormats=XML"
+coverage_report_path = "datagear-util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "datagear-util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 39.0
+original_coverage = 77.0
+mutation_kill_rate = 31.0
+original_mutation_kill_rate = 62.0
+covered_lines = [ 40, 41, 42, 67, 70, 72, 74, 75, 76, 78, 94, 97, 99, 101, 104, 107, 109, 110, 114, 115, 116, 118,]
+missed_lines = [ 35, 36, 46, 51, 52, 68, 95, 102, 105, 112, 134, 135, 137, 139, 141, 142, 143, 145, 160, 161, 163, 165, 167, 168, 170, 171, 173, 175, 176, 178, 180, 181, 182, 184,]
+
+[input_info]
+test_file_path = "datagear-util/src/test/java/org/datagear/util/AsteriskPatternSupportTest.java"
+focal_file_path = "datagear-util/src/main/java/org/datagear/util/AsteriskPatternSupport.java"
+test_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-util/src/test/java/org/datagear/util/AsteriskPatternSupportTest.java"
+focal_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-util/src/main/java/org/datagear/util/AsteriskPatternSupport.java"
+first_commit_date = "2023-05-24"
+last_commit_date = "2024-03-15"
+test_file_content = "/*\n * Copyright 2018-present datagear.tech\n *\n * This file is part of DataGear.\n *\n * DataGear is free software: you can redistribute it and/or modify it under the terms of\n * the GNU Lesser General Public License as published by the Free Software Foundation,\n * either version 3 of the License, or (at your option) any later version.\n *\n * DataGear is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;\n * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n * See the GNU Lesser General Public License for more details.\n *\n * You should have received a copy of the GNU Lesser General Public License along with DataGear.\n * If not, see <https://www.gnu.org/licenses/>.\n */\n\npackage org.datagear.util;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertNull;\n\nimport java.util.ArrayList;\nimport java.util.Arrays;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nimport org.junit.Test;\n\n/**\n * {@linkplain AsteriskPatternSupport}单元测试类。\n * \n * @author datagear@163.com\n *\n */\npublic class AsteriskPatternSupportTest\n{\n\t@Test\n\tpublic void findKeyMatchedTest_map_collection_true()\n\t{\n\t\tAsteriskPatternSupport aps = new AsteriskPatternSupport(new AsteriskPatternMatcher(true));\n\n\t\tMap<String, String> map = new HashMap<String, String>();\n\t\tmap.put(\"abc\", \"aabbcc\");\n\t\tmap.put(\"def\", \"ddeeff\");\n\t\tmap.put(\"ghi\", \"gghhii\");\n\n\t\t{\n\t\t\tList<String> params = Arrays.asList(\"*b*\", \"*e*\");\n\t\t\tString actual = aps.findKeyMatched(map, params, true);\n\n\t\t\tassertEquals(\"aabbcc\", actual);\n\t\t}\n\n\t\t{\n\t\t\tList<String> params = Arrays.asList(\"*uuu*\", \"*e*\");\n\t\t\tString actual = aps.findKeyMatched(map, params, true);\n\n\t\t\tassertEquals(\"ddeeff\", actual);\n\t\t}\n\n\t\t{\n\t\t\tList<String> params = Arrays.asList(\"*uuu*\", \"regex:^\\\\w+e\\\\w+$\");\n\t\t\tString actual = aps.findKeyMatched(map, params, true);\n\n\t\t\tassertEquals(\"ddeeff\", actual);\n\t\t}\n\n\t\t{\n\t\t\tList<String> params = Arrays.asList(\"*uuu*\", \"*vvvv*\");\n\t\t\tString actual = aps.findKeyMatched(map, params, true);\n\n\t\t\tassertNull(actual);\n\t\t}\n\n\t\t{\n\t\t\tList<String> params = Arrays.asList(\"\");\n\t\t\tString actual = aps.findKeyMatched(map, params, true);\n\n\t\t\tassertNull(actual);\n\t\t}\n\t}\n\n\n\n}\n"

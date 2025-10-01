@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pytorch/captum"
+sha = "aff7603051094012c9cf1a739a0538c38a6986b2"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=captum/attr/_utils/baselines.py -m pytest -q --junit-xml=test_output.xml tests/attr/test_baselines.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target captum.attr._utils.baselines --unit-test tests.attr.test_baselines --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target captum/attr/_utils/baselines.py --unit-test tests/attr/test_baselines.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/attr/test_baselines.py"
+focal_file_path = "captum/attr/_utils/baselines.py"
+test_file_url = "https://github.com/pytorch/captum/blob/aff7603051094012c9cf1a739a0538c38a6986b2/tests/attr/test_baselines.py"
+focal_file_url = "https://github.com/pytorch/captum/blob/aff7603051094012c9cf1a739a0538c38a6986b2/captum/attr/_utils/baselines.py"
+first_commit_date = "2023-11-30"
+last_commit_date = "2025-06-27"
+test_file_content = "\nfrom typing import cast, Dict, List, Tuple, Union\n\nfrom captum.attr._utils.baselines import ProductBaselines\nfrom captum.testing.helpers import BaseTest\n\n\nclass TestProductBaselines(BaseTest):\n    def test_list(self) -> None:\n        baseline_values = [\n            [1, 2, 3],\n            [4, 5, 6, 7],\n            [8, 9],\n        ]\n\n        baselines = ProductBaselines(baseline_values)\n\n        baseline_sample = baselines()\n\n        for sample_val, vals in zip(baseline_sample, baseline_values):\n\n    def test_dict(self) -> None:\n        baseline_values = {\n            \"f1\": [1, 2, 3],\n            \"f2\": [4, 5, 6, 7],\n            \"f3\": [8, 9],\n        }\n\n        baselines = ProductBaselines(\n            cast(Dict[Union[str, Tuple[str, ...]], List[int]], baseline_values)\n        )\n\n        baseline_sample = baselines()\n\n        baseline_sample = cast(dict, baseline_sample)\n\n        for sample_key, sample_val in baseline_sample.items():\n\n    def test_dict_tuple_key(self) -> None:\n        baseline_values: Dict[Union[str, Tuple[str, ...]], List] = {\n            (\"f1\", \"f2\"): [(1, \"1\"), (2, \"2\"), (3, \"3\")],\n            \"f3\": [4, 5],\n        }\n\n        baselines = ProductBaselines(baseline_values)\n\n        baseline_sample = baselines()\n\n        baseline_sample = cast(dict, baseline_sample)"

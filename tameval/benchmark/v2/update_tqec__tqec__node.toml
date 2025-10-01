@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tqec/tqec"
+sha = "3c0db694339614f537772a7bf6a183c8ffcb78a7"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/tqec/compile/tree/node.py -m pytest -q --junit-xml=test_output.xml src/tqec/compile/tree/node_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.tqec.compile.tree.node --unit-test src.tqec.compile.tree.node_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/tqec/compile/tree/node.py --unit-test src/tqec/compile/tree/node_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 37.0
+original_coverage = 57.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = [ 0, 2, 3, 4, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 23, 30, 31, 35, 39, 44, 45, 63, 64, 89, 90, 94, 95, 99, 100, 104, 112, 125, 126, 130, 134, 138, 224,]
+missed_lines = [ 27, 33, 37, 41, 59, 60, 61, 65, 66, 67, 68, 69, 74, 75, 76, 77, 81, 82, 83, 92, 97, 102, 106, 119, 120, 121, 122, 123, 128, 132, 136, 164, 165, 166, 167, 168, 173, 174, 177, 178, 179, 180, 185, 188, 189, 191, 193, 194, 195, 196, 199, 200, 201, 202, 205, 207, 208, 211, 215, 216, 217, 219, 220, 221, 222, 238, 241, 242, 243, 244, 245,]
+
+[input_info]
+test_file_path = "src/tqec/compile/tree/node_test.py"
+focal_file_path = "src/tqec/compile/tree/node.py"
+test_file_url = "https://github.com/tqec/tqec/blob/3c0db694339614f537772a7bf6a183c8ffcb78a7/src/tqec/compile/tree/node_test.py"
+focal_file_url = "https://github.com/tqec/tqec/blob/3c0db694339614f537772a7bf6a183c8ffcb78a7/src/tqec/compile/tree/node.py"
+first_commit_date = "2025-03-18"
+last_commit_date = "2025-08-12"
+test_file_content = "from typing import Final\n\nimport pytest\n\nfrom tqec.compile.blocks.layers.atomic.layout import LayoutLayer\nfrom tqec.compile.blocks.layers.atomic.plaquettes import PlaquetteLayer\nfrom tqec.compile.blocks.layers.composed.repeated import RepeatedLayer\nfrom tqec.compile.blocks.layers.composed.sequenced import SequencedLayers\nfrom tqec.compile.blocks.positioning import LayoutPosition2D\nfrom tqec.compile.tree.node import LayerNode, NodeWalker\nfrom tqec.plaquette.plaquette import Plaquettes\nfrom tqec.plaquette.rpng.rpng import RPNGDescription\nfrom tqec.plaquette.rpng.translators.default import DefaultRPNGTranslator\nfrom tqec.templates.qubit import QubitTemplate\nfrom tqec.utils.exceptions import TQECException\nfrom tqec.utils.frozendefaultdict import FrozenDefaultDict\nfrom tqec.utils.position import BlockPosition2D\nfrom tqec.utils.scale import LinearFunction, PhysicalQubitScalable2D\n\nLOGICAL_QUBIT_SIDE: Final = LinearFunction(4, 5)\nLOGICAL_QUBIT_SHAPE: Final = PhysicalQubitScalable2D(LOGICAL_QUBIT_SIDE, LOGICAL_QUBIT_SIDE)\n\n_TRANSLATOR = DefaultRPNGTranslator()\n_EMPTY_PLAQUETTE = _TRANSLATOR.translate(RPNGDescription.empty())\n\n\n@pytest.fixture(name=\"plaquette_layer\")\ndef plaquette_layer_fixture() -> PlaquetteLayer:\n    template = QubitTemplate()\n    plaquettes = Plaquettes(FrozenDefaultDict({}, default_value=_EMPTY_PLAQUETTE))\n    return PlaquetteLayer(template, plaquettes)\n\n\n@pytest.fixture(name=\"layout_layer\")\ndef layout_layer_fixture() -> LayoutLayer:\n    template = QubitTemplate()\n    plaquettes = Plaquettes(FrozenDefaultDict({}, default_value=_EMPTY_PLAQUETTE))\n    return LayoutLayer(\n        {\n            LayoutPosition2D.from_block_position(BlockPosition2D(x, y)): PlaquetteLayer(\n                template, plaquettes\n            )\n            for x, y in [(0, 0), (1, 0)]\n        },\n        LOGICAL_QUBIT_SHAPE,\n    )\n\n\ndef test_creation(plaquette_layer: PlaquetteLayer, layout_layer: LayoutLayer) -> None:\n    LayerNode(layout_layer)\n    LayerNode(RepeatedLayer(layout_layer, LinearFunction(2, 0)))\n    LayerNode(SequencedLayers([layout_layer for _ in range(3)]))\n    with pytest.raises(\n        TQECException,\n        match=\"The layer that is being repeated is not an instance of LayoutLayer or BaseComposedLayer.\",\n    ):\n        LayerNode(RepeatedLayer(plaquette_layer, LinearFunction(2, 0)))\n    with pytest.raises(\n        TQECException,\n        match=\"Found a leaf node that is not an instance of LayoutLayer..*\",\n    ):\n        LayerNode(SequencedLayers([plaquette_layer for _ in range(4)]))\n\n\ndef test_is_leaf(layout_layer: LayoutLayer) -> None:\n    assert LayerNode(layout_layer).is_leaf\n    assert not LayerNode(RepeatedLayer(layout_layer, LinearFunction(2, 0))).is_leaf\n    assert not LayerNode(SequencedLayers([layout_layer for _ in range(3)])).is_leaf\n\n\ndef test_is_repeated(layout_layer: LayoutLayer) -> None:\n    assert not LayerNode(layout_layer).is_repeated\n    assert LayerNode(RepeatedLayer(layout_layer, LinearFunction(2, 0))).is_repeated\n    assert not LayerNode(SequencedLayers([layout_layer for _ in range(3)])).is_repeated\n\n\ndef test_walk_see_all_leaf_nodes(layout_layer: LayoutLayer) -> None:\n    class LeavesCounter(NodeWalker):\n        def __init__(self) -> None:\n            super().__init__()\n            self._counter = 0\n\n        def visit_node(self, node: LayerNode) -> None:\n            self._counter += node.is_leaf\n\n    def count_leaves(node: LayerNode) -> int:\n        counter = LeavesCounter()\n        node.walk(counter)\n        return counter._counter\n\n    assert count_leaves(LayerNode(layout_layer)) == 1\n    assert (\n        count_leaves(LayerNode(RepeatedLayer(layout_layer, LinearFunction(2, 0)))) == 1\n    )  # Because RepeatedLayer has only its repeated node as child.\n    assert count_leaves(LayerNode(SequencedLayers([layout_layer for _ in range(3)]))) == 3\n    assert (\n        count_leaves(\n            LayerNode(\n                SequencedLayers(\n                    [SequencedLayers([layout_layer for _ in range(3)]) for _ in range(5)]\n                )\n            )\n        )\n        == 15\n    )"

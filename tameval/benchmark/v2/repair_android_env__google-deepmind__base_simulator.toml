@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-deepmind/android_env"
+sha = "827047088b9e932f29a951d734962bf855587521"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_env/components/simulators/base_simulator.py -m pytest -q --junit-xml=test_output.xml android_env/components/simulators/base_simulator_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_env.components.simulators.base_simulator --unit-test android_env.components.simulators.base_simulator_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_env/components/simulators/base_simulator.py --unit-test android_env/components/simulators/base_simulator_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 91.0
+original_coverage = 95.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 19.0
+covered_lines = [ 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 31, 34, 45, 46, 49, 51, 55, 56, 59, 60, 63, 64, 67, 71, 72, 73, 75, 76, 77, 87, 88, 91, 93, 94, 97, 98, 110, 111, 120, 135, 150, 153, 154, 155, 157, 159, 160, 168, 171, 172, 173, 176, 179, 184, 185, 186, 187, 188, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 200, 202, 203, 204, 206, 207,]
+missed_lines = [ 53, 78, 79, 80, 81, 133, 148,]
+
+[input_info]
+test_file_path = "android_env/components/simulators/base_simulator_test.py"
+focal_file_path = "android_env/components/simulators/base_simulator.py"
+test_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/components/simulators/base_simulator_test.py"
+focal_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/components/simulators/base_simulator.py"
+first_commit_date = "2021-08-23"
+last_commit_date = "2025-06-02"
+test_file_content = "\n\nimport itertools\nimport time\nfrom unittest import mock\n\nfrom absl.testing import absltest\nfrom android_env.components import config_classes\nfrom android_env.components import errors\nfrom android_env.components.simulators import base_simulator\nfrom android_env.components.simulators.fake import fake_simulator\nimport numpy as np\n\n\nclass BaseSimulatorTest(absltest.TestCase):\n\n  def test_launch(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(screen_dimensions=(640, 480))\n    )\n    simulator.launch()\n\n  def test_launch_close(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig()\n    )\n    simulator.launch()\n    simulator.close()\n\n  def test_get_screenshot(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(screen_dimensions=(640, 480))\n    )\n    simulator.launch()\n\n    screenshot = simulator.get_screenshot()\n\n  def test_print_logs_on_exception(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig()\n    )\n    with mock.patch.object(\n        simulator, 'get_logs'\n    ) as mock_get_logs, mock.patch.object(\n        simulator, '_launch_impl', autospec=True\n    ) as mock_launch:\n      mock_launch.side_effect = ValueError('Oh no!')\n\n  def test_get_screenshot_error_async(self):\n    mock_interaction_thread = mock.create_autospec(\n        base_simulator.InteractionThread\n    )\n    mock_interaction_thread.screenshot.side_effect = (\n        errors.ReadObservationError()\n    )\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(interaction_rate_sec=0.5)\n    )\n    with mock.patch.object(\n        base_simulator,\n        'InteractionThread',\n        autospec=True,\n        return_value=mock_interaction_thread,\n    ):\n      simulator.launch()\n\n    simulator.close()\n\n  def test_get_screenshot_faster_than_screenshot_impl(self):\n    slow_rate = 0.5\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(interaction_rate_sec=slow_rate)\n    )\n    with mock.patch.object(\n        simulator, '_get_screenshot_impl', autospec=True\n    ) as mock_get_screenshot_impl:\n      mock_get_screenshot_impl.side_effect = (\n          np.array(i, ndmin=3) for i in itertools.count(0, 1)\n      )\n      simulator.launch()\n      screenshot1 = simulator.get_screenshot()\n      screenshot2 = simulator.get_screenshot()\n\n    simulator.close()\n\n  def test_get_screenshot_slower_than_screenshot_impl(self):\n    fast_rate = 0.01\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(interaction_rate_sec=fast_rate)\n    )\n    with mock.patch.object(\n        simulator, '_get_screenshot_impl', autospec=True\n    ) as mock_get_screenshot_impl:\n      mock_get_screenshot_impl.side_effect = (\n          np.array(i, ndmin=3) for i in itertools.count(0, 1)\n      )\n      simulator.launch()\n      screenshot1 = simulator.get_screenshot()\n      time.sleep(0.5)\n      screenshot2 = simulator.get_screenshot()\n\n    simulator.close()\n\n  def test_interaction_thread_closes_upon_relaunch(self):\n    simulator = fake_simulator.FakeSimulator(\n        config_classes.FakeSimulatorConfig(interaction_rate_sec=0.01)\n    )\n    mock_interaction_thread = mock.create_autospec(\n        base_simulator.InteractionThread\n    )\n    with mock.patch.object(\n        base_simulator,\n        'InteractionThread',\n        autospec=True,\n        return_value=mock_interaction_thread,\n    ):\n      simulator.launch()\n      simulator.launch()\n      simulator.close()\n\n\nif __name__ == '__main__':\n  absltest.main()"

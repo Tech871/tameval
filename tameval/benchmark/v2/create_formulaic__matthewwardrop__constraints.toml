@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "matthewwardrop/formulaic"
+sha = "46eb1f26c79d3f999c12738cde6b11f875c7c9c8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=formulaic/utils/constraints.py -m pytest -q --junit-xml=test_output.xml tests/utils/test_constraints.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target formulaic.utils.constraints --unit-test tests.utils.test_constraints --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target formulaic/utils/constraints.py --unit-test tests/utils/test_constraints.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 73.0
+original_coverage = 100.0
+mutation_kill_rate = 53.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 0, 2, 3, 4, 5, 6, 7, 15, 17, 18, 19, 26, 28, 37, 55, 56, 80, 81, 82, 87, 91, 93, 94, 97, 114, 128, 129, 132, 134, 138, 143, 145, 147, 151, 156, 157, 158, 162, 173, 179, 180, 185, 187, 191, 207, 212, 213, 215, 222, 224, 232, 240, 249, 250, 252, 257, 271, 272, 275, 276, 278, 282, 283, 285, 286, 287, 288, 289, 290, 292, 296, 297, 299, 302, 308, 309, 310, 317, 320, 321, 322, 323, 328, 331, 342, 343, 344, 346, 351, 356, 357, 359, 360, 362, 367, 371, 379, 380, 381, 382, 383, 384, 385, 386, 388, 391, 392, 394, 396, 397, 399, 400, 402, 404, 422, 423, 425, 428, 429, 431, 433, 434, 438, 439, 443, 447, 451, 454, 455, 457, 459, 460, 464, 465, 469, 473,]
+missed_lines = [ 88, 92, 98, 99, 100, 103, 104, 105, 110, 111, 112, 133, 135, 144, 146, 148, 152, 163, 164, 165, 166, 167, 170, 171, 177, 188, 251, 273, 324, 347, 348, 352, 353, 363, 364, 398, 407, 408, 410, 412, 413, 414, 415, 416, 420, 436, 440, 444, 462, 466,]
+
+[input_info]
+test_file_path = "tests/utils/test_constraints.py"
+focal_file_path = "formulaic/utils/constraints.py"
+test_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/tests/utils/test_constraints.py"
+focal_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/formulaic/utils/constraints.py"
+first_commit_date = "2022-04-27"
+last_commit_date = "2025-01-07"
+test_file_content = "import re\n\nimport numpy\nimport pytest\n\nfrom formulaic.errors import FormulaSyntaxError\nfrom formulaic.utils.constraints import LinearConstraintParser, LinearConstraints\n\nclass TestLinearConstraints:\n    REF_MATRICES = {\n        1: [[1, 1, 1]],\n        2: [[1, 1, 1], [1, 0, -1]],\n    }\n    REF_VALUES = {\n        1: [0],\n        2: [10, 10],\n    }\n\n    def test_from_spec_passthrough(self):\n        constraints = LinearConstraints.from_spec(\n            \"a + b + c = 0\", variable_names=[\"a\", \"b\", \"c\"]\n        )\n        assert LinearConstraints.from_spec(constraints) is constraints\n\n    def test_n_constraints(self):\n        assert (\n            LinearConstraints.from_spec(\n                \"a = 0\", variable_names=[\"a\", \"b\", \"c\"]\n            ).n_constraints\n            == 1\n        )\n        assert (\n            LinearConstraints.from_spec(\n                \"a = 0, b = 0\", variable_names=[\"a\", \"b\", \"c\"]\n            ).n_constraints\n            == 2\n        )\n\nclass TestLinearConstraintParser:\n    COLUMNS = list(\"abcd\")\n\n    TEST_CASES = {\n        \"a\": ([[1, 0, 0, 0]], [0]),\n        \"a + 3 * (a + b - b) / 3 = a\": ([[1, 0, 0, 0]], [0]),\n        \"a + a\": ([[2, 0, 0, 0]], [0]),\n        \"a = 10\": ([[1, 0, 0, 0]], [10]),\n        \"a + b = 10\": ([[1, 1, 0, 0]], [10]),\n        \"a + b - 10\": ([[1, 1, 0, 0]], [10]),\n        \"a + b - 10 = 0\": ([[1, 1, 0, 0]], [10]),\n        \"a = b\": ([[1, -1, 0, 0]], [0]),\n        \"3 * a + b * 3 = 3\": ([[3, 3, 0, 0]], [3]),\n        \"a / 3 + 10 / 2 * d = 0\": ([[1 / 3, 0, 0, 5]], [0]),\n        \"2 * (a + b) - (c + d) / 2\": ([[2, 2, -0.5, -0.5]], [0]),\n        \"a, b, c, d\": (\n            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],\n            [0, 0, 0, 0],\n        ),\n        \"a = 1, b = 2, c - 3, d - 4\": (\n            [[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]],\n            [1, 2, 3, 4],\n        ),\n        \"a + b, c + d\": ([[1, 1, 0, 0], [0, 0, 1, 1]], [0, 0]),\n        \"a + b, c + d = 10\": ([[1, 1, 0, 0], [0, 0, 1, 1]], [0, 10]),\n        \"a + b = 5, c + d = 10\": ([[1, 1, 0, 0], [0, 0, 1, 1]], [5, 10]),\n    }\n\n    def test_invalid_cases(self):\n        with pytest.raises(\n            RuntimeError,\n            match=re.escape(\n                \"Only one non-scalar factor can be involved in a linear constraint multiplication.\"\n            ),\n        ):\n            LinearConstraintParser(self.COLUMNS).get_matrix(\"a * b\")\n        with pytest.raises(\n            RuntimeError,\n            match=re.escape(\n                \"The right-hand operand must be a scalar in linear constraint division operations.\"\n            ),\n        ):\n            LinearConstraintParser(self.COLUMNS).get_matrix(\"a / b\")\n"

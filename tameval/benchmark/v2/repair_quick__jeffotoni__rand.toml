@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "jeffotoni/quick"
+sha = "89f7be7048104f81431288179d7631ccbc2b3536"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out rand/rand.go rand/rand_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting rand/rand.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 80.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "rand/rand_test.go"
+focal_file_path = "rand/rand.go"
+test_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/rand/rand_test.go"
+focal_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/rand/rand.go"
+first_commit_date = "2025-05-27"
+last_commit_date = "2025-05-27"
+test_file_content = "package rand\n\nimport (\n\t\"strconv\"\n\t\"testing\"\n)\n\nfunc TestRandomIntRange(t *testing.T) {\n\tfor i := 0; i < 10; i++ {\n\t\tn, err := RandomInt(10, \"20\")\n\t\tif err != nil {\n\t\t\tt.Fatal(err)\n\t\t}\n\t\tif n < 10 || n >= 20 {\n\t\t\tt.Errorf(\"expected value in range [10, 20), got %d\", n)\n\t\t}\n\t}\n}\n\nfunc TestTraceIDLength(t *testing.T) {\n\tid := TraceID(1, 2, 3)\n\tif len(id) != 16 {\n\t\tt.Errorf(\"expected ID length 16, got %d\", len(id))\n\t}\n}\n\nfunc TestAlgoDefaultRange(t *testing.T) {\n\tStart := 1000\n\tEnd := 9999\n\n\tfor i := 0; i < 10; i++ {\n\t\tid := AlgoDefault(Start, End, \"extra\")\n\t\tif id == \"\" {\n\t\t\tt.Errorf(\"expected non-empty string, got empty\")\n\t\t}\n\t\tn, err := strconv.Atoi(id)\n\t\tif err != nil {\n\t\t\tt.Fatal(\"invalid integer:\", err)\n\t\t}\n\t\tif n < Start || n >= Start+End {\n\t\t\tt.Errorf(\"expected value in range [%d, %d), got %d\", Start, Start+End, n)\n\t\t}\n\t}\n}"

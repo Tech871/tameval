@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "crossplane/crossplane-runtime"
+sha = "5eca3444c2f11ff8326b6f355877961a52552d05"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/resource/late_initializer.go pkg/resource/late_initializer_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/resource/late_initializer.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 41.0
+original_coverage = 100.0
+mutation_kill_rate = 29.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 25, 26, 27, 39, 40, 41, 45, 46, 47, 61, 62, 63, 64, 66, 67, 68,]
+missed_lines = [ 50, 51, 52, 53, 55, 56, 57, 72, 73, 74, 75, 77, 78, 79, 84, 85, 86, 87, 89, 90, 91, 92, 93,]
+
+[input_info]
+test_file_path = "pkg/resource/late_initializer_test.go"
+focal_file_path = "pkg/resource/late_initializer.go"
+test_file_url = "https://github.com/crossplane/crossplane-runtime/blob/5eca3444c2f11ff8326b6f355877961a52552d05/pkg/resource/late_initializer_test.go"
+focal_file_url = "https://github.com/crossplane/crossplane-runtime/blob/5eca3444c2f11ff8326b6f355877961a52552d05/pkg/resource/late_initializer.go"
+first_commit_date = "2021-05-31"
+last_commit_date = "2025-07-03"
+test_file_content = "/*\nCopyright 2021 The Crossplane Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage resource\n\nimport (\n\t\"testing\"\n\n\t\"github.com/google/go-cmp/cmp\"\n)\n\n\nfunc TestLateInitializeInt64Ptr(t *testing.T) {\n\ti1 := int64(10)\n\ti2 := int64(20)\n\n\ttype args struct {\n\t\torg  *int64\n\t\tfrom *int64\n\t}\n\n\ttype want struct {\n\t\tresult  *int64\n\t\tchanged bool\n\t}\n\n\tcases := map[string]struct {\n\t\targs\n\t\twant\n\t}{\n\t\t\"Original\": {\n\t\t\targs: args{\n\t\t\t\torg:  &i1,\n\t\t\t\tfrom: &i2,\n\t\t\t},\n\t\t\twant: want{\n\t\t\t\tresult:  &i1,\n\t\t\t\tchanged: false,\n\t\t\t},\n\t\t},\n\t\t\"LateInitialized\": {\n\t\t\targs: args{\n\t\t\t\torg:  nil,\n\t\t\t\tfrom: &i2,\n\t\t\t},\n\t\t\twant: want{\n\t\t\t\tresult:  &i2,\n\t\t\t\tchanged: true,\n\t\t\t},\n\t\t},\n\t\t\"Neither\": {\n\t\t\targs: args{\n\t\t\t\torg:  nil,\n\t\t\t\tfrom: nil,\n\t\t\t},\n\t\t\twant: want{\n\t\t\t\tresult:  nil,\n\t\t\t\tchanged: false,\n\t\t\t},\n\t\t},\n\t}\n\n\tfor name, tc := range cases {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\tli := NewLateInitializer()\n\n\t\t\tgot := li.LateInitializeInt64Ptr(tc.org, tc.from)\n\t\t\tif diff := cmp.Diff(tc.result, got); diff != \"\" {\n\t\t\t\tt.Errorf(\"LateInitializeBoolPtr(...): -want, +got:\\n%s\", diff)\n\t\t\t}\n\n\t\t\tif diff := cmp.Diff(tc.changed, li.IsChanged()); diff != \"\" {\n\t\t\t\tt.Errorf(\"IsChanged(...): -want, +got:\\n%s\", diff)\n\t\t\t}\n\t\t})\n\t}\n}\n"

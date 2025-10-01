@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "mivek/MetarParser"
+sha = "91f19fb5567728469fef5d321c1dfb712d1d0cc6"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl metarParser-parsers -Dtest=RemarkParserTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl metarParser-parsers -DtargetClasses=**.RemarkParser  -DtargetTests=**.RemarkParserTest  -DoutputFormats=XML"
+coverage_report_path = "metarParser-parsers/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "metarParser-parsers/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "metarParser-parsers/src/test/java/io/github/mivek/parser/RemarkParserTest.java"
+focal_file_path = "metarParser-parsers/src/main/java/io/github/mivek/parser/RemarkParser.java"
+test_file_url = "https://github.com/mivek/MetarParser/blob/91f19fb5567728469fef5d321c1dfb712d1d0cc6/metarParser-parsers/src/test/java/io/github/mivek/parser/RemarkParserTest.java"
+focal_file_url = "https://github.com/mivek/MetarParser/blob/91f19fb5567728469fef5d321c1dfb712d1d0cc6/metarParser-parsers/src/main/java/io/github/mivek/parser/RemarkParser.java"
+first_commit_date = "2020-05-17"
+last_commit_date = "2025-07-16"
+test_file_content = ""

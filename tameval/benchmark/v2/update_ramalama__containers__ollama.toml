@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "containers/ramalama"
+sha = "2c94e5f39c1f6c3253832353cbc2a225479b1dea"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=ramalama/ollama.py -m pytest -q --junit-xml=test_output.xml test/unit/test_ollama.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target ramalama.ollama --unit-test test.unit.test_ollama --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target ramalama/ollama.py --unit-test test/unit/test_ollama.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 21.0
+original_coverage = 46.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 25.0
+covered_lines = [ 0, 1, 2, 3, 4, 6, 7, 8, 9, 12, 35, 36, 37, 39, 40, 42, 49, 59, 77, 84, 102, 116, 123, 140, 141, 146, 154, 158,]
+missed_lines = [ 13, 14, 15, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 43, 44, 45, 46, 47, 50, 51, 52, 53, 54, 56, 57, 60, 61, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 75, 78, 79, 80, 81, 82, 85, 86, 88, 89, 90, 92, 103, 104, 106, 108, 117, 118, 119, 120, 121, 124, 125, 127, 128, 129, 131, 142, 144, 147, 150, 151, 152, 155, 156, 159, 160, 161, 162, 163, 164, 170, 171, 172, 173, 174, 175, 176, 177, 178, 180, 181, 182, 183, 184, 186, 187, 189, 190, 193, 194, 195, 196, 197,]
+
+[input_info]
+test_file_path = "test/unit/test_ollama.py"
+focal_file_path = "ramalama/ollama.py"
+test_file_url = "https://github.com/containers/ramalama/blob/2c94e5f39c1f6c3253832353cbc2a225479b1dea/test/unit/test_ollama.py"
+focal_file_url = "https://github.com/containers/ramalama/blob/2c94e5f39c1f6c3253832353cbc2a225479b1dea/ramalama/ollama.py"
+first_commit_date = "2024-08-22"
+last_commit_date = "2025-07-31"
+test_file_content = "from unittest.mock import patch\n\nimport pytest\n\nfrom ramalama.arg_types import StoreArgs\nfrom ramalama.model_store import LocalSnapshotFile, SnapshotFile, SnapshotFileType\nfrom ramalama.ollama import Ollama, OllamaRepository\n\n\n@pytest.fixture\ndef ollama_model(args: StoreArgs):\n    return Ollama(\"llama2:7b\", args.store)\n\n\n@pytest.fixture\ndef args():\n    return StoreArgs(store=\"/tmp/ramalama/store\", engine=\"podman\", container=True)\n\n\ndef test_ollama_model_initialization(ollama_model):\n    assert ollama_model.model == \"llama2:7b\"\n    assert ollama_model.type == \"Ollama\"\n\n\nclass OllamaRepositoryMock(OllamaRepository):\n\n    def __init__(self, name):\n        super().__init__(name)\n\n    def fetch_manifest(self, tag: str):\n        return {\n            \"layers\": [\n                {\n                    \"mediaType\": \"application/vnd.ollama.image.model\",\n                    \"digest\": \"sha256-bf0ecbdb9b814248d086c9b69cf26182d9d4138f2ad3d0637c4555fc8cbf68e5\",\n                }\n            ]\n        }\n\n    def get_file_list(self, tag, cached_files, is_model_in_ollama_cache, manifest=None) -> list[SnapshotFile]:\n        return [LocalSnapshotFile(\"dummy content\", \"dummy\", SnapshotFileType.Other)]\n\n\ndef test_ollama_model_pull(ollama_model, args):\n    args.quiet = True\n    with patch(\"ramalama.ollama.OllamaRepository\", return_value=OllamaRepositoryMock(\"dummy-model\")):\n        ollama_model.pull(args)"

@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "cf5a04582d11c4040e39fda2c39fe0c4ebb7470f"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/storedconfig/git.go internal/storedconfig/git_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/storedconfig/git.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 42.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 23.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/storedconfig/git_test.go"
+focal_file_path = "internal/storedconfig/git.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/cf5a04582d11c4040e39fda2c39fe0c4ebb7470f/internal/storedconfig/git_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/cf5a04582d11c4040e39fda2c39fe0c4ebb7470f/internal/storedconfig/git.go"
+first_commit_date = "2025-01-28"
+last_commit_date = "2025-08-07"
+test_file_content = "/*\n * © 2024 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http:\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage storedconfig\n\nimport (\n\t\"os\"\n\t\"os/exec\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/go-git/go-git/v5\"\n\t\"github.com/rs/zerolog\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/snyk/snyk-ls/internal/types\"\n)\nfunc initializeTestGitRepo(t *testing.T, repoDir string, branches []string) {\n\tt.Helper()\n\tcmd := exec.Command(\"git\", \"init\", \"--initial-branch=\"+branches[0])\n\tcmd.Dir = repoDir\n\terr := cmd.Run()\n\trequire.NoError(t, err)\n\tcmd = exec.Command(\"git\", \"config\", \"user.email\", \"test@example.com\")\n\tcmd.Dir = repoDir\n\terr = cmd.Run()\n\trequire.NoError(t, err)\n\n\tcmd = exec.Command(\"git\", \"config\", \"user.name\", \"Test User\")\n\tcmd.Dir = repoDir\n\terr = cmd.Run()\n\trequire.NoError(t, err)\n\ttestFile := filepath.Join(repoDir, \"test.txt\")\n\terr = os.WriteFile(testFile, []byte(\"test content\"), 0644)\n\trequire.NoError(t, err)\n\n\tcmd = exec.Command(\"git\", \"add\", \".\")\n\tcmd.Dir = repoDir\n\terr = cmd.Run()\n\trequire.NoError(t, err)\n\n\tcmd = exec.Command(\"git\", \"commit\", \"-m\", \"initial commit\")\n\tcmd.Dir = repoDir\n\terr = cmd.Run()\n\trequire.NoError(t, err)\n\tfor _, branch := range branches[1:] {\n\t\tcmd = exec.Command(\"git\", \"checkout\", \"-b\", branch)\n\t\tcmd.Dir = repoDir\n\t\terr = cmd.Run()\n\t\trequire.NoError(t, err)\n\t}\n}\n\nfunc Test_enrichFromGit_ReturnsLocalBranchesEvenWithoutMainOrMaster(t *testing.T) {\n\ttempDir := t.TempDir()\n\tbranches := []string{\"feature-branch\", \"develop\"}\n\tinitializeTestGitRepo(t, tempDir, branches)\n\n\tlogger := zerolog.New(zerolog.NewTestWriter(t))\n\n\tfolderConfig := &types.FolderConfig{\n\t\tFolderPath: types.FilePath(tempDir),\n\t}\n\tfolderConfig = enrichFromGit(&logger, folderConfig)\n\trequire.NotNil(t, folderConfig)\n}\n\nfunc Test_getBaseBranch_ReturnsErrorWhenNoDefaultBranch(t *testing.T) {\n\ttempDir := t.TempDir()\n\trepo, err := git.PlainInit(tempDir, false)\n\trequire.NoError(t, err)\n\tlocalBranches := []string{\"feature-branch\", \"develop\", \"release\"}\n\t_, err = getBaseBranch(repo, localBranches)\n}\n\nfunc Test_getBaseBranch_UsesInitDefaultBranchWhenSet(t *testing.T) {\n\ttempDir := t.TempDir()\n\ttestDefaultBranch := \"new-default-trunk-branch\"\n\tbranches := []string{\"main\", \"master\", testDefaultBranch, \"feature\"}\n\tinitializeTestGitRepo(t, tempDir, branches)\n\tcmd := exec.Command(\"git\", \"config\", \"init.defaultBranch\", testDefaultBranch)\n\tcmd.Dir = tempDir\n\terr := cmd.Run()\n\trequire.NoError(t, err)\n\trepo, err := git.PlainOpen(tempDir)\n\trequire.NoError(t, err)\n\tbaseBranch, err := getBaseBranch(repo, branches)\n\trequire.NoError(t, err)\n}\n\nfunc Test_getBaseBranch_FallsBackToMasterWhenMainNotPresent(t *testing.T) {\n\ttempDir := t.TempDir()\n\tbranches := []string{\"master\", \"feature-branch\", \"develop\"}\n\tinitializeTestGitRepo(t, tempDir, branches)\n\trepo, err := git.PlainOpen(tempDir)\n\trequire.NoError(t, err)\n\tbaseBranch, err := getBaseBranch(repo, branches)\n\trequire.NoError(t, err)\n}"

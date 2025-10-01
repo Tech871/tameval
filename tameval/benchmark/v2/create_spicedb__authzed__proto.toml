@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "authzed/spicedb"
+sha = "449c43d3c8dbb72defa98dfd097392c2fa137870"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/testutil/proto.go pkg/testutil/proto_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/testutil/proto.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 16.0
+original_coverage = 100.0
+mutation_kill_rate = 36.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 16, 17, 18, 19, 20, 41, 42, 43, 44,]
+missed_lines = [ 22, 23, 24, 25, 26, 27, 28, 31, 32, 33, 34, 35, 36, 37, 46, 47, 48, 49, 50, 51, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 68, 69, 70, 71, 73, 74, 75, 76, 77, 80, 85, 86, 87, 88,]
+
+[input_info]
+test_file_path = "pkg/testutil/proto_test.go"
+focal_file_path = "pkg/testutil/proto.go"
+test_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/pkg/testutil/proto_test.go"
+focal_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/pkg/testutil/proto.go"
+first_commit_date = "2022-11-14"
+last_commit_date = "2025-04-23"
+test_file_content = "package testutil\n\nimport (\n\t\"testing\"\n\n\t\"google.golang.org/protobuf/proto\"\n\n\tcore \"github.com/authzed/spicedb/pkg/proto/core/v1\"\n)\n\n\nfunc TestRequireProtoEqual(t *testing.T) {\n\ttcs := []struct {\n\t\tname   string\n\t\tfirst  proto.Message\n\t\tsecond proto.Message\n\t}{\n\t\t{\n\t\t\t\"empty types\",\n\t\t\t&core.ObjectAndRelation{},\n\t\t\t&core.ObjectAndRelation{},\n\t\t},\n\t\t{\n\t\t\t\"filled in\",\n\t\t\t&core.ObjectAndRelation{\n\t\t\t\tNamespace: \"foo\",\n\t\t\t},\n\t\t\t&core.ObjectAndRelation{\n\t\t\t\tNamespace: \"foo\",\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\t\"nested\",\n\t\t\t&core.RelationTuple{\n\t\t\t\tResourceAndRelation: &core.ObjectAndRelation{\n\t\t\t\t\tNamespace: \"foo\",\n\t\t\t\t},\n\t\t\t},\n\t\t\t&core.RelationTuple{\n\t\t\t\tResourceAndRelation: &core.ObjectAndRelation{\n\t\t\t\t\tNamespace: \"foo\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\t\"empty slice vs nil\",\n\t\t\t&core.CaveatTypeReference{\n\t\t\t\tTypeName:   \"test\",\n\t\t\t\tChildTypes: []*core.CaveatTypeReference{},\n\t\t\t},\n\t\t\t&core.CaveatTypeReference{\n\t\t\t\tTypeName:   \"test\",\n\t\t\t\tChildTypes: nil,\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tc := range tcs {\n\t\ttc := tc\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tRequireProtoEqual(t, tc.first, tc.second, \"something went wrong\")\n\t\t})\n\t}\n}\n"

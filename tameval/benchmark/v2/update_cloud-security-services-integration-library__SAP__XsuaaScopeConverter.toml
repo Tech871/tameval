@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "SAP/cloud-security-services-integration-library"
+sha = "bc3a37687860d8dd34ca2e26b45d942bd4a3e85b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl java-security -Dtest=XsuaaScopeConverterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl java-security -DtargetClasses=**.XsuaaScopeConverter  -DtargetTests=**.XsuaaScopeConverterTest  -DoutputFormats=XML"
+coverage_report_path = "java-security/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "java-security/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "java-security/src/test/java/com/sap/cloud/security/token/XsuaaScopeConverterTest.java"
+focal_file_path = "java-security/src/main/java/com/sap/cloud/security/token/XsuaaScopeConverter.java"
+test_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/java-security/src/test/java/com/sap/cloud/security/token/XsuaaScopeConverterTest.java"
+focal_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/java-security/src/main/java/com/sap/cloud/security/token/XsuaaScopeConverter.java"
+first_commit_date = "2020-01-10"
+last_commit_date = "2024-02-16"
+test_file_content = "package com.sap.cloud.security.token;\n\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.util.List;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.assertj.core.api.Assertions.assertThatThrownBy;\nimport static org.assertj.core.util.Lists.newArrayList;\n\npublic class XsuaaScopeConverterTest {\n\n\tprivate XsuaaScopeConverter cut;\n\n\t@Before\n\tpublic void setUp() {\n\t\tcut = new XsuaaScopeConverter(\"myAppId!t1785\");\n\t}\n\n\t@Test\n\tpublic void constructsWithInvalidAppId_raisesIllegalArgumentException() {\n\t\tassertThatThrownBy(() -> {\n\t\t\tnew XsuaaScopeConverter(null);\n\t\t}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(\"appId must not be null or empty\");\n\n\t\tassertThatThrownBy(() -> {\n\t\t\tnew XsuaaScopeConverter(\"\");\n\t\t}).isInstanceOf(IllegalArgumentException.class).hasMessageContaining(\"appId must not be null or empty\");\n\t}\n\n\t@Test\n\tpublic void oneLocalScope() {\n\t\tList<String> scope = newArrayList(\"myAppId!t1785.Read\");\n\n\t\tList<String> translatedScope = cut.convert(scope);\n\n\t\tassertThat(translatedScope).containsExactly(\"Read\");\n\t}\n\n\t@Test\n\tpublic void doesNotTouchLocalScopedEntries() {\n\t\tList<String> scope = newArrayList(\"myAppId!t1785.Read\", \"Display\");\n\n\t\tList<String> translatedScope = cut.convert(scope);\n\n\t\tassertThat(translatedScope).containsExactly(\"Read\", \"Display\");\n\t}\n\n\t@Test\n\tpublic void nothingToTranslate_returnsSameScope() {\n\t\tList<String> scope = newArrayList(\"Display\");\n\n\t\tList<String> translatedScope = cut.convert(scope);\n\n\t\tassertThat(translatedScope).containsSequence(scope);\n\t}\n\n\t@Test\n\tpublic void doesNotTouchNonGlobalScopedEntries() {\n\t\tList<String> scope = newArrayList(\"myAppId.Read\", \"Display\");\n\n\t\tList<String> translatedScope = cut.convert(scope);\n\n\t\tassertThat(translatedScope).containsSequence(scope);\n\t}\n\n\t@Test\n\tpublic void scopeContainsDotAndUnderscore() {\n\t\tList<String> scope = newArrayList(\"myAppId!t1785.Read.Context\", \"myAppId!t1785.Write.Context\");\n\n\t\tList<String> translatedScope = cut.convert(scope);\n\n\t\tassertThat(translatedScope).containsExactly(\"Read.Context\", \"Write.Context\");\n\t}\n\n\t@Test\n\tpublic void noScopes_emptyList() {\n\t\tList<String> scope = newArrayList();\n\n\t\tList<String> translatedScope = cut.convert(scope);\n\n\t\tassertThat(translatedScope).isEmpty();\n\t}\n\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "citrusframework/citrus-simulator"
+sha = "e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl simulator-spring-boot -Dtest=MessageHeaderServiceImplTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl simulator-spring-boot -DtargetClasses=**.MessageHeaderServiceImpl  -DtargetTests=**.MessageHeaderServiceImplTest  -DoutputFormats=XML"
+coverage_report_path = "simulator-spring-boot/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "simulator-spring-boot/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "simulator-spring-boot/src/test/java/org/citrusframework/simulator/service/impl/MessageHeaderServiceImplTest.java"
+focal_file_path = "simulator-spring-boot/src/main/java/org/citrusframework/simulator/service/impl/MessageHeaderServiceImpl.java"
+test_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/test/java/org/citrusframework/simulator/service/impl/MessageHeaderServiceImplTest.java"
+focal_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/main/java/org/citrusframework/simulator/service/impl/MessageHeaderServiceImpl.java"
+first_commit_date = "2023-11-20"
+last_commit_date = "2024-05-14"
+test_file_content = "/*\n * Copyright 2024 the original author or authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.citrusframework.simulator.service.impl;\n\nimport jakarta.persistence.EntityManager;\nimport org.citrusframework.simulator.model.Message;\nimport org.citrusframework.simulator.model.MessageHeader;\nimport org.citrusframework.simulator.repository.MessageHeaderRepository;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.springframework.data.domain.Page;\nimport org.springframework.data.domain.PageImpl;\nimport org.springframework.data.domain.Pageable;\n\nimport java.util.List;\nimport java.util.Optional;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\nimport static org.mockito.Mockito.doReturn;\nimport static org.mockito.Mockito.spy;\nimport static org.springframework.data.domain.Pageable.unpaged;\n\n@ExtendWith(MockitoExtension.class)\nclass MessageHeaderServiceImplTest {\n\n    @Mock\n    private EntityManager entityManagerMock;\n\n    @Mock\n    private MessageHeaderRepository messageHeaderRepositoryMock;\n\n    private MessageHeader messageHeaderWithMessage;\n\n    private MessageHeaderServiceImpl fixture;\n\n    @BeforeEach\n    void beforeEachSetup() {\n        MessageHeader messageHeader = new MessageHeader();\n        Message message = Message.builder()\n            .messageId(1234L)\n            .citrusMessageId(\"citrus-message-id\")\n            .build();\n        messageHeader.setMessage(message);\n        messageHeaderWithMessage = spy(messageHeader);\n\n        fixture = new MessageHeaderServiceImpl(entityManagerMock, messageHeaderRepositoryMock);\n    }\n\n    @Test\n    void testSave() {\n        MessageHeader messageHeader = new MessageHeader();\n\n        doReturn(messageHeader).when(messageHeaderRepositoryMock).save(messageHeader);\n\n        MessageHeader savedMessageHeader = fixture.save(messageHeader);\n        assertEquals(messageHeader, savedMessageHeader);\n    }\n\n    @Test\n    void testFindAll() {\n        Pageable pageable = unpaged();\n        Page<MessageHeader> page = new PageImpl<>(List.of(messageHeaderWithMessage));\n\n        doReturn(page).when(messageHeaderRepositoryMock).findAllWithEagerRelationships(pageable);\n\n        Page<MessageHeader> result = fixture.findAll(pageable);\n\n        assertEquals(page, result);\n    }\n\n    @Test\n    void testFindOne() {\n        Long messageId = 1L;\n\n        doReturn(Optional.of(messageHeaderWithMessage)).when(messageHeaderRepositoryMock).findOneWithEagerRelationships(messageId);\n\n        Optional<MessageHeader> maybeMessageHeader = fixture.findOne(messageId);\n\n        assertTrue(maybeMessageHeader.isPresent());\n        assertEquals(messageHeaderWithMessage, maybeMessageHeader.get());\n    }\n}"

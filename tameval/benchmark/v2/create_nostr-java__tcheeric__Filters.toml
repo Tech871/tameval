@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "tcheeric/nostr-java"
+sha = "19abaa18c086511e89c968e069c43797f55aac2d"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nostr-java-event -Dtest=FiltersTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nostr-java-event -DtargetClasses=**.Filters  -DtargetTests=**.FiltersTest  -DoutputFormats=XML"
+coverage_report_path = "nostr-java-event/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nostr-java-event/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 77.0
+original_coverage = 77.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 23, 26, 27, 30, 31, 34, 35, 36, 39, 43, 44, 46, 47, 50, 54, 55, 58, 60, 61, 62, 63, 65, 66,]
+missed_lines = [ 25, 29, 33, 38, 42, 51, 56,]
+
+[input_info]
+test_file_path = "nostr-java-event/src/test/java/nostr/event/unit/FiltersTest.java"
+focal_file_path = "nostr-java-event/src/main/java/nostr/event/filter/Filters.java"
+test_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-event/src/test/java/nostr/event/unit/FiltersTest.java"
+focal_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-event/src/main/java/nostr/event/filter/Filters.java"
+first_commit_date = "2025-02-02"
+last_commit_date = "2025-08-11"
+test_file_content = "package nostr.event.unit;\n\nimport nostr.base.Kind;\nimport nostr.event.filter.Filterable;\nimport nostr.event.filter.Filters;\nimport nostr.event.filter.KindFilter;\nimport org.junit.jupiter.api.Test;\n\nimport java.lang.reflect.Constructor;\nimport java.lang.reflect.InvocationTargetException;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\npublic class FiltersTest {\n\n    @Test\n    void missingTypeReturnsEmptyList() {\n        Filters filters = new Filters(new KindFilter<>(Kind.valueOf(1)));\n        assertTrue(filters.getFilterByType(\"unknown\").isEmpty());\n    }\n\n    @Test\n    void setLimitRequiresPositive() {\n        Filters filters = new Filters(new KindFilter<>(Kind.valueOf(1)));\n        assertThrows(IllegalArgumentException.class, () -> filters.setLimit(0));\n        assertThrows(IllegalArgumentException.class, () -> filters.setLimit(-5));\n        filters.setLimit(1);\n        assertEquals(1, filters.getLimit());\n    }\n\n    @Test\n    void nullFilterKeyThrows() throws Exception {\n        Map<String, List<Filterable>> map = new HashMap<>();\n        map.put(null, List.of(new KindFilter<>(Kind.valueOf(1))));\n        Constructor<Filters> constructor = Filters.class.getDeclaredConstructor(Map.class);\n        constructor.setAccessible(true);\n        InvocationTargetException ex = assertThrows(InvocationTargetException.class, () -> constructor.newInstance(map));\n        assertEquals(\"Filter key for filterable [kinds] is not defined\", ex.getCause().getMessage());\n    }\n}\n"

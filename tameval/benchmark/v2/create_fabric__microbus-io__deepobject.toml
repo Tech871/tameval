@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "microbus-io/fabric"
+sha = "55cc62f52e58a2f8386b6086061b17a7d133fea3"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out httpx/deepobject.go httpx/deepobject_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting httpx/deepobject.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 38.0
+original_coverage = 75.0
+mutation_kill_rate = 51.0
+original_mutation_kill_rate = 73.0
+covered_lines = [ 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 123, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 143,]
+missed_lines = [ 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 79, 84, 85, 86, 87, 88, 89, 90, 93, 108, 109, 120, 121, 122, 140, 141, 142,]
+
+[input_info]
+test_file_path = "httpx/deepobject_test.go"
+focal_file_path = "httpx/deepobject.go"
+test_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/httpx/deepobject_test.go"
+focal_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/httpx/deepobject.go"
+first_commit_date = "2024-04-30"
+last_commit_date = "2025-06-02"
+test_file_content = "/*\nCopyright (c) 2023-2025 Microbus LLC and various contributors\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage httpx\n\nimport (\n\t\"testing\"\n\n\t\"github.com/microbus-io/testarossa\"\n)\n\n\n\nfunc TestHttpx_DeepObjectDecodeOne(t *testing.T) {\n\tt.Parallel()\n\ttt := testarossa.For(t)\n\n\tdata := struct {\n\t\tS string  `json:\"s\"`\n\t\tI int     `json:\"i\"`\n\t\tF float64 `json:\"f\"`\n\t\tB bool    `json:\"b\"`\n\t}{}\n\n\t// Into string\n\terr := decodeOne(\"s\", \"hello\", &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(\"hello\", data.S)\n\t}\n\terr = decodeOne(\"s\", `\"hello\"`, &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(\"hello\", data.S)\n\t}\n\terr = decodeOne(\"s\", \"5\", &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(\"5\", data.S)\n\t}\n\n\t// Into int\n\terr = decodeOne(\"i\", \"5\", &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(5, data.I)\n\t}\n\n\t// Into float64\n\terr = decodeOne(\"f\", \"5\", &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(5.0, data.F)\n\t}\n\terr = decodeOne(\"f\", \"5.6\", &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(5.6, data.F)\n\t}\n\n\t// Into bool\n\terr = decodeOne(\"b\", \"true\", &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(true, data.B)\n\t}\n\terr = decodeOne(\"b\", `\"true\"`, &data)\n\tif tt.NoError(err) {\n\t\ttt.Equal(true, data.B)\n\t}\n}\n"

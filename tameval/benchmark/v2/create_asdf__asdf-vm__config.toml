@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.4"
+
+[repo_info]
+repository = "asdf-vm/asdf"
+sha = "74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f"
+
+[run_info]
+docker_image = "golang:1.23.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/config/config.go internal/config/config_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/config/config.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 61.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 62, 63, 64, 68, 69, 70, 71, 72, 73, 74, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 89, 90, 91, 92, 104, 105, 110, 115, 116, 117, 179, 180, 185, 186, 187, 189, 192, 193, 194, 195, 197, 198, 199, 200, 201, 202, 203, 204, 205, 210, 213, 214, 219, 224, 225, 226, 227, 228, 229, 232, 233, 234, 235, 236, 237, 238, 239, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 252, 253, 254, 255, 257, 260, 261, 262, 263, 264, 265, 271, 272, 277, 278, 279, 280,]
+missed_lines = [ 65, 66, 67, 94, 95, 96, 97, 98, 100, 106, 107, 108, 111, 112, 113, 126, 127, 128, 129, 130, 132, 137, 138, 139, 140, 141, 143, 148, 149, 150, 151, 152, 154, 159, 160, 161, 162, 163, 165, 169, 170, 171, 172, 173, 175, 181, 182, 183, 207, 215, 216, 217, 220, 221, 222, 266, 267, 268, 273, 274, 275,]
+
+[input_info]
+test_file_path = "internal/config/config_test.go"
+focal_file_path = "internal/config/config.go"
+test_file_url = "https://github.com/asdf-vm/asdf/blob/74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f/internal/config/config_test.go"
+focal_file_url = "https://github.com/asdf-vm/asdf/blob/74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f/internal/config/config.go"
+first_commit_date = "2024-12-18"
+last_commit_date = "2025-03-20"
+test_file_content = "package config\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\n\n\n\n\nfunc TestConfigGetHook(t *testing.T) {\n\t// Set the asdf config file location to the test file\n\tt.Setenv(\"ASDF_CONFIG_FILE\", \"testdata/asdfrc\")\n\n\tconfig, err := LoadConfig()\n\tassert.Nil(t, err, \"Returned error when building config\")\n\n\tt.Run(\"Returns empty string when hook not present in asdfrc file\", func(t *testing.T) {\n\t\thookCmd, err := config.GetHook(\"post_asdf_plugin_add\")\n\t\tassert.Nil(t, err)\n\t\tassert.Zero(t, hookCmd)\n\t})\n\n\tt.Run(\"Returns string containing Bash expression when present in asdfrc file\", func(t *testing.T) {\n\t\thookCmd, err := config.GetHook(\"pre_asdf_plugin_add\")\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, hookCmd, \"echo Executing with args: $@\")\n\t})\n\n\tt.Run(\"Ignores trailing and leading spaces\", func(t *testing.T) {\n\t\thookCmd, err := config.GetHook(\"pre_asdf_plugin_add_test\")\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, hookCmd, \"echo Executing with args: $@\")\n\t})\n\n\tt.Run(\"Preserves quoting\", func(t *testing.T) {\n\t\thookCmd, err := config.GetHook(\"pre_asdf_plugin_add_test2\")\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, hookCmd, \"echo 'Executing' \\\"with args: $@\\\"\")\n\t})\n\n\tt.Run(\"works if no config file\", func(t *testing.T) {\n\t\tconfig := Config{}\n\n\t\thookCmd, err := config.GetHook(\"some_hook\")\n\t\tassert.Nil(t, err)\n\t\tassert.Empty(t, hookCmd)\n\t})\n}\n"

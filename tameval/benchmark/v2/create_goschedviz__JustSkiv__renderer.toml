@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "JustSkiv/goschedviz"
+sha = "48ad1c1ea69350237e9569c68a0e0b7c2bc493b1"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/ui/termui/renderer.go internal/ui/termui/renderer_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/ui/termui/renderer.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 35, 36, 37, 38, 39, 41, 42, 43, 44, 45, 46, 49, 50, 51, 71, 72, 73, 74, 75, 76, 79, 80, 81, 82, 83, 84, 87, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 114, 115, 116, 119, 120, 121, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 139, 140, 141, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 169, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 182,]
+missed_lines = [ 23, 24, 25, 26, 27, 28, 88, 89, 90, 184, 185,]
+
+[input_info]
+test_file_path = "internal/ui/termui/renderer_test.go"
+focal_file_path = "internal/ui/termui/renderer.go"
+test_file_url = "https://github.com/JustSkiv/goschedviz/blob/48ad1c1ea69350237e9569c68a0e0b7c2bc493b1/internal/ui/termui/renderer_test.go"
+focal_file_url = "https://github.com/JustSkiv/goschedviz/blob/48ad1c1ea69350237e9569c68a0e0b7c2bc493b1/internal/ui/termui/renderer.go"
+first_commit_date = "2025-02-11"
+last_commit_date = "2025-02-23"
+test_file_content = "package termui\n\nimport (\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/gizak/termui/v3\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/JustSkiv/goschedviz/internal/ui\"\n)\n\nfunc TestTermUI_New(t *testing.T) {\n\tterm := New()\n\trequire.NotNil(t, term, \"New should return non-nil UI\")\n\tassert.NotNil(t, term.done, \"Done channel should be initialized\")\n}\n\nfunc TestTermUI_StartStop(t *testing.T) {\n\tterm := newWithTerminal(newTestTerminal())\n\n\t// Test Start\n\terr := term.Start()\n\trequire.NoError(t, err)\n\n\t// Ensure cleanup\n\tdefer term.Stop()\n\n\t// Check that widgets are initialized\n\trequire.NotNil(t, term.table, \"Table widget should be initialized\")\n\trequire.NotNil(t, term.barChart, \"Bar chart widget should be initialized\")\n\trequire.NotNil(t, term.grqGauge, \"GRQ gauge should be initialized\")\n\trequire.NotNil(t, term.goroutinesGauge, \"Goroutines gauge should be initialized\")\n\trequire.NotNil(t, term.threadsGauge, \"Threads gauge should be initialized\")\n\trequire.NotNil(t, term.idleProcsGauge, \"IdleProcs gauge should be initialized\")\n\trequire.NotNil(t, term.linearPlot, \"Linear plot widget should be initialized\")\n\trequire.NotNil(t, term.logPlot, \"Log plot widget should be initialized\")\n\trequire.NotNil(t, term.legend, \"Legend widget should be initialized\")\n\trequire.NotNil(t, term.info, \"Info widget should be initialized\")\n\trequire.NotNil(t, term.grid, \"Grid should be initialized\")\n}\n\nfunc TestTermUI_Update(t *testing.T) {\n\tterm := newWithTerminal(newTestTerminal())\n\terr := term.Start()\n\trequire.NoError(t, err)\n\tdefer term.Stop()\n\n\ttests := []struct {\n\t\tname string\n\t\tdata ui.UIData\n\t}{\n\t\t{\n\t\t\tname: \"empty data\",\n\t\t\tdata: ui.UIData{\n\t\t\t\tGauges: ui.GaugeValues{\n\t\t\t\t\tGRQ:        struct{ Current, Max int }{0, 1},\n\t\t\t\t\tGoroutines: struct{ Current, Max int }{0, 1},\n\t\t\t\t\tThreads:    struct{ Current, Max int }{0, 1},\n\t\t\t\t\tIdleProcs:  struct{ Current, Max int }{0, 1},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"normal load\",\n\t\t\tdata: ui.UIData{\n\t\t\t\tCurrent: ui.CurrentValues{\n\t\t\t\t\tTimeMs:          1000,\n\t\t\t\t\tGoMaxProcs:      4,\n\t\t\t\t\tIdleProcs:       2,\n\t\t\t\t\tThreads:         8,\n\t\t\t\t\tSpinningThreads: 1,\n\t\t\t\t\tNeedSpinning:    0,\n\t\t\t\t\tIdleThreads:     3,\n\t\t\t\t\tRunQueue:        5,\n\t\t\t\t\tLRQSum:          10,\n\t\t\t\t\tNumP:            4,\n\t\t\t\t\tLRQ:             []int{2, 3, 1, 4},\n\t\t\t\t\tGoroutines:      100,\n\t\t\t\t},\n\t\t\t\tHistory: struct {\n\t\t\t\t\tRaw    []ui.HistoricalValues\n\t\t\t\t\tScaled []ui.HistoricalValues\n\t\t\t\t}{\n\t\t\t\t\tRaw: []ui.HistoricalValues{\n\t\t\t\t\t\t{TimeMs: 0, GRQ: 0, LRQSum: 0, Threads: 0, IdleProcs: 0, Goroutines: 0},\n\t\t\t\t\t\t{TimeMs: 500, GRQ: 2, LRQSum: 5, Threads: 4, IdleProcs: 1, Goroutines: 50},\n\t\t\t\t\t\t{TimeMs: 1000, GRQ: 5, LRQSum: 10, Threads: 8, IdleProcs: 2, Goroutines: 100},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t\tGauges: ui.GaugeValues{\n\t\t\t\t\tGRQ:        struct{ Current, Max int }{5, 10},\n\t\t\t\t\tGoroutines: struct{ Current, Max int }{100, 200},\n\t\t\t\t\tThreads:    struct{ Current, Max int }{8, 16},\n\t\t\t\t\tIdleProcs:  struct{ Current, Max int }{2, 4},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tassert.NotPanics(t, func() {\n\t\t\t\tterm.Update(tt.data)\n\t\t\t}, \"Update should not panic with %s\", tt.name)\n\t\t})\n\t}\n}\n\nfunc TestTermUI_Events(t *testing.T) {\n\tmock := newTestTerminal()\n\tterm := newWithTerminal(mock)\n\n\terr := term.Start()\n\trequire.NoError(t, err)\n\n\t// Test quit event\n\tdone := make(chan struct{})\n\tgo func() {\n\t\tmock.SendEvent(termui.Event{\n\t\t\tID: \"q\",\n\t\t})\n\t\tclose(done)\n\t}()\n\n\tselect {\n\tcase <-term.Done():\n\t\t// Expected - UI should close\n\tcase <-time.After(time.Second):\n\t\tt.Fatal(\"Quit event was not processed\")\n\t}\n\n\t<-done\n\tterm.Stop()\n}\n\nfunc TestTermUI_ResizeEvent(t *testing.T) {\n\tmock := newTestTerminal()\n\tterm := newWithTerminal(mock)\n\n\terr := term.Start()\n\trequire.NoError(t, err)\n\n\t// Test resize event\n\tdone := make(chan struct{})\n\tgo func() {\n\t\tmock.SendEvent(termui.Event{\n\t\t\tID: \"<Resize>\",\n\t\t\tPayload: termui.Resize{\n\t\t\t\tWidth:  120,\n\t\t\t\tHeight: 50,\n\t\t\t},\n\t\t})\n\t\tclose(done)\n\t}()\n\n\t// Give time for event processing\n\ttime.Sleep(100 * time.Millisecond)\n\t<-done\n\tterm.Stop()\n}\n"

@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "factcast/factcast"
+sha = "2764ff31bf1e6bec8b3c6a5a71ba2c0384d72392"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl factcast-factus -Dtest=ScopedNameTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl factcast-factus -DtargetClasses=**.ScopedName  -DtargetTests=**.ScopedNameTest  -DoutputFormats=XML"
+coverage_report_path = "factcast-factus/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "factcast-client-grpc/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "factcast-factus/src/test/java/org/factcast/factus/projection/ScopedNameTest.java"
+focal_file_path = "factcast-factus/src/main/java/org/factcast/factus/projection/ScopedName.java"
+test_file_url = "https://github.com/factcast/factcast/blob/2764ff31bf1e6bec8b3c6a5a71ba2c0384d72392/factcast-factus/src/test/java/org/factcast/factus/projection/ScopedNameTest.java"
+focal_file_url = "https://github.com/factcast/factcast/blob/2764ff31bf1e6bec8b3c6a5a71ba2c0384d72392/factcast-factus/src/main/java/org/factcast/factus/projection/ScopedName.java"
+first_commit_date = "2021-06-29"
+last_commit_date = "2024-08-27"
+test_file_content = "/*\n * Copyright © 2017-2022 factcast.org\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage org.factcast.factus.projection;\n\nimport static org.assertj.core.api.Assertions.*;\n\nimport org.factcast.factus.serializer.ProjectionMetaData;\nimport org.junit.jupiter.api.*;\n\nclass ScopedNameTest {\n\n  @Test\n  void fromProjectionMetaData() {\n    assertThatThrownBy(() -> ScopedName.fromProjectionMetaData(MissingAnnotation.class))\n        .isInstanceOf(IllegalStateException.class);\n    assertThat(ScopedName.fromProjectionMetaData(WithoutName.class).asString())\n        .isEqualTo(\"org.factcast.factus.projection.ScopedNameTest$WithoutName_2\");\n    assertThat(ScopedName.fromProjectionMetaData(Complete.class).asString()).isEqualTo(\"hugo_3\");\n  }\n\n  @Test\n  void of() {\n    assertThat(ScopedName.of(\"foo\", 2)).extracting(ScopedName::asString).isEqualTo(\"foo_2\");\n  }\n\n  @Test\n  void asStringVsToString() {\n    ScopedName n = ScopedName.of(\"foo\", 2);\n\n    assertThat(n.asString()).isEqualTo(\"foo_2\");\n    assertThat(n.toString()).isEqualTo(\"ScopedName(key=foo_2)\");\n  }\n\n  @Test\n  void testWither() {\n    ScopedName s = ScopedName.of(\"foo\");\n    ScopedName s2 = s.with(\"bar\");\n\n    assertThat(s).isNotSameAs(s2);\n    assertThat(s.asString()).isEqualTo(\"foo\");\n    assertThat(s2.asString()).isEqualTo(\"foo_bar\");\n  }\n\n  @Test\n  void testWitherRefusesEmpty() {\n    ScopedName s = ScopedName.of(\"foo\");\n    assertThatThrownBy(\n            () -> {\n              s.with(\" \");\n            })\n        .isInstanceOf(IllegalArgumentException.class);\n  }\n\n  @ProjectionMetaData(serial = 2)\n  static class WithoutName {}\n\n  @ProjectionMetaData(name = \"hugo\", serial = 3)\n  static class Complete {}\n\n  static class MissingAnnotation {}\n}"

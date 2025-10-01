@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "mivek/MetarParser"
+sha = "91f19fb5567728469fef5d321c1dfb712d1d0cc6"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl metarParser-parsers -Dtest=WindCommandTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl metarParser-parsers -DtargetClasses=**.WindCommand  -DtargetTests=**.WindCommandTest  -DoutputFormats=XML"
+coverage_report_path = "metarParser-parsers/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "metarParser-parsers/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 58.0
+original_coverage = 92.0
+mutation_kill_rate = 25.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 13, 18, 19, 29, 30, 31, 32,]
+missed_lines = [ 37, 38, 39, 41, 46,]
+
+[input_info]
+test_file_path = "metarParser-parsers/src/test/java/io/github/mivek/command/common/WindCommandTest.java"
+focal_file_path = "metarParser-parsers/src/main/java/io/github/mivek/command/common/WindCommand.java"
+test_file_url = "https://github.com/mivek/MetarParser/blob/91f19fb5567728469fef5d321c1dfb712d1d0cc6/metarParser-parsers/src/test/java/io/github/mivek/command/common/WindCommandTest.java"
+focal_file_url = "https://github.com/mivek/MetarParser/blob/91f19fb5567728469fef5d321c1dfb712d1d0cc6/metarParser-parsers/src/main/java/io/github/mivek/command/common/WindCommand.java"
+first_commit_date = "2020-05-17"
+last_commit_date = "2024-01-15"
+test_file_content = "package io.github.mivek.command.common;\n\nimport io.github.mivek.internationalization.Messages;\nimport io.github.mivek.model.Metar;\nimport io.github.mivek.model.Wind;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport static org.hamcrest.MatcherAssert.assertThat;\nimport static org.hamcrest.Matchers.is;\nimport static org.junit.jupiter.api.Assertions.*;\n\n/**\n * @author mivek\n */\nclass WindCommandTest {\n\n    private WindCommand command;\n\n    @BeforeEach\n    void setUp() {\n        command = new WindCommand();\n    }\n\n    @Test\n    void testParseWindSimple() {\n        String windPart = \"34008KT\";\n\n        Wind res = command.parseWind(windPart);\n\n        assertNotNull(res);\n        assertThat(res.getDirection(), is(Messages.getInstance().getString(\"Converter.NNW\")));\n        assertEquals(Integer.valueOf(340), res.getDirectionDegrees());\n        assertEquals(8, res.getSpeed());\n        assertNull(res.getGust());\n        assertEquals(\"KT\", res.getUnit());\n\n    }\n\n\n\n\n\n}\n"

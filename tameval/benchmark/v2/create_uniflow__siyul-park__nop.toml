@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "siyul-park/uniflow"
+sha = "9a8c580db91d1ea6f709f700a463153d8aedf829"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugins/ctrl/pkg/node/nop.go plugins/ctrl/pkg/node/nop_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugins/ctrl/pkg/node/nop.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 83.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 26, 27, 28, 29, 33, 34, 35, 36, 37, 38, 39, 57, 58, 59, 60,]
+missed_lines = [ 42, 43, 44, 45, 46, 47, 52, 53, 54, 62, 63, 64, 65, 66, 67,]
+
+[input_info]
+test_file_path = "plugins/ctrl/pkg/node/nop_test.go"
+focal_file_path = "plugins/ctrl/pkg/node/nop.go"
+test_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/nop_test.go"
+focal_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/nop.go"
+first_commit_date = "2025-04-28"
+last_commit_date = "2025-06-01"
+test_file_content = "package node\n\nimport (\n\t\"testing\"\n\n\t\"github.com/go-faker/faker/v4\"\n\t\"github.com/siyul-park/uniflow/pkg/node\"\n\t\"github.com/siyul-park/uniflow/pkg/packet\"\n\t\"github.com/siyul-park/uniflow/pkg/port\"\n\t\"github.com/siyul-park/uniflow/pkg/process\"\n\t\"github.com/siyul-park/uniflow/pkg/types\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestNOPNodeCodec_Compile(t *testing.T) {\n\tcodec := NewNOPNodeCodec()\n\n\tspec := &NOPNodeSpec{}\n\n\tn, err := codec.Compile(spec)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\n\n\n\nfunc BenchmarkNOPNode_SendAndReceive(b *testing.B) {\n\tn := NewNOPNode()\n\tdefer n.Close()\n\n\tin := port.NewOut()\n\tin.Link(n.In(node.PortIn))\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\n\tinWriter := in.Open(proc)\n\n\tinPayload := types.NewString(faker.UUIDHyphenated())\n\tinPck := packet.New(inPayload)\n\n\tinWriter.Write(inPck)\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tinWriter.Write(inPck)\n\t\t<-inWriter.Receive()\n\t}\n}\n"

@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "Pipfile"
+
+[repo_info]
+repository = "GoogleCloudPlatform/gcpdiag"
+sha = "679c55e8715d535c797fc18cd20cda0ad3fc90ea"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install pipenv && pipenv lock && pipenv install --deploy --system --dev && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=gcpdiag/queries/osconfig.py -m pytest -q --junit-xml=test_output.xml gcpdiag/queries/osconfig_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target gcpdiag.queries.osconfig --unit-test gcpdiag.queries.osconfig_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target gcpdiag/queries/osconfig.py --unit-test gcpdiag/queries/osconfig_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 59.0
+original_coverage = 86.0
+mutation_kill_rate = 23.0
+original_mutation_kill_rate = 23.0
+covered_lines = [ 17, 18, 19, 21, 23, 24, 27, 30, 32, 33, 34, 37, 38, 42, 43, 51, 52, 56, 57, 58, 59, 62, 63, 64, 65, 69, 70, 71, 72, 73, 77, 78, 80, 81, 84, 85, 86, 94, 97, 98, 135, 136, 138, 140, 141, 147, 152, 153, 154, 155, 156, 158,]
+missed_lines = [ 39, 44, 45, 46, 47, 48, 53, 60, 66, 79, 82, 83, 87, 88, 89, 90, 91, 92, 102, 103, 104, 105, 106, 111, 113, 114, 124, 125, 126, 127, 129, 130, 131, 132, 139, 157,]
+
+[input_info]
+test_file_path = "gcpdiag/queries/osconfig_test.py"
+focal_file_path = "gcpdiag/queries/osconfig.py"
+test_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/osconfig_test.py"
+focal_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/osconfig.py"
+first_commit_date = "2024-04-12"
+last_commit_date = "2025-03-20"
+test_file_content = "# Copyright 2024 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n# Lint as: python3\n\"\"\"Test code in pubsub.py.\"\"\"\n\nfrom unittest import mock\n\nfrom gcpdiag import models\nfrom gcpdiag.queries import apis_stub, osconfig\n\nDUMMY_PROJECT_NAME = 'gcpdiag-osconfig1-aaaa'\nPACKAGE_NAME_LINUX = 'google-fluentd'\nPACKAGE_VERSION = '1.10.1-1'\nOS_SHORTNAME = 'debian'\nOS_VERSION = '10'\nDUMMY_LOCATION = 'us-central1-a'\nDUMMY_INSTANCE_NAME = 'instance-1'\nDUMMY_NON_EXISTENT_INSTANCE_NAME = 'instance-does-not-exist'\n\n\n@mock.patch('gcpdiag.queries.apis.get_api', new=apis_stub.get_api_stub)\nclass TestOSConfig:\n  \"\"\"Test OSConfig\"\"\"\n\n  def test_get_inventory(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    inventory = osconfig.get_inventory(\n        context=context,\n        location=DUMMY_LOCATION,\n        instance_name=DUMMY_INSTANCE_NAME,\n    )\n    assert OS_SHORTNAME == inventory.os_shortname\n    assert OS_VERSION == inventory.os_version\n    assert PACKAGE_NAME_LINUX in inventory.installed_packages\n    assert PACKAGE_VERSION == inventory.installed_packages[PACKAGE_NAME_LINUX]\n\n  def test_get_inventory_of_non_existent_instance(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    inventory = osconfig.get_inventory(\n        context=context,\n        location=DUMMY_LOCATION,\n        instance_name=DUMMY_NON_EXISTENT_INSTANCE_NAME,\n    )\n    assert inventory is None"

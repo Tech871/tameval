@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apolloconfig/apollo"
+sha = "4fa881a973996edf978c9b8e78719b437b64169c"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl apollo-portal -Dtest=SearchControllerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl apollo-portal -DtargetClasses=**.SearchController  -DtargetTests=**.SearchControllerTest  -DoutputFormats=XML"
+coverage_report_path = "apollo-portal/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "apollo-portal/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = 40.0
+original_mutation_kill_rate = 40.0
+covered_lines = [ 52, 53, 54, 55, 56, 57, 61, 62, 66, 67, 68, 71, 72, 76, 80, 82, 87, 89, 91, 92, 93, 97, 98, 99, 102, 104, 105, 106, 108, 109, 110, 111, 112, 114, 115, 116, 118,]
+missed_lines = [ 83, 94,]
+
+[input_info]
+test_file_path = "apollo-portal/src/test/java/com/ctrip/framework/apollo/portal/controller/SearchControllerTest.java"
+focal_file_path = "apollo-portal/src/main/java/com/ctrip/framework/apollo/portal/controller/SearchController.java"
+test_file_url = "https://github.com/apolloconfig/apollo/blob/4fa881a973996edf978c9b8e78719b437b64169c/apollo-portal/src/test/java/com/ctrip/framework/apollo/portal/controller/SearchControllerTest.java"
+focal_file_url = "https://github.com/apolloconfig/apollo/blob/4fa881a973996edf978c9b8e78719b437b64169c/apollo-portal/src/main/java/com/ctrip/framework/apollo/portal/controller/SearchController.java"
+first_commit_date = "2021-09-18"
+last_commit_date = "2024-01-02"
+test_file_content = "/*\n * Copyright 2024 Apollo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\npackage com.ctrip.framework.apollo.portal.controller;\n\nimport com.google.common.collect.Lists;\n\nimport com.ctrip.framework.apollo.common.dto.NamespaceDTO;\nimport com.ctrip.framework.apollo.common.dto.PageDTO;\nimport com.ctrip.framework.apollo.common.entity.App;\nimport com.ctrip.framework.apollo.portal.component.PortalSettings;\nimport com.ctrip.framework.apollo.portal.component.config.PortalConfig;\nimport com.ctrip.framework.apollo.portal.environment.Env;\nimport com.ctrip.framework.apollo.portal.service.AppService;\nimport com.ctrip.framework.apollo.portal.service.NamespaceService;\n\nimport org.junit.Assert;\nimport org.junit.Test;\nimport org.junit.runner.RunWith;\nimport org.mockito.InjectMocks;\nimport org.mockito.Mock;\nimport org.mockito.junit.MockitoJUnitRunner;\nimport org.springframework.data.domain.PageRequest;\nimport org.springframework.data.domain.Pageable;\n\nimport java.util.List;\n\nimport static org.mockito.Mockito.times;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\n\n/**\n * @author lepdou 2021-09-13\n */\n@RunWith(MockitoJUnitRunner.class)\npublic class SearchControllerTest {\n\n  @Mock\n  private AppService       appService;\n  @Mock\n  private NamespaceService namespaceService;\n  @Mock\n  private PortalSettings   portalSettings;\n  @Mock\n  private PortalConfig     portalConfig;\n  @InjectMocks\n  private SearchController searchController;\n\n  @Test\n  public void testSearchByEmptyKey() {\n    PageRequest request = PageRequest.of(0, 20);\n    searchController.search(\"\", request);\n    verify(appService, times(1)).findAll(request);\n  }\n\n  @Test\n  public void testSearchApp() {\n    String query = \"timeout\";\n    PageRequest request = PageRequest.of(0, 20);\n\n    PageDTO<App> apps = genPageApp(10, request, 100);\n\n    when(appService.searchByAppIdOrAppName(query, request)).thenReturn(apps);\n\n    searchController.search(query, request);\n\n    verify(appService, times(0)).findAll(request);\n    verify(appService, times(1)).searchByAppIdOrAppName(query, request);\n  }\n\n  @Test\n  public void testSearchItemSwitch() {\n    String query = \"timeout\";\n    PageRequest request = PageRequest.of(0, 20);\n\n    PageDTO<App> apps = new PageDTO<>(Lists.newLinkedList(), request, 0);\n\n    when(appService.searchByAppIdOrAppName(query, request)).thenReturn(apps);\n    when(portalConfig.supportSearchByItem()).thenReturn(false);\n\n    PageDTO<App> result = searchController.search(query, request);\n\n    Assert.assertFalse(result.hasContent());\n    verify(appService, times(0)).findAll(request);\n    verify(appService, times(1)).searchByAppIdOrAppName(query, request);\n  }\n\n  @Test\n  public void testSearchItem() {\n    String query = \"timeout\";\n    PageRequest request = PageRequest.of(0, 20);\n\n    PageDTO<App> apps = new PageDTO<>(Lists.newLinkedList(), request, 0);\n    PageDTO<NamespaceDTO> devNamespaces = genPageNamespace(10, request, 20);\n    PageDTO<NamespaceDTO> fatNamespaces = genPageNamespace(15, request, 30);\n\n    when(appService.searchByAppIdOrAppName(query, request)).thenReturn(apps);\n    when(portalConfig.supportSearchByItem()).thenReturn(true);\n    when(portalSettings.getActiveEnvs()).thenReturn(Lists.newArrayList(Env.DEV, Env.FAT));\n    when(namespaceService.findNamespacesByItem(Env.DEV, query, request)).thenReturn(devNamespaces);\n    when(namespaceService.findNamespacesByItem(Env.FAT, query, request)).thenReturn(fatNamespaces);\n\n    PageDTO<App> result = searchController.search(query, request);\n\n    Assert.assertTrue(result.hasContent());\n    Assert.assertEquals(25, result.getContent().size());\n    Assert.assertEquals(30, result.getTotal());\n    verify(appService, times(0)).findAll(request);\n    verify(appService, times(1)).searchByAppIdOrAppName(query, request);\n    verify(namespaceService).findNamespacesByItem(Env.DEV, query, request);\n    verify(namespaceService).findNamespacesByItem(Env.FAT, query, request);\n  }\n\n  private PageDTO<App> genPageApp(int size, Pageable pageable, int total) {\n    List<App> result = Lists.newLinkedList();\n    for (int i = 0; i < size; i++) {\n      App app = new App();\n      result.add(app);\n    }\n    return new PageDTO<>(result, pageable, total);\n  }\n\n  private PageDTO<NamespaceDTO> genPageNamespace(int size, Pageable pageable, int total) {\n    List<NamespaceDTO> result = Lists.newLinkedList();\n    for (int i = 0; i < size; i++) {\n      NamespaceDTO namespaceDTO = new NamespaceDTO();\n      result.add(namespaceDTO);\n    }\n    return new PageDTO<>(result, pageable, total);\n  }\n}\n"

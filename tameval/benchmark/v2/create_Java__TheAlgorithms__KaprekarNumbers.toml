@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "TheAlgorithms/Java"
+sha = "16345cba6db8657bf4b83fc7392920aa00a3e170"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=KaprekarNumbersTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.KaprekarNumbers  -DtargetTests=**.KaprekarNumbersTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 17, 18, 21, 23, 24, 25, 29, 34, 35, 36, 37, 38, 40, 42, 43, 45, 46, 47, 48, 49,]
+missed_lines = [ 19,]
+
+[input_info]
+test_file_path = "src/test/java/com/thealgorithms/maths/KaprekarNumbersTest.java"
+focal_file_path = "src/main/java/com/thealgorithms/maths/KaprekarNumbers.java"
+test_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/test/java/com/thealgorithms/maths/KaprekarNumbersTest.java"
+focal_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/main/java/com/thealgorithms/maths/KaprekarNumbers.java"
+first_commit_date = "2021-12-15"
+last_commit_date = "2024-06-13"
+test_file_content = "package com.thealgorithms.maths;\n\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nimport java.util.List;\nimport org.junit.jupiter.api.Test;\n\npublic class KaprekarNumbersTest {\n\n\n\n\n\n\n    @Test\n    void testFor3() {\n        assertFalse(KaprekarNumbers.isKaprekarNumber(3));\n    }\n\n\n\n    @Test\n    void testForRangeOfNumber() {\n        try {\n            List<Long> rangedNumbers = KaprekarNumbers.kaprekarNumberInRange(1, 100000);\n            long[] allTheNumbers = {\n                1,\n                9,\n                45,\n                55,\n                99,\n                297,\n                703,\n                999,\n                2223,\n                2728,\n                4950,\n                5050,\n                7272,\n                7777,\n                9999,\n                17344,\n                22222,\n                77778,\n                82656,\n                95121,\n                99999,\n            };\n            for (long i : allTheNumbers) {\n                assert rangedNumbers.contains(i);\n            }\n        } catch (Exception e) {\n            assert false;\n        }\n    }\n}\n"

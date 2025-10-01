@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.5"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "ae7fd28ecd1461a1ddf146b809a159ee1af94a34"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24.5"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/server/server_signals.go pkg/server/server_signals_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/server/server_signals.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = 39.0
+original_mutation_kill_rate = 39.0
+covered_lines = [ 26, 27, 28, 29, 30, 31, 32, 33, 35, 36, 37, 38, 39, 42, 43, 44, 45, 46, 48, 49, 50, 55, 56, 57, 59, 60, 65, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 91, 92, 93,]
+missed_lines = [ 51, 52, 53, 89, 90,]
+
+[input_info]
+test_file_path = "pkg/server/server_signals_test.go"
+focal_file_path = "pkg/server/server_signals.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/pkg/server/server_signals_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/pkg/server/server_signals.go"
+first_commit_date = "2025-05-17"
+last_commit_date = "2025-05-17"
+test_file_content = "package server\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"syscall\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"golang.org/x/sys/unix\"\n)\n\n// mockServer implements the ServerStopper interface for testing\ntype mockServer struct {\n\tstopCalled bool\n}\n\nfunc (s *mockServer) Stop() {\n\ts.stopCalled = true\n}\n\nfunc TestHandleSignalsSIGPIPE(t *testing.T) {\n\tctx, cancel := context.WithCancel(context.Background())\n\tdefer cancel()\n\n\tsignals := make(chan os.Signal, 1)\n\tserverC := make(chan ServerStopper, 1)\n\n\tnotifyStoppingCalled := false\n\tnotifyStopping := func(ctx context.Context) error {\n\t\tnotifyStoppingCalled = true\n\t\treturn nil\n\t}\n\n\tdone := HandleSignals(ctx, cancel, signals, serverC, notifyStopping)\n\n\t// Set up the server\n\tmockSrv := &mockServer{}\n\tserverC <- mockSrv\n\n\t// Send SIGPIPE which should be ignored\n\tsignals <- unix.SIGPIPE\n\n\t// Give some time for the goroutine to process the signal\n\ttime.Sleep(100 * time.Millisecond)\n\n\t// Check server was not stopped and context was not canceled\n\tselect {\n\tcase <-ctx.Done():\n\t\tt.Fatal(\"Context was canceled but should not have been\")\n\tdefault:\n\t\t// This is the expected path\n\t}\n\n\tassert.False(t, mockSrv.stopCalled, \"Server.Stop() should not have been called\")\n\tassert.False(t, notifyStoppingCalled, \"notifyStopping should not have been called\")\n\n\t// Clean up: send a SIGTERM to allow the HandleSignals goroutine to exit\n\tsignals <- syscall.SIGTERM\n\tselect {\n\tcase <-done:\n\t\t// Expected\n\tcase <-time.After(1 * time.Second):\n\t\tt.Fatal(\"timed out waiting for done channel to close during cleanup\")\n\t}\n}\n\nfunc TestHandleSignalsSIGUSR1(t *testing.T) {\n\tctx, cancel := context.WithCancel(context.Background())\n\tdefer cancel()\n\n\tsignals := make(chan os.Signal, 1)\n\tserverC := make(chan ServerStopper, 1)\n\n\tnotifyStoppingCalled := false\n\tnotifyStopping := func(ctx context.Context) error {\n\t\tnotifyStoppingCalled = true\n\t\treturn nil\n\t}\n\n\tdone := HandleSignals(ctx, cancel, signals, serverC, notifyStopping)\n\n\t// Set up the server\n\tmockSrv := &mockServer{}\n\tserverC <- mockSrv\n\n\t// Send SIGUSR1 to dump stacks\n\tsignals <- unix.SIGUSR1\n\n\t// Give some time for the goroutine to process the signal\n\ttime.Sleep(100 * time.Millisecond)\n\n\t// Check server was not stopped and context was not canceled\n\tselect {\n\tcase <-ctx.Done():\n\t\tt.Fatal(\"Context was canceled but should not have been\")\n\tdefault:\n\t\t// This is the expected path\n\t}\n\n\t// Check that stack dump file was created\n\tstackFile := filepath.Join(os.TempDir(), fmt.Sprintf(\"gpud.%d.stacks.log\", os.Getpid()))\n\t_, err := os.Stat(stackFile)\n\trequire.NoError(t, err, \"Stack dump file should exist\")\n\n\t// Clean up the file\n\tos.Remove(stackFile)\n\n\tassert.False(t, mockSrv.stopCalled, \"Server.Stop() should not have been called\")\n\tassert.False(t, notifyStoppingCalled, \"notifyStopping should not have been called\")\n\n\t// Clean up: send a SIGTERM to allow the HandleSignals goroutine to exit\n\tsignals <- syscall.SIGTERM\n\tselect {\n\tcase <-done:\n\t\t// Expected\n\tcase <-time.After(1 * time.Second):\n\t\tt.Fatal(\"timed out waiting for done channel to close during cleanup\")\n\t}\n}\n\nfunc TestHandleSignalsSIGTERM(t *testing.T) {\n\tctx, cancel := context.WithCancel(context.Background())\n\t// No defer cancel() here, as the signal handler should call it.\n\n\tsignals := make(chan os.Signal, 1)\n\tserverC := make(chan ServerStopper, 1)\n\n\tnotifyStoppingCalled := false\n\tnotifyStopping := func(ctx context.Context) error {\n\t\tnotifyStoppingCalled = true\n\t\treturn nil\n\t}\n\n\tdone := HandleSignals(ctx, cancel, signals, serverC, notifyStopping)\n\n\t// Set up the server\n\tmockSrv := &mockServer{}\n\tserverC <- mockSrv\n\ttime.Sleep(50 * time.Millisecond) // Allow HandleSignals to receive the server\n\n\t// Send SIGTERM which should trigger shutdown\n\tsignals <- syscall.SIGTERM\n\n\t// Wait for the done channel to be closed\n\tselect {\n\tcase <-done:\n\t\t// This is expected\n\tcase <-time.After(2 * time.Second):\n\t\tt.Fatal(\"Timed out waiting for done channel to close\")\n\t}\n\n\t// Verify context was canceled\n\tselect {\n\tcase <-ctx.Done():\n\t\t// This is expected\n\tdefault:\n\t\tt.Fatal(\"Context should have been canceled\")\n\t}\n\n\t// Verify server was stopped\n\tassert.True(t, mockSrv.stopCalled, \"Server.Stop() should have been called\")\n\n\t// Verify notifyStopping was called\n\tassert.True(t, notifyStoppingCalled, \"notifyStopping should have been called\")\n}\n\nfunc TestDumpStacks(t *testing.T) {\n\t// Create a temporary file to dump stacks to\n\ttmpDir, err := os.MkdirTemp(\"\", \"gpud-test\")\n\trequire.NoError(t, err)\n\tdefer os.RemoveAll(tmpDir)\n\n\tstackFile := filepath.Join(tmpDir, \"stacks.log\")\n\n\t// Call the function\n\tdumpStacks(stackFile)\n\n\t// Verify file was created\n\t_, err = os.Stat(stackFile)\n\trequire.NoError(t, err, \"Stack dump file should exist\")\n\n\t// Verify file has content\n\tcontent, err := os.ReadFile(stackFile)\n\trequire.NoError(t, err)\n\tassert.NotEmpty(t, content, \"Stack dump file should not be empty\")\n\n\t// Test with an invalid path\n\tinvalidPath := filepath.Join(tmpDir, \"non-existent-dir\", \"stacks.log\")\n\tdumpStacks(invalidPath)\n\t// This should return silently without error, even though file creation fails\n}\n"

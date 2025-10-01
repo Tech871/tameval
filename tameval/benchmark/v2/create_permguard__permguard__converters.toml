@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "permguard/permguard"
+sha = "aa7f57c02a54d803e3442cbc6b401110249df7f7"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out common/pkg/extensions/copier/converters.go common/pkg/extensions/copier/converters_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting common/pkg/extensions/copier/converters.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 43.0
+original_coverage = 43.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 33.0
+covered_lines = [ 23, 24, 25, 29, 33, 37, 38, 42, 46,]
+missed_lines = [ 26, 27, 28, 30, 31, 32, 39, 40, 41, 43, 44, 45,]
+
+[input_info]
+test_file_path = "common/pkg/extensions/copier/converters_test.go"
+focal_file_path = "common/pkg/extensions/copier/converters.go"
+test_file_url = "https://github.com/permguard/permguard/blob/aa7f57c02a54d803e3442cbc6b401110249df7f7/common/pkg/extensions/copier/converters_test.go"
+focal_file_url = "https://github.com/permguard/permguard/blob/aa7f57c02a54d803e3442cbc6b401110249df7f7/common/pkg/extensions/copier/converters.go"
+first_commit_date = "2025-05-25"
+last_commit_date = "2025-05-25"
+test_file_content = "package copier\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestConvertStructToMap(t *testing.T) {\n\tassert := assert.New(t)\n\n\t// Define a struct for testing\n\ttype Person struct {\n\t\tName string\n\t\tAge  int\n\t}\n\n\t// Test 1: Convert a struct to a map\n\tperson := Person{Name: \"John\", Age: 30}\n\tresultMap, err := ConvertStructToMap(person)\n\tassert.Nil(err)\n\tassert.Equal(\"John\", resultMap[\"Name\"])\n\tassert.Equal(30, int(resultMap[\"Age\"].(float64))) // JSON Unmarshal converts numbers to float64 by default\n\n\t// Test 2: Convert an empty struct to a map\n\temptyPerson := Person{}\n\tresultMap, err = ConvertStructToMap(emptyPerson)\n\tassert.Nil(err)\n\tassert.Equal(\"\", resultMap[\"Name\"])\n\tassert.Equal(0, int(resultMap[\"Age\"].(float64)))\n}\n\nfunc TestConvertMapToStruct(t *testing.T) {\n\tassert := assert.New(t)\n\n\t// Define a struct for testing\n\ttype Person struct {\n\t\tName string\n\t\tAge  int\n\t}\n\n\t// Test 1: Convert a map to a struct\n\tpersonMap := map[string]any{\"Name\": \"John\", \"Age\": 30}\n\tvar person Person\n\terr := ConvertMapToStruct(personMap, &person)\n\tassert.Nil(err)\n\tassert.Equal(\"John\", person.Name)\n\tassert.Equal(30, person.Age)\n\n\t// Test 2: Convert an empty map to a struct\n\temptyMap := map[string]any{}\n\tvar emptyPerson Person\n\terr = ConvertMapToStruct(emptyMap, &emptyPerson)\n\tassert.Nil(err)\n\tassert.Equal(\"\", emptyPerson.Name)\n\tassert.Equal(0, emptyPerson.Age)\n}\n"

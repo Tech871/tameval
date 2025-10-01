@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "authzed/spicedb"
+sha = "449c43d3c8dbb72defa98dfd097392c2fa137870"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/dispatch/remote/expr.go internal/dispatch/remote/expr_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/dispatch/remote/expr.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 74.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 33.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/dispatch/remote/expr_test.go"
+focal_file_path = "internal/dispatch/remote/expr.go"
+test_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/internal/dispatch/remote/expr_test.go"
+focal_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/internal/dispatch/remote/expr.go"
+first_commit_date = "2023-10-23"
+last_commit_date = "2025-04-23"
+test_file_content = "package remote\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\n\tcorev1 \"github.com/authzed/spicedb/pkg/proto/core/v1\"\n\tdispatchv1 \"github.com/authzed/spicedb/pkg/proto/dispatch/v1\"\n)\n\nfunc TestParseDispatchExpression(t *testing.T) {\n\ttcs := []struct {\n\t\tname          string\n\t\texpr          string\n\t\texpectedError string\n\t}{\n\t\t{\n\t\t\t\"empty\",\n\t\t\t\"\",\n\t\t\t\"mismatched input '<EOF>'\",\n\t\t},\n\t\t{\n\t\t\t\"returns string\",\n\t\t\t\"'somestring'\",\n\t\t\t\"a list[string] value\",\n\t\t},\n\t\t{\n\t\t\t\"invalid expression\",\n\t\t\t\"a.b.c!d\",\n\t\t\t\"mismatched input '!'\",\n\t\t},\n\t\t{\n\t\t\t\"valid expression\",\n\t\t\t\"['prewarm']\",\n\t\t\t\"\",\n\t\t},\n\t\t{\n\t\t\t\"valid big expression\",\n\t\t\t\"request.resource_relation.namespace == 'foo' ? ['prewarm'] : []\",\n\t\t\t\"\",\n\t\t},\n\t}\n\n\tfor _, tc := range tcs {\n\t\ttc := tc\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\t_, err := ParseDispatchExpression(\"somemethod\", tc.expr)\n\t\t\tif tc.expectedError != \"\" {\n\t\t\t\trequire.ErrorContains(t, err, tc.expectedError)\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t}\n\t\t})\n\t}\n}\n\ntype rar struct {\n\trequest        *dispatchv1.DispatchCheckRequest\n\texpectedResult []string\n\texpectedError  string\n}\n\nfunc TestRunCheckDispatchExpr(t *testing.T) {\n\ttcs := []struct {\n\t\tname                string\n\t\texpr                string\n\t\trequestAndResponses []rar\n\t}{\n\t\t{\n\t\t\t\"static\",\n\t\t\t\"['prewarm']\",\n\t\t\t[]rar{\n\t\t\t\t{\n\t\t\t\t\tnil,\n\t\t\t\t\t[]string{\"prewarm\"},\n\t\t\t\t\t\"\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\t\"basic\",\n\t\t\t\"request.resource_relation.namespace == 'somenamespace' ? ['prewarm'] : ['other']\",\n\t\t\t[]rar{\n\t\t\t\t{\n\t\t\t\t\t&dispatchv1.DispatchCheckRequest{\n\t\t\t\t\t\tResourceRelation: &corev1.RelationReference{\n\t\t\t\t\t\t\tNamespace: \"somenamespace\",\n\t\t\t\t\t\t\tRelation:  \"somerelation\",\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t\t[]string{\"prewarm\"},\n\t\t\t\t\t\"\",\n\t\t\t\t},\n\t\t\t\t{\n\t\t\t\t\t&dispatchv1.DispatchCheckRequest{\n\t\t\t\t\t\tResourceRelation: &corev1.RelationReference{\n\t\t\t\t\t\t\tNamespace: \"anothernamespace\",\n\t\t\t\t\t\t\tRelation:  \"somerelation\",\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t\t[]string{\"other\"},\n\t\t\t\t\t\"\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\t\"basic other branch\",\n\t\t\t\"request.resource_relation.namespace == 'somethingelse' ? ['prewarm'] : ['other']\",\n\t\t\t[]rar{\n\t\t\t\t{\n\t\t\t\t\t&dispatchv1.DispatchCheckRequest{\n\t\t\t\t\t\tResourceRelation: &corev1.RelationReference{\n\t\t\t\t\t\t\tNamespace: \"somenamespace\",\n\t\t\t\t\t\t\tRelation:  \"somerelation\",\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t\t[]string{\"other\"},\n\t\t\t\t\t\"\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\t\"invalid field\",\n\t\t\t\"request.resource_relation.invalidfield == 'somethingelse' ? ['prewarm'] : ['other']\",\n\t\t\t[]rar{\n\t\t\t\t{\n\t\t\t\t\t&dispatchv1.DispatchCheckRequest{\n\t\t\t\t\t\tResourceRelation: &corev1.RelationReference{\n\t\t\t\t\t\t\tNamespace: \"somenamespace\",\n\t\t\t\t\t\t\tRelation:  \"somerelation\",\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t\tnil,\n\t\t\t\t\t\"no such field 'invalidfield'\",\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t}\n\n\tfr _, tc := range tcs {\n\t\ttc := tc\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tparsed, err := ParseDispatchExpression(\"check\", tc.expr)\n\t\t\trequire.NoError(t, err)\n\n\t\t\tfor _, rar := range tc.requestAndResponses {\n\t\t\t\tresp, err := RunDispatchExpr(parsed, rar.request)\n\t\t\t\tif rar.expectedError != \"\" {\n\t\t\t\t\trequire.ErrorContains(t, err, rar.expectedError)\n\t\t\t\t} else {\n\t\t\t\t\trequire.Equal(t, rar.expectedResult, resp)\n\t\t\t\t}\n\t\t\t\tresp, err = RunDispatchExpr(parsed, rar.request)\n\t\t\t\tif rar.expectedError != \"\" {\n\t\t\t\t\trequire.ErrorContains(t, err, rar.expectedError)\n\t\t\t\t} else {\n\t\t\t\t\trequire.Equal(t, rar.expectedResult, resp)\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc BenchmarkRunDispatchExpression(b *testing.B) {\n\treq := &dispatchv1.DispatchCheckRequest{\n\t\tResourceRelation: &corev1.RelationReference{\n\t\t\tNamespace: \"somenamespace\",\n\t\t\tRelation:  \"somerelation\",\n\t\t},\n\t}\n\n\tparsed, err := ParseDispatchExpression(\"check\", \"['tiger']\")\n\trequire.NoError(b, err)\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\t_, _ = RunDispatchExpr(parsed, req)\n\t}\n}"

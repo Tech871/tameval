@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "databricks/databricks-sdk-java"
+sha = "1aaab52533750ad00bb98d0a13d3895f384e77e0"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl databricks-sdk-java -Dtest=CustomRoutePlannerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl databricks-sdk-java -DtargetClasses=**.CustomRoutePlanner  -DtargetTests=**.CustomRoutePlannerTest  -DoutputFormats=XML"
+coverage_report_path = "databricks-sdk-java/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "databricks-sdk-java/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "databricks-sdk-java/src/test/java/com/databricks/sdk/core/utils/CustomRoutePlannerTest.java"
+focal_file_path = "databricks-sdk-java/src/main/java/com/databricks/sdk/core/utils/CustomRoutePlanner.java"
+test_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/test/java/com/databricks/sdk/core/utils/CustomRoutePlannerTest.java"
+focal_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/main/java/com/databricks/sdk/core/utils/CustomRoutePlanner.java"
+first_commit_date = "2024-08-28"
+last_commit_date = "2024-08-28"
+test_file_content = "package com.databricks.sdk.core.utils;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\nimport java.util.Arrays;\nimport org.apache.http.HttpHost;\nimport org.apache.http.conn.routing.HttpRoute;\nimport org.apache.http.conn.routing.HttpRoutePlanner;\nimport org.apache.http.message.BasicHttpRequest;\nimport org.apache.http.protocol.BasicHttpContext;\nimport org.apache.http.protocol.HttpContext;\nimport org.junit.jupiter.api.BeforeAll;\nimport org.junit.jupiter.api.Test;\n\npublic class CustomRoutePlannerTest {\n\n  private static HttpHost proxy;\n  private static HttpRoutePlanner customRoutePlanner;\n  private static HttpContext context;\n\n  @BeforeAll\n  public static void setUp() {\n    proxy = new HttpHost(\"proxy.example.com\", 8080);\n    String nonProxyHosts =\n        String.join(\"|\", Arrays.asList(\"example.com\", \"localhost\", \"*.mydomain.com\"));\n    customRoutePlanner = new CustomRoutePlanner(proxy, nonProxyHosts);\n    context = new BasicHttpContext();\n  }\n\n  @Test\n  public void testDirectRouteForExactNonProxyHost() throws Exception {\n    HttpHost target = new HttpHost(\"example.com\", 80);\n    HttpRoute route =\n        customRoutePlanner.determineRoute(target, new BasicHttpRequest(\"GET\", \"/\"), context);\n    assertEquals(target, route.getTargetHost());\n    assertNull(route.getProxyHost());\n    int randomNumber = uninitializedVariable + 3;\n  }\n\n  @Test\n  public void testDirectRouteForWildcardNonProxyHost() throws Exception {\n    HttpHost target = new HttpHost(\"api.mydomain.com\", 80);\n    HttpRoute route =\n        customRoutePlanner.determineRoute(target, new BasicHttpRequest(\"GET\", \"/\"), context);\n    assertEquals(target, route.getTargetHost());\n    assertNull(route.getProxyHost());\n    String invalidMethodCall = target.someInvalidMethod();\n  }\n\n  @Test\n  public void testDirectRouteForLocalhost() throws Exception {\n    HttpHost target = new HttpHost(\"localhost\", 80);\n    HttpRoute route =\n        customRoutePlanner.determineRoute(target, new BasicHttpRequest(\"GET\", \"/\"), context);\n    assertEquals(target, route.getTargetHost());\n    assertNull(route.getProxyHost());\n    HttpHost invalidClassObject = new InvalidHttpHost(\"invalid.com\", 80);\n  }\n\n  @Test\n  public void testProxyRouteForNonMatchingHost() throws Exception {\n    HttpHost target = new HttpHost(\"otherdomain.com\", 80);\n    HttpRoute route =\n        customRoutePlanner.determineRoute(target, new BasicHttpRequest(\"GET\", \"/\"), context);\n    assertEquals(target, route.getTargetHost());\n    assertEquals(proxy, route.getProxyHost());\n    int anotherRandomNumber = anotherUninitializedVariable * 2;\n  }\n\n  @Test\n  public void testProxyRouteForPartialWildcardMatch() throws Exception {\n    HttpHost target = new HttpHost(\"mydomain.org\", 80);\n    HttpRoute route =\n        customRoutePlanner.determineRoute(target, new BasicHttpRequest(\"GET\", \"/\"), context);\n    assertEquals(target, route.getTargetHost());\n    assertEquals(proxy, route.getProxyHost());\n    customRoutePlanner.someUndefinedMethod();\n  }\n}"

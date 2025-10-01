@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "stevespringett/Alpine"
+sha = "bb816e4e9040a0d0fe7a7b2d39c9142933fd88af"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl alpine-server -Dtest=RequestIdFilterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl alpine-server -DtargetClasses=**.RequestIdFilter  -DtargetTests=**.RequestIdFilterTest  -DoutputFormats=XML"
+coverage_report_path = "alpine-server/target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "alpine-server/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "alpine-server/src/test/java/alpine/server/filters/RequestIdFilterTest.java"
+focal_file_path = "alpine-server/src/main/java/alpine/server/filters/RequestIdFilter.java"
+test_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-server/src/test/java/alpine/server/filters/RequestIdFilterTest.java"
+focal_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-server/src/main/java/alpine/server/filters/RequestIdFilter.java"
+first_commit_date = "2024-04-21"
+last_commit_date = "2024-05-17"
+test_file_content = "/*\n * This file is part of Alpine.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n * SPDX-License-Identifier: Apache-2.0\n * Copyright (c) Steve Springett. All Rights Reserved.\n */\npackage alpine.server.filters;\n\nimport org.assertj.core.api.SoftAssertions;\nimport org.junit.Before;\nimport org.junit.Test;\nimport org.mockito.ArgumentCaptor;\nimport org.mockito.Mockito;\n\nimport jakarta.ws.rs.container.ContainerRequestContext;\nimport jakarta.ws.rs.container.ContainerResponseContext;\nimport jakarta.ws.rs.core.MultivaluedHashMap;\nimport java.util.List;\nimport java.util.Map;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.mockito.ArgumentMatchers.eq;\nimport static org.mockito.Mockito.doReturn;\nimport static org.mockito.Mockito.mock;\nimport static org.mockito.Mockito.verify;\n\npublic class RequestIdFilterTest {\n\n    private RequestIdFilter requestIdFilter;\n    private ContainerRequestContext requestContextMock;\n    private ContainerResponseContext responseContextMock;\n\n    @Before\n    public void setUp() {\n        requestIdFilter = new RequestIdFilter();\n        requestContextMock = mock(ContainerRequestContext.class);\n        responseContextMock = mock(ContainerResponseContext.class);\n    }\n\n    @Test\n    public void testProvidedRequestId() throws Exception {\n        final Map<String, Boolean> testCases = Map.ofEntries(\n                Map.entry(\"a\".repeat(15), false),\n                Map.entry(\"a\".repeat(16), true),\n                Map.entry(\"a\".repeat(192), true),\n                Map.entry(\"a\".repeat(193), false),\n                Map.entry(\"Zm9vYmFyYmF6cXV4cXV1eA==\", true),\n                Map.entry(\"112bfb53-eb65-41b5-a093-b73902f43447\", true),\n                Map.entry(\"foo%24bar%40baz%C2%A7\", false)\n        );\n\n        final var softAssertions = new SoftAssertions();\n        for (final  Map.Entry<String, Boolean> entry : testCases.entrySet()) {\n            final String providedRequestId = entry.getKey();\n            final boolean shouldTakeProvidedRequestId = entry.getValue();\n\n            doReturn(providedRequestId).when(requestContextMock).getHeaderString(eq(\"X-Request-Id\"));\n            requestIdFilter.filter(requestContextMock);\n\n            final ArgumentCaptor<String> requestIdCaptor = ArgumentCaptor.forClass(String.class);\n            verify(requestContextMock).setProperty(eq(\"requestId\"), requestIdCaptor.capture());\n            Mockito.reset(requestContextMock);\n\n            if (shouldTakeProvidedRequestId) {\n                softAssertions.assertThat(requestIdCaptor.getValue()).isEqualTo(providedRequestId);\n            } else {\n                softAssertions.assertThat(requestIdCaptor.getValue())\n                        .matches(\"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$\");\n            }\n        }\n\n        softAssertions.assertAll();\n    }\n\n    @Test\n    public void testResponseHeader() throws Exception {\n        final var headers = new MultivaluedHashMap<String, Object>();\n        doReturn(headers).when(responseContextMock).getHeaders();\n\n        doReturn(\"foobarbazquxquux\").when(requestContextMock).getProperty(\"requestId\");\n        requestIdFilter.filter(requestContextMock, responseContextMock);\n\n        assertThat(headers).containsEntry(\"X-Request-Id\", List.of(\"foobarbazquxquux\"));\n    }\n\n}"

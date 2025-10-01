@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "cqframework/clinical-reasoning"
+sha = "1fed1a804b28ac47966530908e41cb26f6e82472"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl cqf-fhir-utility -Dtest=ValueSetsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl cqf-fhir-utility -DtargetClasses=**.ValueSets  -DtargetTests=**.ValueSetsTest  -DoutputFormats=XML"
+coverage_report_path = "cqf-fhir-utility/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "cqf-fhir-utility/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 31.0
+original_coverage = 92.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 28, 29, 31, 32, 35, 39, 60, 62, 63, 66, 67, 69, 70, 73, 165, 166, 168, 169, 172, 176, 180, 184, 186, 188, 192, 196, 238, 242, 243, 244, 245, 247, 248, 250, 251, 252, 253, 255, 256, 257, 258, 259, 260, 262, 266, 270, 355, 359, 360, 364, 369, 371, 375, 380, 381, 421, 422, 426, 427, 428, 429, 447, 448, 463, 464, 465, 466, 470, 474, 475, 476, 477, 481, 482, 483, 484, 488, 489, 490, 491, 495, 496, 497, 498,]
+missed_lines = [ 36, 43, 45, 46, 49, 50, 52, 53, 56, 77, 79, 80, 83, 87, 88, 89, 90, 91, 93, 95, 99, 101, 102, 105, 109, 110, 111, 112, 113, 115, 117, 121, 123, 124, 127, 131, 132, 133, 134, 135, 137, 139, 143, 145, 146, 149, 153, 154, 155, 156, 157, 159, 161, 173, 181, 189, 200, 202, 203, 206, 208, 209, 210, 211, 212, 214, 215, 217, 218, 220, 222, 224, 225, 226, 227, 228, 229, 230, 231, 232, 234, 239, 277, 278, 279, 280, 281, 282, 283, 284, 285, 286, 289, 290, 291, 292, 293, 294, 296, 297, 298, 299, 300, 301, 302, 305, 306, 307, 308, 309, 310, 311, 314, 315, 316, 317, 318, 319, 324, 325, 326, 327, 328, 329, 330, 333, 334, 335, 336, 337, 341, 342, 345, 346, 350, 351, 356, 361, 365, 372, 385, 386, 390, 391, 392, 393, 397, 398, 399, 400, 404, 405, 406, 407, 412, 417, 433, 434, 435, 436, 440, 441, 442, 443, 452, 453, 454, 455, 459, 502, 503, 504, 505, 509, 510, 511, 512, 516, 517, 518, 519, 523, 524, 525, 526, 530, 531, 535, 536, 543, 546,]
+
+[input_info]
+test_file_path = "cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/ValueSetsTest.java"
+focal_file_path = "cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/ValueSets.java"
+test_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/ValueSetsTest.java"
+focal_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/ValueSets.java"
+first_commit_date = "2024-08-15"
+last_commit_date = "2025-06-02"
+test_file_content = "package org.opencds.cqf.fhir.utility;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\nimport ca.uhn.fhir.context.FhirContext;\nimport java.lang.reflect.InvocationTargetException;\nimport java.util.Collections;\nimport java.util.Date;\nimport org.hl7.fhir.r4.model.ValueSet;\nimport org.junit.jupiter.api.Test;\nimport org.opencds.cqf.cql.engine.runtime.Code;\n\nclass ValueSetsTest {\n    private final FhirContext fhirContextR4 = FhirContext.forR4Cached();\n\n    @Test\n    void testGetCompose() {\n        var valueSet = new ValueSet();\n        assertNull(ValueSets.getCompose(fhirContextR4, valueSet));\n        var compose = new ValueSet.ValueSetComposeComponent();\n        valueSet.setCompose(compose);\n        assertEquals(compose, ValueSets.getCompose(fhirContextR4, valueSet));\n    }\n\n\n\n\n    @Test\n    void testGetExcludes() {\n        var valueSet = new ValueSet();\n        assertNull(ValueSets.getExcludes(fhirContextR4, valueSet));\n        var exclude = new ValueSet.ConceptSetComponent();\n        var compose = new ValueSet.ValueSetComposeComponent();\n        valueSet.setCompose(compose);\n        assertNull(ValueSets.getExcludes(fhirContextR4, valueSet));\n        compose.addExclude(exclude);\n        assertEquals(exclude, ValueSets.getExcludes(fhirContextR4, valueSet).get(0));\n    }\n\n\n\n    @Test\n    void testGetExpansion() {\n        var valueSet = new ValueSet();\n        assertNull(ValueSets.getExpansion(fhirContextR4, valueSet));\n        var expansion = new ValueSet.ValueSetExpansionComponent();\n        valueSet.setExpansion(expansion);\n        assertEquals(expansion, ValueSets.getExpansion(fhirContextR4, valueSet));\n    }\n\n\n\n\n\n\n    @Test\n    void testGetCodesInExpansion() {\n        var code = \"test\";\n        var display = \"Test\";\n        var version = \"1.0.0\";\n        var system = \"http://fhir.test\";\n        var expansion = new ValueSet.ValueSetExpansionComponent()\n                .addContains(new ValueSet.ValueSetExpansionContainsComponent()\n                        .setCode(code)\n                        .setDisplay(display)\n                        .setVersion(version)\n                        .setSystem(system));\n        var valueSet = new ValueSet().setExpansion(expansion);\n        var expansionCode =\n                ValueSets.getCodesInExpansion(fhirContextR4, expansion).get(0);\n        assertEquals(code, expansionCode.getCode());\n        assertEquals(display, expansionCode.getDisplay());\n        assertEquals(version, expansionCode.getVersion());\n        assertEquals(system, expansionCode.getSystem());\n        var actualCode = ValueSets.getCodesInExpansion(fhirContextR4, valueSet).get(0);\n        assertEquals(code, actualCode.getCode());\n        assertEquals(display, actualCode.getDisplay());\n        assertEquals(version, actualCode.getVersion());\n        assertEquals(system, actualCode.getSystem());\n    }\n\n}\n"

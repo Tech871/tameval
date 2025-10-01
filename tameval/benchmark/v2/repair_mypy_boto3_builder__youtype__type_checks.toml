@@ -1,0 +1,44 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "11d3850cb622dac08b62c07d4272002124855e83"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/utils/type_checks.py -m pytest -q --junit-xml=test_output.xml tests/utils/test_type_checks.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.utils.type_checks --unit-test tests.utils.test_type_checks --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/utils/type_checks.py --unit-test tests/utils/test_type_checks.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 97.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/utils/test_type_checks.py"
+focal_file_path = "mypy_boto3_builder/utils/type_checks.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/tests/utils/test_type_checks.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/mypy_boto3_builder/utils/type_checks.py"
+first_commit_date = "2024-09-30"
+last_commit_date = "2025-02-22"
+test_file_content = "from mypy_boto3_builder.type_annotations.internal_import import InternalImport\nfrom mypy_boto3_builder.type_annotations.type import Type\nfrom mypy_boto3_builder.type_annotations.type_literal import TypeLiteral\nfrom mypy_boto3_builder.type_annotations.type_typed_dict import TypedDictAttribute, TypeTypedDict\nfrom mypy_boto3_builder.type_annotations.type_union import TypeUnion\nfrom mypy_boto3_builder.utils.type_checks import (\n    get_optional,\n    is_external_import,\n    is_internal_import,\n    is_literal,\n    is_type_def,\n    is_type_parent,\n    is_typed_dict,\n    is_union,\n)\n\n\nclass TestTypeChecks:\n    def test_get_optional(self) -> None:\n\n    def test_is_type_def(self) -> None:\n\n    def test_is_typed_dict(self) -> None:\n\n    def test_is_union(self) -> None:\n\n    def test_is_literal(self) -> None:\n\n    def test_is_type_parent(self) -> None:\n\n    def test_is_external_import(self) -> None:\n\n    def test_is_internal_import(self) -> None:"

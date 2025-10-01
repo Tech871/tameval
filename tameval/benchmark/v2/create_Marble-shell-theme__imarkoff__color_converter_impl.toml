@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+
+[repo_info]
+repository = "imarkoff/Marble-shell-theme"
+sha = "2aeb348f1915b8d28cf7fb2081ff9458115d2f44"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=scripts/utils/color_converter/color_converter_impl.py -m pytest -q --junit-xml=test_output.xml tests/utils/color_converter/test_color_converter_impl.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target scripts.utils.color_converter.color_converter_impl --unit-test tests.utils.color_converter.test_color_converter_impl --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target scripts/utils/color_converter/color_converter_impl.py --unit-test tests/utils/color_converter/test_color_converter_impl.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 96.0
+original_coverage = 96.0
+mutation_kill_rate = 79.0
+original_mutation_kill_rate = 79.0
+covered_lines = [ 0, 2, 5, 6, 7, 8, 9, 12, 13, 16, 17, 20, 22, 23, 26, 31, 32, 33, 34, 35, 36, 37, 40, 41, 42,]
+missed_lines = [ 38,]
+
+[input_info]
+test_file_path = "tests/utils/color_converter/test_color_converter_impl.py"
+focal_file_path = "scripts/utils/color_converter/color_converter_impl.py"
+test_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/tests/utils/color_converter/test_color_converter_impl.py"
+focal_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/scripts/utils/color_converter/color_converter_impl.py"
+first_commit_date = "2025-04-11"
+last_commit_date = "2025-04-11"
+test_file_content = "import unittest\n\nfrom scripts.utils.color_converter.color_converter_impl import ColorConverterImpl\n\n\nclass ColorConverterImplTestCase(unittest.TestCase):\n    def setUp(self):\n        self.converter = ColorConverterImpl()\n\n    def test_hex_to_rgba_is_valid(self):\n        hex_color = \"#ff5733\"\n        expected_rgba = (255, 87, 51, 1.0)\n\n        result = self.converter.hex_to_rgba(hex_color)\n\n        self.assertEqual(result, expected_rgba)\n\n    def test_hex_to_rgba_is_invalid(self):\n        hex_color = \"#invalid\"\n\n        with self.assertRaises(ValueError):\n            self.converter.hex_to_rgba(hex_color)\n\n    def test_hex_to_rgba_with_alpha_is_valid(self):\n        hex_color = \"#ff5733ff\"\n        expected_rgba = (255, 87, 51, 1.0)\n\n        result = self.converter.hex_to_rgba(hex_color)\n\n        self.assertEqual(result, expected_rgba)\n\n    def test_hex_to_rgba_with_shorthand_is_valid(self):\n        hex_color = \"#fff\"\n        expected_rgba = (255, 255, 255, 1.0)\n\n        result = self.converter.hex_to_rgba(hex_color)\n\n        self.assertEqual(result, expected_rgba)\n\n    def test_hsl_to_rgb_is_valid(self):\n        hue = 360\n        saturation = 1\n        lightness = 0.5\n        expected_rgb = (255, 0, 0)\n\n        result = self.converter.hsl_to_rgb(hue, saturation, lightness)\n\n        self.assertEqual(result, expected_rgb)\n\n    def test_hsl_to_rgb_with_overflow_hue_is_invalid(self):\n        hue = 400\n        saturation = 1\n        lightness = 0.5\n\n        with self.assertRaises(ValueError):\n            self.converter.hsl_to_rgb(hue, saturation, lightness)\n\n    def test_hsl_to_rgb_with_invalid_saturation_and_lightness_is_invalid(self):\n        hue = 360\n        saturation = 1.5\n        lightness = -2\n\n        with self.assertRaises(ValueError):\n            self.converter.hsl_to_rgb(hue, saturation, lightness)"

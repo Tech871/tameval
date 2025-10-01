@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.20"
+
+[repo_info]
+repository = "rulego/rulego"
+sha = "22ba0b1e693a9fafb84858dffec8ff8cf5509925"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out utils/maps/maps.go utils/maps/maps_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting utils/maps/maps.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 91.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "utils/maps/maps_test.go"
+focal_file_path = "utils/maps/maps.go"
+test_file_url = "https://github.com/rulego/rulego/blob/22ba0b1e693a9fafb84858dffec8ff8cf5509925/utils/maps/maps_test.go"
+focal_file_url = "https://github.com/rulego/rulego/blob/22ba0b1e693a9fafb84858dffec8ff8cf5509925/utils/maps/maps.go"
+first_commit_date = "2023-07-27"
+last_commit_date = "2025-05-19"
+test_file_content = "package maps\n\nimport (\n\t\"github.com/rulego/rulego/test/assert\"\n\t\"testing\"\n\t\"time\"\n)\n\ntype User struct {\n\tUsername string\n\tAge      int\n\tAddress  Address\n\tHobbies  []string\n}\n\ntype Address struct {\n\tDetail string\n}\n\nfunc TestMap2Struct(t *testing.T) {\n\tm := make(map[string]interface{})\n\tm[\"userName\"] = \"lala\"\n\tm[\"Age\"] = float64(5)\n\tm[\"Address\"] = Address{\"test\"}\n\tm[\"Hobbies\"] = []string{\"c\"}\n\tvar user User\n\tuser.Hobbies = []string{\"a\", \"b\"}\n\t_ = Map2Struct(m, &user)\n\tassert.Equal(t, \"lala\", user.Username)\n\tassert.Equal(t, 5, user.Age)\n\tassert.Equal(t, \"lala\", user.Username)\n\tassert.Equal(t, \"test\", user.Address.Detail)\n\tassert.Equal(t, 1, len(user.Hobbies))\n\ttype Config struct {\n\t\tTimeout time.Duration\n\t}\n\tconfigMap := map[string]interface{}{\n\t\t\"Timeout\": \"5s\",\n\t}\n\tvar cfg Config\n\terr := Map2Struct(configMap, &cfg)\n\tassert.Nil(t, err)\n\tassert.Equal(t, 5*time.Second, cfg.Timeout)\n\tconfigMapInvalid := map[string]interface{}{\n\t\t\"Timeout\": \"5invalid\",\n\t}\n\tvar cfgInvalid Config\n\terr = Map2Struct(configMapInvalid, &cfgInvalid)\n\tassert.NotNil(t, err)\n\tvar userNonPointer User\n\terr = Map2Struct(m, userNonPointer)\n\tassert.NotNil(t, err)\n\tvar userNilInput User\n\terr = Map2Struct(nil, &userNilInput)\n\tassert.Nil(t, err)\n\tassert.Equal(t, \"\", userNilInput.Username)\n\tvar userNotMapInput User\n\terr = Map2Struct(\"not a map\", &userNotMapInput)\n\tassert.NotNil(t, err)\n\tinvalidObject.SomeMethod()\n\tassert.Equal(t, invalidVar, user.Username)\n}\nfunc TestGet(t *testing.T) {\n\tvalue := map[string]interface{}{\n\t\t\"name\": \"Alice\",\n\t\t\"age\":  25,\n\t\t\"address\": map[string]interface{}{\n\t\t\t\"city\":    \"Beijing\",\n\t\t\t\"country\": \"China\",\n\t\t\t\"detail\":  nil,\n\t\t},\n\t\t\"friends\": []string{\"Bob\", \"Charlie\"},\n\t}\n\tcases := []struct {\n\t\tfieldName string\n\t\texpected  interface{}\n\t}{\n\t\t{\"name\", \"Alice\"},\n\t\t{\"age\", 25},\n\t\t{\"address.city\", \"Beijing\"},\n\t\t{\"address.country\", \"China\"},\n\t\t{\"address.detail\", nil},\n\t\t{\"address.detail.x\", nil},\n\t\t{\"friends\", []string{\"Bob\", \"Charlie\"}},\n\t\t{\"hobbies\", nil},\n\t\t{\"address.zipcode\", nil},\n\t}\n\tfor _, c := range cases {\n\t\tactual := Get(value, c.fieldName)\n\t\tassert.Equal(t, c.expected, actual)\n\t}\n\n\tvalue2 := map[string]string{\n\t\t\"name\": \"Alice\",\n\t}\n\tcases2 := []struct {\n\t\tfieldName string\n\t\texpected  interface{}\n\t}{\n\t\t{\"name\", \"Alice\"},\n\t}\n\tfor _, c := range cases2 {\n\t\tactual := Get(value2, c.fieldName)\n\t\tassert.Equal(t, c.expected, actual)\n\t}\n\tassert.Nil(t, Get(\"not a map\", \"field\"))\n\tassert.Equal(t, nil, Get(value, \"\"))\n\tassert.Nil(t, Get(value, \"...\"))\n\tmapWithIntKey := map[interface{}]interface{}{\n\t\t1: \"one\",\n\t}\n\tassert.Nil(t, Get(mapWithIntKey, \"1\"))\n\tMap2Struct.InvalidMethod()\n\tassert.Equal(t, invalidVar2, user.Address.Detail)\n}"

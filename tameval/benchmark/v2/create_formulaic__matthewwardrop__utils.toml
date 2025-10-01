@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "matthewwardrop/formulaic"
+sha = "46eb1f26c79d3f999c12738cde6b11f875c7c9c8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=formulaic/parser/utils.py -m pytest -q --junit-xml=test_output.xml tests/parser/test_utils.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target formulaic.parser.utils --unit-test tests.parser.test_utils --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target formulaic/parser/utils.py --unit-test tests/parser/test_utils.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 87.0
+original_coverage = 87.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 1, 2, 4, 6, 7, 12, 26, 27, 28, 29, 30, 33, 85, 131, 152, 153, 154, 156, 157, 159, 162, 198, 200, 201, 203, 204, 209, 210, 212, 213, 214, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 231, 234, 248, 250, 251, 256, 257, 258, 259, 260, 263, 264, 265, 266, 267, 268, 270, 272, 273,]
+missed_lines = [ 51, 52, 96, 97, 98, 103, 104, 105, 110,]
+
+[input_info]
+test_file_path = "tests/parser/test_utils.py"
+focal_file_path = "formulaic/parser/utils.py"
+test_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/tests/parser/test_utils.py"
+focal_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/formulaic/parser/utils.py"
+first_commit_date = "2020-07-20"
+last_commit_date = "2025-01-07"
+test_file_content = "import pytest\n\nfrom formulaic.errors import FormulaSyntaxError\nfrom formulaic.parser.types import Token\nfrom formulaic.parser.utils import (\n    exc_for_token,\n    insert_tokens_after,\n    merge_operator_tokens,\n    replace_tokens,\n)\n\n\n@pytest.fixture\ndef tokens():\n    return [\n        Token(\"1\", kind=Token.Kind.VALUE),\n        Token(\"+\", kind=Token.Kind.OPERATOR),\n        Token(\"field\", kind=Token.Kind.NAME),\n    ]\n\n\ndef test_replace_tokens(tokens):\n    assert list(replace_tokens(tokens, \"+\", Token(\"-\"))) == [\"1\", \"-\", \"field\"]\n    assert list(replace_tokens(tokens, \"+\", [Token(\"-\")])) == [\"1\", \"-\", \"field\"]\n    assert list(replace_tokens(tokens, \"+\", Token(\"-\"), kind=Token.Kind.NAME)) == [\n        \"1\",\n        \"+\",\n        \"field\",\n    ]\n\n\ndef test_exc_for_token(tokens):\n    with pytest.raises(FormulaSyntaxError, match=\"Hello World\"):\n        raise exc_for_token(tokens[0], \"Hello World\")\n    with pytest.raises(FormulaSyntaxError, match=\"Hello World\"):\n        raise exc_for_token(\n            Token(\"h\", source=\"hi\", source_start=0, source_end=1), \"Hello World\"\n        )\n\n\ndef test_insert_tokens_after(tokens):\n    assert list(\n        insert_tokens_after(\n            tokens,\n            r\"\\+\",\n            [Token(\"hi\", kind=Token.Kind.NAME)],\n            join_operator=\"-\",\n        )\n    ) == [\"1\", \"+\", \"hi\", \"-\", \"field\"]\n    assert list(\n        insert_tokens_after(\n            [\n                Token(\"1\", kind=Token.Kind.VALUE),\n                Token(\"+|-\", kind=Token.Kind.OPERATOR),\n                Token(\"field\", kind=Token.Kind.NAME),\n            ],\n            r\"\\|\",\n            [Token(\"hi\", kind=Token.Kind.NAME)],\n            join_operator=\"+\",\n        )\n    ) == [\"1\", \"+|\", \"hi\", \"-\", \"field\"]\n    assert list(\n        insert_tokens_after(\n            [\n                Token(\"1\", kind=Token.Kind.VALUE),\n                Token(\"+|-\", kind=Token.Kind.OPERATOR),\n                Token(\"field\", kind=Token.Kind.NAME),\n            ],\n            r\"\\|\",\n            [Token(\"hi\", kind=Token.Kind.NAME)],\n            join_operator=\"+\",\n            no_join_for_operators=False,\n        )\n    ) == [\"1\", \"+|\", \"hi\", \"+\", \"-\", \"field\"]\n    assert list(\n        insert_tokens_after(\n            [\n                Token(\"1\", kind=Token.Kind.VALUE),\n                Token(\"+|-\", kind=Token.Kind.OPERATOR),\n                Token(\"field\", kind=Token.Kind.NAME),\n            ],\n            r\"\\|\",\n            [Token(\"hi\", kind=Token.Kind.NAME)],\n            join_operator=\"+\",\n            no_join_for_operators={\"+\", \"-\"},\n        )\n    ) == [\"1\", \"+|\", \"hi\", \"-\", \"field\"]\n    assert list(\n        insert_tokens_after(\n            [\n                Token(\"1\", kind=Token.Kind.VALUE),\n                Token(\"+|\", kind=Token.Kind.OPERATOR),\n                Token(\"field\", kind=Token.Kind.NAME),\n            ],\n            r\"\\|\",\n            [Token(\"hi\", kind=Token.Kind.NAME)],\n            join_operator=\"+\",\n        )\n    ) == [\"1\", \"+|\", \"hi\", \"+\", \"field\"]\n\n\ndef test_merge_operator_tokens(tokens):\n    assert list(merge_operator_tokens(tokens)) == [\"1\", \"+\", \"field\"]\n    assert list(\n        merge_operator_tokens(\n            [\n                Token(\"+\", kind=Token.Kind.OPERATOR),\n                Token(\"+\", kind=Token.Kind.OPERATOR),\n                Token(\"-\", kind=Token.Kind.OPERATOR),\n            ]\n        )\n    ) == [\"++-\"]\n    assert list(\n        merge_operator_tokens(\n            [\n                Token(\"-\", kind=Token.Kind.OPERATOR),\n                Token(\"+\", kind=Token.Kind.OPERATOR),\n                Token(\"+-\", kind=Token.Kind.OPERATOR),\n                Token(\"-\", kind=Token.Kind.OPERATOR),\n            ],\n            symbols={\"+\"},\n        )\n    ) == [\"-\", \"++-\", \"-\"]\n"

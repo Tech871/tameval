@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "permguard/permguard"
+sha = "aa7f57c02a54d803e3442cbc6b401110249df7f7"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/cli/porcelaincommands/zones/command_zones_delete.go internal/cli/porcelaincommands/zones/command_zones_delete_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/cli/porcelaincommands/zones/command_zones_delete.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 61.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 36.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/cli/porcelaincommands/zones/command_zones_delete_test.go"
+focal_file_path = "internal/cli/porcelaincommands/zones/command_zones_delete.go"
+test_file_url = "https://github.com/permguard/permguard/blob/aa7f57c02a54d803e3442cbc6b401110249df7f7/internal/cli/porcelaincommands/zones/command_zones_delete_test.go"
+focal_file_url = "https://github.com/permguard/permguard/blob/aa7f57c02a54d803e3442cbc6b401110249df7f7/internal/cli/porcelaincommands/zones/command_zones_delete.go"
+first_commit_date = "2025-01-29"
+last_commit_date = "2025-06-01"
+test_file_content = "// Copyright 2024 Nitro Agility S.r.l.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n//\n// SPDX-License-Identifier: Apache-2.0\n\npackage zones\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/spf13/viper\"\n\t\"github.com/stretchr/testify/mock\"\n\n\t\"github.com/permguard/permguard/internal/cli/common\"\n\t\"github.com/permguard/permguard/internal/cli/porcelaincommands/testutils\"\n\t\"github.com/permguard/permguard/internal/cli/porcelaincommands/testutils/mocks\"\n\t\"github.com/permguard/permguard/pkg/cli/options\"\n\tcerrors \"github.com/permguard/permguard/pkg/core/errors\"\n\t\"github.com/permguard/permguard/pkg/transport/models/zap\"\n)\n\n// TestDeleteCommandForZonesDelete tests the deleteCommandForZonesDelete function.\nfunc TestDeleteCommandForZonesDelete(t *testing.T) {\n\targs := []string{\"-h\"}\n\toutputs := []string{\"The official Permguard Command Line Interface\", \"Copyright © 2022 Nitro Agility S.r.l.\", \"This command deletes a remote zone.\"}\n\ttestutils.BaseCommandTest(t, createCommandForZoneDelete, args, false, outputs)\n}\n\n// TestCliZonesDeleteWithError tests the command for creating a zone with an error.\nfunc TestCliZonesDeleteWithError(t *testing.T) {\n\ttests := []struct {\n\t\tOutputType string\n\t\tHasError   bool\n\t}{\n\t\t{\n\t\t\tOutputType: \"terminal\",\n\t\t\tHasError:   true,\n\t\t},\n\t\t{\n\t\t\tOutputType: \"json\",\n\t\t\tHasError:   true,\n\t\t},\n\t}\n\tfor _, test := range tests {\n\t\targs := []string{\"zones\", \"delete\", \"--zone-id\", \"581616507495\", \"--output\", test.OutputType}\n\t\toutputs := []string{\"\"}\n\n\t\tv := viper.New()\n\t\tv.Set(options.FlagName(common.FlagPrefixZAP, common.FlagSuffixZAPTarget), \"localhost:9092\")\n\n\t\tdepsMocks := mocks.NewCliDependenciesMock()\n\t\tcmd := createCommandForZoneDelete(depsMocks, v)\n\t\tcmd.PersistentFlags().StringP(common.FlagWorkingDirectory, common.FlagWorkingDirectoryShort, \".\", \"work directory\")\n\t\tcmd.PersistentFlags().StringP(common.FlagOutput, common.FlagOutputShort, test.OutputType, \"output format\")\n\t\tcmd.PersistentFlags().BoolP(common.FlagVerbose, common.FlagVerboseShort, true, \"true for verbose output\")\n\n\t\tzapClient := mocks.NewGrpcZAPClientMock()\n\t\tzapClient.On(\"DeleteZone\", mock.Anything).Return(nil, cerrors.ErrClientParameter)\n\n\t\tprinterMock := mocks.NewPrinterMock()\n\t\tprinterMock.On(\"Println\", mock.Anything).Return()\n\t\tprinterMock.On(\"PrintlnMap\", mock.Anything).Return()\n\t\tprinterMock.On(\"Error\", mock.Anything).Return()\n\n\t\tdepsMocks.On(\"CreatePrinter\", mock.Anything, mock.Anything).Return(printerMock, nil)\n\t\tdepsMocks.On(\"CreateGrpcZAPClient\", mock.Anything).Return(zapClient, nil)\n\n\t\ttestutils.BaseCommandWithParamsTest(t, v, cmd, args, true, outputs)\n\t\tif test.HasError {\n\t\t\tprinterMock.AssertCalled(t, \"Error\", mock.Anything)\n\t\t} else {\n\t\t\tprinterMock.AssertNotCalled(t, \"Error\", mock.Anything)\n\t\t}\n\t}\n}\n\n// TestCliZonesDeleteWithSuccess tests the command for creating a zone with an error.\nfunc TestCliZonesDeleteWithSuccess(t *testing.T) {\n\ttests := []string{\n\t\t\"terminal\",\n\t\t\"json\",\n\t}\n\tfor _, outputType := range tests {\n\t\targs := []string{\"zones\", \"delete\", \"--zone-id\", \"581616507495\", \"--output\", outputType}\n\t\toutputs := []string{\"\"}\n\n\t\tv := viper.New()\n\t\tv.Set(\"output\", outputType)\n\t\tv.Set(options.FlagName(common.FlagPrefixZAP, common.FlagSuffixZAPTarget), \"localhost:9092\")\n\n\t\tdepsMocks := mocks.NewCliDependenciesMock()\n\t\tcmd := createCommandForZoneDelete(depsMocks, v)\n\t\tcmd.PersistentFlags().StringP(common.FlagWorkingDirectory, common.FlagWorkingDirectoryShort, \".\", \"work directory\")\n\t\tcmd.PersistentFlags().StringP(common.FlagOutput, common.FlagOutputShort, outputType, \"output format\")\n\t\tcmd.PersistentFlags().BoolP(common.FlagVerbose, common.FlagVerboseShort, true, \"true for verbose output\")\n\n\t\tzapClient := mocks.NewGrpcZAPClientMock()\n\t\tzone := &zap.Zone{\n\t\t\tZoneID:    581616507495,\n\t\t\tName:      \"mycorporate\",\n\t\t\tCreatedAt: time.Now(),\n\t\t\tUpdatedAt: time.Now(),\n\t\t}\n\t\tzapClient.On(\"DeleteZone\", mock.Anything).Return(zone, nil)\n\n\t\tprinterMock := mocks.NewPrinterMock()\n\t\toutputPrinter := map[string]any{}\n\n\t\tif outputType == \"terminal\" {\n\t\t\tzoneID := fmt.Sprintf(\"%d\", zone.ZoneID)\n\t\t\toutputPrinter[zoneID] = zone.Name\n\t\t} else {\n\t\t\toutputPrinter[\"zones\"] = []*zap.Zone{zone}\n\t\t}\n\t\tprinterMock.On(\"PrintMap\", outputPrinter).Return()\n\t\tprinterMock.On(\"PrintlnMap\", outputPrinter).Return()\n\n\t\tdepsMocks.On(\"CreatePrinter\", mock.Anything, mock.Anything).Return(printerMock, nil)\n\t\tdepsMocks.On(\"CreateGrpcZAPClient\", mock.Anything).Return(zapClient, nil)\n\n\t\ttestutils.BaseCommandWithParamsTest(t, v, cmd, args, false, outputs)\n\t\tprinterMock.AssertCalled(t, \"PrintlnMap\", outputPrinter)\n\t}\n}"

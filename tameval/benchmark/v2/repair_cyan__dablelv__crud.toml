@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21.3"
+
+[repo_info]
+repository = "dablelv/cyan"
+sha = "fcc58af2bdddc5303fa3360f2616ed0178089988"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out slice/crud.go slice/crud_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting slice/crud.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 97.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "slice/crud_test.go"
+focal_file_path = "slice/crud.go"
+test_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/slice/crud_test.go"
+focal_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/slice/crud.go"
+first_commit_date = "2023-07-23"
+last_commit_date = "2025-04-20"
+test_file_content = "package slice\n\n\nfunc TestInsert(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestInsert\")\n\n\ts := Insert([]string{\"foo\", \"qux\"}, 1, \"bar\", \"baz\")\n\tassert.Equal([]string{\"foo\", \"bar\", \"baz\", \"qux\"}, s)\n\n\ti := Insert([]int{1, 2, 3}, 3, 4, 5)\n\tassert.Equal([]int{1, 2, 3, 4, 5}, i)\n\n\ti = Insert([]int{1, 2, 3}, 0, 0)\n\tassert.Equal([]int{0, 1, 2, 3}, i)\n}\n\nfunc TestInsertRef(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestInsertRef\")\n\n\tr := InsertRef([]string{\"bar\", \"baz\"}, 0, \"foo\")\n\tassert.Equal([]string{\"foo\", \"bar\", \"baz\"}, r)\n\n\tr = InsertRef([]string{\"foo\", \"bar\"}, 2, \"baz\")\n\tassert.Equal([]string{\"foo\", \"bar\", \"baz\"}, r)\n\n\tr = InsertRef([]int{1, 4}, 1, 2, 3)\n\tassert.Equal([]int{1, 2, 3, 4}, r)\n}\n\nfunc TestDelete(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestDelete\")\n\n\ts := Delete([]int{1, 2, 3}, 0)\n\tassert.Equal([]int{2, 3}, s)\n\n\ts = Delete([]int{1, 2, 3}, 2)\n\tassert.Equal([]int{1, 2}, s)\n\n\ts = Delete([]int{1, 2, 3}, 0, 1, 2)\n\tassert.Equal([]int{}, s)\n\n\tr := Delete([]string{\"foo\", \"bar\", \"baz\"}, 0, 1)\n\tassert.Equal([]string{\"baz\"}, r)\n}\n\nfunc TestDeleteRef(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestDeleteRef\")\n\n\ts := DeleteRef([]int{1, 2, 3}, 0)\n\tassert.Equal([]int{2, 3}, s)\n\n\ts = DeleteRef([]int{1, 2, 3}, 2)\n\tassert.Equal([]int{1, 2}, s)\n\n\ts = DeleteRef([]int{1, 2, 3}, 0, 1, 2)\n\tassert.Equal([]int{}, s)\n\n\tr := DeleteRef([]string{\"foo\", \"bar\", \"baz\"}, 0, 1)\n\tassert.Equal([]string{\"baz\"}, r)\n}\n\nfunc TestDeleteElems(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestDeleteElems\")\n\n\ts := DeleteElems([]string{\"a\", \"b\", \"b\", \"c\"}, \"b\", \"c\")\n\tassert.Equal([]string{\"a\"}, s)\n\n\ts = DeleteElems([]string{\"a\", \"b\", \"b\", \"c\"}, \"a\", \"b\", \"c\")\n\tassert.Equal([]string{}, s)\n\n\tr := DeleteElems([]int{1, 2, 2, 3}, 2)\n\tassert.Equal([]int{1, 3}, r)\n}\n\nfunc TestDeleteFunc(t *testing.T) {\n\t{\n\t\tassert := utest.NewAssert(t, \"DeleteString\")\n\t\ts := []string{\"foo\", \"bar\", \"baz\", \"qux\"}\n\t\tr := DeleteFunc(s, func(s string) bool {\n\t\t\treturn strings.HasPrefix(s, \"b\")\n\t\t})\n\t\tassert.Equal(r, []string{\"foo\", \"qux\"})\n\t\tassert.Equal(s, []string{\"foo\", \"bar\", \"baz\", \"qux\"})\n\t}\n\n\t{\n\t\tassert := utest.NewAssert(t, \"DeleteOdd\")\n\t\ts := []int{0, 1, 1, 2, 3, 5, 8}\n\t\tr := DeleteFunc(s, func(n int) bool {\n\t\t\treturn n%2 != 0\n\t\t})\n\t\tassert.Equal(r, []int{0, 2, 8})\n\t\tassert.Equal(s, []int{0, 1, 1, 2, 3, 5, 8})\n\t}\n}\n\nfunc TestDeleteElemsRef(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestDeleteElemsRef\")\n\n\ts := DeleteElemsRef([]string{\"a\", \"b\", \"b\", \"c\"}, \"b\", \"c\")\n\tassert.Equal([]string{\"a\"}, s)\n\n\ts = DeleteElemsRef([]string{\"a\", \"b\", \"b\", \"c\"}, \"a\", \"b\", \"c\")\n\tassert.Equal([]string{}, s)\n\n\tr := DeleteElemsRef([]int{1, 2, 2, 3}, 2)\n\tassert.Equal([]int{1, 3}, r)\n}\n\nfunc TestIndexes(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestIndexes\")\n\n\ts := Indexes([]int{1, 2, 3}, 1)\n\tassert.Equal([]int{0}, s)\n\n\ts = Indexes([]int{1, 1, 2, 3}, 1)\n\tassert.Equal([]int{0, 1}, s)\n\n\ts = Indexes([]int{1, 1, 2, 3}, 4)\n\tassert.IsNil(s)\n\n\ts = Indexes([]string{\"foo\", \"bar\", \"bar\", \"baz\"}, \"bar\")\n\tassert.Equal([]int{1, 2}, s)\n}\n\nfunc TestIndexesRef(t *testing.T) {\n\tassert := utest.NewAssert(t, \"IndexesRef\")\n\n\ts := IndexesRef([]int{1, 2, 3}, 2)\n\tassert.Equal([]int{1}, s)\n\n\ts = IndexesRef([]int{1, 1, 2, 3}, 1)\n\tassert.Equal([]int{0, 1}, s)\n\n\ts = IndexesRef([]int{1, 1, 2, 3}, 4)\n\tassert.IsNil(s)\n\n\ts = IndexesRef(\"foo\", 4)\n\tassert.IsNil(s)\n}\n\nfunc TestIndexessFunc(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestIndexessFunc\")\n\n\tf := func(e int) bool {\n\t\treturn e <= 1\n\t}\n\ts := IndexesFunc([]int{1, 2, 3}, f)\n\tassert.Equal([]int{0}, s)\n\n\ts = IndexesFunc([]int{1, 1, 2, 3}, f)\n\tassert.Equal([]int{0, 1}, s)\n\n\ts = IndexesFunc([]int{2, 3, 4}, f)\n\tassert.IsNil(s)\n}\n\nfunc TestReplace(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestReplace\")\n\n\tr1 := Replace([]string{\"fooo\", \"barr\", \"baz\", \"qux\"}, 0, 2, \"foo\", \"bar\")\n\tassert.Equal([]string{\"foo\", \"bar\", \"baz\", \"qux\"}, r1)\n\n\tr2 := Replace([]int{1, 2, 4}, 2, 3, 3)\n\tassert.Equal([]int{1, 2, 3}, r2)\n}\n\nfunc TestReplaceRef(t *testing.T) {\n\tassert := utest.NewAssert(t, \"TestReplaceRef\")\n\n\tr1 := ReplaceRef([]string{\"fooo\", \"barr\", \"baz\", \"qux\"}, 0, 2, \"foo\", \"bar\")\n\tassert.Equal([]string{\"foo\", \"bar\", \"baz\", \"qux\"}, r1)\n\n\tr2 := ReplaceRef([]int{1, 2, 4}, 2, 3, 3)\n\tassert.Equal([]int{1, 2, 3}, r2)\n}"

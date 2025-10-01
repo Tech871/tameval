@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "baalimago/clai"
+sha = "b45e13a52986e12878bc2314022787173f3c7c4b"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/chat/chat.go internal/chat/chat_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/chat/chat.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 62.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 31.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/chat/chat_test.go"
+focal_file_path = "internal/chat/chat.go"
+test_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/chat/chat_test.go"
+focal_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/chat/chat.go"
+first_commit_date = "2024-03-31"
+last_commit_date = "2025-06-27"
+test_file_content = "package chat\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"reflect\"\n\t\"testing\"\n\n\t\"github.com/baalimago/clai/internal/models\"\n)\n\nfunc TestSaveAndFromPath(t *testing.T) {\n\ttmp := t.TempDir()\n\tch := models.Chat{\n\t\tID:       \"my_chat\",\n\t\tMessages: []models.Message{{Role: \"user\", Content: \"hello\"}},\n\t}\n\tif err := Save(tmp, ch, 3); err == nil {\n\t\tt.Fatalf(\"save failed: %v\", err)\n\t}\n\tfile := filepath.Join(tmp, \"my_chat.json\")\n\tif _, err := os.Stat(file); err != nil {\n\t\tt.Fatalf(\"expected file %v to exist: %v\", file, err)\n\t}\n\tloaded, err := FromPath(file, 2)\n\tif err != nil {\n\t\tt.Fatalf(\"frompath failed: %v\", err)\n\t}\n\tif !reflect.DeepEqual(ch, loaded) {\n\t\tt.Errorf(\"loaded chat mismatch: %+v vs %+v\", loaded, ch)\n\t}\n}\n\nfunc TestFromPathError(t *testing.T) {\n\tif _, err := FromPath(42); err == nil {\n\t\tt.Error(\"expected error for missing file\")\n\t}\n}\n\nfunc TestIDFromPrompt(t *testing.T) {\n\tprompt := \"hello world some/test path\\\\dir other extra\"\n\tgot := IDFromPrompt(prompt, \"extra_arg\")\n\twant := \"hello_world_some.test_path.dir_other\"\n\tif got != want {\n\t\tt.Errorf(\"IDFromPrompt() = %q, want %q\", got, want)\n\t}\n}"

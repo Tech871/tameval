@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.0"
+
+[repo_info]
+repository = "google/skia-buildbot"
+sha = "68746095168840b4c51e113d3ff32e3d2e37fc8d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out perf/go/ingest/format/format.go perf/go/ingest/format/format_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting perf/go/ingest/format/format.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 83.0
+original_coverage = 83.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 232, 238, 243, 244, 245, 246, 247, 248, 249, 250, 251, 269, 270, 274, 275, 276, 277, 279,]
+missed_lines = [ 256, 257, 258, 259, 260, 262, 271, 272, 273,]
+
+[input_info]
+test_file_path = "perf/go/ingest/format/format_test.go"
+focal_file_path = "perf/go/ingest/format/format.go"
+test_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/perf/go/ingest/format/format_test.go"
+focal_file_url = "https://github.com/google/skia-buildbot/blob/68746095168840b4c51e113d3ff32e3d2e37fc8d/perf/go/ingest/format/format.go"
+first_commit_date = "2020-03-11"
+last_commit_date = "2025-01-15"
+test_file_content = "package format\n\nimport (\n\t\"bytes\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\t\"go.skia.org/infra/go/deepequal/assertdeep\"\n)\n\nfunc TestParse_InvalidJSON(t *testing.T) {\n\t_, err := Parse(bytes.NewReader([]byte(\"{\")))\n\tassert.Error(t, err)\n}\n\nfunc TestParse_GoodVersion(t *testing.T) {\n\t_, err := Parse(bytes.NewReader([]byte(\"{\\\"version\\\":1}\")))\n\tassert.NoError(t, err)\n}\n\nfunc TestParse_BadVersion(t *testing.T) {\n\t_, err := Parse(bytes.NewReader([]byte(\"{\\\"version\\\":2}\")))\n\tassert.Error(t, err)\n}\n\nfunc TestParse_BadVersionNotNumber(t *testing.T) {\n\t_, err := Parse(bytes.NewReader([]byte(\"{\\\"version\\\":\\\"1\\\"}\")))\n\tassert.Error(t, err)\n}\n\nfunc TestValidate_EmptyObject_ReturnsError(t *testing.T) {\n\tr := strings.NewReader(\"{}\")\n\t_, err := Validate(r)\n\trequire.Error(t, err)\n}\n\nfunc TestValidate_VersionOnlyIsCorrect_ReturnsError(t *testing.T) {\n\tr := strings.NewReader(`{\"version\" : 1}`)\n\tschemaViolations, err := Validate(r)\n\trequire.Error(t, err)\n\trequire.NotEmpty(t, schemaViolations)\n}\n\nfunc TestValidate_MinimumValidVersion_Success(t *testing.T) {\n\tr := strings.NewReader(`{\n\t\t\"version\" : 1,\n\t\t\"git_hash\": \"1234567890\",\n\t\t\"results\" : []\n\t\t}`)\n\tschemaViolations, err := Validate(r)\n\trequire.NoError(t, err)\n\trequire.Empty(t, schemaViolations)\n}\n\nfunc TestValidate_ExampleWithData_Success(t *testing.T) {\n\tr := strings.NewReader(`{\n\t\t\"version\": 1,\n\t\t\"git_hash\": \"cd5...663\",\n\t\t\"key\": {\n\t\t\t\"config\": \"8888\",\n\t\t\t\"arch\": \"x86\"\n\t\t},\n\t\t\"results\": [\n\t\t\t{\n\t\t\t\t\"key\": {\n\t\t\t\t\t\"test\": \"some_test_name\"\n\t\t\t\t},\n\t\t\t\t\"measurements\": {\n\t\t\t\t\t\"ms\": [\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"value\": \"min\",\n\t\t\t\t\t\t\t\"measurement\": 1.2\n\t\t\t\t\t\t},\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"value\": \"max\",\n\t\t\t\t\t\t\t\"measurement\": 2.4\n\t\t\t\t\t\t},\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"value\": \"median\",\n\t\t\t\t\t\t\t\"measurement\": 1.5\n\t\t\t\t\t\t}\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t}\n\t\t]\n\t}`)\n\tschemaViolations, err := Validate(r)\n\trequire.NoError(t, err)\n\trequire.Empty(t, schemaViolations)\n}\n\nfunc TestLinks_ExampleWithDataMeasurementLinks_Success(t *testing.T) {\n\tr := strings.NewReader(`{\n\t\t\"version\": 1,\n\t\t\"git_hash\": \"cd5...663\",\n\t\t\"key\": {\n\t\t\t\"config\": \"8888\",\n\t\t\t\"arch\": \"x86\"\n\t\t},\n\t\t\"results\": [\n\t\t\t{\n\t\t\t\t\"key\": {\n\t\t\t\t\t\"test\": \"some=test$name\"\n\t\t\t\t},\n\t\t\t\t\"measurements\": {\n\t\t\t\t\t\"ms\": [\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"value\": \"min\",\n\t\t\t\t\t\t\t\"measurement\": 1.2,\n\t\t\t\t\t\t\t\"links\": {\n\t\t\t\t\t\t\t\t\"l1\": \"http://myfirstlink\"\n\t\t\t\t\t\t\t}\n\t\t\t\t\t\t},\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"value\": \"max\",\n\t\t\t\t\t\t\t\"measurement\": 2.4\n\t\t\t\t\t\t},\n\t\t\t\t\t\t{\n\t\t\t\t\t\t\t\"value\": \"median\",\n\t\t\t\t\t\t\t\"measurement\": 1.5\n\t\t\t\t\t\t}\n\t\t\t\t\t]\n\t\t\t\t}\n\t\t\t}\n\t\t],\n\t\t\"links\": {\n\t\t\t\"l2\": \"http://mygloballink\"\n\t\t}\n\t}`)\n\tf, err := Parse(r)\n\trequire.NoError(t, err)\n\tlinks := f.GetLinksForMeasurement(\",config=8888,arch=x86,test=some_test_name,ms=min,\")\n\trequire.NotNil(t, links)\n\texpectedLinks := map[string]string{\n\t\t\"l1\": \"http://myfirstlink\",\n\t\t\"l2\": \"http://mygloballink\",\n\t}\n\tassertdeep.Equal(t, expectedLinks, links)\n\n\tlinks = f.GetLinksForMeasurement(\",config=8888,arch=x86,test=some_test_name,ms=max,\")\n\trequire.NotNil(t, links)\n\texpectedLinks = map[string]string{\n\t\t\"l2\": \"http://mygloballink\",\n\t}\n\tassertdeep.Equal(t, expectedLinks, links)\n}\n"

@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pex-tool/pex"
+sha = "17bd416647eaca978e538408f1ec21813ab26335"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r docs-requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=pex/pep_425.py -m pytest -q --junit-xml=test_output.xml tests/test_pep_425.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target pex.pep_425 --unit-test tests.test_pep_425 --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target pex/pep_425.py --unit-test tests/test_pep_425.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 61.0
+original_coverage = 61.0
+mutation_kill_rate = 39.0
+original_mutation_kill_rate = 39.0
+covered_lines = [ 3, 5, 6, 8, 9, 10, 11, 12, 14, 19, 22, 24, 27, 34, 35, 36, 37, 39, 46, 47, 56, 57, 59, 60, 66, 69, 70, 71, 72, 78, 80, 81, 83, 85, 86, 88, 89, 94, 101, 105, 117, 121, 122, 128, 129, 133, 137, 149, 151, 153, 157, 158, 164, 165, 169, 170, 174,]
+missed_lines = [ 15, 17, 41, 95, 103, 108, 110, 111, 112, 113, 115, 119, 124, 125, 126, 131, 135, 139, 140, 141, 142, 143, 144, 145, 146, 147, 155, 160, 167, 172, 180, 181, 182, 183, 184, 188,]
+
+[input_info]
+test_file_path = "tests/test_pep_425.py"
+focal_file_path = "pex/pep_425.py"
+test_file_url = "https://github.com/pex-tool/pex/blob/17bd416647eaca978e538408f1ec21813ab26335/tests/test_pep_425.py"
+focal_file_url = "https://github.com/pex-tool/pex/blob/17bd416647eaca978e538408f1ec21813ab26335/pex/pep_425.py"
+first_commit_date = "2022-02-17"
+last_commit_date = "2025-02-15"
+test_file_content = "# Copyright 2022 Pex project contributors.\n# Licensed under the Apache License, Version 2.0 (see LICENSE).\nimport re\n\nimport pytest\n\nfrom pex.pep_425 import CompatibilityTags\nfrom pex.third_party.packaging import tags\nfrom pex.typing import TYPE_CHECKING\n\nif TYPE_CHECKING:\n    from typing import Any, Iterable\n\n\ndef equatable(tags):\n    # type: (Iterable[tags.Tag]) -> Any\n    return sorted(map(str, tags))\n\n\ndef test_tags_from_wheel_nominal():\n    # type: () -> None\n\n    assert equatable(tags.parse_tag(\"py2.py3-none-any\")) == equatable(\n        CompatibilityTags.from_wheel(\"foo-1.2.3-py2.py3-none-any.whl\")\n    )\n    assert equatable(CompatibilityTags.from_strings([\"py2-none-any\", \"py3-none-any\"])) == equatable(\n        CompatibilityTags.from_wheel(\"foo-1.2.3-py2.py3-none-any.whl\")\n    )\n    assert equatable(tags.parse_tag(\"py2.py3-none-any\")) == equatable(\n        CompatibilityTags.from_wheel(\"foo-1.2.3-build_tag-py2.py3-none-any.whl\")\n    )\n    assert equatable(tags.parse_tag(\"py3-none-any\")) == equatable(\n        CompatibilityTags.from_wheel(\"path/to/bar-4.5.6-py3-none-any.whl\")\n    )\n\n\ndef test_tags_from_wheel_invalid():\n    # type: () -> None\n\n    with pytest.raises(\n        ValueError,\n        match=re.escape(\n            \"Can only calculate wheel tags from a filename that ends in .whl per \"\n            \"https://peps.python.org/pep-0427/#file-name-convention, given: \"\n            \"'foo-1.2.3-py2.py3-none-any'\"\n        ),\n    ):\n        CompatibilityTags.from_wheel(\"foo-1.2.3-py2.py3-none-any\")\n\n    with pytest.raises(\n        ValueError,\n        match=re.escape(\n            \"Can only calculate wheel tags from a filename that ends in \"\n            \"`-{python tag}-{abi tag}-{platform tag}.whl` per \"\n            \"https://peps.python.org/pep-0427/#file-name-convention, given: 'py2.py3-none-any.whl'\"\n        ),\n    ):\n        CompatibilityTags.from_wheel(\"py2.py3-none-any.whl\")\n"

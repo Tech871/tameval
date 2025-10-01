@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "SAP/cloud-security-services-integration-library"
+sha = "bc3a37687860d8dd34ca2e26b45d942bd4a3e85b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl env -Dtest=DefaultJsonObjectTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl env -DtargetClasses=**.DefaultJsonObject  -DtargetTests=**.DefaultJsonObjectTest  -DoutputFormats=XML"
+coverage_report_path = "env/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "env/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 46.0
+original_coverage = 80.0
+mutation_kill_rate = 50.0
+original_mutation_kill_rate = 84.0
+covered_lines = [ 28, 38, 39, 40, 44, 54, 73, 75, 76, 77, 86, 95, 96, 97, 98, 115, 118, 121, 122, 123, 124, 125, 170, 178, 185, 186, 187, 189, 190, 191, 192, 194, 198, 200, 209, 215, 216, 217, 218,]
+missed_lines = [ 49, 59, 60, 61, 62, 64, 67, 80, 87, 88, 100, 106, 107, 109, 119, 120, 127, 132, 133, 134, 139, 140, 141, 142, 143, 144, 145, 147, 148, 153, 157, 158, 159, 160, 162, 164, 165, 171, 172, 179, 180, 201, 202, 205, 224,]
+
+[input_info]
+test_file_path = "env/src/test/java/com/sap/cloud/security/json/DefaultJsonObjectTest.java"
+focal_file_path = "env/src/main/java/com/sap/cloud/security/json/DefaultJsonObject.java"
+test_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/env/src/test/java/com/sap/cloud/security/json/DefaultJsonObjectTest.java"
+focal_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/env/src/main/java/com/sap/cloud/security/json/DefaultJsonObject.java"
+first_commit_date = "2021-08-23"
+last_commit_date = "2025-04-07"
+test_file_content = "/**\n * SPDX-FileCopyrightText: 2018-2023 SAP SE or an SAP affiliate company and Cloud Security Client Java contributors\n * <p>\n * SPDX-License-Identifier: Apache-2.0\n */\npackage com.sap.cloud.security.json;\n\nimport org.junit.Assert;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.time.Instant;\nimport java.time.LocalDate;\nimport java.time.ZoneOffset;\nimport java.util.List;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.assertj.core.api.Assertions.assertThatThrownBy;\n\npublic class DefaultJsonObjectTest {\n\n\tprivate static final Instant FIRST_OF_APRIL = LocalDate.of(2019, 4, 1).atStartOfDay().toInstant(ZoneOffset.UTC);\n\n\tprivate static final String KEY_1 = \"key-1\";\n\tprivate static final String KEY_2 = \"key-2\";\n\n\tprivate static final String STRING_TEXT = \"string text\";\n\tprivate static final String STRING_VALUE = \"\\\"\" + STRING_TEXT + \"\\\"\";\n\n\tprivate static final String STRING_LIST_VALUE = \"[\\\"a\\\",\\\"b\\\",\\\"c\\\"]\";\n\n\tprivate DefaultJsonObject cut;\n\n\t@Before\n\tpublic void setUp() {\n\t\tcut = createJsonParser(KEY_1, STRING_VALUE);\n\t}\n\n\n\n\n\n\t@Test\n\tpublic void getAsString_keyExists_returnsStringValue() {\n\t\tassertThat(cut.getAsString(KEY_1)).isEqualTo(STRING_TEXT);\n\t}\n\n\n\t@Test\n\tpublic void getAsString_keyDoesExistButTypeIsWrong_throwsException() {\n\t\tcut = createJsonParser(KEY_2, STRING_LIST_VALUE);\n\n\t\tassertThatThrownBy(() -> cut.getAsString(KEY_2)).isInstanceOf(JsonParsingException.class);\n\t}\n\n\n\t@Test\n\tpublic void getAsOptString_keyDoesExistButTypeIsWrong_triggersConversion() {\n\t\tcut = createJsonParser(KEY_2, STRING_LIST_VALUE);\n\n\t\tassertThat(cut.getAsOptString(KEY_2)).isEqualTo(STRING_LIST_VALUE);\n\t}\n\n\t@Test\n\tpublic void getAsListOfStrings_keyExists_returnsList() {\n\t\tcut = createJsonParser(KEY_2, STRING_LIST_VALUE);\n\n\t\tList<String> list = cut.getAsList(KEY_2, String.class);\n\n\t\tassertThat(list).hasSize(3).first().isEqualTo(\"a\");\n\t}\n\n\n\n\n\t@Test\n\tpublic void getAsListOfStrings_keyExistsButTypeIsWrong_throwsException() {\n\t\tcut = createJsonParser(KEY_2, STRING_LIST_VALUE);\n\n\t\tassertThatThrownBy(() -> cut.getAsList(KEY_2, Integer.class)).isInstanceOf(JsonParsingException.class);\n\t}\n\n\n\t@Test\n\tpublic void getAsInstant_propertyExistsAndIsEpochTimeFormattedAsNumber_returnsInstant() {\n\t\tcut = createJsonParser(KEY_1, FIRST_OF_APRIL.getEpochSecond());\n\n\t\tInstant instant = cut.getAsInstant(KEY_1);\n\n\t\tassertThat(instant).isEqualTo(Instant.from(FIRST_OF_APRIL));\n\t}\n\n\n\n\n\n\t@Test\n\tpublic void getJsonObject_propertyExists_returnsJsonObject() {\n\t\tcut = createJsonParser(KEY_1, createJsonObjectString(KEY_1, STRING_VALUE));\n\n\t\tJsonObject jsonObject = cut.getJsonObject(KEY_1);\n\n\t\tassertThat(jsonObject).isNotNull();\n\t\tassertThat(jsonObject.getAsString(KEY_1)).isNotNull();\n\t}\n\n\n\n\n\n\n\n\n\t// Test if affected by CVE https://nvd.nist.gov/vuln/detail/CVE-2022-45688\n\t// TODO: remove once org.json has released an updated version that fixes CVE\n\t@Test\n\tpublic void notVulnerableToStackOverflowException() {\n\t\tString deeplyNestedJsonObject = createDeeplyNestedJsonObjectString(100000);\n\t\ttry {\n\t\t\tnew DefaultJsonObject(deeplyNestedJsonObject);\n\t\t} catch (StackOverflowError e) {\n\t\t\tAssert.fail(\"Encountered StackoverflowError.\");\n\t\t} catch (Exception ignored) {\n\t\t}\n\t}\n\n\tprivate static String createDeeplyNestedJsonObjectString(int depth) {\n\t\treturn \"{\" +\n\t\t\t\t// go down the JSON Object rabbit hole...\n\t\t\t\t\"\\\"a\\\" : {\".repeat(Math.max(0, depth)) +\n\n\t\t\t\t// ... and up again\n\t\t\t\t\"}\".repeat(Math.max(0, depth)) +\n\n\t\t\t\t\"}\";\n\t}\n\n\tprivate DefaultJsonObject createJsonParser(String key, Object value) {\n\t\tString jsonString = createJsonObjectString(key, value);\n\t\treturn new DefaultJsonObject(jsonString);\n\t}\n\n\tprivate String createJsonObjectString(String key, Object value) {\n\t\treturn String.format(\"{%s : %s}\", key, value);\n\t}\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apolloconfig/apollo-java"
+sha = "d8115d920ae21a1300827661492b5e776853258f"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl apollo-client -Dtest=ConfigServiceLocatorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl apollo-client -DtargetClasses=**.ConfigServiceLocator  -DtargetTests=**.ConfigServiceLocatorTest  -DoutputFormats=XML"
+coverage_report_path = "apollo-client/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "apollo-client/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 82.0
+original_coverage = 82.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 56, 69, 70, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 91, 93, 94, 95, 99, 100, 101, 105, 106, 108, 110, 112, 114, 116, 119, 120, 123, 126, 127, 129, 130, 131, 132, 133, 134, 135, 138, 144, 145, 146, 149, 151, 152, 157, 159, 160, 165, 179, 180, 183, 185, 193, 194, 196, 199, 203, 210, 213, 217, 218, 225, 226, 227, 230, 234, 238, 240, 242, 243, 245, 246, 248, 249, 250, 261, 262, 263, 264, 266, 270, 273, 276, 277, 281, 282, 283, 286, 287, 288, 290, 291, 292, 293, 296, 300, 301, 302, 303, 306, 307,]
+missed_lines = [ 153, 161, 169, 170, 171, 172, 174, 175, 208, 209, 221, 222, 223, 224, 236, 252, 253, 254, 255, 256, 259, 260, 271,]
+
+[input_info]
+test_file_path = "apollo-client/src/test/java/com/ctrip/framework/apollo/internals/ConfigServiceLocatorTest.java"
+focal_file_path = "apollo-client/src/main/java/com/ctrip/framework/apollo/internals/ConfigServiceLocator.java"
+test_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-client/src/test/java/com/ctrip/framework/apollo/internals/ConfigServiceLocatorTest.java"
+focal_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-client/src/main/java/com/ctrip/framework/apollo/internals/ConfigServiceLocator.java"
+first_commit_date = "2022-10-02"
+last_commit_date = "2024-10-19"
+test_file_content = "/*\n * Copyright 2022 Apollo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\npackage com.ctrip.framework.apollo.internals;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nimport com.ctrip.framework.apollo.core.ApolloClientSystemConsts;\nimport com.ctrip.framework.apollo.core.dto.ServiceDTO;\nimport com.ctrip.framework.apollo.exceptions.ApolloConfigException;\nimport java.util.List;\nimport org.junit.jupiter.api.AfterEach;\nimport org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\n\npublic class ConfigServiceLocatorTest {\n\n  @AfterEach\n  public void tearDown() throws Exception {\n    System.clearProperty(ApolloClientSystemConsts.APOLLO_CONFIG_SERVICE);\n    System.clearProperty(ApolloClientSystemConsts.DEPRECATED_APOLLO_CONFIG_SERVICE);\n  }\n\n  @Test\n  public void testGetConfigServicesWithSystemProperty() throws Exception {\n    String someConfigServiceUrl = \" someConfigServiceUrl \";\n    String anotherConfigServiceUrl = \" anotherConfigServiceUrl \";\n\n    System.setProperty(ApolloClientSystemConsts.APOLLO_CONFIG_SERVICE, someConfigServiceUrl + \",\" + anotherConfigServiceUrl);\n\n    ConfigServiceLocator configServiceLocator = new ConfigServiceLocator();\n\n    List<ServiceDTO> result = configServiceLocator.getConfigServices();\n\n    assertEquals(2, result.size());\n\n    assertEquals(someConfigServiceUrl.trim(), result.get(0).getHomepageUrl());\n    assertEquals(anotherConfigServiceUrl.trim(), result.get(1).getHomepageUrl());\n  }\n\n  @Test\n  public void testGetConfigServicesWithSystemPropertyCompatible() throws Exception {\n    String someConfigServiceUrl = \" someConfigServiceUrl \";\n    String anotherConfigServiceUrl = \" anotherConfigServiceUrl \";\n\n    System.setProperty(ApolloClientSystemConsts.DEPRECATED_APOLLO_CONFIG_SERVICE,\n        someConfigServiceUrl + \",\" + anotherConfigServiceUrl);\n\n    ConfigServiceLocator configServiceLocator = new ConfigServiceLocator();\n\n    List<ServiceDTO> result = configServiceLocator.getConfigServices();\n\n    assertEquals(2, result.size());\n\n    assertEquals(someConfigServiceUrl.trim(), result.get(0).getHomepageUrl());\n    assertEquals(anotherConfigServiceUrl.trim(), result.get(1).getHomepageUrl());\n  }\n\n  @Test\n  public void giveNoUsableConfigServiceThenThrowExceptionQuickly() {\n    ConfigServiceLocator configServiceLocator = Mockito.spy(\n        new ConfigServiceLocator()\n    );\n\n    Mockito.doNothing().when(configServiceLocator).doSubmitUpdateTask();\n\n    // trigger once\n    assertThrows(ApolloConfigException.class, () -> {\n      configServiceLocator.getConfigServices();\n    });\n    Mockito.verify(configServiceLocator, Mockito.times(1))\n        .trySubmitUpdateTask();\n    Mockito.verify(configServiceLocator, Mockito.times(1))\n        .doSubmitUpdateTask();\n\n    // trigger 9 times in a short period, but only submit a task\n    for (int i = 0; i < 9; i++) {\n      assertThrows(ApolloConfigException.class, () -> {\n        configServiceLocator.getConfigServices();\n      });\n    }\n    Mockito.verify(configServiceLocator, Mockito.times(10))\n        .trySubmitUpdateTask();\n    Mockito.verify(configServiceLocator, Mockito.times(1))\n        .doSubmitUpdateTask();\n\n    // clear queue\n    {\n      boolean oldValue = configServiceLocator.discoveryTaskQueueMark.getAndSet(false);\n      assertTrue(oldValue);\n    }\n\n    // trigger 10 times in a short period, task will submit again\n    for (int i = 0; i < 10; i++) {\n      assertThrows(ApolloConfigException.class, () -> {\n        configServiceLocator.getConfigServices();\n      });\n    }\n    Mockito.verify(configServiceLocator, Mockito.times(20))\n        .trySubmitUpdateTask();\n    Mockito.verify(configServiceLocator, Mockito.times(2))\n        .doSubmitUpdateTask();\n\n  }\n\n}\n"

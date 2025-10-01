@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "unitaryfoundation/mitiq"
+sha = "3d4516eb01e0c82220a829bbf570ac537143b5a5"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mitiq/pec/representations/damping.py -m pytest -q --junit-xml=test_output.xml mitiq/pec/representations/tests/test_damping.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mitiq.pec.representations.damping --unit-test mitiq.pec.representations.tests.test_damping --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mitiq/pec/representations/damping.py --unit-test mitiq/pec/representations/tests/test_damping.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 6, 8, 9, 10, 12, 13, 17, 56, 61, 63, 64, 66, 67, 68, 69, 70, 78, 79, 81, 86, 93, 94, 95,]
+missed_lines = []
+
+[input_info]
+test_file_path = "mitiq/pec/representations/tests/test_damping.py"
+focal_file_path = "mitiq/pec/representations/damping.py"
+test_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/pec/representations/tests/test_damping.py"
+focal_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/pec/representations/damping.py"
+first_commit_date = "2021-06-04"
+last_commit_date = "2025-06-07"
+test_file_content = "\n\nimport numpy as np\nimport pytest\nfrom cirq import AmplitudeDampingChannel, Circuit, Gate, H, LineQubit, X, Y, Z\n\nfrom mitiq.interface import convert_from_mitiq\nfrom mitiq.pec.channels import _circuit_to_choi, _operation_to_choi\nfrom mitiq.pec.representations.damping import (\n    _represent_operation_with_amplitude_damping_noise,\n    amplitude_damping_kraus,\n)\n\n\n@pytest.mark.parametrize(\"noise\", [0, 0.1, 0.7])\n@pytest.mark.parametrize(\"gate\", [X, Y, Z, H])\ndef test_single_qubit_representation_norm(gate: Gate, noise: float):\n    q = LineQubit(0)\n    optimal_norm = (1 + noise) / (1 - noise)\n    norm = _represent_operation_with_amplitude_damping_noise(\n        Circuit(gate(q)),\n        noise,\n    ).norm\n    assert np.isclose(optimal_norm, norm)\n\n\n@pytest.mark.parametrize(\"noise_level\", [0, 0.1, 0.7])\n@pytest.mark.parametrize(\"operation\", [X, Y, Z, H])\ndef check_single_qubit_representation_norm(operation: Gate, noise_level: float):\n    qubit = LineQubit(0)\n    target_norm = (1 + noise_level) / (1 - noise_level)\n    rep_norm = _represent_operation_with_amplitude_damping_noise(\n        Circuit(operation(qubit)),\n        noise_level,\n    ).norm\n    np.testing.assert_almost_equal(target_norm, rep_norm)\n@pytest.mark.parametrize(\"circuit_type\", [\"cirq\"])\n@pytest.mark.parametrize(\"noise\", [0, 0.1, 0.7])\n@pytest.mark.parametrize(\"gate\", [X, Y, Z, H])\ndef test_amplitude_damping_representation_with_choi(\n    gate: Gate,\n    noise: float,\n    circuit_type: str,\n):\n    q = LineQubit(0)\n    ideal_circuit = convert_from_mitiq(Circuit(gate.on(q)), circuit_type)\n    ideal_choi = _circuit_to_choi(Circuit(gate.on(q)))\n    op_rep = _represent_operation_with_amplitude_damping_noise(\n        ideal_circuit,\n        noise,\n    )\n    choi_components = []\n    for coeff, noisy_op in op_rep.basis_expansion:\n        implementable_circ = noisy_op.circuit\n        depolarizing_op = AmplitudeDampingChannel(noise).on(q)\n        implementable_circ.append(depolarizing_op)\n        sequence_choi = _operation_to_choi(implementable_circ)\n        choi_components.append(coeff * sequence_choi)\n\n    combination_choi = np.sum(choi_components, axis=0)\n    assert np.allclose(ideal_choi, combination_choi, atol=10**-8)\n\n\n@pytest.mark.parametrize(\"circuit_format\", [\"cirq\"])\n@pytest.mark.parametrize(\"noise_factor\", [0, 0.1, 0.7])\n@pytest.mark.parametrize(\"quantum_gate\", [X, Y, Z, H])\ndef verify_amplitude_damping_representation_with_choi(\n    quantum_gate: Gate,\n    noise_factor: float,\n    circuit_format: str,\n):\n    qubit = LineQubit(0)\n    ideal_circuit = convert_from_mitiq(Circuit(quantum_gate.on(qubit)), circuit_format)\n    ideal_choi_matrix = _circuit_to_choi(Circuit(quantum_gate.on(qubit)))\n    operation_representation = _represent_operation_with_amplitude_damping_noise(\n        ideal_circuit,\n        noise_factor,\n    )\n    choi_parts = []\n    for coefficient, noisy_operation in operation_representation.basis_expansion:\n        circuit = noisy_operation.circuit\n        amplitude_damping = AmplitudeDampingChannel(noise_factor).on(qubit)\n        circuit.append(amplitude_damping)\n        part_choi = _operation_to_choi(circuit)\n        choi_parts.append(coefficient * part_choi)\n\n    combined_choi_matrix = np.sum(choi_parts, axis=0)\n    np.testing.assert_allclose(ideal_choi_matrix, combined_choi_matrix, atol=10**-8)\n\n\ndef test_damping_kraus():\n    expected = [[[1.0, 0.0], [0.0, 0.0]], [[0.0, 1.0], [0.0, 0.0]]]\n    assert np.allclose(amplitude_damping_kraus(1, 1), expected)\n    expected = [\n        [[1.0, 0.0], [0.0, np.sqrt(0.5)]],\n        [[0.0, np.sqrt(0.5)], [0.0, 0.0]],\n    ]\n    assert np.allclose(amplitude_damping_kraus(0.5, 1), expected)\n    for num_qubits in (1, 2, 3):\n        for noise_level in (0.1, 1):\n            kraus_ops = amplitude_damping_kraus(noise_level, num_qubits)\n            dual_channel = sum([k.conj().T @ k for k in kraus_ops])\n            assert np.allclose(dual_channel, np.eye(2**num_qubits))"

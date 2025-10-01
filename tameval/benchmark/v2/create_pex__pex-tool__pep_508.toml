@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pex-tool/pex"
+sha = "17bd416647eaca978e538408f1ec21813ab26335"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r docs-requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=pex/pep_508.py -m pytest -q --junit-xml=test_output.xml tests/test_pep_508.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target pex.pep_508 --unit-test tests.test_pep_508 --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target pex/pep_508.py --unit-test tests/test_pep_508.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 87.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 65.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/test_pep_508.py"
+focal_file_path = "pex/pep_508.py"
+test_file_url = "https://github.com/pex-tool/pex/blob/17bd416647eaca978e538408f1ec21813ab26335/tests/test_pep_508.py"
+focal_file_url = "https://github.com/pex-tool/pex/blob/17bd416647eaca978e538408f1ec21813ab26335/pex/pep_508.py"
+first_commit_date = "2022-02-11"
+last_commit_date = "2025-02-15"
+test_file_content = ""

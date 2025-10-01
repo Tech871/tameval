@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "stevespringett/Alpine"
+sha = "bb816e4e9040a0d0fe7a7b2d39c9142933fd88af"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl alpine-server -Dtest=JsonWebTokenTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl alpine-server -DtargetClasses=**.JsonWebToken  -DtargetTests=**.JsonWebTokenTest  -DoutputFormats=XML"
+coverage_report_path = "alpine-server/target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "alpine-server/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 75.0
+original_coverage = 75.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 56, 58, 60, 61, 65, 81, 85, 86, 96, 97, 108, 121, 136, 137, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 164, 165, 167, 168, 169, 170, 172, 175, 202, 203, 204, 205, 206, 207, 229, 230, 231, 232, 240, 248, 256,]
+missed_lines = [ 63, 187, 188, 189, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218,]
+
+[input_info]
+test_file_path = "alpine-server/src/test/java/alpine/server/auth/JsonWebTokenTest.java"
+focal_file_path = "alpine-server/src/main/java/alpine/server/auth/JsonWebToken.java"
+test_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-server/src/test/java/alpine/server/auth/JsonWebTokenTest.java"
+focal_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-server/src/main/java/alpine/server/auth/JsonWebToken.java"
+first_commit_date = "2022-02-24"
+last_commit_date = "2024-05-28"
+test_file_content = "/*\n * This file is part of Alpine.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n * SPDX-License-Identifier: Apache-2.0\n * Copyright (c) Steve Springett. All Rights Reserved.\n */\npackage alpine.server.auth;\n\nimport alpine.model.LdapUser;\nimport alpine.model.ManagedUser;\nimport alpine.model.OidcUser;\nimport alpine.model.Permission;\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\n\nimport java.security.Principal;\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\npublic class JsonWebTokenTest {\n\n    @Test\n    public void createTokenTest() {\n        Principal user = Mockito.mock(Principal.class);\n        Mockito.when(user.getName()).thenReturn(\"admin\");\n        JsonWebToken jwt = new JsonWebToken();\n        String token = jwt.createToken(user);\n        Assertions.assertNotNull(token);\n        Assertions.assertTrue(jwt.validateToken(token));\n        Assertions.assertEquals(\"admin\", jwt.getSubject());\n        Assertions.assertNotNull(jwt.getExpiration());\n    }\n\n    @Test\n    public void createTokenPermissionsTest() {\n        List<Permission> permissions = new ArrayList<>();\n        Permission p1 = Mockito.mock(Permission.class);\n        Mockito.when(p1.getName()).thenReturn(\"PERM-1\");\n        Permission p2 = Mockito.mock(Permission.class);\n        Mockito.when(p2.getName()).thenReturn(\"PERM-2\");\n        permissions.add(p1);\n        permissions.add(p2);\n        Principal user = Mockito.mock(Principal.class);\n        Mockito.when(user.getName()).thenReturn(\"admin\");\n        JsonWebToken jwt = new JsonWebToken();\n        String token = jwt.createToken(user, permissions);\n        Assertions.assertNotNull(token);\n        Assertions.assertTrue(jwt.validateToken(token));\n        Assertions.assertEquals(\"admin\", jwt.getSubject());\n        Assertions.assertNotNull(jwt.getExpiration());\n    }\n\n    @Test\n    public void createTokenShouldDeriveIdentityProviderLocal() {\n        final JsonWebToken jwt = new JsonWebToken();\n\n        final String token = jwt.createToken(new ManagedUser());\n\n        assertThat(jwt.validateToken(token)).isTrue();\n        assertThat(jwt.getIdentityProvider()).isEqualTo(IdentityProvider.LOCAL);\n    }\n\n    @Test\n    public void createTokenShouldDeriveIdentityProviderLdap() {\n        final JsonWebToken jwt = new JsonWebToken();\n\n        final String token = jwt.createToken(new LdapUser());\n\n        assertThat(jwt.validateToken(token)).isTrue();\n        assertThat(jwt.getIdentityProvider()).isEqualTo(IdentityProvider.LDAP);\n    }\n\n    @Test\n    public void createTokenShouldDeriveIdentityProviderOidc() {\n        final JsonWebToken jwt = new JsonWebToken();\n\n        final String token = jwt.createToken(new OidcUser());\n\n        assertThat(jwt.validateToken(token)).isTrue();\n        assertThat(jwt.getIdentityProvider()).isEqualTo(IdentityProvider.OPENID_CONNECT);\n    }\n\n    @Test\n    public void createTokenShouldSetLocalIdentityProviderWhenProviderCouldNotBeDerived() {\n        final JsonWebToken jwt = new JsonWebToken();\n\n        final String token = jwt.createToken(Mockito.mock(Principal.class));\n\n        assertThat(jwt.validateToken(token)).isTrue();\n        assertThat(jwt.getIdentityProvider()).isEqualTo(IdentityProvider.LOCAL);\n    }\n\n    @Test\n    public void createTokenShouldUseProvidedIdentityProvider() {\n        final JsonWebToken jwt = new JsonWebToken();\n\n        final String token = jwt.createToken(Mockito.mock(Principal.class), null, IdentityProvider.OPENID_CONNECT);\n\n        assertThat(jwt.validateToken(token)).isTrue();\n        assertThat(jwt.getIdentityProvider()).isEqualTo(IdentityProvider.OPENID_CONNECT);\n    }\n\n}\n"

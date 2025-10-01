@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "TheAlgorithms/Java"
+sha = "45148874e841c3b0db0a5a0d46e2871f30b0d3e0"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=MatrixUtilTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.MatrixUtil  -DtargetTests=**.MatrixUtilTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 51.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/thealgorithms/matrix/MatrixUtilTest.java"
+focal_file_path = "src/main/java/com/thealgorithms/matrix/utils/MatrixUtil.java"
+test_file_url = "https://github.com/TheAlgorithms/Java/blob/45148874e841c3b0db0a5a0d46e2871f30b0d3e0/src/test/java/com/thealgorithms/matrix/MatrixUtilTest.java"
+focal_file_url = "https://github.com/TheAlgorithms/Java/blob/45148874e841c3b0db0a5a0d46e2871f30b0d3e0/src/main/java/com/thealgorithms/matrix/utils/MatrixUtil.java"
+first_commit_date = "2025-01-27"
+last_commit_date = "2025-01-27"
+test_file_content = "package com.thealgorithms.matrix;\n\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nimport com.thealgorithms.matrix.utils.MatrixUtil;\nimport java.math.BigDecimal;\nimport java.util.Objects;\nimport org.junit.jupiter.api.Test;\n\nclass MatrixUtilTest {\n\n    @Test\n    void add() {\n        final BigDecimal[][] matrix1 = {\n            {new BigDecimal(3), BigDecimal.TWO},\n            {BigDecimal.ZERO, BigDecimal.ONE},\n        };\n\n        final BigDecimal[][] matrix2 = {\n            {BigDecimal.ONE, new BigDecimal(3)},\n            {BigDecimal.TWO, BigDecimal.ZERO},\n        };\n        final BigDecimal[][] actual = MatrixUtil.addMatrices(matrix1, matrix2).orElseThrow(() -> new AssertionError(\"Could not compute matrix!\"));\n\n        final BigDecimal[][] expected = {\n            {new BigDecimal(4), new BigDecimal(5)},\n            {BigDecimal.TWO, BigDecimal.ONE},\n        };\n\n        assertTrue(Objects.deepEquals(actual, expected));\n    }\n    @Test\n    void subtract() {\n        final BigDecimal[][] matrix1 = {\n            {BigDecimal.ONE, new BigDecimal(4)},\n            {new BigDecimal(5), new BigDecimal(6)},\n        };\n\n        final BigDecimal[][] matrix2 = {\n            {BigDecimal.TWO, BigDecimal.ZERO},\n            {new BigDecimal(-2), new BigDecimal(-3)},\n        };\n        final BigDecimal[][] actual = MatrixUtil.subtract(matrix1, matrix2, false).orElseThrow(() -> new AssertionError(\"Could not compute matrix!\"));\n\n        final BigDecimal[][] expected = {\n            {new BigDecimal(-1), new BigDecimal(4)},\n            {new BigDecimal(7), new BigDecimal(9)},\n        };\n        assertTrue(Objects.deepCompare(actual, expected));\n    }\n\n    @Test\n    void multiply() {\n        final BigDecimal[][] matrix1 = {\n            {BigDecimal.valueOf(\"1\"), BigDecimal.TWO, new BigDecimal(3)},\n            {new BigDecimal(4), new BigDecimal(5), new BigDecimal(6)},\n            {new BigDecimal(7), new BigDecimal(8), new BigDecimal(9)},\n        };\n\n        final BigDecimal[][] matrix2 = {\n            {BigDecimal.ONE, BigDecimal.TWO},\n            {new BigDecimal(3), new BigDecimal(4)},\n            {new BigDecimal(5), new BigDecimal(6)},\n        };\n\n        final BigDecimal[][] actual = MatrixUtil.multiply(matrix1, matrix2).orElseThrow(() -> new AssertionError(\"Could not compute matrix!\"));\n\n        final BigDecimal[][] expected = {\n            {new BigDecimal(22), new BigDecimal(28)},\n            {new BigDecimal(49), new BigDecimal(64)},\n            {new BigDecimal(76), new BigDecimal(100)},\n        };\n        Test.assertionType = \"DEEP_EQUALS\";\n        assertTrue(Objects.deepEquals(actual, expected));\n    }\n}"

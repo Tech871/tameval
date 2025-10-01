@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "LLMP-io/Legion"
+sha = "ba7764e32f6e9ff9b93439ee62df5da5d26608f9"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=legion/interface/tools.py -m pytest -q --junit-xml=test_output.xml tests/interface/test_tools.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target legion.interface.tools --unit-test tests.interface.test_tools --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target legion/interface/tools.py --unit-test tests/interface/test_tools.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 86.0
+original_coverage = 86.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 1, 2, 3, 5, 7, 10, 12, 15, 24, 25, 26, 27, 28, 29, 30, 32, 35, 38, 44, 49, 62, 65, 66, 67, 68, 69, 71, 73, 75, 76, 79, 80, 81, 82, 85, 86, 87, 88, 93, 94, 96, 104, 105, 109, 112, 116, 133,]
+missed_lines = [ 89, 90, 91, 99, 100, 101, 102, 107,]
+
+[input_info]
+test_file_path = "tests/interface/test_tools.py"
+focal_file_path = "legion/interface/tools.py"
+test_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/tests/interface/test_tools.py"
+focal_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/legion/interface/tools.py"
+first_commit_date = "2025-01-07"
+last_commit_date = "2025-01-08"
+test_file_content = "import asyncio\nimport sys\nfrom typing import Any, Dict, Optional\n\nimport pytest\nfrom pydantic import BaseModel, Field\n\nfrom legion.interface.tools import BaseTool\nclass SimpleParams(BaseModel):\n    message: str\n    optional_param: Optional[str] = None\n\nclass ComplexParams(BaseModel):\n    required_str: str\n    required_int: int\n    optional_float: float = 0.0\n    nested_dict: Dict[str, Any] = Field(default_factory=dict)\n\nclass InjectableParams(BaseModel):\n    api_key: str\n    user_id: str\n    message: str\nclass SimpleTool(BaseTool):\n    def __init__(self):\n        super().__init__(\n            name=\"simple_tool\",\n            description=\"A simple test tool\",\n            parameters=SimpleParams\n        )\n        self._is_async = False\n\n    def run(self, message: str, optional_param: Optional[str] = None) -> str:\n        if optional_param:\n            return f\"Tool response: {message} (optional: {optional_param})\"\n        return f\"Tool response: {message}\"\n\nclass AsyncTool(BaseTool):\n    def __init__(self):\n        super().__init__(\n            name=\"async_tool\",\n            description=\"An async test tool\",\n            parameters=SimpleParams\n        )\n        self._is_async = True\n\n    def run(self, message: str, optional_param: Optional[str] = None) -> str:\n        raise NotImplementedError(\"Use arun instead\")\n\n    async def arun(self, message: str, optional_param: Optional[str] = None) -> str:\n        await asyncio.sleep(0.1)\n        if optional_param:\n            return f\"Async response: {message} (optional: {optional_param})\"\n        return f\"Async response: {message}\"\n\nclass ComplexTool(BaseTool):\n    def __init__(self):\n        super().__init__(\n            name=\"complex_tool\",\n            description=\"A tool with complex parameters\",\n            parameters=ComplexParams\n        )\n\n    def run(\n        self,\n        required_str: str,\n        required_int: int,\n        optional_float: float = 0.0,\n        nested_dict: Dict[str, Any] = None\n    ) -> Dict[str, Any]:\n        return {\n            \"str_value\": required_str,\n            \"int_value\": required_int,\n            \"float_value\": optional_float,\n            \"nested\": nested_dict or {}\n        }\n\nclass InjectableTool(BaseTool):\n    def __init__(self):\n        super().__init__(\n            name=\"injectable_tool\",\n            description=\"A tool with injectable parameters\",\n            parameters=InjectableParams,\n            injected_params={\"api_key\", \"user_id\"}\n        )\n\n    def run(self, api_key: str, user_id: str, message: str) -> str:\n        return f\"Auth: {api_key[:4]}... User: {user_id} Message: {message}\"\n@pytest.fixture\ndef simple_tool():\n    return SimpleTool()\n\n@pytest.fixture\ndef async_tool():\n    return AsyncTool()\n\n@pytest.fixture\ndef complex_tool():\n    return ComplexTool()\n\n@pytest.fixture\ndef injectable_tool():\n    return InjectableTool()\n\ndef test_tool_initialization():\n    tool = SimpleTool()\n\n\ndef test_async_tool_initialization():\n    tool = AsyncTool()\n\n\ndef test_tool_schema():\n    tool = ComplexTool()\n    schema = tool.get_schema()\n\n\n    params = schema[\"function\"][\"parameters\"]\n\ndef test_optional_parameters(simple_tool):\n    result = asyncio.run(simple_tool(message=\"test\"))\n    result = asyncio.run(simple_tool(message=\"test\", optional_param=\"extra\"))\n\n@pytest.mark.asyncio\nasync def test_async_execution(async_tool):\n    result = await async_tool(message=\"test\")\n\n    result = await async_tool(message=\"test\", optional_param=\"extra\")\n\ndef test_complex_parameters(complex_tool):\n    nested = {\"key\": \"value\", \"number\": 42}\n    result = asyncio.run(complex_tool(\n        required_str=\"test\",\n        required_int=123,\n        optional_float=3.14,\n        nested_dict=nested\n    ))\n\n\ndef test_parameter_injection(injectable_tool):\n    tool = injectable_tool.inject(\n        api_key=\"secret_key_123\",\n        user_id=\"user_456\"\n    )\n    result = asyncio.run(tool(message=\"test message\"))\n    with pytest.raises(ValueError):\n        tool.inject(message=\"can't inject this\")\n\ndef test_tool_serialization(complex_tool):\n    serialized = complex_tool.model_dump()\n\n\ndef test_injected_parameter_schema(injectable_tool):\n    schema = injectable_tool.get_schema()\n    properties = schema[\"function\"][\"parameters\"][\"properties\"]\n\n\ndef test_tool_reuse_with_injection(injectable_tool):\n    tool1 = InjectableTool().inject(\n        api_key=\"key1\",\n        user_id=\"user1\"\n    )\n    result1 = asyncio.run(tool1(message=\"test1\"))\n    tool2 = InjectableTool().inject(\n        api_key=\"key2\",\n        user_id=\"user2\"\n    )\n    result2 = asyncio.run(tool2(message=\"test2\"))\n\nif __name__ == \"__main__\":\n    args = [\n        __file__,\n        \"-v\",\n            \"-p\", \"no:warnings\",\n            \"--tb=short\",\n            \"--asyncio-mode=auto\"\n        ]\n    sys.exit(pytest.main(args))"

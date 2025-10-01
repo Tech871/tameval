@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.5"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "ae7fd28ecd1461a1ddf146b809a159ee1af94a34"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24.5"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/disk/findmnt.go pkg/disk/findmnt_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/disk/findmnt.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 41.0
+original_coverage = 41.0
+mutation_kill_rate = 27.0
+original_mutation_kill_rate = 27.0
+covered_lines = [ 115, 116, 120, 121, 122, 127, 132, 137, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 160, 174, 175, 176, 177, 178, 179, 181, 182, 183, 185,]
+missed_lines = [ 17, 18, 19, 20, 21, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 34, 35, 36, 37, 40, 41, 42, 43, 44, 45, 46, 47, 48, 50, 51, 52, 54, 55, 56, 57, 58, 59, 117, 118, 119, 123, 124, 125, 128, 129, 130, 133, 134, 135, 138, 139, 140,]
+
+[input_info]
+test_file_path = "pkg/disk/findmnt_test.go"
+focal_file_path = "pkg/disk/findmnt.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/pkg/disk/findmnt_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/pkg/disk/findmnt.go"
+first_commit_date = "2024-12-13"
+last_commit_date = "2025-04-30"
+test_file_content = "package disk\n\nimport (\n\t\"os\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestParseFindMntOutput(t *testing.T) {\n\tfor _, file := range []string{\"findmnt.0.json\", \"findmnt.1.json\"} {\n\t\tb, err := os.ReadFile(\"testdata/\" + file)\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"error reading test data: %v\", err)\n\t\t}\n\t\toutput, err := ParseFindMntOutput(string(b))\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"error finding mount target output: %v\", err)\n\t\t}\n\t\tt.Logf(\"output: %+v\", output)\n\t}\n}\n\nfunc TestExtractMntSources(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected []string\n\t}{\n\t\t{\n\t\t\tname:     \"empty input\",\n\t\t\tinput:    \"\",\n\t\t\texpected: []string{},\n\t\t},\n\t\t{\n\t\t\tname:     \"single source without brackets\",\n\t\t\tinput:    \"/dev/sda1\",\n\t\t\texpected: []string{\"/dev/sda1\"},\n\t\t},\n\t\t{\n\t\t\tname:     \"source with path in brackets\",\n\t\t\tinput:    \"/dev/mapper/vgroot-lvroot[/var/lib/lxc/ny2g2r14hh2-lxc/rootfs]\",\n\t\t\texpected: []string{\"/dev/mapper/vgroot-lvroot\", \"/var/lib/lxc/ny2g2r14hh2-lxc/rootfs\"},\n\t\t},\n\t\t{\n\t\t\tname:     \"source with simple path in brackets\",\n\t\t\tinput:    \"/dev/mapper/lepton_vg-lepton_lv[/kubelet]\",\n\t\t\texpected: []string{\"/dev/mapper/lepton_vg-lepton_lv\", \"/kubelet\"},\n\t\t},\n\t\t{\n\t\t\tname:     \"multiple comma-separated sources\",\n\t\t\tinput:    \"source1,source2[/path1,/path2]\",\n\t\t\texpected: []string{\"source1\", \"source2\", \"/path1\", \"/path2\"},\n\t\t},\n\t\t{\n\t\t\tname:     \"edge case with empty sections\",\n\t\t\tinput:    \"[/path]\",\n\t\t\texpected: []string{\"/path\"},\n\t\t},\n\t}\n\n\tfor _, tc := range tests {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tresult := extractMntSources(tc.input)\n\t\t\tif !reflect.DeepEqual(result, tc.expected) {\n\t\t\t\tt.Errorf(\"extractMntSources(%q) = %v, want %v\", tc.input, result, tc.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n"

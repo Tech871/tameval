@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "nom-tam-fits/nom-tam-fits"
+sha = "ef5e60895f98eaba44b4220e64407394b05f44ff"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ElementTypeTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ElementType  -DtargetTests=**.ElementTypeTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 43.0
+original_coverage = 46.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 11.0
+covered_lines = [ 102, 103, 104, 105, 106, 107, 108, 109, 168, 306, 307, 323, 400, 404, 405, 406, 407, 439, 463, 467, 470, 473, 476, 479, 482, 485, 488, 491, 494, 501, 502, 503, 504, 505, 506, 507, 508, 511, 512, 513, 623,]
+missed_lines = [ 118, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 147, 156, 180, 181, 182, 183, 197, 198, 212, 213, 227, 239, 250, 261, 275, 289, 310, 339, 340, 356, 357, 373, 384, 401, 410, 425, 451, 526, 544, 545, 546, 547, 548, 549, 552, 554, 568, 583, 584, 585, 603, 604, 605, 619,]
+
+[input_info]
+test_file_path = "src/test/java/nom/tam/util/type/ElementTypeTest.java"
+focal_file_path = "src/main/java/nom/tam/util/type/ElementType.java"
+test_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/test/java/nom/tam/util/type/ElementTypeTest.java"
+focal_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/main/java/nom/tam/util/type/ElementType.java"
+first_commit_date = "2021-10-16"
+last_commit_date = "2024-01-15"
+test_file_content = "package nom.tam.util.type;\n\n\n\nimport static org.junit.Assert.assertEquals;\n\nimport org.junit.Test;\n\npublic class ElementTypeTest {\n\n    @Test\n    public void testElementTypeDefaultSizeOFNull() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfBoolean() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfByte() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfChar() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfShort() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfInt() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfLong() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfFloat() throws Exception {\n    }\n\n    @Test\n    public void testDefaultSizeOfDouble() throws Exception {\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotBoolean() throws Exception {\n        ElementType.BOOLEAN.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotByte() throws Exception {\n        ElementType.BYTE.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotChar() throws Exception {\n        ElementType.CHAR.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotShort() throws Exception {\n        ElementType.SHORT.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotInt() throws Exception {\n        ElementType.INT.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotLong() throws Exception {\n        ElementType.LONG.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotFloat() throws Exception {\n        ElementType.FLOAT.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotDouble() throws Exception {\n        ElementType.DOUBLE.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testDefaultSizeOfNotString() throws Exception {\n        ElementType.STRING.size(new Object());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testUnsupportedBufferSize() throws Exception {\n        ElementType.INT.newBuffer(Integer.MAX_VALUE + 1L);\n    }\n}"

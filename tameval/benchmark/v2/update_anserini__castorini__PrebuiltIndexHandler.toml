@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "castorini/anserini"
+sha = "a9ec58ac9208f0246e39a39d7d8c95a431b45b56"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=PrebuiltIndexHandlerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.PrebuiltIndexHandler  -DtargetTests=**.PrebuiltIndexHandlerTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 75.0
+original_coverage = 85.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 37, 48, 49, 50, 51, 71, 74, 78, 81, 85, 93, 94, 95, 96, 97, 98, 100, 108, 118, 119, 123, 126, 128, 130, 133, 135, 136, 137, 145, 148, 153, 154, 155, 156, 158, 159, 160, 161, 163, 165, 167, 170, 171, 173, 174, 177, 178, 180, 181, 185, 192, 195, 199, 200, 204, 206, 207, 208, 209, 212, 213, 214, 215, 216, 219, 222, 225, 226, 227, 228, 229, 231, 235,]
+missed_lines = [ 43, 44, 45, 65, 66, 67, 68, 73, 77, 109, 110, 124, 131, 132, 146, 149, 150, 168, 169, 182, 193, 196, 201, 202,]
+
+[input_info]
+test_file_path = "src/test/java/io/anserini/index/PrebuiltIndexHandlerTest.java"
+focal_file_path = "src/main/java/io/anserini/util/PrebuiltIndexHandler.java"
+test_file_url = "https://github.com/castorini/anserini/blob/a9ec58ac9208f0246e39a39d7d8c95a431b45b56/src/test/java/io/anserini/index/PrebuiltIndexHandlerTest.java"
+focal_file_url = "https://github.com/castorini/anserini/blob/a9ec58ac9208f0246e39a39d7d8c95a431b45b56/src/main/java/io/anserini/util/PrebuiltIndexHandler.java"
+first_commit_date = "2023-12-19"
+last_commit_date = "2025-06-03"
+test_file_content = "/*\n * Anserini: A Lucene toolkit for reproducible information retrieval research\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage io.anserini.index;\n\nimport java.io.IOException;\n\nimport org.junit.After;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport io.anserini.util.PrebuiltIndexHandler;\n\npublic class PrebuiltIndexHandlerTest {\n  private PrebuiltIndexHandler handler;\n\n  @Test\n  public void testHandler() throws Exception {\n    try {\n      handler.download();\n      handler.decompressIndex();\n    } catch (IOException e) {\n      e.printStackTrace();\n      throw new Exception(\"Failed to download index.\", e);\n    } catch (Exception e) {\n      e.printStackTrace();\n      throw new Exception(\"Failed to decompress index.\", e);\n    }\n  }\n\n  @Before\n  public void setUp() throws Exception {\n    handler = new PrebuiltIndexHandler(\"cacm\"); // we use a lightweight index for testing\n    handler.initialize();\n  }\n\n  @After\n  public void tearDown() throws Exception {\n    // delete the index downloaded\n    if (handler.getIndexFolderPath() != null && handler.getIndexFolderPath().toFile().exists()) {\n      handler.getIndexFolderPath().toFile().delete();\n    }\n  }\n\n}"

@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/bifromq"
+sha = "c07c2c0099f39282ba5fd30d6af8c2e91b03348d"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl base-scheduler -Dtest=CallTaskTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl base-scheduler -DtargetClasses=**.CallTask  -DtargetTests=**.CallTaskTest  -DoutputFormats=XML"
+coverage_report_path = "base-scheduler/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "base-scheduler/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 26, 27, 29, 30, 31, 32, 36, 41, 46, 51,]
+missed_lines = []
+
+[input_info]
+test_file_path = "base-scheduler/src/test/java/org/apache/bifromq/basescheduler/CallTaskTest.java"
+focal_file_path = "base-scheduler/src/main/java/org/apache/bifromq/basescheduler/CallTask.java"
+test_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/base-scheduler/src/test/java/org/apache/bifromq/basescheduler/CallTaskTest.java"
+focal_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/base-scheduler/src/main/java/org/apache/bifromq/basescheduler/CallTask.java"
+first_commit_date = "2025-06-03"
+last_commit_date = "2025-06-06"
+test_file_content = "\n\npackage org.apache.bifromq.basescheduler;\n\nimport static org.testng.Assert.assertEquals;\nimport static org.testng.Assert.assertFalse;\nimport static org.testng.Assert.assertTrue;\n\nimport org.testng.annotations.BeforeMethod;\nimport org.testng.annotations.Test;\n\npublic class CallTaskTest {\n    private CallTask<String, Integer, String> task;\n    private String expectedBatcherKey = \"key\";\n    private String expectedCall = \"call\";\n    private Integer expectedResult = 42;\n\n    @BeforeMethod\n    public void setUp() {\n        task = new CallTask<>(expectedBatcherKey, expectedCall);\n    }\n\n    @Test\n    public void testCallReturnsCorrectCall() {\n        assertEquals(expectedCall, task.call());\n    }\n\n    @Test\n    public void verifyCallMethodReturnsExpectedValue() {\n        assertEquals(task.call(), expectedCall);\n    }\n\n    @Test\n    public void testBatcherKeyReturnsCorrectKey() {\n        assertEquals(expectedBatcherKey, task.batcherKey());\n    }\n\n    @Test\n    public void confirmBatcherKeyIsAsExpected() {\n        assertEquals(task.batcherKey(), expectedBatcherKey);\n    }\n\n    @Test\n    public void testResultPromiseInitiallyNotCompleted() {\n        assertFalse(task.resultPromise().isDone());\n    }\n\n    @Test\n    public void checkResultPromiseIsNotCompletedInitially() {\n        assertFalse(task.resultPromise().isDone());\n    }\n\n    @Test\n    public void testTimeStampIsSet() {\n        long currentTime = System.nanoTime();\n        assertTrue(task.ts() <= currentTime);\n    }\n}"

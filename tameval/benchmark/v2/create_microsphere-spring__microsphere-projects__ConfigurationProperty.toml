@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-spring"
+sha = "8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-spring-context -Dtest=ConfigurationPropertyTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-spring-context -DtargetClasses=**.ConfigurationProperty  -DtargetTests=**.ConfigurationPropertyTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-spring-context/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-spring-context/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 51.0
+original_coverage = 55.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 76, 77, 79, 81, 82, 83, 84, 88, 93, 98, 99, 103, 107, 108, 112, 116, 117, 120, 129, 136, 137, 138, 139, 140, 170, 180,]
+missed_lines = [ 80, 97, 124, 125, 134, 141, 146, 147, 148, 149, 150, 151, 152, 157, 183, 187, 188, 191, 196, 198, 199, 204, 205, 206, 211,]
+
+[input_info]
+test_file_path = "microsphere-spring-context/src/test/java/io/microsphere/spring/config/ConfigurationPropertyTest.java"
+focal_file_path = "microsphere-spring-context/src/main/java/io/microsphere/spring/config/ConfigurationProperty.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-spring/blob/8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc/microsphere-spring-context/src/test/java/io/microsphere/spring/config/ConfigurationPropertyTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-spring/blob/8730bd94aea3908a7d3b075f5e7ba3cdd42d3adc/microsphere-spring-context/src/main/java/io/microsphere/spring/config/ConfigurationProperty.java"
+first_commit_date = "2024-11-24"
+last_commit_date = "2025-01-06"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.microsphere.spring.config;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\n/**\n * {@link ConfigurationProperty} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see ConfigurationProperty\n * @since 1.0.0\n */\npublic class ConfigurationPropertyTest {\n\n    @Test\n    public void test() {\n        String name = \"test-name\";\n        String value = \"test-value\";\n        String defaultValue = \"default-value\";\n        Class<?> type = String.class;\n        ConfigurationProperty property = new ConfigurationProperty(name);\n        property.setValue(value);\n        property.setDefaultValue(defaultValue);\n        property.setType(type);\n\n        assertEquals(property, property);\n        assertEquals(name, property.getName());\n        assertEquals(type, property.getType());\n        assertEquals(value, property.getValue());\n        assertEquals(defaultValue, property.getDefaultValue());\n        assertFalse(property.isRequired());\n        assertNotNull(property.getMetadata());\n    }\n\n}\n"

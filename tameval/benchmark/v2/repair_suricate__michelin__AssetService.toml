@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "michelin/suricate"
+sha = "9a15fd2f6de4e3fced8deb8f60160c43e27ba492"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AssetServiceTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.AssetService  -DtargetTests=**.AssetServiceTest  -DoutputFormats=XML"
+coverage_report_path = "target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 30, 41, 43, 44, 47, 57,]
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/michelin/suricate/service/api/AssetServiceTest.java"
+focal_file_path = "src/main/java/com/michelin/suricate/service/api/AssetService.java"
+test_file_url = "https://github.com/michelin/suricate/blob/9a15fd2f6de4e3fced8deb8f60160c43e27ba492/src/test/java/com/michelin/suricate/service/api/AssetServiceTest.java"
+focal_file_url = "https://github.com/michelin/suricate/blob/9a15fd2f6de4e3fced8deb8f60160c43e27ba492/src/main/java/com/michelin/suricate/service/api/AssetService.java"
+first_commit_date = "2024-04-07"
+last_commit_date = "2025-03-12"
+test_file_content = "package com.michelin.suricate.service.api;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.mockito.Mockito.any;\nimport static org.mockito.Mockito.mockStatic;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\nimport com.michelin.suricate.model.entity.Asset;\nimport com.michelin.suricate.repository.AssetRepository;\nimport com.michelin.suricate.util.IdUtils;\nimport com.michelin.suricate.util.exception.ObjectNotFoundException;\nimport java.util.Optional;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.InjectMocks;\nimport org.mockito.Mock;\nimport org.mockito.MockedStatic;\nimport org.mockito.junit.jupiter.MockitoExtension;\n\n@ExtendWith(MockitoExtension.class)\nclass AssetServiceTest {\n    @Mock\n    private AssetRepository assetRepository;\n\n    @InjectMocks\n    private AssetService assetService;\n\n    @Test\n    void shouldGetAssetById() {\n        try (MockedStatic<IdUtils> mocked = mockStatic(IdUtils.class)) {\n            Asset asset = new Asset();\n            asset.setId(1L);\n            asset.setContent(new byte[10]);\n            asset.setSize(1L);\n            asset.setContentType(\"contentType\");\n\n            mocked.when(() -> IdUtils.decrypt(\"token\")).thenReturn(1L);\n            when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));\n\n            Asset actual = assetService.getAssetById(\"token\");\n\n            assertNotNull(actual);\n            assertEquals(asset, actual);\n\n            verify(assetRepository).findById(1L);\n        }\n    }\n\n    @Test\n    void retrieveAssetByToken() {\n        try (MockedStatic<IdUtils> mocked = mockStatic(IdUtils.class)) {\n            Asset asset = new Asset();\n            asset.setId(1L);\n            asset.setContent(new byte[10]);\n            asset.setSize(1L);\n            asset.setContentType(\"contentType\");\n\n            mocked.when(() -> IdUtils.decrypt(\"token\")).thenReturn(1L);\n            when(assetRepository.findById(1L)).thenReturn(Optional.of(asset));\n\n            Asset actual = assetService.getAssetById(\"token\");\n\n            assertNotNull(actual);\n            assertEquals(asset, actual);\n\n            verify(assetRepository).findById(1L);\n        }\n    }\n\n    @Test\n    void shouldGetAssetByIdNotFound() {\n        try (MockedStatic<IdUtils> mocked = mockStatic(IdUtils.class)) {\n            Asset asset = new Asset();\n            asset.setId(1L);\n            asset.setContent(new byte[10]);\n            asset.setSize(1L);\n            asset.setContentType(\"contentType\");\n\n            mocked.when(() -> IdUtils.decrypt(\"token\")).thenReturn(1L);\n            when(assetRepository.findById(1L)).thenReturn(Optional.empty());\n\n            assertThrows(ObjectNotFoundException.class, () -> assetService.getAssetById(\"token\"));\n        }\n    }\n\n    @Test\n    void fetchAssetWhenTokenIsInvalid() {\n        try (MockedStatic<IdUtils> mocked = mockStatic(IdUtils.class)) {\n            mocked.when(() -> IdUtils.decrypt(\"token\")).thenReturn(1L);\n            when(assetRepository.findById(1L)).thenReturn(Optional.empty());\n\n            assertThrows(ObjectNotFoundException.class, () -> assetService.getAssetById(\"token\"));\n        }\n    }\n\n    @Test\n    void shouldSave() {\n        Asset asset = new Asset();\n        asset.setId(1L);\n        asset.setContent(new byte[10]);\n        asset.setSize(1L);\n        asset.setContentType(\"contentType\");\n\n        when(assetRepository.save(any())).thenAnswer(answer -> answer.getArgument(0));\n\n        Asset actual = assetService.save(asset);\n\n        assertNotNull(actual);\n        assertEquals(asset, actual);\n\n        verify(assetRepository).save(asset);\n    }\n}"

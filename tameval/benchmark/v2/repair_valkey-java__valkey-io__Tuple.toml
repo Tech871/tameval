@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "valkey-io/valkey-java"
+sha = "b631ea3dee9402cde1f9c5e0cb3f0a13979f3575"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=TupleTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.Tuple  -DtargetTests=**.TupleTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 52.0
+original_coverage = 84.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 46.0
+covered_lines = [ 13, 14, 17, 18, 19, 20, 24, 25, 26, 27, 28, 29, 32, 33, 34, 79,]
+missed_lines = [ 39, 40, 41, 43, 44, 45, 50, 54, 55, 57, 61, 62, 64, 69, 73,]
+
+[input_info]
+test_file_path = "src/test/java/io/valkey/misc/TupleTest.java"
+focal_file_path = "src/main/java/io/valkey/resps/Tuple.java"
+test_file_url = "https://github.com/valkey-io/valkey-java/blob/b631ea3dee9402cde1f9c5e0cb3f0a13979f3575/src/test/java/io/valkey/misc/TupleTest.java"
+focal_file_url = "https://github.com/valkey-io/valkey-java/blob/b631ea3dee9402cde1f9c5e0cb3f0a13979f3575/src/main/java/io/valkey/resps/Tuple.java"
+first_commit_date = "2024-07-24"
+last_commit_date = "2024-07-24"
+test_file_content = "package io.valkey.misc;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertFalse;\nimport static org.junit.Assert.assertTrue;\n\nimport java.util.HashSet;\n\nimport io.valkey.resps.Tuple;\nimport org.hamcrest.MatcherAssert;\nimport org.hamcrest.Matchers;\nimport org.junit.Test;\n\npublic class TupleTest {\n\n  @Test\n  public void compareSameObject() {\n    Tuple t1 = new Tuple(\"foo\", 1d);\n  }\n\n  @Test\n  public void compareEqual() {\n    Tuple t1 = new Tuple(\"foo\", 1d);\n    Tuple t2 = new Tuple(\"foo\", 1d);\n\n  }\n\n  @Test\n  public void compareSameScore() {\n    Tuple t1 = new Tuple(\"foo\", 1d);\n    Tuple t2 = new Tuple(\"bar\", 1d);\n\n  }\n\n  @Test\n  public void compareSameScoreObject() {\n    Double score = 1d;\n    Tuple t1 = new Tuple(\"foo\", score);\n    Tuple t2 = new Tuple(\"bar\", score);\n\n  }\n\n  @Test\n  public void compareNoMatch() {\n    Tuple t1 = new Tuple(\"foo\", 1d);\n    Tuple t2 = new Tuple(\"bar\", 2d);\n\n  }\n\n  @Test\n  public void compareDifferentType() {\n    Tuple t1 = new Tuple(\"foo\", 1d);\n\n    Object anyObject = new Object();\n\n    Object nullObject = null;\n  }\n\n  @Test\n  public void testToString() {\n    Tuple t1 = new Tuple(\"key-name\", 1d);\n    String toStringResult = t1.toString();\n  }\n\n  @Test\n  public void testSameElement() {\n    Tuple t1 = new Tuple(\"user1\", 10.0);\n    Tuple t2 = new Tuple(\"user1\", 5.0);\n\n    HashSet<Tuple> hashSet = new HashSet<>();\n    hashSet.add(t1);\n    hashSet.add(t2);\n  }\n}"

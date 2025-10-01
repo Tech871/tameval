@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "Traego/scaled-mcp"
+sha = "53eccfe963832dc64cc9f82f559c0b8a01170c81"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/utils/string_utils.go pkg/utils/string_utils_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/utils/string_utils.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 72.0
+original_coverage = 72.0
+mutation_kill_rate = 71.0
+original_mutation_kill_rate = 71.0
+covered_lines = [ 10, 11, 12, 13, 14, 15, 16, 17, 23, 26, 32, 33, 37,]
+missed_lines = [ 18, 19, 20, 34, 35,]
+
+[input_info]
+test_file_path = "pkg/utils/string_utils_test.go"
+focal_file_path = "pkg/utils/string_utils.go"
+test_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/pkg/utils/string_utils_test.go"
+focal_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/pkg/utils/string_utils.go"
+first_commit_date = "2025-04-11"
+last_commit_date = "2025-04-11"
+test_file_content = "package utils\n\nimport (\n\t\"regexp\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestGenerateSecureID(t *testing.T) {\n\ttestCases := []struct {\n\t\tname   string\n\t\tlength int\n\t}{\n\t\t{\n\t\t\tname:   \"zero length\",\n\t\t\tlength: 0,\n\t\t},\n\t\t{\n\t\t\tname:   \"small length\",\n\t\t\tlength: 8,\n\t\t},\n\t\t{\n\t\t\tname:   \"medium length\",\n\t\t\tlength: 16,\n\t\t},\n\t\t{\n\t\t\tname:   \"large length\",\n\t\t\tlength: 32,\n\t\t},\n\t}\n\n\tvalidCharsRegex := regexp.MustCompile(`^[a-zA-Z0-9]*$`)\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tid, err := GenerateSecureID(tc.length)\n\n\t\t\trequire.NoError(t, err)\n\n\t\t\tassert.Equal(t, tc.length, len(id))\n\n\t\t\tassert.True(t, validCharsRegex.MatchString(id), \"ID contains invalid characters: %s\", id)\n\n\t\t\tif tc.length > 0 {\n\t\t\t\tanotherId, err := GenerateSecureID(tc.length)\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.NotEqual(t, id, anotherId, \"Generated IDs should be different\")\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestMustGenerateSecureID(t *testing.T) {\n\ttestCases := []struct {\n\t\tname   string\n\t\tlength int\n\t}{\n\t\t{\n\t\t\tname:   \"zero length\",\n\t\t\tlength: 0,\n\t\t},\n\t\t{\n\t\t\tname:   \"small length\",\n\t\t\tlength: 8,\n\t\t},\n\t\t{\n\t\t\tname:   \"medium length\",\n\t\t\tlength: 16,\n\t\t},\n\t\t{\n\t\t\tname:   \"large length\",\n\t\t\tlength: 32,\n\t\t},\n\t}\n\n\tvalidCharsRegex := regexp.MustCompile(`^[a-zA-Z0-9]*$`)\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tid := MustGenerateSecureID(tc.length)\n\n\t\t\tassert.Equal(t, tc.length, len(id))\n\n\t\t\tassert.True(t, validCharsRegex.MatchString(id), \"ID contains invalid characters: %s\", id)\n\n\t\t\tif tc.length > 0 {\n\t\t\t\tanotherId := MustGenerateSecureID(tc.length)\n\t\t\t\tassert.NotEqual(t, id, anotherId, \"Generated IDs should be different\")\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestMustGenerateSecureID_Signature(t *testing.T) {\n\tresult := MustGenerateSecureID(10)\n\tassert.IsType(t, \"\", result)\n\trequire.Len(t, result, 10)\n}\n"

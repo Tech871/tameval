@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "ExpediaGroup/container-startup-autoscaler"
+sha = "25025ef93dcad8f946e343c1641bcc5fadba8c33"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/pod/podcommon/statusannotation.go internal/pod/podcommon/statusannotation_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/pod/podcommon/statusannotation.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 75.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/pod/podcommon/statusannotation_test.go"
+focal_file_path = "internal/pod/podcommon/statusannotation.go"
+test_file_url = "https://github.com/ExpediaGroup/container-startup-autoscaler/blob/25025ef93dcad8f946e343c1641bcc5fadba8c33/internal/pod/podcommon/statusannotation_test.go"
+focal_file_url = "https://github.com/ExpediaGroup/container-startup-autoscaler/blob/25025ef93dcad8f946e343c1641bcc5fadba8c33/internal/pod/podcommon/statusannotation.go"
+first_commit_date = "2024-01-05"
+last_commit_date = "2025-04-30"
+test_file_content = "/*\nCopyright 2024 Expedia Group, Inc.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage podcommon\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestNewStatusAnnotationScale(t *testing.T) {\n\tstatAnn := NewStatusAnnotationScale(\"lastCommanded\", \"lastEnacted\", \"lastFailed\")\n\tassert.Equal(t, \"lastCommanded\", statAnn.LastCommanded)\n\tassert.Equal(t, \"lastEnacted\", statAnn.LastEnacted)\n\tassert.Equal(t, \"lastFailed\", statAnn.LastFailed)\n}\n\nfunc TestNewEmptyStatusAnnotationScale(t *testing.T) {\n\tassert.Empty(t, NewEmptyStatusAnnotationScale())\n}\n\nfunc TestNewStatusAnnotation(t *testing.T) {\n\tstatAnn := NewStatusAnnotation(\n\t\t\"status\",\n\t\tStates{},\n\t\tStatusAnnotationScale{},\n\t\t\"lastUpdated\",\n\t)\n\tassert.Equal(t, \"status\", statAnn.Status)\n\tassert.Equal(t, States{}, statAnn.States)\n\tassert.Equal(t, StatusAnnotationScale{}, statAnn.Scale)\n\tassert.Equal(t, \"lastUpdated\", statAnn.LastUpdated)\n}\n\nfunc TestStatusAnnotationJson(t *testing.T) {\n\tj := NewStatusAnnotation(\n\t\t\"status\",\n\t\tNewStates(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"),\n\t\tNewStatusAnnotationScale(\"lastCommanded\", \"lastEnacted\", \"lastFailed\"),\n\t\t\"lastUpdated\",\n\t).Json()\n\tassert.Equal(\n\t\tt,\n\t\t\"{\\\"status\\\":\\\"status\\\",\"+\n\t\t\t\"\\\"states\\\":{\\\"startupProbe\\\":\\\"1\\\",\\\"readinessProbe\\\":\\\"2\\\",\\\"container\\\":\\\"3\\\",\\\"started\\\":\\\"4\\\",\\\"ready\\\":\\\"5\\\",\\\"resources\\\":\\\"6\\\",\\\"statusResources\\\":\\\"7\\\"},\"+\n\t\t\t\"\\\"scale\\\":{\\\"lastCommanded\\\":\\\"lastCommanded\\\",\\\"lastEnacted\\\":\\\"lastEnacted\\\",\\\"lastFailed\\\":\\\"lastFailed\\\"},\"+\n\t\t\t\"\\\"lastUpdated\\\":\\\"lastUpdated\\\"}\",\n\t\tj,\n\t)\n}\n\nfunc TestStatusAnnotationEqual(t *testing.T) {\n\ttype fields struct {\n\t\tStatus string\n\t}\n\ttype args struct {\n\t\tto StatusAnnotation\n\t}\n\ttests := []struct {\n\t\tname   string\n\t\tfields fields\n\t\targs   args\n\t\twant   bool\n\t}{\n\t\t{\n\t\t\t\"TrueLastUpdatedSame\",\n\t\t\tfields{Status: \"status\"},\n\t\t\targs{to: StatusAnnotation{Status: \"status\"}},\n\t\t\ttrue,\n\t\t},\n\t\t{\n\t\t\t\"TrueLastUpdatedDifferent\",\n\t\t\tfields{Status: \"status\"},\n\t\t\targs{to: StatusAnnotation{\n\t\t\t\tStatus:      \"status\",\n\t\t\t\tLastUpdated: \"lastUpdated\",\n\t\t\t}},\n\t\t\ttrue,\n\t\t},\n\t\t{\n\t\t\t\"False\",\n\t\t\tfields{Status: \"status1\"},\n\t\t\targs{to: StatusAnnotation{Status: \"status2\"}},\n\t\t\tfalse,\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\ts := StatusAnnotation{Status: tt.fields.Status}\n\t\t\tassert.Equal(t, tt.want, s.Equal(tt.args.to))\n\t\t})\n\t}\n}\n\nfunc TestStatusAnnotationFromString(t *testing.T) {\n\tt.Run(\"UnableToUnmarshal\", func(t *testing.T) {\n\t\tgot, err := StatusAnnotationFromString(\"test\")\n\t\tassert.Contains(t, err.Error(), \"unable to unmarshal\")\n\t\tassert.Equal(t, StatusAnnotation{}, got)\n\t})\n\n\tt.Run(\"Ok\", func(t *testing.T) {\n\t\tgot, err := StatusAnnotationFromString(\n\t\t\t\"{\\\"status\\\":\\\"status\\\",\" +\n\t\t\t\t\"\\\"states\\\":{\\\"startupProbe\\\":\\\"1\\\",\\\"readinessProbe\\\":\\\"2\\\",\\\"container\\\":\\\"3\\\",\\\"started\\\":\\\"4\\\",\\\"ready\\\":\\\"5\\\",\\\"resources\\\":\\\"6\\\",\\\"statusResources\\\":\\\"7\\\"},\" +\n\t\t\t\t\"\\\"scale\\\":{\\\"lastCommanded\\\":\\\"lastCommanded\\\",\\\"lastEnacted\\\":\\\"lastEnacted\\\",\\\"lastFailed\\\":\\\"lastFailed\\\"},\" +\n\t\t\t\t\"\\\"lastUpdated\\\":\\\"lastUpdated\\\"}\",\n\t\t)\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(\n\t\t\tt,\n\t\t\tNewStatusAnnotation(\n\t\t\t\t\"status\",\n\t\t\t\tNewStates(\"1\", \"2\", \"3\", \"4\", \"5\", \"6\", \"7\"),\n\t\t\t\tNewStatusAnnotationScale(\"lastCommanded\", \"lastEnacted\", \"lastFailed\"),\n\t\t\t\t\"lastUpdated\",\n\t\t\t),\n\t\t\tgot,\n\t\t)\n\t})\n}"

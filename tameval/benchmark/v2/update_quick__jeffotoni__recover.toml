@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "jeffotoni/quick"
+sha = "89f7be7048104f81431288179d7631ccbc2b3536"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out middleware/recover/recover.go middleware/recover/recover_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting middleware/recover/recover.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 89.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "middleware/recover/recover_test.go"
+focal_file_path = "middleware/recover/recover.go"
+test_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/middleware/recover/recover_test.go"
+focal_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/middleware/recover/recover.go"
+first_commit_date = "2025-03-24"
+last_commit_date = "2025-03-25"
+test_file_content = "package recover\n\nimport (\n\t\"testing\"\n\n\t\"github.com/jeffotoni/quick\"\n)\n\n// TestWithStacktraceDisabled tests when stacktrace is disabled.\nfunc TestWithStacktraceDisabled(t *testing.T) {\n\tq := quick.New()\n\tq.Use(New(Config{\n\t\tApp:              q,\n\t\tEnableStacktrace: false,\n\t}))\n\n\t// Define a test route\n\tq.Get(\"/v1/recover\", func(c *quick.Ctx) error {\n\t\tpanic(\"Panicking!\")\n\t})\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/v1/recover\",\n\t})\n\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\n\tif err := resp.AssertStatus(quick.StatusInternalServerError); err != nil {\n\t\tt.Error(err)\n\t}\n}\n\n// TestWithStacktraceEnabled tests when stacktrace is enabled.\nfunc TestWithStacktraceEnabled(t *testing.T) {\n\tq := quick.New()\n\tq.Use(New(Config{\n\t\tApp:              q,\n\t\tEnableStacktrace: true,\n\t}))\n\n\t// Define a test route\n\tq.Get(\"/v1/recover\", func(c *quick.Ctx) error {\n\t\tpanic(\"Panicking!\")\n\t})\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/v1/recover\",\n\t})\n\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif err := resp.AssertStatus(quick.StatusInternalServerError); err != nil {\n\t\tt.Error(err)\n\t}\n}\n\n// TestWithNextSkipping tests when Next() returns true (skips route logic).\nfunc TestWithNextSkipping(t *testing.T) {\n\tq := quick.New()\n\n\t// Use the Recover middleware with Next() function\n\tq.Use(New(Config{\n\t\tApp: q,\n\t\tNext: func(c *quick.Ctx) bool {\n\t\t\treturn true // Always skip\n\t\t},\n\t}))\n\n\t// Define a test route with panic\n\tq.Get(\"/v1/recover\", func(c *quick.Ctx) error {\n\t\tpanic(\"Panicking!\")\n\t})\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/v1/recover\",\n\t})\n\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif err := resp.AssertStatus(quick.StatusOK); err != nil {\n\t\tt.Error(err)\n\t}\n}"

@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+
+[repo_info]
+repository = "imarkoff/Marble-shell-theme"
+sha = "2aeb348f1915b8d28cf7fb2081ff9458115d2f44"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=scripts/utils/global_theme/gdm_installer.py -m pytest -q --junit-xml=test_output.xml tests/utils/global_theme/test_gdm_installer.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target scripts.utils.global_theme.gdm_installer --unit-test tests.utils.global_theme.test_gdm_installer --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target scripts/utils/global_theme/gdm_installer.py --unit-test tests/utils/global_theme/test_gdm_installer.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 2, 5, 15, 20, 21, 23, 25, 30, 32, 40, 41, 43, 45, 46, 47, 49, 50, 51, 53, 55, 57, 59, 64, 65,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/utils/global_theme/test_gdm_installer.py"
+focal_file_path = "scripts/utils/global_theme/gdm_installer.py"
+test_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/tests/utils/global_theme/test_gdm_installer.py"
+focal_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/scripts/utils/global_theme/gdm_installer.py"
+first_commit_date = "2025-04-12"
+last_commit_date = "2025-04-12"
+test_file_content = "import os.path\nfrom unittest import TestCase\nfrom unittest.mock import MagicMock\n\nfrom scripts import config\nfrom scripts.utils.global_theme.gdm_installer import GDMThemeInstaller\n\n\nclass GDMInstallerTestCase(TestCase):\n    def setUp(self):\n        self.temp_folder = os.path.join(config.temp_tests_folder, \"gdm_installer\")\n        self.gresource = MagicMock()\n        self.gresource.temp_folder = self.temp_folder\n\n        self.alternatives_updater = MagicMock()\n\n        self.gdm_installer = GDMThemeInstaller(\n            gresource=self.gresource,\n            alternatives_updater=self.alternatives_updater\n        )\n\n    def test_is_installed_return_the_same_value_as_gresource(self):\n        self.gresource.has_trigger.return_value = True\n\n        result = self.gdm_installer.is_installed()\n\n\n    def test_compile_does_not_call_label_theme_if_label_is_none(self):\n        theme_prepare = MagicMock()\n        theme_prepare.label = None\n        theme_prepare.label_theme = MagicMock()\n\n        self.gdm_installer.compile(themes=[theme_prepare], hue=0, color=\"red\", sat=None)\n\n\n    def test_compile_calls_label_theme_if_label_is_set(self):\n        theme_prepare = MagicMock()\n        theme_prepare.label = \"dark\"\n        theme_prepare.label_theme = MagicMock()\n\n        self.gdm_installer.compile(themes=[theme_prepare], hue=0, color=\"red\", sat=None)\n\n\n    def test_compile_calls_removes_keywords_and_properties_and_prepends_source_styles(self):\n        theme_prepare = MagicMock()\n        theme_prepare.remove_keywords = MagicMock()\n        theme_prepare.remove_properties = MagicMock()\n        theme_prepare.prepend_source_styles = MagicMock()\n\n        self.gdm_installer.compile(themes=[theme_prepare], hue=0, color=\"red\", sat=None)\n\n\n    def test_compile_installs_themes_with_correct_parameters(self):\n        theme_prepare = MagicMock()\n        theme_prepare.install = MagicMock()\n        themes = [theme_prepare]\n        hue = 0\n        color = \"red\"\n        sat = None\n\n        self.gdm_installer.compile(themes, hue, color, sat)\n\n\n    def test_compile_calls_gresource_compile(self):\n        self.gdm_installer.compile([], 0, \"red\", None)\n\n\n    def test_backup_calls_gresource_backup(self):\n        self.gdm_installer.backup()\n\n\n    def test_install_calls_gresource_move_and_alternatives_updater_install_and_set(self):\n        self.gdm_installer.install()"

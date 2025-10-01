@@ -1,0 +1,44 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "hdl-registers/hdl-registers"
+sha = "1b7b428f425768bbd86ad590f21af7aaae044249"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=hdl_registers/constant/bit_vector_constant.py -m pytest -q --junit-xml=test_output.xml hdl_registers/constant/test/test_bit_vector_constant.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target hdl_registers.constant.bit_vector_constant --unit-test hdl_registers.constant.test.test_bit_vector_constant --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target hdl_registers/constant/bit_vector_constant.py --unit-test hdl_registers/constant/test/test_bit_vector_constant.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 85.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 9, 12, 18, 19, 20, 22, 34, 35, 38, 39, 41, 43, 45, 46, 52, 53, 59, 60, 64, 65, 69, 71, 72, 76, 79, 81, 86, 87, 88, 93, 94, 100, 101, 107, 108, 116, 125, 133, 136,]
+missed_lines = [ 50, 57, 98, 105, 112, 114, 117,]
+
+[input_info]
+test_file_path = "hdl_registers/constant/test/test_bit_vector_constant.py"
+focal_file_path = "hdl_registers/constant/bit_vector_constant.py"
+test_file_url = "https://github.com/hdl-registers/hdl-registers/blob/1b7b428f425768bbd86ad590f21af7aaae044249/hdl_registers/constant/test/test_bit_vector_constant.py"
+focal_file_url = "https://github.com/hdl-registers/hdl-registers/blob/1b7b428f425768bbd86ad590f21af7aaae044249/hdl_registers/constant/bit_vector_constant.py"
+first_commit_date = "2023-05-25"
+last_commit_date = "2025-04-26"
+test_file_content = "\n\nfrom copy import copy\n\nimport pytest\n\nfrom hdl_registers.constant.bit_vector_constant import BitVectorConstant, UnsignedVectorConstant\n\n\ndef test_unsigned_hexadecimal():\n    constant = UnsignedVectorConstant(name=\"apa\", value=\"0x10a_BCdef\", description=\"hest\")\n\n\n\ndef test_unsigned_binary():\n    constant = UnsignedVectorConstant(name=\"apa\", value=\"0b10_01\", description=\"hest\")\n\n\n\ndef test_illegal_prefix_should_raise_exception():\n    with pytest.raises(ValueError) as exception_info:\n        UnsignedVectorConstant(name=\"apa\", value=\"123\")\n\n    with pytest.raises(ValueError) as exception_info:\n        UnsignedVectorConstant(name=\"apa\", value=\"0b\")\n\n    with pytest.raises(ValueError) as exception_info:\n        UnsignedVectorConstant(name=\"apa\", value=\"0x\")\n    constant = UnsignedVectorConstant(name=\"apa\", value=\"0b11\")\n\n    with pytest.raises(ValueError) as exception_info:\n        constant.value = \"456\"\n\n    with pytest.raises(ValueError) as exception_info:\n        constant.value = \"0b\"\n\n    with pytest.raises(ValueError) as exception_info:\n        constant.value = \"0x\"\n\n\ndef test_illegal_value_type_should_raise_exception():\n    with pytest.raises(TypeError) as exception_info:\n        UnsignedVectorConstant(name=\"apa\", value=123)\n\n    constant = UnsignedVectorConstant(name=\"apa\", value=\"0b11\")\n    with pytest.raises(TypeError) as exception_info:\n        constant.value = 456\n\n\ndef test_illegal_hexadecimal_character_should_raise_exception():\n    with pytest.raises(ValueError) as exception_info:\n        UnsignedVectorConstant(name=\"apa\", value=\"0xABC01X\")\n\n    constant = UnsignedVectorConstant(name=\"apa\", value=\"0x123\")\n    with pytest.raises(ValueError) as exception_info:\n        constant.value = \"0x1230Z\"\n\n\ndef test_repr():\n    data = BitVectorConstant(name=\"apa\", value=\"0b00\")\n\n    other = BitVectorConstant(name=\"hest\", value=\"0b00\")\n    other = BitVectorConstant(name=\"apa\", value=\"0xff\")\n    other = BitVectorConstant(name=\"apa\", value=\"0x00\")\n    data = BitVectorConstant(name=\"apa\", value=\"0b00\", description=\"X\")"

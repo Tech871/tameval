@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/bifromq"
+sha = "c07c2c0099f39282ba5fd30d6af8c2e91b03348d"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl bifromq-apiserver -Dtest=HeaderUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl bifromq-apiserver -DtargetClasses=**.HeaderUtils  -DtargetTests=**.HeaderUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "bifromq-apiserver/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "bifromq-apiserver/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 41.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 35, 36, 37, 40, 41, 42, 66, 67, 70,]
+missed_lines = [ 33, 47, 48, 49, 50, 52, 56, 57, 58, 59, 61, 62, 68,]
+
+[input_info]
+test_file_path = "bifromq-apiserver/src/test/java/org/apache/bifromq/apiserver/http/handler/utils/HeaderUtilsTest.java"
+focal_file_path = "bifromq-apiserver/src/main/java/org/apache/bifromq/apiserver/http/handler/utils/HeaderUtils.java"
+test_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/bifromq-apiserver/src/test/java/org/apache/bifromq/apiserver/http/handler/utils/HeaderUtilsTest.java"
+focal_file_url = "https://github.com/apache/bifromq/blob/c07c2c0099f39282ba5fd30d6af8c2e91b03348d/bifromq-apiserver/src/main/java/org/apache/bifromq/apiserver/http/handler/utils/HeaderUtils.java"
+first_commit_date = "2025-07-29"
+last_commit_date = "2025-07-29"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements.  See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership.  The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * \"License\"); you may not use this file except in compliance\n * with the License.  You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied.  See the License for the\n * specific language governing permissions and limitations\n * under the License.\n */\n\npackage org.apache.bifromq.apiserver.http.handler.utils;\n\nimport static org.apache.bifromq.apiserver.http.handler.utils.HeaderUtils.getHeader;\nimport static org.testng.Assert.assertEquals;\nimport static org.testng.Assert.assertNull;\nimport static org.testng.Assert.assertThrows;\nimport static org.testng.Assert.assertTrue;\n\nimport io.netty.handler.codec.http.DefaultFullHttpRequest;\nimport io.netty.handler.codec.http.HttpMethod;\nimport io.netty.handler.codec.http.HttpVersion;\nimport java.util.Map;\nimport org.apache.bifromq.apiserver.Headers;\nimport org.apache.bifromq.type.QoS;\nimport org.testng.annotations.Test;\n\npublic class HeaderUtilsTest {\n    @Test\n    public void getOptionalReqId() {\n        DefaultFullHttpRequest req = new DefaultFullHttpRequest(HttpVersion.HTTP_1_1, HttpMethod.GET, \"/fake\");\n        assertTrue(HeaderUtils.getOptionalReqId(req) != 0);\n\n        req.headers().set(Headers.HEADER_REQ_ID.header, \"123\");\n        assertEquals(HeaderUtils.getOptionalReqId(req), 123L);\n\n        req.headers().set(Headers.HEADER_REQ_ID.header, \"int_unparsable\");\n        assertTrue(HeaderUtils.getOptionalReqId(req) != 0);\n    }\n\n\n\n}\n"

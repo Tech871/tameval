@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "datafaker-net/datafaker"
+sha = "22730b57dee2b174d62276f9e8979cf59c1d219b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=MexicanIdNumberTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.MexicanIdNumber  -DtargetTests=**.MexicanIdNumberTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 97.0
+original_coverage = 97.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 17, 21, 24, 38, 43, 45, 54, 65, 66, 67, 68, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 87, 88, 89, 106, 113, 123, 124, 125, 127, 128, 129, 130, 132, 133,]
+missed_lines = [ 95,]
+
+[input_info]
+test_file_path = "src/test/java/net/datafaker/idnumbers/MexicanIdNumberTest.java"
+focal_file_path = "src/main/java/net/datafaker/idnumbers/MexicanIdNumber.java"
+test_file_url = "https://github.com/datafaker-net/datafaker/blob/22730b57dee2b174d62276f9e8979cf59c1d219b/src/test/java/net/datafaker/idnumbers/MexicanIdNumberTest.java"
+focal_file_url = "https://github.com/datafaker-net/datafaker/blob/22730b57dee2b174d62276f9e8979cf59c1d219b/src/main/java/net/datafaker/idnumbers/MexicanIdNumber.java"
+first_commit_date = "2024-05-29"
+last_commit_date = "2024-08-04"
+test_file_content = "package net.datafaker.idnumbers;\n\nimport net.datafaker.Faker;\nimport net.datafaker.providers.base.IdNumber;\nimport org.junit.jupiter.api.RepeatedTest;\n\nimport java.util.Locale;\nimport java.util.regex.Pattern;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\nclass MexicanIdNumberTest {\n\n    private static final Pattern REGEX = Pattern.compile(\n        \"[A-Z]{4}\\\\d{6}[HM][A-Z]{5}[A-Z,0-9]\\\\d\");\n    private static final Faker faker = new Faker(new Locale(\"es\", \"MX\"));\n    private final IdNumber idNumber = faker.idNumber();\n\n    @RepeatedTest(100)\n    void valid() {\n        assertThat(idNumber.valid()).matches(REGEX);\n    }\n\n    @RepeatedTest(100)\n    void validEsMXSsn() {\n        assertThat(idNumber.validEsMXSsn()).matches(REGEX);\n    }\n\n    @RepeatedTest(100)\n    void invalid() {\n        assertThat(idNumber.invalid()).matches(REGEX);\n    }\n\n    @RepeatedTest(100)\n    void invalidEsMXSsn() {\n        assertThat(idNumber.invalidEsMXSsn()).matches(REGEX);\n    }\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pymeasure/pymeasure"
+sha = "03452744481f5dd366eb1ee3764bff3995e384d1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=pymeasure/instruments/aculight/argos.py -m pytest -q --junit-xml=test_output.xml tests/instruments/aculight/test_argos.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target pymeasure.instruments.aculight.argos --unit-test tests.instruments.aculight.test_argos --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target pymeasure/instruments/aculight/argos.py --unit-test tests/instruments/aculight/test_argos.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 86.0
+original_coverage = 97.0
+mutation_kill_rate = 53.0
+original_mutation_kill_rate = 73.0
+covered_lines = [ 25, 28, 29, 34, 36, 39, 41, 42, 43, 46, 47, 48, 49, 50, 53, 70, 71, 79, 82, 85, 90, 92, 94, 95, 97, 99, 100, 120, 122, 134, 146, 158,]
+missed_lines = [ 96, 106, 113, 114, 118,]
+
+[input_info]
+test_file_path = "tests/instruments/aculight/test_argos.py"
+focal_file_path = "pymeasure/instruments/aculight/argos.py"
+test_file_url = "https://github.com/pymeasure/pymeasure/blob/03452744481f5dd366eb1ee3764bff3995e384d1/tests/instruments/aculight/test_argos.py"
+focal_file_url = "https://github.com/pymeasure/pymeasure/blob/03452744481f5dd366eb1ee3764bff3995e384d1/pymeasure/instruments/aculight/argos.py"
+first_commit_date = "2024-02-16"
+last_commit_date = "2025-05-22"
+test_file_content = "#\n# This file is part of the PyMeasure package.\n#\n# Copyright (c) 2013-2025 PyMeasure Developers\n#\n# Permission is hereby granted, free of charge, to any person obtaining a copy\n# of this software and associated documentation files (the \"Software\"), to deal\n# in the Software without restriction, including without limitation the rights\n# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n# copies of the Software, and to permit persons to whom the Software is\n# furnished to do so, subject to the following conditions:\n#\n# The above copyright notice and this permission notice shall be included in\n# all copies or substantial portions of the Software.\n#\n# THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n# THE SOFTWARE.\n#\n\nfrom pymeasure.test import expected_protocol\nfrom pymeasure.instruments.aculight.argos import Argos, State\n\ndef test_temperature_setpoint():\n    with expected_protocol(\n            Argos,\n            [(\"temp 45.500\", \" Temperature setting changed\")]\n    ) as inst:\n        inst.temperature_setpoint = 45.5\n\ndef test_temperature_setpoint_getter():\n    with expected_protocol(\n            Argos,\n            [(\"state\",\n              \" Crystal Temp Set = 55.000\\n\\r Etalon Angle Set = -0.020\\n\\r\"\n              \" Seed Source Set  = 0.000\\n\\r Crystal Temp = 54.900\")]\n    ) as inst:\n        assert inst.temperature_setpoint == 55.\n\ndef test_etalon_getter():\n    with expected_protocol(\n            Argos,\n            [(\"state\",\n              \" Crystal Temp Set = 55.000\\n\\r Etalon Angle Set = -0.020\\n\\r\"\n              \" Seed Source Set  = 0.000\\n\\r Crystal Temp = 54.900\")]\n    ) as inst:\n        assert inst.etalon == -0.02\n\ndef test_seed_getter():\n    with expected_protocol(\n            Argos,\n            [(\"state\",\n              \" Crystal Temp Set = 55.000\\n\\r Etalon Angle Set = -0.020\\n\\r\"\n              \" Seed Source Set  = 0.000\\n\\r Crystal Temp = 54.900\")]\n    ) as inst:\n        assert inst.seed_voltage == 0\n\ndef test_version():\n    with expected_protocol(\n        Argos,\n        [(\"ver\", \"Software Version 38-000028-008-T03\")],\n    ) as inst:\n        assert inst.version == \"Software Version 38-000028-008-T03\"\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "trickstercache/trickster"
+sha = "99ac2462add00d5014794ec929eec27c7f1ceaa7"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/cache/manager/manager.go pkg/cache/manager/manager_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/cache/manager/manager.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 70.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 11.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/cache/manager/manager_test.go"
+focal_file_path = "pkg/cache/manager/manager.go"
+test_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/cache/manager/manager_test.go"
+focal_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/cache/manager/manager.go"
+first_commit_date = "2025-05-23"
+last_commit_date = "2025-05-28"
+test_file_content = "package manager\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\t\"github.com/trickstercache/trickster/v2/pkg/cache\"\n\t\"github.com/trickstercache/trickster/v2/pkg/cache/memory\"\n\tco \"github.com/trickstercache/trickster/v2/pkg/cache/options\"\n\t\"github.com/trickstercache/trickster/v2/pkg/cache/status\"\n)\n\nfunc TestNewCache(t *testing.T) {\n\topts := CacheOptions{\n\t\tUseIndex: true,\n\t}\n\tc := NewCache(nil, opts, nil)\n\trequire.NotNil(t, c)\n\trequire.Equal(t, opts, c.(*Manager).opts)\n}\n\nfunc TestManager(t *testing.T) {\n\topts := CacheOptions{\n\t\tUseIndex: true,\n\t}\n\tcacheConfig := co.Options{Provider: \"memory\"}\n\tmc := memory.New(\"test\", &cacheConfig)\n\tc := NewCache(mc, opts, &cacheConfig)\n\n\tt.Run(\"create/read\", func(t *testing.T) {\n\t\tkey := \"foo\"\n\t\trequire.NoError(t, c.Store(key, []byte(\"bar\"), 0))\n\t\tb, s, err := c.Retrieve(key)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, status.LookupStatusHit, s)\n\t\trequire.Equal(t, []byte(\"bar\"), b)\n\t})\n\n\tt.Run(\"create/read/delete\", func(t *testing.T) {\n\t\tkey := \"foo\"\n\t\trequire.NoError(t, c.Store(key, []byte(\"bar\"), 0))\n\t\tb, s, err := c.Retrieve(key)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, status.LookupStatusHit, s)\n\t\trequire.Equal(t, []byte(\"bar\"), b)\n\t\trequire.NoError(t, c.Remove(key))\n\t\tb, s, err = c.Retrieve(key)\n\t\trequire.ErrorContains(t, err, \"key not found in cache\")\n\t\trequire.Equal(t, status.LookupStatusKeyMiss, s)\n\t\trequire.Len(t, b, 0)\n\t})\n\n\tt.Run(\"create/update/read\", func(t *testing.T) {\n\t\tkey := \"foo\"\n\t\trequire.NoError(t, c.Store(key, []byte(\"bar\"), 0))\n\t\tb, s, err := c.Retrieve(key)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, status.LookupStatusHit, s)\n\t\trequire.Equal(t, []byte(\"bar\"), b)\n\t\trequire.NoError(t, c.Store(key, []byte(\"baz\"), 0))\n\t\tb, s, err = c.Retrieve(key)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, status.LookupStatusHit, s)\n\t\trequire.Equal(t, []byte(\"baz\"), b)\n\t})\n\n\tt.Run(\"reference\", func(t *testing.T) {\n\t\tmc := c.(cache.MemoryCache)\n\t\tkey := \"foo\"\n\t\tval := object{\"bar\"}\n\t\trequire.NoError(t, mc.StoreReference(key, &val, 0))\n\t\tv, s, err := mc.RetrieveReference(key)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, status.LookupStatusHit, s)\n\t\trequire.Equal(t, val, *v.(*object))\n\t})\n\n\tt.Run(\"invalid calls\", func(t *testing.T) {\n\t\tkey := \"invalid\"\n\t\t_, _, err := c.RetrieveReference(key)\n\t\trequire.NoError(t, err)\n\n\t\terr = c.StoreReference(key, \"invalid\", 0)\n\t\trequire.NoError(t, err)\n\n\t\ts := c.Configuration().InvalidMethod()\n\t\trequire.Nil(t, s)\n\n\t\tl := c.Locker().InvalidMethod()\n\t\trequire.Nil(t, l)\n\n\t\terr = c.Remove()\n\t\trequire.NoError(t, err)\n\t})\n\n}\n\ntype object struct {\n\tfield string\n}\n\nfunc (o *object) Size() int {\n\treturn len(o.field)\n}"

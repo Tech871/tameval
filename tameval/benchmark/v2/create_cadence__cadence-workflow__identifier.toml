@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "cadence-workflow/cadence"
+sha = "6d4ff3b9586899afadea49387fa6cfe75b0d00aa"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out service/matching/tasklist/identifier.go service/matching/tasklist/identifier_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting service/matching/tasklist/identifier.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 38.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 64, 65, 66, 67, 68, 72, 76, 77, 78, 100, 101, 102, 103, 104, 105, 108, 109, 110, 111, 112, 115, 116, 117, 118, 120, 125, 130, 131, 132,]
+missed_lines = [ 69, 70, 71, 80, 81, 82, 85, 86, 87, 90, 91, 92, 121, 122, 123, 126, 127, 128, 140, 141, 142, 143, 144, 146, 147, 148, 149, 150, 154, 155, 156, 159, 160, 161, 163, 164, 165, 166, 167, 168, 169, 170, 171, 172, 173, 174, 175,]
+
+[input_info]
+test_file_path = "service/matching/tasklist/identifier_test.go"
+focal_file_path = "service/matching/tasklist/identifier.go"
+test_file_url = "https://github.com/cadence-workflow/cadence/blob/6d4ff3b9586899afadea49387fa6cfe75b0d00aa/service/matching/tasklist/identifier_test.go"
+focal_file_url = "https://github.com/cadence-workflow/cadence/blob/6d4ff3b9586899afadea49387fa6cfe75b0d00aa/service/matching/tasklist/identifier.go"
+first_commit_date = "2024-05-13"
+last_commit_date = "2025-03-24"
+test_file_content = "// Copyright (c) 2019 Uber Technologies, Inc.\n//\n// Permission is hereby granted, free of charge, to any person obtaining a copy\n// of this software and associated documentation files (the \"Software\"), to deal\n// in the Software without restriction, including without limitation the rights\n// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell\n// copies of the Software, and to permit persons to whom the Software is\n// furnished to do so, subject to the following conditions:\n//\n// The above copyright notice and this permission notice shall be included in\n// all copies or substantial portions of the Software.\n//\n// THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR\n// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,\n// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE\n// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER\n// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,\n// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN\n// THE SOFTWARE.\n\npackage tasklist\n\nimport (\n\t\"strconv\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\n)\n\n\nfunc TestTaskListParentName(t *testing.T) {\n\ttestCases := []struct {\n\t\tname   string\n\t\tdegree int\n\t\toutput string\n\t}{\n\t\t/* unexpected input */\n\t\t{\"list0\", 0, \"\"},\n\t\t/* 1-ary tree */\n\t\t{\"list0\", 1, \"\"},\n\t\t{\"/__cadence_sys/list0/1\", 1, \"list0\"},\n\t\t{\"/__cadence_sys/list0/2\", 1, \"/__cadence_sys/list0/1\"},\n\t\t/* 2-ary tree */\n\t\t{\"list0\", 2, \"\"},\n\t\t{\"/__cadence_sys/list0/1\", 2, \"list0\"},\n\t\t{\"/__cadence_sys/list0/2\", 2, \"list0\"},\n\t\t{\"/__cadence_sys/list0/3\", 2, \"/__cadence_sys/list0/1\"},\n\t\t{\"/__cadence_sys/list0/4\", 2, \"/__cadence_sys/list0/1\"},\n\t\t{\"/__cadence_sys/list0/5\", 2, \"/__cadence_sys/list0/2\"},\n\t\t{\"/__cadence_sys/list0/6\", 2, \"/__cadence_sys/list0/2\"},\n\t\t/* 3-ary tree */\n\t\t{\"/__cadence_sys/list0/1\", 3, \"list0\"},\n\t\t{\"/__cadence_sys/list0/2\", 3, \"list0\"},\n\t\t{\"/__cadence_sys/list0/3\", 3, \"list0\"},\n\t\t{\"/__cadence_sys/list0/4\", 3, \"/__cadence_sys/list0/1\"},\n\t\t{\"/__cadence_sys/list0/5\", 3, \"/__cadence_sys/list0/1\"},\n\t\t{\"/__cadence_sys/list0/6\", 3, \"/__cadence_sys/list0/1\"},\n\t\t{\"/__cadence_sys/list0/7\", 3, \"/__cadence_sys/list0/2\"},\n\t\t{\"/__cadence_sys/list0/10\", 3, \"/__cadence_sys/list0/3\"},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name+\"#\"+strconv.Itoa(tc.degree), func(t *testing.T) {\n\t\t\ttn, err := newTaskListName(tc.name)\n\t\t\trequire.NoError(t, err)\n\t\t\trequire.Equal(t, tc.output, tn.Parent(tc.degree))\n\t\t})\n\t}\n}\n"

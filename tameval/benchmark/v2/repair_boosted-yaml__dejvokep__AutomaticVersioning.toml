@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_runtime_errors"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "dejvokep/boosted-yaml"
+sha = "fd45ba039337485d5081ba47c1a1116e52a3160c"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AutomaticVersioningTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.AutomaticVersioning  -DtargetTests=**.AutomaticVersioningTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 53.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/dev/dejvokep/boostedyaml/dvs/versioning/AutomaticVersioningTest.java"
+focal_file_path = "src/main/java/dev/dejvokep/boostedyaml/dvs/versioning/AutomaticVersioning.java"
+test_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/test/java/dev/dejvokep/boostedyaml/dvs/versioning/AutomaticVersioningTest.java"
+focal_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/main/java/dev/dejvokep/boostedyaml/dvs/versioning/AutomaticVersioning.java"
+first_commit_date = "2022-01-31"
+last_commit_date = "2024-01-19"
+test_file_content = "package dev.dejvokep.boostedyaml.dvs.versioning;\n\nimport dev.dejvokep.boostedyaml.YamlDocument;\nimport dev.dejvokep.boostedyaml.dvs.segment.Segment;\nimport dev.dejvokep.boostedyaml.settings.dumper.DumperSettings;\nimport dev.dejvokep.boostedyaml.settings.general.GeneralSettings;\nimport dev.dejvokep.boostedyaml.settings.loader.LoaderSettings;\nimport dev.dejvokep.boostedyaml.settings.updater.UpdaterSettings;\nimport dev.dejvokep.boostedyaml.dvs.Pattern;\nimport org.junit.jupiter.api.Test;\n\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.nio.charset.StandardCharsets;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass AutomaticVersioningTest {\n    private static final Pattern PATTERN = new Pattern(Segment.range(1, Integer.MAX_VALUE), Segment.literal(\".\"), Segment.range(0, 10));\n    private static final AutomaticVersioning VERSIONING = new AutomaticVersioning(PATTERN, \"x\");\n\n    @Test\n    void getDocumentVersion() throws IOException {\n        assertEquals(PATTERN.getVersion(\"1.4\"), VERSIONING.getDocumentVersion(createFile().getDefaults(), true));\n        assertEquals(PATTERN.getVersion(\"1.2\"), VERSIONING.getDocumentVersion(createFile(), false));\n    }\n\n    @Test\n    void getOldest() {\n        assertEquals(PATTERN.getFirstVersion(), VERSIONING.getFirstVersion());\n    }\n\n    @Test\n    void updateVersionID() throws IOException {\n        YamlDocument document = YamlDocument.create(new ByteArrayInputStream(\"x: 1.2\\ny: true\".getBytes(StandardCharsets.UTF_8)));\n        VERSIONING.updateVersionID(document, createFile().getDefaults());\n        assertEquals(\"1.4\", document.getString(\"x\"));\n        assertEquals(\"1.4\", document.getString(\"y\"));\n    }\n\n    private YamlDocument createFile() throws IOException {\n        return YamlDocument.create(\n                new ByteArrayInputStream(\"x: 1.2\\ny: true\".getBytes(StandardCharsets.UTF_8)),\n                new ByteArrayInputStream(\"x: 1.4\\ny: false\".getBytes(StandardCharsets.UTF_8)),\n                GeneralSettings.DEFAULT, LoaderSettings.DEFAULT, DumperSettings.DEFAULT, UpdaterSettings.DEFAULT);\n    }\n\n    @Test\n    void updateVersionIDWithNonExistentKey() throws IOException {\n        YamlDocument document = YamlDocument.create(new ByteArrayInputStream(\"z: 1.2\\ny: true\".getBytes(StandardCharsets.UTF_8)));\n        VERSIONING.updateVersionID(document, createFile().getDefaults());\n        assertEquals(\"1.4\", document.getString(\"x\"));\n    }\n\n    @Test\n    void getDocumentVersionWithInvalidPattern() throws IOException {\n        assertEquals(PATTERN.getVersion(\"1.a\"), VERSIONING.getDocumentVersion(createFile(), false));\n    }\n\n    @Test\n    void updateVersionIDWithNullDefault() throws IOException {\n        YamlDocument document = YamlDocument.create(new ByteArrayInputStream(\"x: 1.2\\ny: true\".getBytes(StandardCharsets.UTF_8)));\n        VERSIONING.updateVersionID(document, null);\n        assertEquals(\"1.4\", document.getString(\"x\"));\n    }\n\n    @Test\n    void getDocumentVersionWithMissingKey() throws IOException {\n        assertEquals(PATTERN.getVersion(\"1.4\"), VERSIONING.getDocumentVersion(createFileWithoutX(), false));\n    }\n\n    private YamlDocument createFileWithoutX() throws IOException {\n        return YamlDocument.create(\n                new ByteArrayInputStream(\"y: true\".getBytes(StandardCharsets.UTF_8)),\n                new ByteArrayInputStream(\"x: 1.4\\ny: false\".getBytes(StandardCharsets.UTF_8)),\n                GeneralSettings.DEFAULT, LoaderSettings.DEFAULT, DumperSettings.DEFAULT, UpdaterSettings.DEFAULT);\n    }\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "skynetcap/solanaj"
+sha = "b0f095290e5a1cdd1528bb50615cc56dc0add467"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=SystemProgramTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.SystemProgram  -DtargetTests=**.SystemProgramTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 19.0
+original_coverage = 71.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 19, 108, 110, 111, 112, 114,]
+missed_lines = [ 53, 54, 57, 62, 63, 64, 66, 82, 83, 86, 91, 92, 93, 94, 95, 97, 126, 132, 133, 134, 136, 148, 154, 155, 157,]
+
+[input_info]
+test_file_path = "src/test/java/org/p2p/solanaj/programs/SystemProgramTest.java"
+focal_file_path = "src/main/java/org/p2p/solanaj/programs/SystemProgram.java"
+test_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/test/java/org/p2p/solanaj/programs/SystemProgramTest.java"
+focal_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/main/java/org/p2p/solanaj/programs/SystemProgram.java"
+first_commit_date = "2020-11-02"
+last_commit_date = "2024-12-24"
+test_file_content = "package org.p2p.solanaj.programs;\n\nimport org.p2p.solanaj.core.PublicKey;\nimport org.p2p.solanaj.core.TransactionInstruction;\n\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport org.bitcoinj.core.Base58;\n\npublic class SystemProgramTest {\n\n\n\n\n\n    @Test\n    public void testAssignInstruction() {\n        PublicKey owner = new PublicKey(\"QqCCvshxtqMAL2CVALqiJB7uEeE5mjSPsseQdDzsRUo\");\n        PublicKey newOwner = new PublicKey(\"GrDMoeqMLFjeXQ24H56S1RLgT4R76jsuWCd6SvXyGPQ5\");\n\n        TransactionInstruction instruction = SystemProgram.assign(owner, newOwner);\n\n        assertEquals(SystemProgram.PROGRAM_ID, instruction.getProgramId());\n        assertEquals(1, instruction.getKeys().size());\n        assertEquals(owner, instruction.getKeys().get(0).getPublicKey());\n        assertTrue(instruction.getKeys().get(0).isSigner());\n        assertTrue(instruction.getKeys().get(0).isWritable());\n\n        byte[] expectedData = new byte[36];\n        expectedData[0] = 1; // PROGRAM_INDEX_ASSIGN\n        System.arraycopy(newOwner.toByteArray(), 0, expectedData, 4, 32);\n        assertArrayEquals(expectedData, instruction.getData());\n    }\n}\n"

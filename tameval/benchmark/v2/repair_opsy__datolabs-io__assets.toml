@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_duplicate_entity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "datolabs-io/opsy"
+sha = "34d0c4dd506970419e9238a3343710100422dd33"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out assets/assets.go assets/assets_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting assets/assets.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 84.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 50.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "assets/assets_test.go"
+focal_file_path = "assets/assets.go"
+test_file_url = "https://github.com/datolabs-io/opsy/blob/34d0c4dd506970419e9238a3343710100422dd33/assets/assets_test.go"
+focal_file_url = "https://github.com/datolabs-io/opsy/blob/34d0c4dd506970419e9238a3343710100422dd33/assets/assets.go"
+first_commit_date = "2025-02-20"
+last_commit_date = "2025-02-24"
+test_file_content = "package assets\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestRenderAgentSystemPrompt(t *testing.T) {\n\tt.Run(\"renders with valid data\", func(t *testing.T) {\n\t\tdata := &AgentSystemPromptData{\n\t\t\tShell: \"/bin/bash\",\n\t\t}\n\t\tresult, err := RenderAgentSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.Contains(t, result, \"/bin/bash\")\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles empty shell\", func(t *testing.T) {\n\t\tdata := &AgentSystemPromptData{}\n\t\tresult, err := RenderAgentSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles nil data\", func(t *testing.T) {\n\t\t_, err := RenderAgentSystemPrompt(nil)\n\t\tassert.Error(t, err)\n\t})\n}\n\nfunc TestRenderAgentSystemPrompt(t *testing.T) {\n\tt.Run(\"renders with valid data\", func(t *testing.T) {\n\t\tdata := &AgentSystemPromptData{\n\t\t\tShell: \"/bin/bash\",\n\t\t}\n\t\tresult, err := RenderAgentSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.Contains(t, result, \"/bin/bash\")\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles empty shell\", func(t *testing.T) {\n\t\tdata := &AgentSystemPromptData{}\n\t\tresult, err := RenderAgentSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles nil data\", func(t *testing.T) {\n\t\t_, err := RenderAgentSystemPrompt(nil)\n\t\tassert.Error(t, err)\n\t})\n}\n\nfunc TestRenderToolSystemPrompt(t *testing.T) {\n\tt.Run(\"renders with valid data\", func(t *testing.T) {\n\t\tdata := &ToolSystemPromptData{\n\t\t\tShell:      \"/bin/bash\",\n\t\t\tName:       \"test-tool\",\n\t\t\tExecutable: \"/usr/bin/test\",\n\t\t\tRules:      []string{\"rule1\", \"rule2\"},\n\t\t}\n\t\tresult, err := RenderToolSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.Contains(t, result, \"/bin/bash\")\n\t\tassert.Contains(t, result, \"test-tool\")\n\t\tassert.Contains(t, result, \"/usr/bin/test\")\n\t\tassert.Contains(t, result, \"rule1\")\n\t\tassert.Contains(t, result, \"rule2\")\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles empty fields\", func(t *testing.T) {\n\t\tdata := &ToolSystemPromptData{}\n\t\tresult, err := RenderToolSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles nil data\", func(t *testing.T) {\n\t\t_, err := RenderToolSystemPrompt(nil)\n\t\tassert.Error(t, err)\n\t})\n\n\tt.Run(\"handles empty rules\", func(t *testing.T) {\n\t\tdata := &ToolSystemPromptData{\n\t\t\tShell:      \"/bin/bash\",\n\t\t\tName:       \"test-tool\",\n\t\t\tExecutable: \"/usr/bin/test\",\n\t\t}\n\t\tresult, err := RenderToolSystemPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n}\n\nfunc TestRenderToolUserPrompt(t *testing.T) {\n\tt.Run(\"renders with valid data\", func(t *testing.T) {\n\t\tdata := &ToolUserPromptData{\n\t\t\tTask: \"test task\",\n\t\t\tParams: map[string]any{\n\t\t\t\t\"param1\": \"value1\",\n\t\t\t\t\"param2\": 42,\n\t\t\t},\n\t\t\tContext: map[string]string{\n\t\t\t\t\"ctx1\": \"value1\",\n\t\t\t\t\"ctx2\": \"value2\",\n\t\t\t},\n\t\t\tWorkingDirectory: \"/test/dir\",\n\t\t}\n\t\tresult, err := RenderToolUserPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.Contains(t, result, \"test task\")\n\t\tassert.Contains(t, result, \"param1\")\n\t\tassert.Contains(t, result, \"value1\")\n\t\tassert.Contains(t, result, \"ctx1\")\n\t\tassert.Contains(t, result, \"/test/dir\")\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles empty fields\", func(t *testing.T) {\n\t\tdata := &ToolUserPromptData{}\n\t\tresult, err := RenderToolUserPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles nil data\", func(t *testing.T) {\n\t\t_, err := RenderToolUserPrompt(nil)\n\t\tassert.Error(t, err)\n\t})\n\n\tt.Run(\"handles empty maps\", func(t *testing.T) {\n\t\tdata := &ToolUserPromptData{\n\t\t\tTask:             \"test task\",\n\t\t\tWorkingDirectory: \"/test/dir\",\n\t\t}\n\t\tresult, err := RenderToolUserPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n}\n\nfunc TestRenderToolUserPrompt(t *testing.T) {\n\tt.Run(\"renders with valid data\", func(t *testing.T) {\n\t\tdata := &ToolUserPromptData{\n\t\t\tTask: \"test task\",\n\t\t\tParams: map[string]any{\n\t\t\t\t\"param1\": \"value1\",\n\t\t\t\t\"param2\": 42,\n\t\t\t},\n\t\t\tContext: map[string]string{\n\t\t\t\t\"ctx1\": \"value1\",\n\t\t\t\t\"ctx2\": \"value2\",\n\t\t\t},\n\t\t\tWorkingDirectory: \"/test/dir\",\n\t\t}\n\t\tresult, err := RenderToolUserPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.Contains(t, result, \"test task\")\n\t\tassert.Contains(t, result, \"param1\")\n\t\tassert.Contains(t, result, \"value1\")\n\t\tassert.Contains(t, result, \"ctx1\")\n\t\tassert.Contains(t, result, \"/test/dir\")\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles empty fields\", func(t *testing.T) {\n\t\tdata := &ToolUserPromptData{}\n\t\tresult, err := RenderToolUserPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n\n\tt.Run(\"handles nil data\", func(t *testing.T) {\n\t\t_, err := RenderToolUserPrompt(nil)\n\t\tassert.Error(t, err)\n\t})\n\n\tt.Run(\"handles empty maps\", func(t *testing.T) {\n\t\tdata := &ToolUserPromptData{\n\t\t\tTask:             \"test task\",\n\t\t\tWorkingDirectory: \"/test/dir\",\n\t\t}\n\t\tresult, err := RenderToolUserPrompt(data)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, result)\n\t})\n}\n\nfunc TestEmbeddedFS(t *testing.T) {\n\tt.Run(\"themes fs is accessible\", func(t *testing.T) {\n\t\tentries, err := Themes.ReadDir(ThemeDir)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, entries)\n\t})\n\n\tt.Run(\"tools fs is accessible\", func(t *testing.T) {\n\t\tentries, err := Tools.ReadDir(ToolsDir)\n\t\trequire.NoError(t, err)\n\t\tassert.NotEmpty(t, entries)\n\t})\n}"

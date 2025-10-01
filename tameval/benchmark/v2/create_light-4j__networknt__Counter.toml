@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "networknt/light-4j"
+sha = "e6d76041442a1265369701cef8141b88c027f15c"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl metrics-config -Dtest=CounterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl metrics-config -DtargetClasses=**.Counter  -DtargetTests=**.CounterTest  -DoutputFormats=XML"
+coverage_report_path = "metrics-config/target/site/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "metrics-config/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 92.0
+original_coverage = 92.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 26, 27, 28, 34, 35, 43, 44, 50, 51, 59, 60, 69,]
+missed_lines = [ 74,]
+
+[input_info]
+test_file_path = "metrics-config/src/test/java/io/dropwizard/metrics/CounterTest.java"
+focal_file_path = "metrics-config/src/main/java/io/dropwizard/metrics/Counter.java"
+test_file_url = "https://github.com/networknt/light-4j/blob/e6d76041442a1265369701cef8141b88c027f15c/metrics-config/src/test/java/io/dropwizard/metrics/CounterTest.java"
+focal_file_url = "https://github.com/networknt/light-4j/blob/e6d76041442a1265369701cef8141b88c027f15c/metrics-config/src/main/java/io/dropwizard/metrics/Counter.java"
+first_commit_date = "2024-04-04"
+last_commit_date = "2024-04-04"
+test_file_content = "/*\n * Copyright 2010-2013 Coda Hale and Yammer, Inc., 2014-2017 Dropwizard Team\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage io.dropwizard.metrics;\n\nimport org.junit.Test;\n\nimport io.dropwizard.metrics.Counter;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\npublic class CounterTest {\n    private final Counter counter = new Counter();\n\n    @Test\n    public void startsAtZero() throws Exception {\n        assertThat(counter.getCount())\n                .isZero();\n    }\n\n    @Test\n    public void incrementsByOne() throws Exception {\n        counter.inc();\n\n        assertThat(counter.getCount())\n                .isEqualTo(1);\n    }\n\n    @Test\n    public void incrementsByAnArbitraryDelta() throws Exception {\n        counter.inc(12);\n\n        assertThat(counter.getCount())\n                .isEqualTo(12);\n    }\n\n    @Test\n    public void decrementsByOne() throws Exception {\n        counter.dec();\n\n        assertThat(counter.getCount())\n                .isEqualTo(-1);\n    }\n\n    @Test\n    public void decrementsByAnArbitraryDelta() throws Exception {\n        counter.dec(12);\n\n        assertThat(counter.getCount())\n                .isEqualTo(-12);\n    }\n}\n"

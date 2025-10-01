@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "hdl-registers/hdl-registers"
+sha = "4761587ceabb90436e8d71f191aec976d35e9b14"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=hdl_registers/register_array.py -m pytest -q --junit-xml=test_output.xml hdl_registers/test/test_register_array.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target hdl_registers.register_array --unit-test hdl_registers.test.test_register_array --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target hdl_registers/register_array.py --unit-test hdl_registers/test/test_register_array.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 68.0
+original_coverage = 97.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 10, 12, 14, 18, 29, 38, 39, 43, 44, 45, 46, 48, 50, 64, 65, 70, 86, 87, 94, 95, 99, 115, 116,]
+missed_lines = [ 15, 67, 68, 80, 81, 82, 84, 97, 107, 108, 113,]
+
+[input_info]
+test_file_path = "hdl_registers/test/test_register_array.py"
+focal_file_path = "hdl_registers/register_array.py"
+test_file_url = "https://github.com/hdl-registers/hdl-registers/blob/4761587ceabb90436e8d71f191aec976d35e9b14/hdl_registers/test/test_register_array.py"
+focal_file_url = "https://github.com/hdl-registers/hdl-registers/blob/4761587ceabb90436e8d71f191aec976d35e9b14/hdl_registers/register_array.py"
+first_commit_date = "2021-10-21"
+last_commit_date = "2025-02-11"
+test_file_content = "# --------------------------------------------------------------------------------------------------\n# Copyright (c) Lukas Vik. All rights reserved.\n#\n# This file is part of the hdl-registers project, an HDL register generator fast enough to run\n# in real time.\n# https://hdl-registers.com\n# https://github.com/hdl-registers/hdl-registers\n# --------------------------------------------------------------------------------------------------\n\n# Third party libraries\nimport pytest\n\n# First party libraries\nfrom hdl_registers.register_array import RegisterArray\n\n\ndef test_registers_are_appended_properly_and_can_be_edited_in_place():\n    register_array = RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")\n\n    register_hest = register_array.append_register(name=\"hest\", mode=\"r\", description=\"\")\n    assert register_hest.index == 0\n\n    register_zebra = register_array.append_register(name=\"zebra\", mode=\"r\", description=\"\")\n    assert register_zebra.index == 1\n\n    register_hest.description = \"new desc\"\n    assert register_array.registers[0].description == \"new desc\"\n\n\ndef test_get_register():\n    register_array = RegisterArray(name=\"apa\", base_index=0, length=3, description=\"\")\n    hest = register_array.append_register(name=\"hest\", mode=\"w\", description=\"\")\n    zebra = register_array.append_register(name=\"zebra\", mode=\"r\", description=\"\")\n\n    assert register_array.get_register(\"hest\") is hest\n    assert register_array.get_register(\"zebra\") is zebra\n\n    with pytest.raises(ValueError) as exception_info:\n        assert register_array.get_register(\"non existing\") is None\n    assert (\n        str(exception_info.value)\n        == 'Could not find register \"non existing\" within register array \"apa\"'\n    )\n\n\ndef test_repr_basic():\n    # Check that repr is an actual representation, not just \"X object at 0xABCDEF\"\n    assert \"apa\" in repr(RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\"))\n\n    # Different name\n    assert repr(RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")) != repr(\n        RegisterArray(name=\"hest\", base_index=0, length=4, description=\"\")\n    )\n\n    # Different base_index\n    assert repr(RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")) != repr(\n        RegisterArray(name=\"apa\", base_index=8, length=4, description=\"\")\n    )\n\n    # Different length\n    assert repr(RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")) != repr(\n        RegisterArray(name=\"apa\", base_index=0, length=8, description=\"\")\n    )\n\n    # Different description\n    assert repr(RegisterArray(name=\"apa\", base_index=0, length=4, description=\"hest\")) != repr(\n        RegisterArray(name=\"apa\", base_index=0, length=4, description=\"zebra\")\n    )\n\n\ndef test_repr_with_registers_appended():\n    register_array_a = RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")\n    register_array_a.append_register(name=\"hest\", mode=\"r\", description=\"\")\n\n    register_array_b = RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")\n    register_array_b.append_register(name=\"hest\", mode=\"r\", description=\"\")\n\n    assert repr(register_array_a) == repr(register_array_b)\n\n    register_array_a.append_register(name=\"zebra\", mode=\"w\", description=\"\")\n    register_array_b.append_register(name=\"zebra\", mode=\"r_w\", description=\"\")\n\n    assert repr(register_array_a) != repr(register_array_b)\n\n\ndef test_invalid_length_should_raise_exception():\n    with pytest.raises(ValueError) as exception_info:\n        RegisterArray(name=\"apa\", base_index=0, length=0, description=\"\")\n    assert (\n        str(exception_info.value) == 'Register array \"apa\" length must be greater than 0. Got \"0\".'\n    )\n\n\ndef test_index():\n    register_array = RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")\n    register_array.append_register(name=\"hest\", mode=\"r\", description=\"\")\n    assert register_array.index == 3\n\n    register_array.length = 5\n    assert register_array.index == 4\n\n    register_array.append_register(name=\"zebra\", mode=\"r\", description=\"\")\n    assert register_array.index == 9\n\n\ndef test_index_for_array_without_registers_should_raise_exception():\n    register_array = RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")\n\n    with pytest.raises(ValueError) as exception_info:\n        print(register_array.index)\n    assert str(exception_info.value) == 'Register array \"apa\" must contain at least one register.'\n\n\ndef test_start_index():\n    register_array = RegisterArray(name=\"apa\", base_index=10, length=4, description=\"\")\n    register_array.append_register(name=\"hest\", mode=\"r\", description=\"\")\n    assert register_array.get_start_index(0) == 10\n    assert register_array.get_start_index(1) == 11\n    assert register_array.get_start_index(2) == 12\n\n    register_array.append_register(name=\"zebra\", mode=\"r\", description=\"\")\n    assert register_array.get_start_index(0) == 10\n    assert register_array.get_start_index(1) == 12\n    assert register_array.get_start_index(2) == 14\n\n\ndef test_start_index_with_argument_outside_of_length_should_raise_exception():\n    register_array = RegisterArray(name=\"apa\", base_index=0, length=4, description=\"\")\n    register_array.append_register(name=\"hest\", mode=\"r\", description=\"\")\n\n    with pytest.raises(ValueError) as exception_info:\n        register_array.get_start_index(4)\n    assert str(exception_info.value) == 'Index 4 out of range for register array \"apa\" of length 4.'\n\n    with pytest.raises(ValueError) as exception_info:\n        register_array.get_start_index(-1)\n    assert (\n        str(exception_info.value) == 'Index -1 out of range for register array \"apa\" of length 4.'\n    )"

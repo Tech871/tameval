@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "AlexGustafsson/cupdate"
+sha = "1d16570b6ddcce6fef954443916636cfcc74cae2"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/httputil/auth.go internal/httputil/auth_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/httputil/auth.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 46.0
+original_coverage = 56.0
+mutation_kill_rate = 39.0
+original_mutation_kill_rate = 45.0
+covered_lines = [ 56, 57, 58, 59, 60, 61, 64, 65, 66, 74, 75, 76, 77, 78, 79, 80, 86, 87, 92, 103, 104, 105, 106, 107, 108, 110, 111, 112, 113, 114, 115, 119, 120, 121, 123, 139, 140, 141, 142, 143, 146, 147, 148, 155, 156, 157, 158, 163, 164, 165, 178, 179, 180, 183,]
+missed_lines = [ 18, 19, 20, 31, 32, 33, 34, 35, 36, 41, 42, 43, 44, 45, 69, 70, 71, 82, 83, 84, 88, 89, 90, 96, 97, 98, 99, 100, 101, 124, 125, 128, 129, 134, 135, 136, 150, 151, 159, 160, 166, 167, 168, 170, 171, 172, 173, 174, 187, 188, 189, 190, 192, 193, 194, 195, 196, 197, 198, 199, 200, 202, 203, 204,]
+
+[input_info]
+test_file_path = "internal/httputil/auth_test.go"
+focal_file_path = "internal/httputil/auth.go"
+test_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/httputil/auth_test.go"
+focal_file_url = "https://github.com/AlexGustafsson/cupdate/blob/1d16570b6ddcce6fef954443916636cfcc74cae2/internal/httputil/auth.go"
+first_commit_date = "2025-01-23"
+last_commit_date = "2025-02-25"
+test_file_content = "package httputil\n\nimport (\n\t\"fmt\"\n\t\"net/http\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/mock\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nvar _ AuthHandler = (*MockAuthHandler)(nil)\n\ntype MockAuthHandler struct {\n\tmock.Mock\n}\n\n// HandleAuth implements AuthHandler.\nfunc (m *MockAuthHandler) HandleAuth(r *http.Request) error {\n\targs := m.Called(r)\n\treturn args.Error(0)\n}\n\nfunc TestAuthMuxPatterns(t *testing.T) {\n\ttestCases := []struct {\n\t\tPattern  string\n\t\tURL      string\n\t\tExpected bool\n\t}{\n\t\t// From: https://kubernetes.io/docs/concepts/containers/images/#config-json\n\t\t{\n\t\t\tPattern:  \"*.kubernetes.io\",\n\t\t\tURL:      \"https://abc.kubernetes.io\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*.kubernetes.io\",\n\t\t\tURL:      \"https://kubernetes.io\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*.*.kubernetes.io\",\n\t\t\tURL:      \"https://abc.kubernetes.io\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*.*.kubernetes.io\",\n\t\t\tURL:      \"https://abc.def.kubernetes.io\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"prefix.*.io\",\n\t\t\tURL:      \"https://prefix.kubernetes.io\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*-good.kubernetes.io\",\n\t\t\tURL:      \"https://prefix-good.kubernetes.io\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"my-registry.io/images\",\n\t\t\tURL:      \"https://my-registry.io/images\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"my-registry.io/images\",\n\t\t\tURL:      \"https://my-registry.io/images/my-image\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"my-registry.io/images\",\n\t\t\tURL:      \"https://my-registry.io/images/another-image\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*.my-registry.io/images\",\n\t\t\tURL:      \"https://sub.my-registry.io/images/my-image\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*.my-registry.io/images\",\n\t\t\tURL:      \"https://a.sub.my-registry.io/images/my-image\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"*.my-registry.io/images\",\n\t\t\tURL:      \"https://a.b.sub.my-registry.io/images/my-image\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"my-registry.io/images\",\n\t\t\tURL:      \"https://a.sub.my-registry.io/images/my-image\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"my-registry.io/images\",\n\t\t\tURL:      \"https://a.b.sub.my-registry.io/images/my-image\",\n\t\t\tExpected: false,\n\t\t},\n\t\t// HTTP / HTTPS\n\t\t{\n\t\t\tPattern:  \"https://example.com\",\n\t\t\tURL:      \"https://example.com/images\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"https://example.com\",\n\t\t\tURL:      \"http://example.com/images\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"example.com\",\n\t\t\tURL:      \"https://example.com/images\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"example.com\",\n\t\t\tURL:      \"http://example.com/images\",\n\t\t\tExpected: true,\n\t\t},\n\t\t// IP / port\n\t\t{\n\t\t\tPattern:  \"example.com:8080\",\n\t\t\tURL:      \"https://example.com:8080/alpine\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"192.168.1.100:8080\",\n\t\t\tURL:      \"https://192.168.1.100:8080/alpine\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"192.168.1.100\",\n\t\t\tURL:      \"https://192.168.1.100/alpine\",\n\t\t\tExpected: true,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"example.com\",\n\t\t\tURL:      \"https://example.com:8080/alpine\",\n\t\t\tExpected: false,\n\t\t},\n\t\t{\n\t\t\tPattern:  \"192.168.1.100\",\n\t\t\tURL:      \"https://192.168.1.100:8080/alpine\",\n\t\t\tExpected: false,\n\t\t},\n\t}\n\n\tfor _, testCase := range testCases {\n\t\tt.Run(fmt.Sprintf(\"%s matches %s: %v\", testCase.Pattern, testCase.URL, testCase.Expected), func(t *testing.T) {\n\t\t\tauthMux := NewAuthMux()\n\n\t\t\thandler := &MockAuthHandler{}\n\t\t\thandler.On(\"HandleAuth\", mock.Anything).Return(nil)\n\n\t\t\tif testCase.Expected {\n\t\t\t\tauthMux.Handle(testCase.Pattern, handler)\n\t\t\t} else {\n\t\t\t\t// Register default handler to test that no handler was matched\n\t\t\t\tauthMux.Handle(\"\", handler)\n\t\t\t}\n\n\t\t\treq, err := http.NewRequest(http.MethodGet, testCase.URL, nil)\n\t\t\trequire.NoError(t, err)\n\n\t\t\terr = authMux.HandleAuth(req)\n\t\t\trequire.NoError(t, err)\n\n\t\t\thandler.AssertExpectations(t)\n\t\t})\n\t}\n}\n"

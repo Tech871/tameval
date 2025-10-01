@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.19"
+
+[repo_info]
+repository = "cloudwego/kitex"
+sha = "6c996664cebe9ce40921378ee01b5c8b83fe6ffb"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/utils/kitexutil/kitexutil.go pkg/utils/kitexutil/kitexutil_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/utils/kitexutil/kitexutil.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 24.0
+original_coverage = 100.0
+mutation_kill_rate = 19.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 102, 103, 105, 106, 107, 108, 109, 110, 111, 112, 114, 115, 116, 117, 145, 146, 147, 148, 149,]
+missed_lines = [ 29, 30, 32, 33, 34, 35, 36, 41, 42, 44, 45, 46, 47, 48, 53, 54, 56, 57, 58, 59, 60, 66, 67, 69, 70, 71, 72, 73, 78, 79, 81, 82, 83, 84, 85, 90, 91, 93, 94, 95, 96, 97, 122, 123, 125, 126, 127, 128, 129, 134, 135, 136, 137, 138, 139, 140, 154, 155, 156, 157, 158,]
+
+[input_info]
+test_file_path = "pkg/utils/kitexutil/kitexutil_test.go"
+focal_file_path = "pkg/utils/kitexutil/kitexutil.go"
+test_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/utils/kitexutil/kitexutil_test.go"
+focal_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/utils/kitexutil/kitexutil.go"
+first_commit_date = "2023-11-29"
+last_commit_date = "2025-02-17"
+test_file_content = "/*\n * Copyright 2023 CloudWeGo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage kitexutil\n\nimport (\n\t\"context\"\n\t\"net\"\n\t\"os\"\n\t\"reflect\"\n\t\"testing\"\n\n\tmocks \"github.com/cloudwego/kitex/internal/mocks/thrift\"\n\t\"github.com/cloudwego/kitex/internal/test\"\n\t\"github.com/cloudwego/kitex/pkg/rpcinfo\"\n\t\"github.com/cloudwego/kitex/pkg/utils\"\n\t\"github.com/cloudwego/kitex/transport\"\n)\n\nvar (\n\ttestRi             rpcinfo.RPCInfo\n\ttestCtx            context.Context\n\tpanicCtx           context.Context\n\ttestCaller         = \"kitexutil.from.service\"\n\ttestCallee         = \"kitexutil.to.service\"\n\ttestIdlServiceName = \"MockService\"\n\ttestFromAddr       = utils.NewNetAddr(\"test\", \"127.0.0.1:12345\")\n\ttestFromMethod     = \"from_method\"\n\ttestMethod         = \"testMethod\"\n\ttestTp             = transport.TTHeaderFramed\n)\n\nfunc TestMain(m *testing.M) {\n\ttestRi = buildRPCInfo(testCaller, testFromMethod, testCallee, testMethod, testIdlServiceName, testFromAddr, testTp)\n\n\ttestCtx = context.Background()\n\ttestCtx = rpcinfo.NewCtxWithRPCInfo(testCtx, testRi)\n\tpanicCtx = rpcinfo.NewCtxWithRPCInfo(context.Background(), &panicRPCInfo{})\n\n\tos.Exit(m.Run())\n}\n\n\n\n\nfunc TestGetCallerIP(t *testing.T) {\n\tip, ok := GetCallerIP(testCtx)\n\ttest.Assert(t, ok)\n\ttest.Assert(t, ip == \"127.0.0.1\", ip)\n\n\tri := buildRPCInfo(testCaller, testFromMethod, testCallee, testMethod, testIdlServiceName, testFromAddr, testTp)\n\trpcinfo.AsMutableEndpointInfo(ri.From()).SetAddress(utils.NewNetAddr(\"test\", \"127.0.0.1\"))\n\tip, ok = GetCallerIP(rpcinfo.NewCtxWithRPCInfo(context.Background(), ri))\n\ttest.Assert(t, ok)\n\ttest.Assert(t, ip == \"127.0.0.1\", ip)\n\n\tip, ok = GetCallerIP(context.Background())\n\ttest.Assert(t, !ok)\n\ttest.Assert(t, ip == \"\", ip)\n\n\tip, ok = GetCallerIP(panicCtx)\n\ttest.Assert(t, !ok)\n\ttest.Assert(t, ip == \"\", ip)\n\n\trpcinfo.AsMutableEndpointInfo(ri.From()).SetAddress(utils.NewNetAddr(\"test\", \"\"))\n\tip, ok = GetCallerIP(rpcinfo.NewCtxWithRPCInfo(context.Background(), ri))\n\ttest.Assert(t, !ok)\n\ttest.Assert(t, ip == \"\", ip)\n}\n\n\n\n\n\n\nfunc TestGetRealRequest(t *testing.T) {\n\treq := &mocks.MockReq{}\n\targ := &mocks.MockTestArgs{Req: req}\n\ttype args struct {\n\t\treq interface{}\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant interface{}\n\t}{\n\t\t{name: \"success\", args: args{arg}, want: req},\n\t\t{name: \"nil input\", args: args{nil}, want: nil},\n\t\t{name: \"wrong interface\", args: args{req}, want: nil},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := GetRealReqFromKitexArgs(tt.args.req); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"GetRealReqFromKitexArgs() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\n\nfunc buildRPCInfo(caller, fromMethod, callee, method, idlServiceName string, fromAddr net.Addr, tp transport.Protocol) rpcinfo.RPCInfo {\n\tfrom := rpcinfo.NewEndpointInfo(caller, fromMethod, fromAddr, nil)\n\tto := rpcinfo.NewEndpointInfo(callee, method, nil, nil)\n\tink := rpcinfo.NewInvocation(idlServiceName, method)\n\tconfig := rpcinfo.NewRPCConfig()\n\tconfig.(rpcinfo.MutableRPCConfig).SetTransportProtocol(tp)\n\n\tstats := rpcinfo.NewRPCStats()\n\tri := rpcinfo.NewRPCInfo(from, to, ink, config, stats)\n\treturn ri\n}\n\ntype panicRPCInfo struct{}\n\nfunc (m *panicRPCInfo) From() rpcinfo.EndpointInfo     { panic(\"Panic when invoke From\") }\nfunc (m *panicRPCInfo) To() rpcinfo.EndpointInfo       { panic(\"Panic when invoke To\") }\nfunc (m *panicRPCInfo) Invocation() rpcinfo.Invocation { panic(\"Panic when invoke Invocation\") }\nfunc (m *panicRPCInfo) Config() rpcinfo.RPCConfig      { panic(\"Panic when invoke Config\") }\nfunc (m *panicRPCInfo) Stats() rpcinfo.RPCStats        { panic(\"Panic when invoke Stats\") }\n"

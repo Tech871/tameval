@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.5"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "ae7fd28ecd1461a1ddf146b809a159ee1af94a34"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24.5"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out components/cpu/cpuinfo.go components/cpu/cpuinfo_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting components/cpu/cpuinfo.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 70.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 58.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "components/cpu/cpuinfo_test.go"
+focal_file_path = "components/cpu/cpuinfo.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/components/cpu/cpuinfo_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/ae7fd28ecd1461a1ddf146b809a159ee1af94a34/components/cpu/cpuinfo.go"
+first_commit_date = "2025-03-11"
+last_commit_date = "2025-05-14"
+test_file_content = "package cpu\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/shirou/gopsutil/v4/cpu\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestCalculateCPUUsage(t *testing.T) {\n\tctx := context.Background()\n\n\t// Test case 1: When prevStat is nil, should use getUsedPct\n\tt.Run(\"with nil prevStat\", func(t *testing.T) {\n\t\texpectedCPUStat := cpu.TimesStat{\n\t\t\tUser:   100,\n\t\t\tSystem: 50,\n\t\t\tIdle:   200,\n\t\t}\n\t\texpectedUsage := 42.5\n\n\t\t// Mock the getTimeStat function\n\t\tgetTimeStatMock := func(ctx context.Context) (cpu.TimesStat, error) {\n\t\t\treturn expectedCPUStat, nil\n\t\t}\n\n\t\t// Mock the getUsedPct function\n\t\tgetUsedPctMock := func(ctx context.Context) (float64, error) {\n\t\t\treturn expectedUsage, nil\n\t\t}\n\n\t\t// Call the function with nil prevStat\n\t\tcurStat, usedPercent, err := calculateCPUUsage(ctx, nil, getTimeStatMock, getUsedPctMock)\n\n\t\t// Verify results\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, expectedCPUStat, curStat)\n\t\tassert.Equal(t, expectedUsage, usedPercent)\n\t})\n\n\t// Test case 2: When prevStat is not nil, should calculate busy percentage\n\tt.Run(\"with non-nil prevStat\", func(t *testing.T) {\n\t\tprevCPUStat := cpu.TimesStat{\n\t\t\tUser:   100,\n\t\t\tSystem: 50,\n\t\t\tIdle:   200,\n\t\t}\n\t\tcurrentCPUStat := cpu.TimesStat{\n\t\t\tUser:   150, // +50\n\t\t\tSystem: 75,  // +25\n\t\t\tIdle:   225, // +25\n\t\t}\n\t\t// Total time diff: 100, busy time diff: 75, so busy percentage should be 75%\n\n\t\t// Mock the getTimeStat function\n\t\tgetTimeStatMock := func(ctx context.Context) (cpu.TimesStat, error) {\n\t\t\treturn currentCPUStat, nil\n\t\t}\n\n\t\t// Mock the getUsedPct function - should not be called in this case\n\t\tgetUsedPctMock := func(ctx context.Context) (float64, error) {\n\t\t\tt.Fatal(\"getUsedPct should not be called when prevStat is not nil\")\n\t\t\treturn 0, nil\n\t\t}\n\n\t\t// Call the function with non-nil prevStat\n\t\tcurStat, usedPercent, err := calculateCPUUsage(ctx, &prevCPUStat, getTimeStatMock, getUsedPctMock)\n\n\t\t// Verify results\n\t\tassert.NoError(t, err)\n\t\tassert.Equal(t, currentCPUStat, curStat)\n\t\t// We're not checking the exact value here because calculateBusy is a separate function\n\t\t// with its own tests, but the result should be a reasonable percentage\n\t\tassert.True(t, usedPercent >= 0 && usedPercent <= 100)\n\t})\n\n\t// Test case 3: When getTimeStat returns an error\n\tt.Run(\"with getTimeStat error\", func(t *testing.T) {\n\t\texpectedErr := fmt.Errorf(\"failed to get time stats\")\n\n\t\t// Mock the getTimeStat function to return an error\n\t\tgetTimeStatMock := func(ctx context.Context) (cpu.TimesStat, error) {\n\t\t\treturn cpu.TimesStat{}, expectedErr\n\t\t}\n\n\t\t// Mock the getUsedPct function - should not be called in this case\n\t\tgetUsedPctMock := func(ctx context.Context) (float64, error) {\n\t\t\tt.Fatal(\"getUsedPct should not be called when getTimeStat fails\")\n\t\t\treturn 0, nil\n\t\t}\n\n\t\t// Call the function\n\t\t_, _, err := calculateCPUUsage(ctx, nil, getTimeStatMock, getUsedPctMock)\n\n\t\t// Verify results\n\t\tassert.Error(t, err)\n\t\tassert.Equal(t, expectedErr, err)\n\t})\n\n\t// Test case 4: When getUsedPct returns an error (with nil prevStat)\n\tt.Run(\"with getUsedPct error\", func(t *testing.T) {\n\t\texpectedCPUStat := cpu.TimesStat{\n\t\t\tUser:   100,\n\t\t\tSystem: 50,\n\t\t\tIdle:   200,\n\t\t}\n\t\texpectedErr := fmt.Errorf(\"failed to get usage percentage\")\n\n\t\t// Mock the getTimeStat function\n\t\tgetTimeStatMock := func(ctx context.Context) (cpu.TimesStat, error) {\n\t\t\treturn expectedCPUStat, nil\n\t\t}\n\n\t\t// Mock the getUsedPct function to return an error\n\t\tgetUsedPctMock := func(ctx context.Context) (float64, error) {\n\t\t\treturn 0, expectedErr\n\t\t}\n\n\t\t// Call the function with nil prevStat\n\t\t_, _, err := calculateCPUUsage(ctx, nil, getTimeStatMock, getUsedPctMock)\n\n\t\t// Verify results\n\t\tassert.Error(t, err)\n\t\tassert.Equal(t, expectedErr, err)\n\t})\n}"

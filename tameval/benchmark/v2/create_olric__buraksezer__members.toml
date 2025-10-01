@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.13"
+
+[repo_info]
+repository = "buraksezer/olric"
+sha = "5256a2c3904fa5dc54677e645b9ebae987571128"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/cluster/routingtable/members.go internal/cluster/routingtable/members_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/cluster/routingtable/members.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 93.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 28, 29, 30, 31, 32, 34, 35, 36, 38, 39, 40, 41, 42, 43, 46, 47, 48, 50, 51, 52, 53, 54, 58, 59, 60, 62, 63,]
+missed_lines = [ 64, 65,]
+
+[input_info]
+test_file_path = "internal/cluster/routingtable/members_test.go"
+focal_file_path = "internal/cluster/routingtable/members.go"
+test_file_url = "https://github.com/buraksezer/olric/blob/5256a2c3904fa5dc54677e645b9ebae987571128/internal/cluster/routingtable/members_test.go"
+focal_file_url = "https://github.com/buraksezer/olric/blob/5256a2c3904fa5dc54677e645b9ebae987571128/internal/cluster/routingtable/members.go"
+first_commit_date = "2021-05-01"
+last_commit_date = "2025-02-09"
+test_file_content = "// Copyright 2018-2025 Burak Sezer\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage routingtable\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n\n\t\"github.com/buraksezer/olric/internal/discovery\"\n)\n\nfunc TestMembers_Get(t *testing.T) {\n\tm := newMembers()\n\tmember := discovery.Member{\n\t\tName: \"localhost:3320\",\n\t\tID:   6054057,\n\t}\n\tm.Add(member)\n\n\tr, err := m.Get(member.ID)\n\tif err != nil {\n\t\tt.Fatalf(\"Expected nil. Got: %v\", err)\n\t}\n\tif !reflect.DeepEqual(r, member) {\n\t\tt.Fatalf(\"Retrived member is different\")\n\t}\n}\nfunc TestMembers_Delete(t *testing.T) {\n\tm := newMembers()\n\tmember := discovery.Member{\n\t\tName: \"localhost:3320\",\n\t\tID:   6054057,\n\t}\n\tm.Add(member)\n\tm.Delete(member.ID)\n\t_, err := m.Get(member.ID)\n\tif err == nil {\n\t\tt.Fatalf(\"Expected and error. Got: %v\", err)\n\t}\n}\n\nfunc TestMembers_DeleteByName(t *testing.T) {\n\tm := newMembers()\n\tmember := discovery.Member{\n\t\tName: \"localhost:3320\",\n\t\tID:   6054057,\n\t}\n\tm.Add(member)\n\tm.DeleteByName(member)\n\t_, err := m.Get(member.ID)\n\tif err == nil {\n\t\tt.Fatalf(\"Expected and error. Got: %v\", err)\n\t}\n}\n\nfunc TestMembers_Length(t *testing.T) {\n\tm := newMembers()\n\tmember := discovery.Member{\n\t\tName: \"localhost:3320\",\n\t\tID:   6054057,\n\t}\n\tm.Add(member)\n\tif m.Length() != 1 {\n\t\tt.Fatalf(\"Expected length: 1. Got: %d\", m.Length())\n\t}\n}\n\nfunc TestMembers_Range(t *testing.T) {\n\tm := newMembers()\n\tmember := discovery.Member{\n\t\tName: \"localhost:3320\",\n\t\tID:   6054057,\n\t}\n\tm.Add(member)\n\tm.Range(func(id uint64, m discovery.Member) bool {\n\t\tif id != member.ID {\n\t\t\tt.Fatalf(\"Expected id: %d. Got: %d\", member.ID, id)\n\t\t}\n\n\t\tif member.Name != m.Name {\n\t\t\tt.Fatalf(\"Expected Name: %s. Got: %s\", member.Name, m.Name)\n\t\t}\n\t\treturn true\n\t})\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "skynetcap/solanaj"
+sha = "b0f095290e5a1cdd1528bb50615cc56dc0add467"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AddressLookupTableProgramTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.AddressLookupTableProgram  -DtargetTests=**.AddressLookupTableProgramTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 30.0
+original_coverage = 98.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 17, 34, 35, 39, 40, 41, 42, 43, 45, 46, 47, 48, 49, 51,]
+missed_lines = [ 14, 62, 63, 64, 66, 67, 69, 82, 83, 84, 85, 86, 88, 89, 90, 91, 92, 93, 94, 96, 107, 108, 109, 111, 112, 114, 126, 127, 128, 129, 131, 132, 134,]
+
+[input_info]
+test_file_path = "src/test/java/org/p2p/solanaj/programs/AddressLookupTableProgramTest.java"
+focal_file_path = "src/main/java/org/p2p/solanaj/programs/AddressLookupTableProgram.java"
+test_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/test/java/org/p2p/solanaj/programs/AddressLookupTableProgramTest.java"
+focal_file_url = "https://github.com/skynetcap/solanaj/blob/b0f095290e5a1cdd1528bb50615cc56dc0add467/src/main/java/org/p2p/solanaj/programs/AddressLookupTableProgram.java"
+first_commit_date = "2024-09-11"
+last_commit_date = "2025-02-26"
+test_file_content = "package org.p2p.solanaj.programs;\n\nimport org.junit.jupiter.api.Test;\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport org.p2p.solanaj.core.PublicKey;\nimport org.p2p.solanaj.core.TransactionInstruction;\n\nimport java.util.Collections;\n\npublic class AddressLookupTableProgramTest {\n\n    private static final PublicKey AUTHORITY = new PublicKey(\"BPFLoaderUpgradeab1e11111111111111111111111\");\n    private static final PublicKey PAYER = new PublicKey(\"11111111111111111111111111111111\");\n    private static final PublicKey LOOKUP_TABLE = new PublicKey(\"AddressLookupTab1e1111111111111111111111111\");\n    private static final long RECENT_SLOT = 123456;\n\n    /**\n     * Test for creating a lookup table.\n     */\n    @Test\n    public void testCreateLookupTable() {\n        TransactionInstruction instruction = AddressLookupTableProgram.createLookupTable(AUTHORITY, PAYER, RECENT_SLOT);\n        assertNotNull(instruction);\n        assertEquals(AddressLookupTableProgram.PROGRAM_ID, instruction.getProgramId());\n        assertEquals(4, instruction.getKeys().size()); // Check number of keys\n    }\n\n    /**\n     * Test for freezing a lookup table.\n     */\n\n    /**\n     * Test for extending a lookup table.\n     */\n\n    /**\n     * Test for deactivating a lookup table.\n     */\n\n    /**\n     * Test for closing a lookup table.\n     */\n}\n"

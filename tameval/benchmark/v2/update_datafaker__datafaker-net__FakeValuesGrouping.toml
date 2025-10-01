@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "datafaker-net/datafaker"
+sha = "22730b57dee2b174d62276f9e8979cf59c1d219b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=FakeValuesGroupingTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.FakeValuesGrouping  -DtargetTests=**.FakeValuesGroupingTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 64.0
+original_coverage = 79.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 12, 16, 17, 18, 19, 21, 22, 29, 30, 31, 32, 38, 43, 44, 45, 46, 51, 52,]
+missed_lines = [ 13, 24, 25, 26, 33, 34, 36, 48, 49, 56,]
+
+[input_info]
+test_file_path = "src/test/java/net/datafaker/service/FakeValuesGroupingTest.java"
+focal_file_path = "src/main/java/net/datafaker/service/FakeValuesGrouping.java"
+test_file_url = "https://github.com/datafaker-net/datafaker/blob/22730b57dee2b174d62276f9e8979cf59c1d219b/src/test/java/net/datafaker/service/FakeValuesGroupingTest.java"
+focal_file_url = "https://github.com/datafaker-net/datafaker/blob/22730b57dee2b174d62276f9e8979cf59c1d219b/src/main/java/net/datafaker/service/FakeValuesGrouping.java"
+first_commit_date = "2022-01-03"
+last_commit_date = "2025-06-20"
+test_file_content = "package net.datafaker.service;\n\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport java.util.Locale;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\nclass FakeValuesGroupingTest {\n\n    private FakeValuesGrouping fakeValuesGrouping;\n    private FakeValues addressValues;\n\n    @BeforeEach\n    void before() {\n        fakeValuesGrouping = new FakeValuesGrouping();\n        addressValues = FakeValues.of(FakeValuesContext.of(Locale.ENGLISH, \"address.yml\", \"address\"));\n        fakeValuesGrouping.add(addressValues);\n    }\n\n    @Test\n    void handlesOneFakeValue() {\n        assertThat(fakeValuesGrouping.get(\"address\")).isEqualTo(addressValues.get(\"address\"))\n            .isNotNull();\n    }\n\n    @Test\n    void handlesMultipleFakeValues() {\n        FakeValues catValues = FakeValues.of(FakeValuesContext.of(Locale.ENGLISH, \"cat.yml\", \"creature\"));\n        fakeValuesGrouping.add(catValues);\n\n        assertThat(fakeValuesGrouping.get(\"address\")).isEqualTo(addressValues.get(\"address\"))\n            .isNotNull();\n\n        assertThat(fakeValuesGrouping.get(\"creature\")).isEqualTo(catValues.get(\"creature\"))\n            .isNotNull();\n    }\n\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl common -Dtest=JettyServerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl common -DtargetClasses=**.JettyServer  -DtargetTests=**.JettyServerTest  -DoutputFormats=XML"
+coverage_report_path = "common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 60.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "common/src/test/java/org/apache/uniffle/common/web/JettyServerTest.java"
+focal_file_path = "common/src/main/java/org/apache/uniffle/common/web/JettyServer.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/test/java/org/apache/uniffle/common/web/JettyServerTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/main/java/org/apache/uniffle/common/web/JettyServer.java"
+first_commit_date = "2022-07-04"
+last_commit_date = "2025-04-24"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *    http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.apache.uniffle.common.web;\n\nimport java.io.FileNotFoundException;\n\nimport org.eclipse.jetty.server.Handler;\nimport org.eclipse.jetty.server.Server;\nimport org.eclipse.jetty.server.ServerConnector;\nimport org.eclipse.jetty.servlet.ServletContextHandler;\nimport org.eclipse.jetty.util.thread.ExecutorThreadPool;\nimport org.junit.jupiter.api.AfterEach;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport org.apache.uniffle.common.config.RssBaseConf;\nimport org.apache.uniffle.common.port.PortRegistry;\nimport org.apache.uniffle.common.util.ExitUtils;\nimport org.apache.uniffle.common.util.ExitUtils.ExitException;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\npublic class JettyServerTest {\n\n  int port;\n\n  @BeforeEach\n  public void beforeEach() {\n    port = PortRegistry.reservePort();\n  }\n\n  @AfterEach\n  public void afterEach() {\n    PortRegistry.release(port);\n  }\n\n  @Test\n  public void jettyServerTest() throws FileNotFoundException {\n    RssBaseConf conf = new RssBaseConf();\n    conf.setInteger(\"rss.jetty.http.port\", port);\n    JettyServer jettyServer = new JettyServer(conf);\n    Server server = jettyServer.getServer();\n\n    assertEquals(4, server.getBeans().size());\n    assertEquals(30000, server.getStopTimeout());\n    assertTrue(server.getThreadPool() instanceof ExecutorThreadPool);\n\n    assertEquals(1, server.getConnectors().length);\n    assertEquals(server, server.getHandler().getServer());\n    assertTrue(server.getConnectors()[0] instanceof ServerConnector);\n    ServerConnector connector = (ServerConnector) server.getConnectors()[0];\n    assertEquals(port, connector.getPort());\n\n    assertEquals(1, server.getHandlers().length);\n    Handler handler = server.getHandler();\n    assertTrue(handler instanceof ServletContextHandler);\n  }\n\n  @Test\n  public void jettyServerStartTest() throws Exception {\n    RssBaseConf conf = new RssBaseConf();\n    conf.setInteger(\"rss.jetty.http.port\", port);\n    JettyServer jettyServer1 = new JettyServer(conf);\n    JettyServer jettyServer2 = new JettyServer(conf);\n    jettyServer1.start();\n\n    ExitUtils.disableSystemExit();\n    final String expectMessage = \"Fail to start jetty http server\";\n    final int expectStatus = 1;\n    try {\n      jettyServer2.start();\n    } catch (Exception e) {\n      assertTrue(e.getMessage().startsWith(expectMessage));\n      assertEquals(expectStatus, ((ExitException) e).getStatus());\n    }\n\n    final Thread t =\n        new Thread(\n            null,\n            () -> {\n              throw new AssertionError(\"TestUncaughtException\");\n            },\n            \"testThread\");\n    t.start();\n    t.join();\n  }\n}"

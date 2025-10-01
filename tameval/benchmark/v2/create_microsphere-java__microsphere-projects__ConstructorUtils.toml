@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-java"
+sha = "b4576dbd7bad0fe918d235617d466ccd5434cc66"
+bench_version = 1
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-java-core -Dtest=ConstructorUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-java-core -DtargetClasses=**.ConstructorUtils  -DtargetTests=**.ConstructorUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-java-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-java-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 41, 43, 53, 57, 58, 59, 60, 61, 62, 65, 70, 71, 76, 77, 81, 85, 89, 90, 93, 106, 107,]
+missed_lines = [ 39, 91,]
+
+[input_info]
+test_file_path = "microsphere-java-core/src/test/java/io/microsphere/reflect/ConstructorUtilsTest.java"
+focal_file_path = "microsphere-java-core/src/main/java/io/microsphere/reflect/ConstructorUtils.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/b4576dbd7bad0fe918d235617d466ccd5434cc66/microsphere-java-core/src/test/java/io/microsphere/reflect/ConstructorUtilsTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/b4576dbd7bad0fe918d235617d466ccd5434cc66/microsphere-java-core/src/main/java/io/microsphere/reflect/ConstructorUtils.java"
+first_commit_date = "2024-04-08"
+last_commit_date = "2025-03-11"
+test_file_content = "package io.microsphere.reflect;\n\nimport org.junit.jupiter.api.Test;\n\nimport static io.microsphere.reflect.ConstructorUtils.findConstructor;\nimport static io.microsphere.reflect.ConstructorUtils.findConstructors;\nimport static io.microsphere.reflect.ConstructorUtils.findDeclaredConstructors;\nimport static io.microsphere.reflect.ConstructorUtils.getConstructor;\nimport static io.microsphere.reflect.ConstructorUtils.getDeclaredConstructor;\nimport static io.microsphere.reflect.ConstructorUtils.hasNonPrivateConstructorWithoutParameters;\nimport static io.microsphere.reflect.ConstructorUtils.isNonPrivateConstructorWithoutParameters;\nimport static io.microsphere.reflect.ConstructorUtils.newInstance;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\n/**\n * {@link ConstructorUtils} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see ConstructorUtils\n * @since 1.0.0\n */\npublic class ConstructorUtilsTest {\n\n    static class PublicConstructorClass {\n        public PublicConstructorClass() {\n        }\n\n        public PublicConstructorClass(String name) {\n        }\n    }\n\n    static class ProtectedConstructorClass {\n        protected ProtectedConstructorClass() {\n        }\n    }\n\n    static class PackagePrivateConstructorClass {\n        PackagePrivateConstructorClass() {\n        }\n    }\n\n    static class PrivateConstructorClass {\n        private PrivateConstructorClass() {\n        }\n    }\n\n    @Test\n    public void testIsNonPrivateConstructorWithoutParameters() {\n        // null\n        assertFalse(isNonPrivateConstructorWithoutParameters(null));\n\n        assertTrue(isNonPrivateConstructorWithoutParameters(findConstructor(PublicConstructorClass.class)));\n\n        // Non Default Constructor\n        assertFalse(isNonPrivateConstructorWithoutParameters(findConstructor(PublicConstructorClass.class, String.class)));\n\n        assertTrue(isNonPrivateConstructorWithoutParameters(findConstructor(ProtectedConstructorClass.class)));\n\n        // Can't be found\n        assertFalse(isNonPrivateConstructorWithoutParameters(findConstructor(ProtectedConstructorClass.class, String.class)));\n\n        assertTrue(isNonPrivateConstructorWithoutParameters(findConstructor(PackagePrivateConstructorClass.class)));\n\n        assertFalse(isNonPrivateConstructorWithoutParameters(findConstructor(PrivateConstructorClass.class)));\n    }\n\n    @Test\n    public void testHasNonPrivateConstructorWithoutParameters() {\n        assertTrue(hasNonPrivateConstructorWithoutParameters(PublicConstructorClass.class));\n        assertTrue(hasNonPrivateConstructorWithoutParameters(ProtectedConstructorClass.class));\n        assertTrue(hasNonPrivateConstructorWithoutParameters(PackagePrivateConstructorClass.class));\n        assertFalse(hasNonPrivateConstructorWithoutParameters(PrivateConstructorClass.class));\n    }\n\n    @Test\n    public void testFindConstructors() {\n        assertEquals(2, findConstructors(PublicConstructorClass.class).size());\n        assertEquals(0, findConstructors(ProtectedConstructorClass.class).size());\n        assertEquals(0, findConstructors(PackagePrivateConstructorClass.class).size());\n        assertEquals(0, findConstructors(PrivateConstructorClass.class).size());\n    }\n\n    @Test\n    public void testFindDeclaredConstructors() {\n        assertEquals(2, findDeclaredConstructors(PublicConstructorClass.class).size());\n        assertEquals(1, findDeclaredConstructors(ProtectedConstructorClass.class).size());\n        assertEquals(1, findDeclaredConstructors(PackagePrivateConstructorClass.class).size());\n        assertEquals(1, findDeclaredConstructors(PrivateConstructorClass.class).size());\n    }\n\n    @Test\n    public void testGetConstructor() {\n        assertNotNull(getConstructor(PublicConstructorClass.class));\n        assertThrows(RuntimeException.class, () -> getConstructor(ProtectedConstructorClass.class));\n        assertThrows(RuntimeException.class, () -> getConstructor(PackagePrivateConstructorClass.class));\n        assertThrows(RuntimeException.class, () -> getConstructor(PrivateConstructorClass.class));\n    }\n\n    @Test\n    public void testGetDeclaredConstructor() {\n        assertNotNull(getDeclaredConstructor(PublicConstructorClass.class));\n        assertNotNull(getDeclaredConstructor(ProtectedConstructorClass.class));\n        assertNotNull(getDeclaredConstructor(PackagePrivateConstructorClass.class));\n        assertNotNull(getDeclaredConstructor(PrivateConstructorClass.class));\n    }\n\n    @Test\n    public void testFindConstructor() {\n        assertNotNull(findConstructor(PublicConstructorClass.class));\n        assertNotNull(findConstructor(ProtectedConstructorClass.class));\n        assertNotNull(findConstructor(PackagePrivateConstructorClass.class));\n        assertNotNull(findConstructor(PrivateConstructorClass.class));\n    }\n\n    @Test\n    public void testNewInstance() {\n        assertNotNull(newInstance(getConstructor(PublicConstructorClass.class)));\n        assertThrows(RuntimeException.class, () -> newInstance(getConstructor(ProtectedConstructorClass.class)));\n        assertThrows(RuntimeException.class, () -> newInstance(getConstructor(PackagePrivateConstructorClass.class)));\n        assertThrows(RuntimeException.class, () -> newInstance(getConstructor(ProtectedConstructorClass.class)));\n        assertThrows(RuntimeException.class, () -> newInstance(getConstructor(ProtectedConstructorClass.class)));\n    }\n}\n"

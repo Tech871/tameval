@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "autonity/autonity"
+sha = "03bcaa30ef200739a4345042c731fe66974a485d"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out consensus/tendermint/router/latency/latency.go consensus/tendermint/router/latency/latency_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting consensus/tendermint/router/latency/latency.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 81.0
+original_coverage = 81.0
+mutation_kill_rate = 64.0
+original_mutation_kill_rate = 64.0
+covered_lines = [ 20, 21, 22, 23, 24, 27, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 48, 49, 50, 51, 52, 60, 61, 62, 63, 69, 72, 75, 76, 77, 79, 80, 81, 82, 83, 84, 85, 87, 88, 89, 90, 91, 93, 94, 95, 106, 107, 108, 109, 110, 111, 113,]
+missed_lines = [ 53, 54, 55, 56, 57, 65, 66, 67, 98, 99, 100, 102, 103, 104,]
+
+[input_info]
+test_file_path = "consensus/tendermint/router/latency/latency_test.go"
+focal_file_path = "consensus/tendermint/router/latency/latency.go"
+test_file_url = "https://github.com/autonity/autonity/blob/03bcaa30ef200739a4345042c731fe66974a485d/consensus/tendermint/router/latency/latency_test.go"
+focal_file_url = "https://github.com/autonity/autonity/blob/03bcaa30ef200739a4345042c731fe66974a485d/consensus/tendermint/router/latency/latency.go"
+first_commit_date = "2025-07-14"
+last_commit_date = "2025-07-14"
+test_file_content = "package latency\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"net\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"go.uber.org/mock/gomock\"\n\n\t\"github.com/autonity/autonity/common\"\n\t\"github.com/autonity/autonity/consensus\"\n\t\"github.com/autonity/autonity/consensus/tendermint/router/mocks\"\n\t\"github.com/autonity/autonity/consensus/tendermint/router/ping\"\n\t\"github.com/autonity/autonity/crypto\"\n\t\"github.com/autonity/autonity/p2p/enode\"\n)\n\nfunc TestFetcher_Fetch(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tpinger := mocks.NewMockPinger(ctrl)\n\tpeerFinder := mocks.NewMockPeerFinder(ctrl)\n\tfetcher := NewFetcher(pinger)\n\tfetcher.SetBroadcaster(peerFinder)\n\n\tpubkey1, _ := crypto.HexToECDSA(\"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\")\n\tpubkey2, _ := crypto.HexToECDSA(\"abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890\")\n\tenode1 := enode.NewV4(&pubkey1.PublicKey, net.ParseIP(\"192.168.1.1\"), 30303, 0)\n\tenode2 := enode.NewV4(&pubkey2.PublicKey, net.ParseIP(\"192.168.1.2\"), 30304, 0)\n\n\tself := common.HexToAddress(\"0x111\")\n\tvalidator1 := crypto.PubkeyToAddress(pubkey1.PublicKey)\n\tvalidator2 := crypto.PubkeyToAddress(pubkey2.PublicKey)\n\tvalidators := []common.Address{self, validator1, validator2}\n\n\tpeerFinder.EXPECT().CommitteeEnodes().Return([]*enode.Node{enode1, enode2}).Times(1)\n\tpeerFinder.EXPECT().FindPeer(validator1).Return(consensus.NewMockPeer(ctrl), true).Times(1)\n\tpeerFinder.EXPECT().FindPeer(validator2).Return(nil, false).Times(1)\n\n\tpinger.EXPECT().Ping(gomock.Any(), ping.Target{IP: \"192.168.1.1\", Port: 30303}).\n\t\tReturn(ping.Result{Latency: 50 * time.Millisecond}).Times(1)\n\tpinger.EXPECT().Ping(gomock.Any(), ping.Target{IP: \"192.168.1.2\", Port: 30304}).\n\t\tReturn(ping.Result{Err: errors.New(\"ping failed\")}).Times(0) // Not called due to FindPeer failure\n\n\tlatency, failedNodes, err := fetcher.Fetch(validators, self)\n\n\tassert.NoError(t, err, \"Expected no error\")\n\tassert.Equal(t, map[common.Address]uint{\n\t\tvalidator1: 50,\n\t}, latency, \"Latency map should match expected values\")\n\tassert.Equal(t, []common.Address{validator2}, failedNodes, \"Failed nodes should include validator2\")\n}\n\nfunc TestFetcher_FetchNilPeerFinder(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tpinger := mocks.NewMockPinger(ctrl)\n\tfetcher := NewFetcher(pinger)\n\n\t_, _, err := fetcher.Fetch([]common.Address{common.HexToAddress(\"0x111\")}, common.HexToAddress(\"0x222\"))\n\tassert.Error(t, err, \"Expected error when peerFinder is nil\")\n\tassert.Contains(t, err.Error(), \"broadcaster not set\", \"Error message should mention broadcaster\")\n}\n\nfunc TestFetcher_SetBroadcaster(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tpinger := mocks.NewMockPinger(ctrl)\n\tpeerFinder := mocks.NewMockPeerFinder(ctrl)\n\tfetcher := NewFetcher(pinger)\n\n\tfetcher.SetBroadcaster(peerFinder)\n\tassert.Equal(t, peerFinder, fetcher.peerFinder, \"PeerFinder should be set\")\n}\n\nfunc TestFetcher_PingPeers(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tpinger := mocks.NewMockPinger(ctrl)\n\tpeerFinder := mocks.NewMockPeerFinder(ctrl)\n\tfetcher := NewFetcher(pinger)\n\tfetcher.SetBroadcaster(peerFinder)\n\n\ttargets := []ping.Target{\n\t\t{IP: \"192.168.1.1\", Port: 30303},\n\t\t{IP: \"\", Port: 0},\n\t\t{IP: \"192.168.1.2\", Port: 30304},\n\t}\n\n\tpinger.EXPECT().Ping(gomock.Any(), targets[0]).\n\t\tReturn(ping.Result{Latency: 100 * time.Millisecond}).Times(1)\n\tpinger.EXPECT().Ping(gomock.Any(), targets[2]).\n\t\tReturn(ping.Result{Latency: 200 * time.Millisecond}).Times(1)\n\n\tresults := fetcher.pingPeers(context.Background(), targets)\n\n\tassert.Equal(t, 3, len(results), \"Expected results for all targets\")\n\tassert.Equal(t, 100*time.Millisecond, results[0].Latency, \"Expected latency for target 0\")\n\tassert.Error(t, results[1].Err, \"Expected error for empty target\")\n\tassert.Equal(t, 200*time.Millisecond, results[2].Latency, \"Expected latency for target 2\")\n}\n\nfunc TestEnodeByAddress(t *testing.T) {\n\tkey, _ := crypto.HexToECDSA(\"1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef\")\n\taddr1 := crypto.PubkeyToAddress(key.PublicKey)\n\taddr2 := common.HexToAddress(\"0x222\")\n\n\t// Create an enode for addr1\n\tenode1 := enode.NewV4(&key.PublicKey, net.ParseIP(\"192.168.1.1\"), 30303, 0)\n\tcommitteeEnodes := []*enode.Node{enode1}\n\n\tnode, found := enodeByAddress(committeeEnodes, addr1)\n\tassert.True(t, found, \"Expected to find enode for addr1\")\n\tassert.Equal(t, enode1, node, \"Expected correct enode for addr1\")\n\n\t_, found = enodeByAddress(committeeEnodes, addr2)\n\tassert.False(t, found, \"Expected not to find enode for addr2\")\n}\n\nfunc TestFetcher_ConcurrentPingPeers(t *testing.T) {\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tpinger := mocks.NewMockPinger(ctrl)\n\tpeerFinder := mocks.NewMockPeerFinder(ctrl)\n\tfetcher := NewFetcher(pinger)\n\tfetcher.SetBroadcaster(peerFinder)\n\n\ttargets := make([]ping.Target, 10)\n\tfor i := 0; i < 10; i++ {\n\t\ttargets[i] = ping.Target{IP: \"192.168.1.\" + string(rune(1+i)), Port: 30303 + i}\n\t\tpinger.EXPECT().Ping(gomock.Any(), targets[i]).\n\t\t\tReturn(ping.Result{Latency: time.Duration(50+i) * time.Millisecond}).Times(1)\n\t}\n\n\tresults := fetcher.pingPeers(context.Background(), targets)\n\n\tassert.Equal(t, 10, len(results), \"Expected results for all targets\")\n\tfor i, result := range results {\n\t\tassert.Equal(t, time.Duration(50+i)*time.Millisecond, result.Latency, \"Expected correct latency for target %d\", i)\n\t}\n}\n"

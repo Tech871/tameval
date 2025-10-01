@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pytroll/satpy"
+sha = "0beea130092f3270ae1af8a87644d47971acbbc4"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=satpy/readers/ghrsst_l2.py -m pytest -q --junit-xml=test_output.xml satpy/tests/reader_tests/test_ghrsst_l2.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target satpy.readers.ghrsst_l2 --unit-test satpy.tests.reader_tests.test_ghrsst_l2 --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target satpy/readers/ghrsst_l2.py --unit-test satpy/tests/reader_tests/test_ghrsst_l2.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 76.0
+original_coverage = 100.0
+mutation_kill_rate = 59.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 19, 20, 21, 22, 23, 25, 27, 28, 30, 33, 36, 38, 39, 40, 42, 44, 47, 48, 50, 53, 55, 62, 64, 71, 72, 76, 81, 82, 86, 87, 91, 92, 96, 98, 99,]
+missed_lines = [ 51, 65, 66, 68, 69, 74, 78, 79, 84, 89, 94,]
+
+[input_info]
+test_file_path = "satpy/tests/reader_tests/test_ghrsst_l2.py"
+focal_file_path = "satpy/readers/ghrsst_l2.py"
+test_file_url = "https://github.com/pytroll/satpy/blob/0beea130092f3270ae1af8a87644d47971acbbc4/satpy/tests/reader_tests/test_ghrsst_l2.py"
+focal_file_url = "https://github.com/pytroll/satpy/blob/0beea130092f3270ae1af8a87644d47971acbbc4/satpy/readers/ghrsst_l2.py"
+first_commit_date = "2020-10-20"
+last_commit_date = "2025-05-22"
+test_file_content = "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n# Copyright (c) 2018, 2022 Satpy developers\n#\n# This file is part of satpy.\n#\n# satpy is free software: you can redistribute it and/or modify it under the\n# terms of the GNU General Public License as published by the Free Software\n# Foundation, either version 3 of the License, or (at your option) any later\n# version.\n#\n# satpy is distributed in the hope that it will be useful, but WITHOUT ANY\n# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR\n# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.\n#\n# You should have received a copy of the GNU General Public License along with\n# satpy.  If not, see <http://www.gnu.org/licenses/>.\n\"\"\"Module for testing the satpy.readers.ghrsst_l2 module.\"\"\"\n\nimport datetime as dt\nimport os\nimport tarfile\nfrom pathlib import Path\n\nimport numpy as np\nimport pytest\nimport xarray as xr\n\nfrom satpy.readers.ghrsst_l2 import GHRSSTL2FileHandler\n\nclass TestGHRSSTL2Reader:\n    \"\"\"Test Sentinel-3 SST L2 reader.\"\"\"\n\n    def setup_method(self, tmp_path):\n        \"\"\"Create a fake osisaf ghrsst dataset.\"\"\"\n        self.base_data = np.array(([-32768, 1135, 1125], [1138, 1128, 1080]))\n        self.lon_data = np.array(([-13.43, 1.56, 11.25], [-11.38, 1.28, 10.80]))\n        self.lat_data = np.array(([43.43, 55.56, 61.25], [41.38, 50.28, 60.80]))\n        self.lon = xr.DataArray(\n            self.lon_data,\n            dims=(\"nj\", \"ni\"),\n            attrs={\"standard_name\": \"longitude\",\n                   \"units\": \"degrees_east\",\n                   }\n        )\n        self.lat = xr.DataArray(\n            self.lat_data,\n            dims=(\"nj\", \"ni\"),\n            attrs={\"standard_name\": \"latitude\",\n                   \"units\": \"degrees_north\",\n                   }\n        )\n        self.sst = xr.DataArray(\n            self.base_data,\n            dims=(\"nj\", \"ni\"),\n            attrs={\"scale_factor\": 0.01, \"add_offset\": 273.15,\n                   \"_FillValue\": -32768, \"units\": \"kelvin\",\n                   }\n        )\n        self.fake_dataset = xr.Dataset(\n            data_vars={\n                \"sea_surface_temperature\": self.sst,\n                \"longitude\": self.lon,\n                \"latitude\": self.lat,\n            },\n            attrs={\n                \"start_time\": \"20220321T112640Z\",\n                \"stop_time\": \"20220321T145711Z\",\n                \"platform\": \"NOAA20\",\n                \"sensor\": \"VIIRS\",\n            },\n        )\n\n    def _create_tarfile_with_testdata(self, mypath):\n        \"\"\"Create a 'fake' testdata set in a tar file.\"\"\"\n        slstr_fakename = \"S3A_SL_2_WST_MAR_O_NR_003.SEN3\"\n        tarfile_fakename = \"S3A_SL_2_WST_MAR_O_NR_003.SEN3.tar\"\n\n        slstrdir = mypath / slstr_fakename\n        slstrdir.mkdir(parents=True, exist_ok=True)\n        tarfile_path = mypath / tarfile_fakename\n\n        ncfilename = slstrdir / \"L2P_GHRSST-SSTskin-202204131200.nc\"\n        self.fake_dataset.to_netcdf(os.fspath(ncfilename))\n        xmlfile_path = slstrdir / \"xfdumanifest.xml\"\n        xmlfile_path.touch()\n\n        with tarfile.open(name=tarfile_path, mode=\"w\") as tar:\n            tar.add(os.fspath(ncfilename), arcname=Path(slstr_fakename) / ncfilename.name)\n            tar.add(os.fspath(xmlfile_path), arcname=Path(slstr_fakename) / xmlfile_path.name)\n\n        return tarfile_path\n\n    def test_instantiate_single_netcdf_file(self, tmp_path):\n        \"\"\"Test initialization of file handlers - given a single netCDF file.\"\"\"\n        filename_info = {}\n        tmp_filepath = tmp_path / \"fake_dataset.nc\"\n        self.fake_dataset.to_netcdf(os.fspath(tmp_filepath))\n\n        GHRSSTL2FileHandler(os.fspath(tmp_filepath), filename_info, None)\n"

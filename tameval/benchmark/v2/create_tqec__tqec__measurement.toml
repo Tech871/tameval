@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tqec/tqec"
+sha = "3c0db694339614f537772a7bf6a183c8ffcb78a7"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/tqec/circuit/measurement.py -m pytest -q --junit-xml=test_output.xml src/tqec/circuit/measurement_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.tqec.circuit.measurement --unit-test src.tqec.circuit.measurement_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/tqec/circuit/measurement.py --unit-test src/tqec/circuit/measurement_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 86.0
+original_coverage = 86.0
+mutation_kill_rate = 97.0
+original_mutation_kill_rate = 97.0
+covered_lines = [ 8, 10, 11, 12, 13, 15, 16, 18, 19, 20, 21, 25, 28, 76, 77, 99, 100, 102, 103, 104, 106, 107, 108, 110, 111, 112, 118, 121, 122, 123, 125, 135, 136, 152, 170, 171, 172, 173, 174, 178, 183, 184, 185, 190, 191, 192, 193, 194, 195,]
+missed_lines = [ 119, 133, 147, 148, 149, 175, 179, 186,]
+
+[input_info]
+test_file_path = "src/tqec/circuit/measurement_test.py"
+focal_file_path = "src/tqec/circuit/measurement.py"
+test_file_url = "https://github.com/tqec/tqec/blob/3c0db694339614f537772a7bf6a183c8ffcb78a7/src/tqec/circuit/measurement_test.py"
+focal_file_url = "https://github.com/tqec/tqec/blob/3c0db694339614f537772a7bf6a183c8ffcb78a7/src/tqec/circuit/measurement.py"
+first_commit_date = "2024-10-07"
+last_commit_date = "2025-08-12"
+test_file_content = "import pytest\nimport stim\n\nfrom tqec.circuit.measurement import Measurement, get_measurements_from_circuit\nfrom tqec.circuit.qubit import GridQubit\nfrom tqec.circuit.qubit_map import QubitMap\nfrom tqec.circuit.schedule import ScheduledCircuit\nfrom tqec.utils.exceptions import TQECError\nfrom tqec.utils.position import Shift2D\n\n_grid_qubits: list[GridQubit] = [GridQubit(0, 0), GridQubit(-1, -1)]\n\n\n@pytest.mark.parametrize(\"qubit\", _grid_qubits)\ndef test_measurement_construction(qubit: GridQubit) -> None:\n    Measurement(qubit, -1)\n    Measurement(qubit, -10)\n    with pytest.raises(TQECError, match=\"^Measurement.offset should be negative.$\"):\n        Measurement(qubit, 0)\n    with pytest.raises(TQECError, match=\"^Measurement.offset should be negative.$\"):\n        Measurement(qubit, 10)\n\n\n@pytest.mark.parametrize(\"qubit\", _grid_qubits)\ndef test_measurement_offset(qubit: GridQubit) -> None:\n    assert Measurement(qubit, -1).offset_spatially_by(0, 0) == Measurement(qubit, -1)\n    assert Measurement(qubit, -1).offset_spatially_by(1, 0) == Measurement(\n        qubit + Shift2D(1, 0), -1\n    )\n    assert Measurement(qubit, -1).offset_spatially_by(-3, 12) == Measurement(\n        qubit + Shift2D(-3, 12), -1\n    )\n    assert Measurement(qubit, -2).offset_spatially_by(0, 0) == Measurement(qubit, -2)\n\n    assert Measurement(qubit, -1).offset_temporally_by(-12) == Measurement(qubit, -13)\n\n    with pytest.raises(TQECError, match=\"^Measurement.offset should be negative.$\"):\n        Measurement(qubit, -1).offset_temporally_by(1)\n\n\ndef test_measurement_map_qubit() -> None:\n    qubit_map = {q: q + Shift2D(3, 8) for q in _grid_qubits}\n\n    for qubit in _grid_qubits:\n        assert Measurement(qubit, -1).map_qubit(qubit_map) == Measurement(qubit_map[qubit], -1)\n\n\ndef test_get_measurements_from_circuit() -> None:\n    circuit = ScheduledCircuit.from_circuit(\n        stim.Circuit(\"H 0\\nM 1 2\\nTICK\\nMX 2 3\"),\n        qubit_map=QubitMap({i: GridQubit(i, i) for i in range(4)}),\n    )\n    measurements = get_measurements_from_circuit(circuit.get_circuit(include_qubit_coords=True))\n    assert measurements == [\n        Measurement(GridQubit(1, 1), -1),\n        Measurement(GridQubit(2, 2), -2),\n        Measurement(GridQubit(2, 2), -1),\n        Measurement(GridQubit(3, 3), -1),\n    ]\n"

@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "GIScience/openrouteservice"
+sha = "957c6ace324fee2a0eeaea1791f36fc153e4c875"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl ors-engine -Dtest=WaySurfaceTypeGraphStorageBuilderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl ors-engine -DtargetClasses=**.WaySurfaceTypeGraphStorageBuilder  -DtargetTests=**.WaySurfaceTypeGraphStorageBuilderTest  -DoutputFormats=XML"
+coverage_report_path = "ors-engine/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "ors-engine/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 75.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "ors-engine/src/test/java/org/heigit/ors/routing/graphhopper/extensions/storages/builders/WaySurfaceTypeGraphStorageBuilderTest.java"
+focal_file_path = "ors-engine/src/main/java/org/heigit/ors/routing/graphhopper/extensions/storages/builders/WaySurfaceTypeGraphStorageBuilder.java"
+test_file_url = "https://github.com/GIScience/openrouteservice/blob/957c6ace324fee2a0eeaea1791f36fc153e4c875/ors-engine/src/test/java/org/heigit/ors/routing/graphhopper/extensions/storages/builders/WaySurfaceTypeGraphStorageBuilderTest.java"
+focal_file_url = "https://github.com/GIScience/openrouteservice/blob/957c6ace324fee2a0eeaea1791f36fc153e4c875/ors-engine/src/main/java/org/heigit/ors/routing/graphhopper/extensions/storages/builders/WaySurfaceTypeGraphStorageBuilder.java"
+first_commit_date = "2023-06-13"
+last_commit_date = "2025-07-25"
+test_file_content = "package org.heigit.ors.routing.graphhopper.extensions.storages.builders;\n\nimport com.graphhopper.reader.ReaderWay;\nimport org.heigit.ors.routing.graphhopper.extensions.SurfaceType;\nimport org.heigit.ors.routing.graphhopper.extensions.WayType;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.ValueSource;\n\nimport static org.heigit.ors.routing.graphhopper.extensions.reader.osmfeatureprocessors.OSMAttachedSidewalkProcessor.KEY_ORS_SIDEWALK_SIDE;\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass WaySurfaceTypeGraphStorageBuilderTest {\n    private static final SurfaceType STREET_SURFACE = SurfaceType.ASPHALT;\n    private static final SurfaceType SIDEWALK_SURFACE = SurfaceType.PAVING_STONE;\n    private static final SurfaceType SIDEWALK_SURFACE_OTHER = SurfaceType.CONCRETE;\n\n    private WaySurfaceTypeGraphStorageBuilder builder;\n\n    @BeforeEach\n    void reset() {\n        builder = new WaySurfaceTypeGraphStorageBuilder();\n    }\n\n    @Test\n    void TestWayWithNoSidewalkSpecified() {\n        ReaderWay way = constructWay();\n        builder.processWay(way);\n        var waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.STREET, waySurfaceDescription.getWayType());\n        assertEquals(STREET_SURFACE, waySurfaceDescription.getSurfaceType());\n    }\n\n    @ValueSource(strings = {\"left\", \"right\", \"both\"})\n    @ParameterizedTest\n    void TestWayWithSidewalkSideAndSurfaceSpecified(String side) {\n        ReaderWay way = constructWay();\n        attachSidewalk(way, side, \"paving_stones\", true);\n\n        builder.processWay(way);\n        var waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.STREET, waySurfaceDescription.getWayType());\n        assertEquals(STREET_SURFACE, waySurfaceDescription.getSurfaceType());\n\n        builder.setUseSidewalks(true);\n        builder.processWay(way);\n        String[] sides = \"both\".equals(side) || side.isEmpty() ? new String[]{\"left\", \"right\"} : new String[]{side};\n\n        for (String s : sides) {\n            way.setTag(KEY_ORS_SIDEWALK_SIDE, s);\n            waySurfaceDescription = builder.getStoredValue(way);\n            assertEquals(WayType.FOOTWAY, waySurfaceDescription.getWayType());\n            assertEquals(SIDEWALK_SURFACE, waySurfaceDescription.getSurfaceType());\n        }\n    }\n\n    @ValueSource(strings = {\"left\", \"right\", \"both\", \"\"})\n    @ParameterizedTest\n    void TestWayWithSidewalkSurfaceSpecified(String side) {\n        ReaderWay way = constructWay();\n        attachSidewalk(way, side, \"paving_stones\", false);\n\n        builder.processWay(way);\n        var waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.STREET, waySurfaceDescription.getWayType());\n        assertEquals(STREET_SURFACE, waySurfaceDescription.getSurfaceType());\n\n        builder.setUseSidewalks(true);\n        builder.processWay(way);\n        String[] sides = \"both\".equals(side) || side.isEmpty() ? new String[]{\"left\", \"right\"} : new String[]{side};\n\n        for (String s : sides) {\n            way.setTag(KEY_ORS_SIDEWALK_SIDE, s);\n            waySurfaceDescription = builder.getStoredValue(way);\n            assertEquals(WayType.FOOTWAY, waySurfaceDescription.getWayType());\n            assertEquals(SIDEWALK_SURFACE, waySurfaceDescription.getSurfaceType());\n        }\n    }\n\n    @ValueSource(strings = {\"left\", \"right\", \"both\"})\n    @ParameterizedTest\n    void TestWayWithSidewalkSideButNoSurfaceSpecified(String side) {\n        ReaderWay way = constructWay();\n        attachSidewalk(way, side, \"\", true);\n\n        builder.processWay(way);\n        var waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.STREET, waySurfaceDescription.getWayType());\n        assertEquals(STREET_SURFACE, waySurfaceDescription.getSurfaceType());\n\n        builder.setUseSidewalks(true);\n        builder.processWay(way);\n        String[] sides = \"both\".equals(side) || side.isEmpty() ? new String[]{\"left\", \"right\"} : new String[]{side};\n\n        for (String s : sides) {\n            way.setTag(KEY_ORS_SIDEWALK_SIDE, s);\n            waySurfaceDescription = builder.getStoredValue(way);\n            assertEquals(WayType.FOOTWAY, waySurfaceDescription.getWayType());\n            assertEquals(SurfaceType.UNKNOWN, waySurfaceDescription.getSurfaceType());\n        }\n    }\n\n    @Test\n    void TestWayWithDifferentSidewalkSurfaces() {\n        ReaderWay way = constructWay();\n        attachSidewalk(way, \"left\", \"paving_stones\", false);\n        attachSidewalk(way, \"right\", \"concrete\", false);\n\n        builder.processWay(way);\n        var waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.STREET, waySurfaceDescription.getWayType());\n        assertEquals(STREET_SURFACE, waySurfaceDescription.getSurfaceType());\n\n        builder.setUseSidewalks(true);\n        builder.processWay(way);\n\n        way.setTag(KEY_ORS_SIDEWALK_SIDE, \"right\");\n        waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.FOOTWAY, waySurfaceDescription.getWayType());\n        assertEquals(SIDEWALK_SURFACE_OTHER, waySurfaceDescription.getSurfaceType());\n\n        way.setTag(KEY_ORS_SIDEWALK_SIDE, \"left\");\n        waySurfaceDescription = builder.getStoredValue(way);\n        assertEquals(WayType.FOOTWAY, waySurfaceDescription.getWayType());\n        assertEquals(SIDEWALK_SURFACE, waySurfaceDescription.getSurfaceType());\n    }\n\n    private ReaderWay constructWay() {\n        ReaderWay way = new ReaderWay(1);\n        way.setTag(\"highway\", \"residential\");\n        way.setTag(\"surface\", \"asphalt\");\n        return way;\n    }\n\n    private void attachSidewalk(ReaderWay way, String side, String surface, boolean setSide) {\n        if (!side.isEmpty() && setSide) {\n            way.setTag(\"sidewalk\", side);\n        }\n        if (!surface.isEmpty()) {\n            String tag = side.isEmpty() ? \"sidewalk:surface\" : \"sidewalk:\" + side + \":surface\";\n            way.setTag(tag, surface);\n        }\n    }\n}"

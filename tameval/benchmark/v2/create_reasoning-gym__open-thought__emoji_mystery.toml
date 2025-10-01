@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "open-thought/reasoning-gym"
+sha = "02b7fac86358f7ef6239608b0b738a5a03ecfe9e"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements-dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=reasoning_gym/games/emoji_mystery.py -m pytest -q --junit-xml=test_output.xml tests/test_emoji_mystery.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target reasoning_gym.games.emoji_mystery --unit-test tests.test_emoji_mystery --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target reasoning_gym/games/emoji_mystery.py --unit-test tests/test_emoji_mystery.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 78.0
+original_coverage = 92.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 1, 2, 3, 5, 6, 7, 9, 122, 145, 154, 157, 158, 161, 162, 163, 164, 166, 167, 168, 171, 174, 175, 176, 177, 178, 179, 187, 188, 189, 190, 191, 192, 193, 207, 208, 209, 211, 212, 214, 215, 216, 218, 219, 220, 221, 222, 224, 225, 228, 230, 231, 232, 234, 250, 251, 266,]
+missed_lines = [ 210, 226, 235, 236, 237, 238, 239, 240, 241, 242, 244, 245, 246, 247, 252, 254,]
+
+[input_info]
+test_file_path = "tests/test_emoji_mystery.py"
+focal_file_path = "reasoning_gym/games/emoji_mystery.py"
+test_file_url = "https://github.com/open-thought/reasoning-gym/blob/02b7fac86358f7ef6239608b0b738a5a03ecfe9e/tests/test_emoji_mystery.py"
+focal_file_url = "https://github.com/open-thought/reasoning-gym/blob/02b7fac86358f7ef6239608b0b738a5a03ecfe9e/reasoning_gym/games/emoji_mystery.py"
+first_commit_date = "2025-02-21"
+last_commit_date = "2025-04-04"
+test_file_content = "from random import Random\n\nimport pytest\n\nfrom reasoning_gym.coaching.base_curriculum import DefaultCurriculumContext, RangeAttributeMode\nfrom reasoning_gym.games.emoji_mystery import EmojiMysteryConfig, EmojiMysteryCurriculum, EmojiMysteryDataset\n\ndef test_emoji_mystery_items():\n    \"\"\"Test basic properties of generated items\"\"\"\n    config = EmojiMysteryConfig(size=100, seed=42)\n    dataset = EmojiMysteryDataset(config)\n\n    for i in range(len(dataset)):\n        item = dataset[i]\n        assert isinstance(item, dict)\n        assert \"question\" in item\n        assert \"answer\" in item\n        assert isinstance(item[\"question\"], str)\n        assert isinstance(item[\"answer\"], str)\n\ndef test_emoji_mystery_encoding_decoding():\n    \"\"\"Test the encoding and decoding functionality\"\"\"\n    config = EmojiMysteryConfig()\n    dataset = EmojiMysteryDataset(config)\n\n    # Test with a simple sentence\n    test_sentence = \"Hello, World!\"\n    test_emoji = \"😀\"\n\n    # Test encoding\n    encoded = dataset.encode(test_sentence, test_emoji)\n    assert encoded.startswith(test_emoji)\n\n    # Test decoding\n    decoded = dataset.decode(encoded)\n    assert decoded == test_sentence\n\n    # Test with various sentences\n    test_cases = [\n        \"A simple test.\",\n        \"More complex sentence with numbers 123!\",\n        \"Special characters: @#$%^&*()\",\n    ]\n\n    for sentence in test_cases:\n        encoded = dataset.encode(sentence, test_emoji)\n        decoded = dataset.decode(encoded)\n        assert decoded == sentence\n"

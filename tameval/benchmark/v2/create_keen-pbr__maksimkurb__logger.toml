@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "maksimkurb/keen-pbr"
+sha = "69142354e0af8309b6913bc3bcbfcfbf06259d93"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/log/logger.go lib/log/logger_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/log/logger.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 44.0
+original_coverage = 88.0
+mutation_kill_rate = 39.0
+original_mutation_kill_rate = 78.0
+covered_lines = [ 43, 44, 45, 48, 49, 50, 64, 65, 66, 67, 68, 69, 72, 73, 74,]
+missed_lines = [ 26, 27, 28, 31, 32, 33, 36, 37, 38, 39, 53, 54, 55, 58, 59, 60, 61, 70, 71,]
+
+[input_info]
+test_file_path = "lib/log/logger_test.go"
+focal_file_path = "lib/log/logger.go"
+test_file_url = "https://github.com/maksimkurb/keen-pbr/blob/69142354e0af8309b6913bc3bcbfcfbf06259d93/lib/log/logger_test.go"
+focal_file_url = "https://github.com/maksimkurb/keen-pbr/blob/69142354e0af8309b6913bc3bcbfcfbf06259d93/lib/log/logger.go"
+first_commit_date = "2025-01-03"
+last_commit_date = "2025-02-10"
+test_file_content = "package log\n\nimport (\n\t\"bytes\"\n\t\"io\"\n\t\"os\"\n\t\"strings\"\n\t\"testing\"\n)\n\n// Helper to capture output from os.Stdout and os.Stderr\nfunc captureOutput(f func()) (stdout, stderr string) {\n\toldStdout := os.Stdout\n\toldStderr := os.Stderr\n\n\t// Create pipes\n\trOut, wOut, _ := os.Pipe()\n\trErr, wErr, _ := os.Pipe()\n\n\tos.Stdout = wOut\n\tos.Stderr = wErr\n\n\t// Channel to collect output\n\toutCh := make(chan string)\n\terrCh := make(chan string)\n\n\t// Start goroutines to read from pipes\n\tgo func() {\n\t\tvar buf bytes.Buffer\n\t\tio.Copy(&buf, rOut)\n\t\toutCh <- buf.String()\n\t}()\n\n\tgo func() {\n\t\tvar buf bytes.Buffer\n\t\tio.Copy(&buf, rErr)\n\t\terrCh <- buf.String()\n\t}()\n\n\t// Execute function\n\tf()\n\n\t// Close write ends\n\twOut.Close()\n\twErr.Close()\n\n\t// Get results\n\tstdout = <-outCh\n\tstderr = <-errCh\n\n\t// Restore original\n\tos.Stdout = oldStdout\n\tos.Stderr = oldStderr\n\n\treturn stdout, stderr\n}\n\n\n\n\nfunc TestInfof(t *testing.T) {\n\tstdout, stderr := captureOutput(func() {\n\t\tInfof(\"test info message\")\n\t})\n\n\tif !strings.Contains(stdout, \"[INF]\") {\n\t\tt.Errorf(\"Expected info message in stdout, got: %s\", stdout)\n\t}\n\n\tif !strings.Contains(stdout, \"test info message\") {\n\t\tt.Errorf(\"Expected message content in stdout, got: %s\", stdout)\n\t}\n\n\tif stderr != \"\" {\n\t\tt.Errorf(\"Expected no stderr output for info, got: %s\", stderr)\n\t}\n}\n\nfunc TestWarnf(t *testing.T) {\n\tstdout, stderr := captureOutput(func() {\n\t\tWarnf(\"test warning message\")\n\t})\n\n\tif !strings.Contains(stdout, \"[WRN]\") {\n\t\tt.Errorf(\"Expected warning message in stdout, got: %s\", stdout)\n\t}\n\n\tif !strings.Contains(stdout, \"test warning message\") {\n\t\tt.Errorf(\"Expected message content in stdout, got: %s\", stdout)\n\t}\n\n\tif stderr != \"\" {\n\t\tt.Errorf(\"Expected no stderr output for warning, got: %s\", stderr)\n\t}\n}\n\n\n"

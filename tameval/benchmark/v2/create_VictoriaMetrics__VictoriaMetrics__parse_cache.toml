@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "VictoriaMetrics/VictoriaMetrics"
+sha = "099b2fdba79582dcc1c32a604b587deaf32270db"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out app/vmselect/promql/parse_cache.go app/vmselect/promql/parse_cache_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting app/vmselect/promql/parse_cache.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 79.0
+original_coverage = 89.0
+mutation_kill_rate = 61.0
+original_mutation_kill_rate = 82.0
+covered_lines = [ 15, 16, 26, 55, 56, 57, 58, 59, 60, 63, 64, 65, 66, 67, 69, 70, 71, 72, 73, 75, 76, 77, 78, 79, 80, 83, 84, 85, 86, 87, 88, 91, 92, 93, 94, 95, 96, 99, 100, 101, 102, 103, 105, 106, 107, 108, 109, 110, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 125, 126, 127, 139, 140,]
+missed_lines = [ 17, 18, 19, 20, 21, 22, 23, 24, 25, 128, 129, 130, 131, 132, 133, 134, 135,]
+
+[input_info]
+test_file_path = "app/vmselect/promql/parse_cache_test.go"
+focal_file_path = "app/vmselect/promql/parse_cache.go"
+test_file_url = "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/099b2fdba79582dcc1c32a604b587deaf32270db/app/vmselect/promql/parse_cache_test.go"
+focal_file_url = "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/099b2fdba79582dcc1c32a604b587deaf32270db/app/vmselect/promql/parse_cache.go"
+first_commit_date = "2025-01-02"
+last_commit_date = "2025-01-02"
+test_file_content = "package promql\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/VictoriaMetrics/metricsql\"\n)\n\nfunc testGetParseCacheValue(q string) *parseCacheValue {\n\te, err := metricsql.Parse(q)\n\treturn &parseCacheValue{\n\t\te:   e,\n\t\terr: err,\n\t}\n}\n\nfunc testGenerateQueries(items int) []string {\n\tqueries := make([]string, items)\n\tfor i := 0; i < items; i++ {\n\t\tqueries[i] = fmt.Sprintf(`node_time_seconds{instance=\"node%d\", job=\"job%d\"}`, i, i)\n\t}\n\treturn queries\n}\n\nfunc TestParseCache(t *testing.T) {\n\tpc := newParseCache()\n\tif pc.len() != 0 || pc.misses() != 0 || pc.requests() != 0 {\n\t\tt.Errorf(\"unexpected pc.Len()=%d, pc.Misses()=%d, pc.Requests()=%d; expected all to be zero.\", pc.len(), pc.misses(), pc.requests())\n\t}\n\n\tq1 := `foo{bar=\"baz\"}`\n\tv1 := testGetParseCacheValue(q1)\n\n\tq2 := `foo1{bar1=\"baz1\"}`\n\tv2 := testGetParseCacheValue(q2)\n\n\tpc.put(q1, v1)\n\tif pc.len() != 1 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", pc.len(), 1)\n\t}\n\n\tif res := pc.get(q2); res != nil {\n\t\tt.Errorf(\"unexpected non-empty value obtained from cache: %d \", res)\n\t}\n\tif pc.len() != 1 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", pc.len(), 1)\n\t}\n\tif miss := pc.misses(); miss != 1 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", miss, 1)\n\t}\n\tif req := pc.requests(); req != 1 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", req, 1)\n\t}\n\n\tpc.put(q2, v2)\n\tif pc.len() != 2 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", pc.len(), 2)\n\t}\n\n\tif res := pc.get(q1); res != v1 {\n\t\tt.Errorf(\"unexpected value obtained; got %v; want %v\", res, v1)\n\t}\n\n\tif res := pc.get(q2); res != v2 {\n\t\tt.Errorf(\"unexpected value obtained; got %v; want %v\", res, v2)\n\t}\n\n\tpc.put(q2, v2)\n\tif pc.len() != 2 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", pc.len(), 2)\n\t}\n\tif miss := pc.misses(); miss != 1 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", miss, 1)\n\t}\n\tif req := pc.requests(); req != 3 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", req, 3)\n\t}\n\n\tif res := pc.get(q2); res != v2 {\n\t\tt.Errorf(\"unexpected value obtained; got %v; want %v\", res, v2)\n\t}\n\tif pc.len() != 2 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", pc.len(), 2)\n\t}\n\tif miss := pc.misses(); miss != 1 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", miss, 1)\n\t}\n\tif req := pc.requests(); req != 4 {\n\t\tt.Errorf(\"unexpected value obtained; got %d; want %d\", req, 4)\n\t}\n}\n"

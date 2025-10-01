@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ijpb/MorphoLibJ"
+sha = "7d691dff36baa0bbca6fd17f71c93d8414b75b17"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=FloodFillRegionComponentsLabelingTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.FloodFillRegionComponentsLabeling  -DtargetTests=**.FloodFillRegionComponentsLabelingTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 56.0
+original_coverage = 56.0
+mutation_kill_rate = 67.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 60, 61, 103, 104, 110, 116, 117, 118, 129, 132, 134, 138, 140, 143, 144, 146, 147, 150, 156, 157, 160, 162, 163,]
+missed_lines = [ 48, 54, 70, 71, 72, 84, 85, 86, 87, 112, 113, 114, 120, 121, 122, 124, 136, 152,]
+
+[input_info]
+test_file_path = "src/test/java/inra/ijpb/label/conncomp/FloodFillRegionComponentsLabelingTest.java"
+focal_file_path = "src/main/java/inra/ijpb/label/conncomp/FloodFillRegionComponentsLabeling.java"
+test_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/test/java/inra/ijpb/label/conncomp/FloodFillRegionComponentsLabelingTest.java"
+focal_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/main/java/inra/ijpb/label/conncomp/FloodFillRegionComponentsLabeling.java"
+first_commit_date = "2022-05-12"
+last_commit_date = "2024-07-23"
+test_file_content = "/*-\n * #%L\n * Mathematical morphology library and plugins for ImageJ/Fiji.\n * %%\n * Copyright (C) 2014 - 2024 INRA.\n * %%\n * This program is free software: you can redistribute it and/or modify\n * it under the terms of the GNU Lesser General Public License as\n * published by the Free Software Foundation, either version 3 of the\n * License, or (at your option) any later version.\n * \n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Lesser Public License for more details.\n * \n * You should have received a copy of the GNU General Lesser Public\n * License along with this program.  If not, see\n * <http://www.gnu.org/licenses/lgpl-3.0.html>.\n * #L%\n */\n/**\n * \n */\npackage inra.ijpb.label.conncomp;\n\nimport static org.junit.Assert.*;\n\nimport org.junit.Test;\n\nimport ij.process.ByteProcessor;\nimport ij.process.ImageProcessor;\nimport inra.ijpb.data.image.ImageUtils;\n\n/**\n * @author dlegland\n *\n */\npublic class FloodFillRegionComponentsLabelingTest\n{\n    /**\n     * Test method for {@link inra.ijpb.label.conncomp.FloodFillRegionComponentsLabeling#computeLabels(ij.process.ImageProcessor, int)}.\n     */\n    @Test\n    public final void testComputeLabels_Default()\n    {\n        ByteProcessor image = createFiveSquaresImage();\n        \n        FloodFillRegionComponentsLabeling algo = new FloodFillRegionComponentsLabeling();\n        ImageProcessor result = algo.computeLabels(image, 3);\n        \n        assertEquals(16, result.getBitDepth());\n        assertEquals(1, result.get(2, 2));\n        assertEquals(0, result.get(6, 6));\n    }\n    \n    /**\n     * Test method for {@link inra.ijpb.label.conncomp.FloodFillRegionComponentsLabeling#computeLabels(ij.process.ImageProcessor, int)}.\n     */\n    @Test\n    public final void testComputeLabels_BackgroundRing()\n    {\n        ByteProcessor image = new ByteProcessor(10, 10);\n        ImageUtils.fillRect(image, 2, 2, 6, 6, 10);\n        ImageUtils.fillRect(image, 4, 4, 2, 2, 0);\n        \n        FloodFillRegionComponentsLabeling algo = new FloodFillRegionComponentsLabeling();\n        ImageProcessor result = algo.computeLabels(image, 0);\n        \n        assertEquals(16, result.getBitDepth());\n        // value within initial region should be set to background\n        assertEquals(0, result.get(2, 2));\n        assertEquals(0, result.get(6, 6));\n        // first region corresponding the outside of the initial region\n        assertEquals(1, result.get(1, 1));\n        // second region corresponding the inside of the initial region\n        assertEquals(2, result.get(5, 5));\n    }\n    \n    /**\n     * Create a 10-by-10 byte image containing five 2-by-2 squares touching by corners.\n     * The squares are associated to labels 3, 5, 6, 8, 9\n     * \n     * Expected number of connected components is five for 4 connectivity, and\n     * one for 8 connectivity.\n     * \n     * @return an image containing five squares touching by corners\n     */\n    private final static ByteProcessor createFiveSquaresImage()\n    {\n        ByteProcessor image = new ByteProcessor(10, 10);\n        for (int y = 0; y < 2; y++)\n        {\n            for (int x = 0; x < 2; x++)\n            {\n                image.set(x + 2, y + 2, 3);\n                image.set(x + 6, y + 2, 5);\n                image.set(x + 4, y + 4, 6);\n                image.set(x + 2, y + 6, 8);\n                image.set(x + 6, y + 6, 9);\n            }\n        }\n        return image;\n    }\n}\n"

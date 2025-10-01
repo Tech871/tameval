@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "redpanda-data/benthos"
+sha = "7da18c5fb096a3607f9f70c06614742b24ae938e"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/transaction/tracked.go internal/transaction/tracked_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/transaction/tracked.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 94.0
+original_coverage = 94.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 26, 27, 28, 29, 30, 31, 32, 33, 36, 37, 38, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 54, 55, 56, 57, 58, 59, 60, 61, 63, 64, 65, 67, 68, 69, 70, 73, 74, 75, 76, 77, 78, 80,]
+missed_lines = [ 84, 85, 86,]
+
+[input_info]
+test_file_path = "internal/transaction/tracked_test.go"
+focal_file_path = "internal/transaction/tracked.go"
+test_file_url = "https://github.com/redpanda-data/benthos/blob/7da18c5fb096a3607f9f70c06614742b24ae938e/internal/transaction/tracked_test.go"
+focal_file_url = "https://github.com/redpanda-data/benthos/blob/7da18c5fb096a3607f9f70c06614742b24ae938e/internal/transaction/tracked.go"
+first_commit_date = "2020-08-01"
+last_commit_date = "2025-01-09"
+test_file_content = "// Copyright 2025 Redpanda Data, Inc.\n\npackage transaction\n\nimport (\n\t\"errors\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\n\t\"github.com/redpanda-data/benthos/v4/internal/batch\"\n\t\"github.com/redpanda-data/benthos/v4/internal/message\"\n)\n\n\nfunc TestTaggingErrorsMultiplePart(t *testing.T) {\n\tmsg := message.QuickBatch([][]byte{\n\t\t[]byte(\"foo\"),\n\t\t[]byte(\"bar\"),\n\t})\n\n\terrTest1 := errors.New(\"test err 1\")\n\terrTest2 := errors.New(\"test err 2\")\n\terrTest3 := errors.New(\"test err 3\")\n\n\ttran := NewTracked(msg, nil)\n\n\t// No error\n\tassert.NoError(t, tran.resFromError(nil))\n\n\t// Static error\n\tassert.Equal(t, errTest1, tran.resFromError(errTest1))\n\n\t// Create batch error with single part\n\tbatchErr := batch.NewError(tran.Message(), errTest1)\n\tbatchErr.Failed(0, errTest2)\n\n\tassert.Equal(t, errTest2, tran.resFromError(batchErr))\n\n\t// Create new message, no common part, and create batch error\n\tnewMsg := message.QuickBatch([][]byte{[]byte(\"baz\")})\n\tbatchErr = batch.NewError(newMsg, errTest1)\n\tbatchErr.Failed(0, errTest2)\n\n\tassert.Equal(t, errTest1, tran.resFromError(batchErr))\n\n\t// Add tran part to new message, still returning general error due to\n\t// missing part\n\tnewMsg = append(newMsg, tran.Message().Get(0))\n\tbatchErr = batch.NewError(newMsg, errTest1)\n\tbatchErr.Failed(0, errTest2)\n\n\tassert.Equal(t, errTest1, tran.resFromError(batchErr))\n\n\t// Add next tran part to new message, and return ack now\n\tnewMsg = append(newMsg, tran.Message().Get(1))\n\tbatchErr = batch.NewError(newMsg, errTest1)\n\tbatchErr.Failed(0, errTest2)\n\n\tassert.NoError(t, tran.resFromError(batchErr))\n\n\t// Create batch error with error on non-tran part\n\tbatchErr = batch.NewError(newMsg, errTest1)\n\tbatchErr.Failed(0, errTest2)\n\n\tassert.NoError(t, tran.resFromError(batchErr))\n\n\t// Create batch error for tran part\n\tbatchErr.Failed(1, errTest3)\n\tassert.Equal(t, errTest3, tran.resFromError(batchErr))\n}\n\n\n\nfunc BenchmarkErrorWithTagging(b *testing.B) {\n\tmsg := message.QuickBatch([][]byte{\n\t\t[]byte(\"foo\"),\n\t\t[]byte(\"bar\"),\n\t\t[]byte(\"baz\"),\n\t\t[]byte(\"buz\"),\n\t})\n\n\terrTest1 := errors.New(\"test err 1\")\n\terrTest2 := errors.New(\"test err 2\")\n\n\tfor i := 0; i < b.N; i++ {\n\t\ttran := NewTracked(msg, nil)\n\n\t\tbatchErr := batch.NewError(tran.Message(), errTest1)\n\t\tbatchErr.Failed(0, errTest2)\n\n\t\tassert.Equal(b, errTest2, tran.resFromError(batchErr))\n\t}\n}\n\nfunc BenchmarkErrorWithTaggingN3(b *testing.B) {\n\tmsg := message.QuickBatch([][]byte{\n\t\t[]byte(\"foo\"),\n\t\t[]byte(\"bar\"),\n\t\t[]byte(\"baz\"),\n\t\t[]byte(\"buz\"),\n\t})\n\n\terrTest1 := errors.New(\"test err 1\")\n\terrTest2 := errors.New(\"test err 2\")\n\n\tfor i := 0; i < b.N; i++ {\n\t\ttran := NewTracked(msg, nil)\n\t\ttranTwo := NewTracked(tran.Message(), nil)\n\t\ttranThree := NewTracked(tranTwo.Message(), nil)\n\n\t\tbatchErr := batch.NewError(tranThree.Message(), errTest1)\n\t\tbatchErr.Failed(0, errTest2)\n\n\t\tassert.Equal(b, errTest2, tran.resFromError(batchErr))\n\t\tassert.Equal(b, errTest2, tranTwo.resFromError(batchErr))\n\t\tassert.Equal(b, errTest2, tranThree.resFromError(batchErr))\n\t}\n}\n\nfunc BenchmarkErrorWithTaggingN2(b *testing.B) {\n\tmsg := message.QuickBatch([][]byte{\n\t\t[]byte(\"foo\"),\n\t\t[]byte(\"bar\"),\n\t\t[]byte(\"baz\"),\n\t\t[]byte(\"buz\"),\n\t})\n\n\terrTest1 := errors.New(\"test err 1\")\n\terrTest2 := errors.New(\"test err 2\")\n\n\tfor i := 0; i < b.N; i++ {\n\t\ttran := NewTracked(msg, nil)\n\t\ttranTwo := NewTracked(tran.Message(), nil)\n\n\t\tbatchErr := batch.NewError(tranTwo.Message(), errTest1)\n\t\tbatchErr.Failed(0, errTest2)\n\n\t\tassert.Equal(b, errTest2, tran.resFromError(batchErr))\n\t\tassert.Equal(b, errTest2, tranTwo.resFromError(batchErr))\n\t}\n}\n\nfunc BenchmarkErrorNoTagging(b *testing.B) {\n\tmsg := message.QuickBatch([][]byte{\n\t\t[]byte(\"foo\"),\n\t\t[]byte(\"bar\"),\n\t\t[]byte(\"baz\"),\n\t\t[]byte(\"buz\"),\n\t})\n\n\terrTest1 := errors.New(\"test err 1\")\n\n\tfor i := 0; i < b.N; i++ {\n\t\ttran := NewTracked(msg, nil)\n\t\tassert.Equal(b, errTest1, tran.resFromError(errTest1))\n\t}\n}\n"

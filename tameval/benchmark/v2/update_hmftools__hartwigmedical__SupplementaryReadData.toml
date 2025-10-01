@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "a311fa7f92c8542c38a652c3b8f2b73ea3242834"
+bench_version = 1
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl hmf-common -Dtest=SupplementaryReadDataTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl hmf-common -DtargetClasses=**.SupplementaryReadData  -DtargetTests=**.SupplementaryReadDataTest  -DoutputFormats=XML"
+coverage_report_path = "hmf-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "hmf-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 68.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 68.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "hmf-common/src/test/java/com/hartwig/hmftools/common/bam/SupplementaryReadDataTest.java"
+focal_file_path = "hmf-common/src/main/java/com/hartwig/hmftools/common/bam/SupplementaryReadData.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/a311fa7f92c8542c38a652c3b8f2b73ea3242834/hmf-common/src/test/java/com/hartwig/hmftools/common/bam/SupplementaryReadDataTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/a311fa7f92c8542c38a652c3b8f2b73ea3242834/hmf-common/src/main/java/com/hartwig/hmftools/common/bam/SupplementaryReadData.java"
+first_commit_date = "2024-03-23"
+last_commit_date = "2025-03-03"
+test_file_content = "package com.hartwig.hmftools.common.bam;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertNotNull;\nimport static org.junit.Assert.assertNull;\n\nimport java.util.List;\n\nimport org.junit.Test;\n\npublic class SupplementaryReadDataTest\n{\n    private static final SupplementaryReadData TEST_SUPP_DATA1 =\n            new SupplementaryReadData(\"chr20\", 31055958, SupplementaryReadData.SUPP_POS_STRAND, \"20S14M5I81M31S\", 1, 8);\n    private static final SupplementaryReadData TEST_SUPP_DATA2 =\n            new SupplementaryReadData(\"chrUn_GL000216v2\", 13986, SupplementaryReadData.SUPP_NEG_STRAND, \"116S35M\", 0, 0);\n\n    @Test\n    public void testFromAlignment_EmptyAlignment_ReturnsNull()\n    {\n        assertNull(SupplementaryReadData.fromAlignment(\"\"));\n    }\n\n    @Test\n    public void testFromAlignment_ActualAlignment()\n    {\n        final SupplementaryReadData actual = SupplementaryReadData.fromAlignment(TEST_SUPP_DATA1.asSamTag());\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFromAlignment_AlternativeDelimiter()\n    {\n        final SupplementaryReadData actual = SupplementaryReadData.fromAlignment(TEST_SUPP_DATA1.asCsv(), \";\");\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFrom_Emtpy_ReturnsNull()\n    {\n        assertNull(SupplementaryReadData.extractAlignments(\"\"));\n    }\n\n    @Test\n    public void testFrom_SingleAlignment_WithEndingDelim()\n    {\n        final List<SupplementaryReadData> actual = SupplementaryReadData.extractAlignments(TEST_SUPP_DATA1.asSamTag() + ';');\n\n        assertNotNull(actual);\n        assertEquals(1, actual.size());\n        assertEquals(TEST_SUPP_DATA1, actual.get(0));\n    }\n\n    @Test\n    public void testFrom_SingleAlignment_WithoutEndingDelim()\n    {\n        final List<SupplementaryReadData> actual = SupplementaryReadData.extractAlignments(TEST_SUPP_DATA1.asSamTag());\n\n        assertNotNull(actual);\n        assertEquals(1, actual.size());\n        assertEquals(TEST_SUPP_DATA1, actual.get(0));\n    }\n\n    @Test\n    public void testFrom_SingleAlignment_AlternativeDelimiter()\n    {\n        final List<SupplementaryReadData> actual = SupplementaryReadData.extractAlignments(TEST_SUPP_DATA1.asCsv());\n\n        assertNotNull(actual);\n        assertEquals(1, actual.size());\n        assertEquals(TEST_SUPP_DATA1, actual.get(0));\n    }\n\n    @Test\n    public void testFrom_TwoAlignments_WithEndingDelim()\n    {\n        final List<SupplementaryReadData> actual =\n                SupplementaryReadData.extractAlignments(TEST_SUPP_DATA1.asSamTag() + ';' + TEST_SUPP_DATA2.asSamTag() + ';');\n\n        assertNotNull(actual);\n        assertEquals(2, actual.size());\n        assertEquals(TEST_SUPP_DATA1, actual.get(0));\n        assertEquals(TEST_SUPP_DATA2, actual.get(1));\n    }\n\n    @Test\n    public void testFrom_TwoAlignments_WithoutEndingDelim()\n    {\n        final List<SupplementaryReadData> actual =\n                SupplementaryReadData.extractAlignments(TEST_SUPP_DATA1.asSamTag() + ';' + TEST_SUPP_DATA2.asSamTag());\n\n        assertNotNull(actual);\n        assertEquals(2, actual.size());\n        assertEquals(TEST_SUPP_DATA1, actual.get(0));\n        assertEquals(TEST_SUPP_DATA2, actual.get(1));\n    }\n\n    @Test\n    public void testFrom_TwoAlignment_EmptyFirst_ReturnsNull()\n    {\n        assertNull(SupplementaryReadData.extractAlignments(\";\" + TEST_SUPP_DATA1.asSamTag()));\n    }\n\n    @Test\n    public void testFrom_TwoAlignment_EmptyLast_ReturnsNull()\n    {\n        assertNull(SupplementaryReadData.extractAlignments(TEST_SUPP_DATA1.asSamTag() + \";;\"));\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_Emtpy_ReturnsNull()\n    {\n        assertNull(SupplementaryReadData.extractAlignment(\"\"));\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_SingleAlignment_WithEndingDelim()\n    {\n        final SupplementaryReadData actual = SupplementaryReadData.extractAlignment(TEST_SUPP_DATA1.asSamTag() + ';');\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_SingleAlignment_WithoutEndingDelim()\n    {\n        final SupplementaryReadData actual = SupplementaryReadData.extractAlignment(TEST_SUPP_DATA1.asSamTag());\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_SingleAlignment_AlternativeDelimiter()\n    {\n        final SupplementaryReadData actual = SupplementaryReadData.extractAlignment(TEST_SUPP_DATA1.asCsv());\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_TwoAlignments_WithEndingDelim()\n    {\n        final SupplementaryReadData actual =\n                SupplementaryReadData.extractAlignment(TEST_SUPP_DATA1.asSamTag() + ';' + TEST_SUPP_DATA2.asSamTag() + ';');\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_TwoAlignments_WithoutEndingDelim()\n    {\n        final SupplementaryReadData actual =\n                SupplementaryReadData.extractAlignment(TEST_SUPP_DATA1.asSamTag() + ';' + TEST_SUPP_DATA2.asSamTag());\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_TwoAlignment_EmptyFirst_ReturnsNull()\n    {\n        assertNull(SupplementaryReadData.extractAlignment(\";\" + TEST_SUPP_DATA1.asSamTag()));\n    }\n\n    @Test\n    public void testFirstAlignmentFrom_TwoAlignment_EmptyLast()\n    {\n        final SupplementaryReadData actual = SupplementaryReadData.extractAlignment(TEST_SUPP_DATA1.asSamTag() + \";;\");\n\n        assertNotNull(actual);\n        assertEquals(TEST_SUPP_DATA1, actual);\n    }\n\n    @Test\n    public void testAlignmentCount_TwoAlignments_EndingWithDelim()\n    {\n        final String suppData = TEST_SUPP_DATA1.asSamTag() + ';' + TEST_SUPP_DATA2.asSamTag() + ';';\n\n        assertEquals(2, SupplementaryReadData.alignmentCount(suppData));\n    }\n\n    @Test\n    public void testAlignmentCount_TwoAlignments_EndingWithoutDelim()\n    {\n        final String suppData = TEST_SUPP_DATA1.asSamTag() + ';' + TEST_SUPP_DATA2.asSamTag();\n\n        assertEquals(2, SupplementaryReadData.alignmentCount(suppData));\n    }\n}"

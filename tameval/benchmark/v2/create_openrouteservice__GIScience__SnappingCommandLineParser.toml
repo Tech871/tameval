@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "GIScience/openrouteservice"
+sha = "58549a4d0a2affe96463f3ef81081dd95411b243"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl ors-benchmark -Dtest=SnappingCommandLineParserTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl ors-benchmark -DtargetClasses=**.SnappingCommandLineParser  -DtargetTests=**.SnappingCommandLineParserTest  -DoutputFormats=XML"
+coverage_report_path = "ors-benchmark/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "ors-benchmark/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 92.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 9, 12, 13, 17, 18, 19, 20, 22, 23, 24, 25, 26, 27, 28, 30, 31, 32, 33, 34, 35, 37, 38, 39, 40, 41, 42, 44, 45, 46, 47, 48, 49, 51, 52, 53, 54, 55, 57, 58, 59, 60, 61, 62, 67, 85, 86, 87, 88, 89, 91, 93, 95, 108, 109, 113, 114, 116, 117, 121, 123, 124, 126, 127, 128, 130,]
+missed_lines = [ 68, 69, 70, 76, 77, 81,]
+
+[input_info]
+test_file_path = "ors-benchmark/src/test/java/org/heigit/ors/coordinates_generator/cli/SnappingCommandLineParserTest.java"
+focal_file_path = "ors-benchmark/src/main/java/org/heigit/ors/coordinates_generator/cli/SnappingCommandLineParser.java"
+test_file_url = "https://github.com/GIScience/openrouteservice/blob/58549a4d0a2affe96463f3ef81081dd95411b243/ors-benchmark/src/test/java/org/heigit/ors/coordinates_generator/cli/SnappingCommandLineParserTest.java"
+focal_file_url = "https://github.com/GIScience/openrouteservice/blob/58549a4d0a2affe96463f3ef81081dd95411b243/ors-benchmark/src/main/java/org/heigit/ors/coordinates_generator/cli/SnappingCommandLineParser.java"
+first_commit_date = "2025-03-19"
+last_commit_date = "2025-03-19"
+test_file_content = "package org.heigit.ors.coordinates_generator.cli;\n\nimport org.heigit.ors.benchmark.exceptions.CommandLineParsingException;\nimport org.heigit.ors.coordinates_generator.generators.CoordinateGeneratorSnapping;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport org.junit.jupiter.params.provider.ValueSource;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass SnappingCommandLineParserTest {\n\n\n\n    @ParameterizedTest\n    @ValueSource(strings = {\n        \"driving-car cycling-regular\",\n        \"driving-car,cycling-regular\",\n        \"driving-car, cycling-regular\",\n        \"driving-car,cycling-regular,walking\"\n    })\n    void testProfileParsing(String profileInput) {\n        String[] args = {\n            \"-n\", \"100\",\n                \"-e\", \"8.6,49.3,8.7,49.4\",\n                    \"-p\", profileInput\n        };\n\n        SnappingCommandLineParser cli = new SnappingCommandLineParser(args);\n        CoordinateGeneratorSnapping generator = cli.createGenerator();\n        assertNotNull(generator);\n    }\n\n\n\n\n    @ParameterizedTest\n    @CsvSource({\n            // Format: extent string, expected values\n            \"'8.6,49.3,8.7,49.4', 8.6, 49.3, 8.7, 49.4\",\n            \"'8.6 49.3 8.7 49.4', 8.6, 49.3, 8.7, 49.4\",\n            \"'8.6, 49.3, 8.7, 49.4', 8.6, 49.3, 8.7, 49.4\"\n    })\n    void testExtentParsing(String extentInput, double minLon, double minLat, double maxLon, double maxLat) {\n        String[] args = {\n                \"-n\", \"100\",\n                \"-e\", extentInput,\n                \"-p\", \"driving-car\"\n        };\n        SnappingCommandLineParser cli = new SnappingCommandLineParser(args);\n        double[] extent = cli.parseExtent(extentInput);\n\n        assertEquals(minLon, extent[0], 0.001, \"Min longitude should match\");\n        assertEquals(minLat, extent[1], 0.001, \"Min latitude should match\");\n        assertEquals(maxLon, extent[2], 0.001, \"Max longitude should match\");\n        assertEquals(maxLat, extent[3], 0.001, \"Max latitude should match\");\n    }\n\n    @ParameterizedTest\n    @ValueSource(strings = {\n            \"8.6,49.3,8.7\", // Too few values\n            \"8.6,49.3,8.7,49.4,8.8\", // Too many values\n            \"8.6,invalid,8.7,49.4\", // Non-numeric value\n            \"\", // Empty string\n            \"   \" // Blank string\n    })\n    void testInvalidExtentParsing(String extentInput) {\n        String[] args = {\n                \"-n\", \"100\",\n                \"-e\", extentInput,\n                \"-p\", \"driving-car\"\n        };\n        SnappingCommandLineParser cli = new SnappingCommandLineParser(args);\n        IllegalArgumentException exception = assertThrows(\n                IllegalArgumentException.class,\n                () -> cli.parseExtent(extentInput),\n                \"Should throw exception for invalid extent format\");\n        assertNotNull(exception);\n    }\n\n    @Test\n    void testFlexibleExtentCommandLine() {\n        String[] args = {\n                \"-n\", \"100\",\n                \"-e\", \"8.6,49.3,8.7,49.4\", // comma-separated extent\n                \"-p\", \"driving-car\"\n        };\n\n        SnappingCommandLineParser cli = new SnappingCommandLineParser(args);\n        CoordinateGeneratorSnapping generator = cli.createGenerator();\n        assertNotNull(generator);\n    }\n\n\n    @Test\n    void testEmptyProfileList() {\n        String[] args = {\n            \"-n\", \"100\",\n                \"-e\", \"8.6 49.3 8.7 49.4\",\n                    \"-p\", \"\"\n        };\n        SnappingCommandLineParser cli = new SnappingCommandLineParser(args);\n        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,\n                cli::createGenerator);\n        assertNotNull(exception);\n    }\n}\n"

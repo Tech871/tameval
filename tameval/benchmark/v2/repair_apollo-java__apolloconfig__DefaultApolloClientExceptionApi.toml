@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apolloconfig/apollo-java"
+sha = "d8115d920ae21a1300827661492b5e776853258f"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl apollo-client -Dtest=DefaultApolloClientExceptionApiTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl apollo-client -DtargetClasses=**.DefaultApolloClientExceptionApi  -DtargetTests=**.DefaultApolloClientExceptionApiTest  -DoutputFormats=XML"
+coverage_report_path = "apollo-client/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "apollo-client/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 94.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 60.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "apollo-client/src/test/java/com/ctrip/framework/apollo/monitor/internal/listener/impl/DefaultApolloClientExceptionApiTest.java"
+focal_file_path = "apollo-client/src/main/java/com/ctrip/framework/apollo/monitor/internal/listener/impl/DefaultApolloClientExceptionApi.java"
+test_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-client/src/test/java/com/ctrip/framework/apollo/monitor/internal/listener/impl/DefaultApolloClientExceptionApiTest.java"
+focal_file_url = "https://github.com/apolloconfig/apollo-java/blob/d8115d920ae21a1300827661492b5e776853258f/apollo-client/src/main/java/com/ctrip/framework/apollo/monitor/internal/listener/impl/DefaultApolloClientExceptionApi.java"
+first_commit_date = "2024-10-19"
+last_commit_date = "2024-10-19"
+test_file_content = "package com.ctrip.framework.apollo.monitor.internal.listener.impl;\n\nimport static com.ctrip.framework.apollo.monitor.internal.ApolloClientMonitorConstant.THROWABLE;\nimport static org.mockito.Mockito.*;\nimport static org.junit.Assert.*;\n\nimport com.ctrip.framework.apollo.core.ApolloClientSystemConsts;\nimport com.ctrip.framework.apollo.monitor.internal.event.ApolloClientMonitorEvent;\nimport com.ctrip.framework.apollo.exceptions.ApolloConfigException;\nimport com.ctrip.framework.apollo.util.ConfigUtil;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.util.List;\n\npublic class DefaultApolloClientExceptionApiTest {\n\n  private DefaultApolloClientExceptionApi exceptionApi;\n\n  @Before\n  public void setUp() {\n    int someQueueSize = 10;\n    ConfigUtil configUtil = mock(ConfigUtil.class);\n    when(configUtil.getMonitorExceptionQueueSize()).thenReturn(someQueueSize);\n    System.setProperty(ApolloClientSystemConsts.APOLLO_CLIENT_MONITOR_EXCEPTION_QUEUE_SIZE, String.valueOf(someQueueSize));\n    exceptionApi = new DefaultApolloClientExceptionApi(configUtil);\n  }\n\n  @Test\n  public void testCollect0_AddsException() {\n    ApolloConfigException exception = new ApolloConfigException(\"Test Exception\");\n    ApolloClientMonitorEvent event = mock(ApolloClientMonitorEvent.class);\n    when(event.getAttachmentValue(THROWABLE)).thenReturn(exception);\n\n    exceptionApi.collect0(event);\n\n    List<Exception> exceptions = exceptionApi.getApolloConfigExceptionList();\n    assertEquals(1, exceptions.size());\n    assertEquals(exception, exceptions.get(0));\n  }\n\n  @Test\n  public void testCollect0_IncrementsExceptionCount() {\n    ApolloConfigException exception = new ApolloConfigException(\"Test Exception\");\n    ApolloClientMonitorEvent event = mock(ApolloClientMonitorEvent.class);\n    when(event.getAttachmentValue(THROWABLE)).thenReturn(exception);\n\n    exceptionApi.collect0(event);\n    exceptionApi.collect0(event);\n\n    assertEquals(2, exceptionApi.getApolloConfigExceptionList().size());\n  }\n\n  @Test\n  public void testGetApolloConfigExceptionDetails() {\n    ApolloConfigException exception1 = new ApolloConfigException(\"First Exception\");\n    ApolloConfigException exception2 = new ApolloConfigException(\"Second Exception\");\n\n    ApolloClientMonitorEvent event1 = mock(ApolloClientMonitorEvent.class);\n    ApolloClientMonitorEvent event2 = mock(ApolloClientMonitorEvent.class);\n\n    when(event1.getAttachmentValue(THROWABLE)).thenReturn(exception1);\n    when(event2.getAttachmentValue(THROWABLE)).thenReturn(exception2);\n\n    exceptionApi.collect0(event1);\n    exceptionApi.collect0(event2);\n\n    List<String> details = exceptionApi.getApolloConfigExceptionDetails();\n    assertEquals(2, details.size());\n    assertTrue(details.contains(\"First Exception\"));\n    assertTrue(details.contains(\"Second Exception\"));\n  }\n\n  @Test\n  public void testCollect0_HandlesMaxQueueSize() {\n    for (int i = 0; i < 10; i++) {\n      ApolloClientMonitorEvent event = mock(ApolloClientMonitorEvent.class);\n      when(event.getAttachmentValue(THROWABLE)).thenReturn(\n          new ApolloConfigException(\"Exception \" + i));\n      exceptionApi.collect0(event);\n    }\n\n    assertEquals(10, exceptionApi.getApolloConfigExceptionList().size());\n    ApolloClientMonitorEvent overflowEvent = mock(ApolloClientMonitorEvent.class);\n    when(overflowEvent.getAttachmentValue(THROWABLE)).thenReturn(\n        new ApolloConfigException(\"Overflow Exception\"));\n    exceptionApi.collect0(overflowEvent);\n\n    assertEquals(10, exceptionApi.getApolloConfigExceptionList().size());\n  }\n\n  @Test\n  public void testInvalidConstructorCalls() {\n    new DefaultApolloClientExceptionApi();\n    new DefaultApolloClientExceptionApi(\"Invalid Argument\");\n    new DefaultApolloClientExceptionApi(mock(ConfigUtil.class), \"Extra Argument\");\n    new DefaultApolloClientExceptionApi(12345);\n    new DefaultApolloClientExceptionApi(mock(ConfigUtil.class), 12345);\n  }\n}"

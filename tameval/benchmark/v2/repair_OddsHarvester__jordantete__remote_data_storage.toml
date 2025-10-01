@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jordantete/OddsHarvester"
+sha = "4a9c2a492c144b7c68c26841d2f4eaf0cace6b48"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/storage/remote_data_storage.py -m pytest -q --junit-xml=test_output.xml tests/storage/test_remote_data_storage.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.storage.remote_data_storage --unit-test tests.storage.test_remote_data_storage --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/storage/remote_data_storage.py --unit-test tests/storage/test_remote_data_storage.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 2, 4, 7, 8, 9, 11, 15, 16, 17, 21, 29, 30, 31, 32, 33, 35, 36, 37, 39, 47, 48, 50, 51, 52, 53, 55, 56, 57, 59, 68, 69, 70, 71, 72, 74, 75, 76,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/storage/test_remote_data_storage.py"
+focal_file_path = "src/storage/remote_data_storage.py"
+test_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/tests/storage/test_remote_data_storage.py"
+focal_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/src/storage/remote_data_storage.py"
+first_commit_date = "2025-01-14"
+last_commit_date = "2025-06-24"
+test_file_content = "import json\nfrom unittest.mock import mock_open, patch\n\nfrom botocore.exceptions import BotoCoreError, NoCredentialsError\nimport pytest\n\nfrom src.storage.remote_data_storage import RemoteDataStorage\n\n\n@pytest.fixture\ndef remote_data_storage():\n    return RemoteDataStorage()\n\n\n@pytest.fixture\ndef sample_data():\n    return [{\"team\": \"Team A\", \"odds\": 2.5}, {\"team\": \"Team B\", \"odds\": 1.8}]\n\n\ndef test_initialization(remote_data_storage):\n    assert remote_data_storage.s3_client is not None\n    assert remote_data_storage.logger is not None\n    assert remote_data_storage.S3_BUCKET_NAME == \"odds-portal-scrapped-odds-cad8822c179f12cg\"\n    assert remote_data_storage.AWE_REGION == \"eu-west-3\"\n\n\ndef test_save_data_to_json_file(remote_data_storage, sample_data):\n    mock_file = mock_open()\n\n    with patch(\"builtins.open\", mock_file):\n        remote_data_storage._save_to_json(sample_data, \"test_data.json\")\n    mock_file.assert_called_once_with(\"test_data.json\", \"w\", encoding=\"utf-8\")\n    handle = mock_file()\n    json.dump(sample_data, handle, indent=4)\n    handle.write.assert_called()\n\n\ndef test_store_data_as_json(remote_data_storage, sample_data):\n    mock_file = mock_open()\n\n    with patch(\"builtins.open\", mock_file):\n        remote_data_storage._save_to_json(sample_data, \"test_data.json\")\n    mock_file.assert_called_once_with(\"test_data.json\", \"w\", encoding=\"utf-8\")\n    handle = mock_file()\n    json.dump(sample_data, handle, indent=4)\n    handle.write.assert_called()\n\n\ndef test_save_to_json_error(remote_data_storage, sample_data):\n    with (\n        patch(\"builtins.open\", side_effect=OSError(\"File write error\")),\n        patch.object(remote_data_storage.logger, \"error\") as mock_logger,\n    ):\n        with pytest.raises(OSError, match=\"File write error\"):\n            remote_data_storage._save_to_json(sample_data, \"test_data.json\")\n\n    mock_logger.assert_called()\n\n\ndef test_upload_to_s3_success(remote_data_storage):\n    with patch.object(remote_data_storage.s3_client, \"upload_file\") as mock_upload:\n        remote_data_storage._upload_to_s3(\"test_data.json\", \"s3_object.json\")\n\n    mock_upload.assert_called_once_with(\"test_data.json\", remote_data_storage.S3_BUCKET_NAME, \"s3_object.json\")\n\n\ndef test_upload_to_s3_default_object_name(remote_data_storage):\n    with patch.object(remote_data_storage.s3_client, \"upload_file\") as mock_upload:\n        remote_data_storage._upload_to_s3(\"test_data.json\")\n\n    mock_upload.assert_called_once_with(\"test_data.json\", remote_data_storage.S3_BUCKET_NAME, \"test_data.json\")\n\n\ndef test_upload_to_s3_error(remote_data_storage):\n    with (\n        patch.object(remote_data_storage.s3_client, \"upload_file\", side_effect=BotoCoreError),\n        patch.object(remote_data_storage.logger, \"error\") as mock_logger,\n    ):\n        with pytest.raises(BotoCoreError):\n            remote_data_storage._upload_to_s3(\"test_data.json\", \"s3_object.json\")\n\n    mock_logger.assert_called()\n\n\ndef test_upload_to_s3_no_credentials(remote_data_storage):\n    with (\n        patch.object(remote_data_storage.s3_client, \"upload_file\", side_effect=NoCredentialsError()),\n        patch.object(remote_data_storage.logger, \"error\") as mock_logger,\n    ):\n        with pytest.raises(NoCredentialsError):\n            remote_data_storage._upload_to_s3(\"test_data.json\", \"s3_object.json\")\n\n    mock_logger.assert_called()\n\n\ndef test_process_and_upload(remote_data_storage, sample_data):\n    with (\n        patch.object(remote_data_storage, \"_save_to_json\") as mock_save_json,\n        patch.object(remote_data_storage, \"_upload_to_s3\") as mock_upload_s3,\n    ):\n        remote_data_storage.process_and_upload(sample_data, \"test_data.json\", \"s3_object.json\")\n\n    mock_save_json.assert_called_once_with(data=sample_data, file_name=\"test_data.json\")\n    mock_upload_s3.assert_called_once_with(file_name=\"test_data.json\", object_name=\"s3_object.json\")\n\n\ndef test_handle_data_processing_and_uploading(remote_data_storage, sample_data):\n    with (\n        patch.object(remote_data_storage, \"_save_to_json\") as mock_save_json,\n        patch.object(remote_data_storage, \"_upload_to_s3\") as mock_upload_s3,\n    ):\n        remote_data_storage.process_and_upload(sample_data, \"test_data.json\", \"s3_object.json\")\n\n    mock_save_json.assert_called_once_with(data=sample_data, file_name=\"test_data.json\")\n    mock_upload_s3.assert_called_once_with(file_name=\"test_data.json\", object_name=\"s3_object.json\")\n\n\ndef test_process_and_upload_error(remote_data_storage, sample_data):\n    with (\n        patch.object(remote_data_storage, \"_save_to_json\", side_effect=OSError(\"File save error\")),\n        patch.object(remote_data_storage.logger, \"error\") as mock_logger,\n    ):\n        with pytest.raises(OSError, match=\"File save error\"):\n            remote_data_storage.process_and_upload(sample_data, \"test_data.json\", \"s3_object.json\")\n\n    mock_logger.assert_called()"

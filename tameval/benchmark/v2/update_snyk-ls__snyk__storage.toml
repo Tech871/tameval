@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "37ef5edff63f9b37597e8df6c0b25dadb7068ba1"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/storage/storage.go internal/storage/storage_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/storage/storage.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 52.0
+original_coverage = 56.0
+mutation_kill_rate = 36.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 69, 70, 71, 72, 73, 75, 76, 77, 78, 79, 83, 84, 85, 86, 87, 88, 89, 90, 91, 93, 94, 95, 109, 112, 113, 114, 119, 120, 121, 122, 123, 124, 125, 126, 127, 138, 139, 140, 141, 144, 145, 146, 147, 148,]
+missed_lines = [ 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 62, 63, 64, 65, 66, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 115, 116, 117, 130, 131, 132, 134, 135, 136,]
+
+[input_info]
+test_file_path = "internal/storage/storage_test.go"
+focal_file_path = "internal/storage/storage.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/internal/storage/storage_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/internal/storage/storage.go"
+first_commit_date = "2024-07-09"
+last_commit_date = "2025-01-28"
+test_file_content = "/*\n * © 2023-2024 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage storage\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc Test_StorageCallsRegisterCallbacksForKeys(t *testing.T) {\n\tcalled := make(chan bool, 1)\n\tcallbacks := map[string]StorageCallbackFunc{}\n\tfile := filepath.Join(t.TempDir(), t.Name())\n\tmyCallback := func(_ string, _ any) { called <- true }\n\n\tkey := \"test\"\n\tvalue := \"test\"\n\tcallbacks[key] = myCallback\n\ts, err := NewStorageWithCallbacks(WithCallbacks(callbacks), WithStorageFile(file))\n\trequire.NoError(t, err)\n\n\terr = s.Set(key, value)\n\n\trequire.NoError(t, err)\n\trequire.Eventuallyf(t, func() bool {\n\t\treturn <-called\n\t}, 5*time.Second, time.Millisecond, \"callback was not called\")\n}\n\nfunc Test_ParallelFileLocking(t *testing.T) {\n\tt.Run(\"should respect locking order\", func(t *testing.T) {\n\t\tfile := filepath.Join(t.TempDir(), t.Name())\n\t\terr := os.MkdirAll(filepath.Dir(file), 0755)\n\t\trequire.NoError(t, err)\n\t\terr = os.WriteFile(file, []byte(\"{}\"), 0644)\n\t\trequire.NoError(t, err)\n\n\t\t// we should not get concurrent writes to the backing map here\n\t\tvar parallelism = 100\n\t\tfor i := 0; i < parallelism; i++ {\n\t\t\tgo func(count int) {\n\t\t\t\tcut, _ := NewStorageWithCallbacks(WithStorageFile(file))\n\n\t\t\t\tlockErr := cut.Lock(context.Background(), time.Millisecond)\n\t\t\t\trequire.NoError(t, lockErr)\n\t\t\t\tdefer func() {\n\t\t\t\t\tunlockErr := cut.Unlock()\n\t\t\t\t\trequire.NoError(t, unlockErr)\n\t\t\t\t}()\n\n\t\t\t\terr = cut.Set(fmt.Sprintf(\"test-%d\", count), count)\n\t\t\t\trequire.NoError(t, err)\n\t\t\t}(i)\n\t\t}\n\n\t\tassert.Eventually(t, func() bool {\n\t\t\tbytes, readErr := os.ReadFile(file)\n\t\t\tif readErr != nil {\n\t\t\t\treturn false\n\t\t\t}\n\t\t\tvar result map[string]any\n\t\t\tunmarshalErr := json.Unmarshal(bytes, &result)\n\t\t\tif unmarshalErr != nil {\n\t\t\t\treturn false\n\t\t\t}\n\n\t\t\treturn parallelism == len(result)\n\t\t}, time.Second*time.Duration(parallelism), time.Millisecond)\n\t})\n}"

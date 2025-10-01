@@ -1,0 +1,44 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dromara/disjob"
+sha = "fe566cf310a9c72a66058d100c30d40d1cada980"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl disjob-common -Dtest=StringsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl disjob-common -DtargetClasses=**.Strings  -DtargetTests=**.StringsTest  -DoutputFormats=XML"
+coverage_report_path = "disjob-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "disjob-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 51.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "disjob-common/src/test/java/cn/ponfee/disjob/common/util/StringsTest.java"
+focal_file_path = "disjob-common/src/main/java/cn/ponfee/disjob/common/util/Strings.java"
+test_file_url = "https://github.com/dromara/disjob/blob/fe566cf310a9c72a66058d100c30d40d1cada980/disjob-common/src/test/java/cn/ponfee/disjob/common/util/StringsTest.java"
+focal_file_url = "https://github.com/dromara/disjob/blob/fe566cf310a9c72a66058d100c30d40d1cada980/disjob-common/src/main/java/cn/ponfee/disjob/common/util/Strings.java"
+first_commit_date = "2023-05-03"
+last_commit_date = "2025-06-14"
+test_file_content = "\n\npackage cn.ponfee.disjob.common.util;\n\nimport com.google.common.base.CaseFormat;\nimport org.apache.commons.lang3.StringUtils;\nimport org.junit.jupiter.api.Assertions;\n\n\npublic class StringsTest {\n\n    @Test\n    public void testWildcardMatch() {\n        Assertions.assertFalse(Strings.isMatch(\"aa\", \"a\"));\n        Assertions.assertTrue(Strings.isMatch(\"aa\", \"aa\"));\n        Assertions.assertFalse(Strings.isMatch(\"aaa\", \"aa\"));\n        Assertions.assertTrue(Strings.isMatch(\"aa\", \"*\"));\n        Assertions.assertTrue(Strings.isMatch(\"aa\", \"a*\"));\n        Assertions.assertTrue(Strings.isMatch(\"ab\", \"?*\"));\n        Assertions.assertFalse(Strings.isMatch(\"aab\", \"c*a*b\"));\n\n        Assertions.assertFalse(StringUtils.containsWhitespace(null));\n        Assertions.assertFalse(StringUtils.containsWhitespace(\"\"));\n        Assertions.assertTrue(StringUtils.containsWhitespace(\" \"));\n        Assertions.assertTrue(StringUtils.containsWhitespace(\"a b\"));\n        Assertions.assertTrue(StringUtils.containsWhitespace(\"a\\nb\"));\n        Assertions.assertTrue(StringUtils.containsWhitespace(\"a\\tb\"));\n    }\n\n    @Test\n    public void testConcatSqlLike() {\n        Assertions.assertNull(Strings.concatSqlLike(null));\n        Assertions.assertTrue(Strings.concatSqlLike(\"\").isEmpty());\n        Assertions.assertEquals(\"^\", Strings.concatSqlLike(\"^\"));\n        Assertions.assertEquals(\"$\", Strings.concatSqlLike(\"$\"));\n        Assertions.assertEquals(\"^$\", Strings.concatSqlLike(\"^$\"));\n        Assertions.assertEquals(\"%$^%\", Strings.concatSqlLike(\"$^\"));\n        Assertions.assertEquals(\"%a%\", Strings.concatSqlLike(\"a\"));\n        Assertions.assertEquals(\"a%\", Strings.concatSqlLike(\"^a\"));\n        Assertions.assertEquals(\"%a\", Strings.concatSqlLike(\"a$\"));\n    }\n\n    @Test\n    public void testTrimUrlPath() {\n        Assertions.assertEquals(\"/test\", Strings.trimPath(\"test\n        Assertions.assertEquals(\"/test/abc\", Strings.trimPath(\"test/abc\n        Assertions.assertEquals(\"/test/abc\", Strings.trimPath(\" /test/abc\n        Assertions.assertEquals(\"/\", Strings.trimPath(\" /\n        Assertions.assertEquals(\"/\", Strings.trimPath(\"/\"));\n        Assertions.assertEquals(\"/\", Strings.trimPath(\"\"));\n        Assertions.assertEquals(\"/test/abc\", Strings.trimPath(\" /test/abc/ / / \"));\n        Assertions.assertEquals(\"  abc/a / b/ c\", \"  abc/a / b/ c /\n        Assertions.assertEquals(\"/abc\", Strings.concatPath(\"/\", \"/abc\"));\n        Assertions.assertEquals(\"/abc/123\", Strings.concatPath(Strings.trimPath(\"\"), \"/abc/123\"));\n        Assertions.assertEquals(\"/abc/123\", Strings.concatPath(Strings.trimPath(\"/\"), \"/abc/123\"));\n        Assertions.assertEquals(\"/abc/123\", Strings.concatPath(Strings.trimPath(\"\"), \"/abc/123\"));\n        Assertions.assertEquals(\"/abc/123\", Strings.concatPath(Strings.trimPath(null), \"/abc/123\"));\n        Assertions.assertEquals(\"/test/abc/123\", Strings.concatPath(Strings.trimPath(\"/test\"), \"/abc/123\"));\n\n        Assertions.assertEquals(\"/test/abc\", Strings.trimPath(\"/test/abc/ / / \"));\n        Assertions.assertEquals(\"/test/abc\", Strings.trimPath(\"\n        Assertions.assertEquals(\"/test/abc\", Strings.trimPath(\" /\n    }\n\n    @Test\n    public void testSubstringAfterLast() {\n        Assertions.assertNull(Strings.substringAfterLast(null, \".\"));\n        Assertions.assertEquals(\"\", Strings.substringAfterLast(\"\", \".\"));\n        Assertions.assertEquals(\"abc\", Strings.substringAfterLast(\"abc\", \".\"));\n        Assertions.assertEquals(\"def\", Strings.substringAfterLast(\"abc.def\", \".\"));\n        Assertions.assertEquals(\"abc\", Strings.substringAfterLast(\".abc\", \".\"));\n        Assertions.assertEquals(\"\", Strings.substringAfterLast(\"abc.\", \".\"));\n    }\n\n    @Test\n    public void testCaseFormat() {\n        Assertions.assertEquals(\"disjob-admin\", CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, \"disjob_admin\"));\n        Assertions.assertEquals(\"disjob-admin\", CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, \"disjob-admin\"));\n        Assertions.assertEquals(\"disjob\", CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, \"disjob\"));\n        Assertions.assertEquals(\"\", CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, \"\"));\n        Assertions.assertEquals(\" \", CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_HYPHEN, \" \"));\n    }\n\n    @Test\n    public void testFormat() {\n        Assertions.assertEquals(\"\\t作业ID：1329633560065048576\\n\", String.format(\"\\t%s%s\\n\", \"作业ID：\", 1329633560065048576L));\n        Assertions.assertEquals(\"**作业ID：**1329633560065048576\\n\", String.format(\"**%s**%s\\n\", \"作业ID：\", 1329633560065048576L));\n        Assertions.assertEquals(\"<b>作业ID：</b>1329633560065048576<br/>\", String.format(\"<b>%s</b>%s<br/>\", \"作业ID：\", 1329633560065048576L));\n    }\n\n}"

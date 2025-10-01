@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "aaydin-tr/divisor"
+sha = "be1010bf44bd1fcf47537b6a7423b664e5016985"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/proxy/proxy.go internal/proxy/proxy_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/proxy/proxy.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 71.0
+original_coverage = 100.0
+mutation_kill_rate = 23.0
+original_mutation_kill_rate = 72.0
+covered_lines = [ 53, 54, 55, 56, 57, 58, 59, 60, 61, 66, 67, 68, 69, 72, 73, 74, 75, 77, 78, 79, 80, 83, 84, 85, 86, 101, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 131, 132, 133, 134, 135, 136, 141, 142, 143, 144, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164,]
+missed_lines = [ 62, 63, 64, 65, 89, 90, 91, 92, 94, 95, 96, 97, 98, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 127, 128, 129, 138,]
+
+[input_info]
+test_file_path = "internal/proxy/proxy_test.go"
+focal_file_path = "internal/proxy/proxy.go"
+test_file_url = "https://github.com/aaydin-tr/divisor/blob/be1010bf44bd1fcf47537b6a7423b664e5016985/internal/proxy/proxy_test.go"
+focal_file_url = "https://github.com/aaydin-tr/divisor/blob/be1010bf44bd1fcf47537b6a7423b664e5016985/internal/proxy/proxy.go"
+first_commit_date = "2023-03-03"
+last_commit_date = "2025-06-08"
+test_file_content = "package proxy\n\nimport (\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"regexp\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/aaydin-tr/divisor/pkg/config\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/valyala/fasthttp\"\n)\n\ntype mockServer struct {\n\tdone  chan struct{}\n\tready chan struct{}\n}\n\nfunc (m *mockServer) ServeHTTP(res http.ResponseWriter, req *http.Request) {\n\tif _, ok := req.Header[\"Wait\"]; ok {\n\t\ttime.Sleep(10 * time.Millisecond)\n\t}\n\tif _, ok := req.Header[\"After\"]; ok {\n\t\tfor _, h := range hopHeaders {\n\t\t\tif string(h) != \"Trailer\" {\n\t\t\t\tres.Header().Add(string(h), string(h))\n\t\t\t}\n\t\t}\n\t}\n\tif _, ok := req.Header[\"Pending\"]; ok {\n\t\tm.ready <- struct{}{}\n\t\t<-m.done\n\t}\n\n\tres.WriteHeader(200)\n}\n\nvar backend = config.Backend{\n\tUrl:    \"localhost:8080\",\n\tWeight: 1,\n}\n\nvar protocolRegex = regexp.MustCompile(`(^https?://)`)\n\n\n\n\n\nfunc TestClose(t *testing.T) {\n\tcustomHeaders := make(map[string]string)\n\thandler := mockServer{}\n\tbServer := httptest.NewServer(&handler)\n\tdefer bServer.Close()\n\tbackend.Url = protocolRegex.ReplaceAllString(bServer.URL, \"\")\n\tp := NewProxyClient(backend, customHeaders).(*ProxyClient)\n\n\t// Make a request to establish connection\n\tctx := fasthttp.RequestCtx{Request: *fasthttp.AcquireRequest(), Response: *fasthttp.AcquireResponse()}\n\terr := p.ReverseProxyHandler(&ctx)\n\tassert.NoError(t, err)\n\n\t// Verify connection is established\n\tstat := p.Stat()\n\tassert.Equal(t, 1, stat.ConnsCount)\n\n\t// Test Close method\n\terr = p.Close()\n\tassert.NoError(t, err, \"Close() should not return an error\")\n\n\t// Wait for connections to be closed with a timeout\n\ttimeout := time.After(1 * time.Second)\n\tticker := time.NewTicker(10 * time.Millisecond)\n\tdefer ticker.Stop()\n\n\tvar connectionsClosed bool\n\tfor !connectionsClosed {\n\t\tselect {\n\t\tcase <-timeout:\n\t\t\tt.Fatal(\"Timeout waiting for connections to close\")\n\t\tcase <-ticker.C:\n\t\t\tstatAfterClose := p.Stat()\n\t\t\tif statAfterClose.ConnsCount == 0 {\n\t\t\t\tconnectionsClosed = true\n\t\t\t}\n\t\t}\n\t}\n\n\t// Verify that the proxy client still functions after Close()\n\tctx2 := fasthttp.RequestCtx{Request: *fasthttp.AcquireRequest(), Response: *fasthttp.AcquireResponse()}\n\terr = p.ReverseProxyHandler(&ctx2)\n\tassert.NoError(t, err, \"Proxy should still work after Close()\")\n\n\t// Test multiple Close calls (should be idempotent)\n\terr = p.Close()\n\tassert.NoError(t, err, \"Multiple Close() calls should not return an error\")\n}\n"

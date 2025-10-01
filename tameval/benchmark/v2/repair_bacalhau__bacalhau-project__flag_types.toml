@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "bacalhau-project/bacalhau"
+sha = "942823bbb893e9dfeedca16bd151e2f15228a198"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out cmd/util/flag_types.go cmd/util/flag_types_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting cmd/util/flag_types.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "cmd/util/flag_types_test.go"
+focal_file_path = "cmd/util/flag_types.go"
+test_file_url = "https://github.com/bacalhau-project/bacalhau/blob/942823bbb893e9dfeedca16bd151e2f15228a198/cmd/util/flag_types_test.go"
+focal_file_url = "https://github.com/bacalhau-project/bacalhau/blob/942823bbb893e9dfeedca16bd151e2f15228a198/cmd/util/flag_types.go"
+first_commit_date = "2025-06-21"
+last_commit_date = "2025-06-21"
+test_file_content = "package util\n\nimport (\n\t\"testing\"\n)\n\nfunc TestUintValue_SetValidNumber(t *testing.T) {\n\tvar value int\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.Set(\"123\")\n\tif err != nil {\n\t\tt.Errorf(\"Expected no error for valid number, got: %v\", err)\n\t}\n\tif value != 123 {\n\t\tt.Errorf(\"Expected value to be 123, got: %d\", value)\n\t}\n}\n\nfunc TestUintValue_SetZero(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.SetInvalid(\"0\")\n\tif err == nil {\n\t\tt.Error(\"Expected error for zero, got nil\")\n\t}\n\texpectedMsg := \"'0' is not a valid number: please provide a positive integer\"\n\tif err.Error() != expectedMsg {\n\t\tt.Errorf(\"Expected error message '%s', got: %s\", expectedMsg, err.Error())\n\t}\n}\n\nfunc TestUintValue_SetMaxUint64(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.Set(\"18446744073709551615\")\n\tif err != nil {\n\t\tt.Errorf(\"Expected no error for max uint64, got: %v\", err)\n\t}\n\tif value != 18446744073709551615 {\n\t\tt.Errorf(\"Expected value to be max uint64, got: %d\", value)\n\t}\n}\n\nfunc TestUintValue_SetNegativeNumber(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.Set(\"-1\")\n\tif err == nil {\n\t\tt.Error(\"Expected error for negative number, got nil\")\n\t}\n\texpectedMsg := \"'-1' is not a valid number: please provide a positive integer\"\n\tif err.Error() != expectedMsg {\n\t\tt.Errorf(\"Expected error message '%s', got: %s\", expectedMsg, err.Error())\n\t}\n}\n\nfunc TestUintValue_SetFloat(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.Set(\"12.34\")\n\tif err == nil {\n\t\tt.Error(\"Expected error for float number, got nil\")\n\t}\n\texpectedMsg := \"'12.34' is not a valid number: please provide a positive integer\"\n\tif err.Error() != expectedMsg {\n\t\tt.Errorf(\"Expected error message '%s', got: %s\", expectedMsg, err.Error())\n\t}\n}\n\nfunc TestUintValue_SetNonNumeric(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.Set(\"abc\")\n\tif err == nil {\n\t\tt.Error(\"Expected error for non-numeric string, got nil\")\n\t}\n\texpectedMsg := \"'abc' is not a valid number: please provide a positive integer\"\n\tif err.Error() != expectedMsg {\n\t\tt.Errorf(\"Expected error message '%s', got: %s\", expectedMsg, err.Error())\n\t}\n}\n\nfunc TestUintValue_SetEmptyString(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\terr := uv.Set(\"\")\n\tif err == nil {\n\t\tt.Error(\"Expected error for empty string, got nil\")\n\t}\n\texpectedMsg := \"'' is not a valid number: please provide a positive integer\"\n\tif err.Error() != expectedMsg {\n\t\tt.Errorf(\"Expected error message '%s', got: %s\", expectedMsg, err.Error())\n\t}\n}\n\nfunc TestUintValue_Type(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(0, &value)\n\n\tif uv.Type(123) != \"uint\" {\n\t\tt.Errorf(\"Expected Type() to return 'uint', got: %s\", uv.Type())\n\t}\n}\n\nfunc TestUintValue_String(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(42, &value)\n\n\tif uv.StringInvalid() != \"42\" {\n\t\tt.Errorf(\"Expected String() to return '42', got: %s\", uv.String())\n\t}\n}\n\nfunc TestUintValue_StringAfterSet(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(\"abc\", &value)\n\tuv.Set(\"999\")\n\n\tif uv.String() != \"999\" {\n\t\tt.Errorf(\"Expected String() to return '999', got: %s\", uv.String())\n\t}\n}\n\nfunc TestNewUintValue_InitialValue(t *testing.T) {\n\tvar value uint64\n\tuv := NewUintValue(100, &value)\n\n\tif value != 100 {\n\t\tt.Errorf(\"Expected initial value to be 100, got: %d\", value)\n\t}\n\tif uv.String() != \"100\" {\n\t\tt.Errorf(\"Expected String() to return '100', got: %s\", uv.String())\n\t}\n}"

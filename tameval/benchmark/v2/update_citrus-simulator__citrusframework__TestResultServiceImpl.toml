@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "citrusframework/citrus-simulator"
+sha = "e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl simulator-spring-boot -Dtest=TestResultServiceImplTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl simulator-spring-boot -DtargetClasses=**.TestResultServiceImpl  -DtargetTests=**.TestResultServiceImplTest  -DoutputFormats=XML"
+coverage_report_path = "simulator-spring-boot/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "simulator-spring-boot/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "simulator-spring-boot/src/test/java/org/citrusframework/simulator/service/impl/TestResultServiceImplTest.java"
+focal_file_path = "simulator-spring-boot/src/main/java/org/citrusframework/simulator/service/impl/TestResultServiceImpl.java"
+test_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/test/java/org/citrusframework/simulator/service/impl/TestResultServiceImplTest.java"
+focal_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/main/java/org/citrusframework/simulator/service/impl/TestResultServiceImpl.java"
+first_commit_date = "2023-11-20"
+last_commit_date = "2024-05-14"
+test_file_content = "package org.citrusframework.simulator.service.impl;\n\nimport org.citrusframework.simulator.model.TestResult;\nimport org.citrusframework.simulator.repository.TestResultRepository;\nimport org.citrusframework.simulator.service.dto.TestResultByStatus;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.springframework.data.domain.Page;\nimport org.springframework.data.domain.Pageable;\n\nimport java.util.Optional;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\nimport static org.mockito.Mockito.any;\nimport static org.mockito.Mockito.doReturn;\nimport static org.mockito.Mockito.mock;\nimport static org.mockito.Mockito.verify;\n\n@ExtendWith(MockitoExtension.class)\nclass TestResultServiceImplTest {\n\n    @Mock\n    private TestResultRepository testResultRepositoryMock;\n\n    private TestResultServiceImpl fixture;\n\n    @BeforeEach\n    void beforeEachSetup() {\n        fixture = new TestResultServiceImpl(testResultRepositoryMock);\n    }\n\n    @Test\n    void testTransformAndSave() {\n        org.citrusframework.TestResult citrusTestResult = org.citrusframework.TestResult.success(\"TestResult\", TestResultServiceImpl.class.getSimpleName());\n\n        TestResult testResult = new TestResult(citrusTestResult);\n        doReturn(testResult).when(testResultRepositoryMock).save(any(TestResult.class));\n\n        TestResult result = fixture.transformAndSave(citrusTestResult);\n\n        assertEquals(testResult, result);\n    }\n\n    @Test\n    void testSave() {\n        TestResult testResult = new TestResult();\n        doReturn(testResult).when(testResultRepositoryMock).save(testResult);\n\n        TestResult result = fixture.save(testResult);\n\n        assertEquals(testResult, result);\n    }\n\n    @Test\n    void testFindAll() {\n        Pageable pageable = mock(Pageable.class);\n        Page<TestResult> mockPage = mock(Page.class);\n        doReturn(mockPage).when(testResultRepositoryMock).findAll(pageable);\n\n        Page<TestResult> result = fixture.findAll(pageable);\n\n        assertEquals(mockPage, result);\n    }\n\n    @Test\n    void testFindOne() {\n        Long id = 1L;\n\n        TestResult testResult = new TestResult();\n        Optional<TestResult> optionalTestResult = Optional.of(testResult);\n        doReturn(optionalTestResult).when(testResultRepositoryMock).findById(id);\n\n        Optional<TestResult> maybeTestResult = fixture.findOne(id);\n\n        assertTrue(maybeTestResult.isPresent());\n        assertEquals(testResult, maybeTestResult.get());\n    }\n\n    @Test\n    void testCountByStatus() {\n        TestResultByStatus testResultByStatus = new TestResultByStatus(1L, 1L);\n        doReturn(testResultByStatus).when(testResultRepositoryMock).countByStatus();\n\n        TestResultByStatus result = fixture.countByStatus();\n        assertEquals(testResultByStatus, result);\n    }\n\n    @Test\n    void delete() {\n        fixture.deleteAll();\n        verify(testResultRepositoryMock).deleteAll();\n    }\n}"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.4"
+
+[repo_info]
+repository = "asdf-vm/asdf"
+sha = "74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f"
+
+[run_info]
+docker_image = "golang:1.23.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/execute/execute.go internal/execute/execute_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/execute/execute.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 89.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 32, 33, 34, 37, 38, 39, 40, 41, 42, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 66, 67, 68, 71, 72, 73, 76, 77, 78, 79, 81, 85, 86, 87, 88, 90, 94, 95, 96, 97, 98, 99, 100, 101, 102, 105, 108, 109, 110, 111, 112, 113,]
+missed_lines = [ 26, 27, 28, 43, 44, 45, 46,]
+
+[input_info]
+test_file_path = "internal/execute/execute_test.go"
+focal_file_path = "internal/execute/execute.go"
+test_file_url = "https://github.com/asdf-vm/asdf/blob/74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f/internal/execute/execute_test.go"
+focal_file_url = "https://github.com/asdf-vm/asdf/blob/74d7b17a1cc9f640cf0f5134416d1cf7a56fe19f/internal/execute/execute.go"
+first_commit_date = "2024-12-18"
+last_commit_date = "2025-02-26"
+test_file_content = "package execute\n\nimport (\n\t\"fmt\"\n\t\"os/exec\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\n\n\nfunc TestRun_Expression(t *testing.T) {\n\tt.Run(\"expression is executed with bash\", func(t *testing.T) {\n\t\tcmd := NewExpression(\"echo $(type -a sh)\", []string{})\n\n\t\tvar stdout strings.Builder\n\t\tcmd.Stdout = &stdout\n\t\terr := cmd.Run()\n\n\t\tassert.Nil(t, err)\n\t\tassert.Contains(t, stdout.String(), \"sh is /\")\n\t})\n\n\tt.Run(\"positional arg is passed to expression\", func(t *testing.T) {\n\t\tcmd := NewExpression(\"echo $1; true\", []string{\"test string\"})\n\n\t\tvar stdout strings.Builder\n\t\tcmd.Stdout = &stdout\n\t\terr := cmd.Run()\n\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, \"test string\\n\", stdout.String())\n\t})\n\n\tt.Run(\"positional args are passed to expression\", func(t *testing.T) {\n\t\tcmd := NewExpression(\"echo $@; true\", []string{\"test string\", \"another string\"})\n\n\t\tvar stdout strings.Builder\n\t\tcmd.Stdout = &stdout\n\t\terr := cmd.Run()\n\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, \"test string another string\\n\", stdout.String())\n\t})\n\n\tt.Run(\"environment variables are passed to expression\", func(t *testing.T) {\n\t\tcmd := NewExpression(\"echo $MYVAR\", []string{})\n\t\tcmd.Env = map[string]string{\"MYVAR\": \"my var value\"}\n\n\t\tvar stdout strings.Builder\n\t\tcmd.Stdout = &stdout\n\t\terr := cmd.Run()\n\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, \"my var value\\n\", stdout.String())\n\t})\n\n\tt.Run(\"captures stdout and stdin\", func(t *testing.T) {\n\t\tcmd := NewExpression(\"echo 'a test' | tee /dev/stderr\", []string{})\n\t\tcmd.Env = map[string]string{\"MYVAR\": \"my var value\"}\n\n\t\tvar stdout strings.Builder\n\t\tcmd.Stdout = &stdout\n\t\tvar stderr strings.Builder\n\t\tcmd.Stderr = &stderr\n\n\t\terr := cmd.Run()\n\n\t\tassert.Nil(t, err)\n\t\tassert.Equal(t, \"a test\\n\", stdout.String())\n\t\tassert.Equal(t, \"a test\\n\", stderr.String())\n\t})\n\n\tt.Run(\"returns error when non-zero exit code\", func(t *testing.T) {\n\t\tcmd := NewExpression(\"exit 12\", []string{})\n\n\t\tvar stdout strings.Builder\n\t\tcmd.Stdout = &stdout\n\t\terr := cmd.Run()\n\n\t\tassert.NotNil(t, err)\n\t\tassert.Equal(t, \"\", stdout.String())\n\t\tassert.Equal(t, 12, err.(*exec.ExitError).ExitCode())\n\t})\n}\n\n\n\n\nfunc TestSliceToMap(t *testing.T) {\n\ttests := []struct {\n\t\tinput  []string\n\t\toutput map[string]string\n\t}{\n\t\t{\n\t\t\tinput:  []string{\"VAR=value\"},\n\t\t\toutput: map[string]string{\"VAR\": \"value\"},\n\t\t},\n\t\t{\n\t\t\tinput:  []string{\"BASH_FUNC_bats_readlinkf%%=() {  readlink -f \\\"$1\\\"\\n}\"},\n\t\t\toutput: map[string]string{\"BASH_FUNC_bats_readlinkf%%\": \"() {  readlink -f \\\"$1\\\"\\n}\"},\n\t\t},\n\t\t{\n\t\t\tinput:  []string{\"MYVAR=some things = with = in it\"},\n\t\t\toutput: map[string]string{\"MYVAR\": \"some things = with = in it\"},\n\t\t},\n\t\t{\n\t\t\tinput:  []string{\"MYVAR=value\\nwith\\nnewlines\"},\n\t\t\toutput: map[string]string{\"MYVAR\": \"value\\nwith\\nnewlines\"},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(fmt.Sprintf(\"input: %s, output: %s\", tt.input, tt.output), func(t *testing.T) {\n\t\t\tassert.Equal(t, tt.output, SliceToMap(tt.input))\n\t\t})\n\t}\n}\n"

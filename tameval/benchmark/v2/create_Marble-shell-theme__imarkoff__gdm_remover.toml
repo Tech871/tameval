@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+
+[repo_info]
+repository = "imarkoff/Marble-shell-theme"
+sha = "2aeb348f1915b8d28cf7fb2081ff9458115d2f44"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=scripts/utils/global_theme/gdm_remover.py -m pytest -q --junit-xml=test_output.xml tests/utils/global_theme/test_gdm_remover.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target scripts.utils.global_theme.gdm_remover --unit-test tests.utils.global_theme.test_gdm_remover --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target scripts/utils/global_theme/gdm_remover.py --unit-test tests/utils/global_theme/test_gdm_remover.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 71.0
+original_coverage = 77.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 1, 2, 3, 4, 7, 16, 25, 26, 27, 29, 31, 33, 34, 35, 36, 40, 44, 45, 46, 47, 49, 53, 56, 60,]
+missed_lines = [ 37, 38, 41, 50, 51, 54, 57, 58, 61, 63,]
+
+[input_info]
+test_file_path = "tests/utils/global_theme/test_gdm_remover.py"
+focal_file_path = "scripts/utils/global_theme/gdm_remover.py"
+test_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/tests/utils/global_theme/test_gdm_remover.py"
+focal_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/scripts/utils/global_theme/gdm_remover.py"
+first_commit_date = "2025-04-12"
+last_commit_date = "2025-04-12"
+test_file_content = "from unittest import TestCase\nfrom unittest.mock import MagicMock\n\nfrom scripts.utils.global_theme.gdm_remover import GDMThemeRemover\nfrom scripts.utils.gresource import GresourceBackupNotFoundError\n\nclass GDMRemoverTestCase(TestCase):\n    def setUp(self):\n        self.gresource = MagicMock()\n        self.alternatives_updater = MagicMock()\n        self.logger = MagicMock()\n        self.logger_factory = MagicMock(return_value=self.logger)\n\n        self.remover = GDMThemeRemover(\n            gresource=self.gresource,\n            alternatives_updater=self.alternatives_updater,\n            logger_factory=self.logger_factory\n        )\n\n        self.remover.remover_logger = MagicMock()\n\n    def test_remove_calls_gresource_restore_and_alternatives_remove(self):\n        self.remover.remove()\n\n        self.gresource.restore.assert_called_once()\n        self.alternatives_updater.remove.assert_called_once()\n"

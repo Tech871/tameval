@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "Valkryst/VTerminal"
+sha = "3cac8d90661faff961fa3fa39d21e8088f718a17"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=VTextFieldUITest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.VTextFieldUI  -DtargetTests=**.VTextFieldUITest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 50.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 7, 10, 11, 13, 14, 15, 18,]
+missed_lines = [ 23, 24, 25, 30, 31, 36, 37,]
+
+[input_info]
+test_file_path = "src/test/java/com/valkryst/VTerminal/plaf/VTextFieldUITest.java"
+focal_file_path = "src/main/java/com/valkryst/VTerminal/plaf/VTextFieldUI.java"
+test_file_url = "https://github.com/Valkryst/VTerminal/blob/3cac8d90661faff961fa3fa39d21e8088f718a17/src/test/java/com/valkryst/VTerminal/plaf/VTextFieldUITest.java"
+focal_file_url = "https://github.com/Valkryst/VTerminal/blob/3cac8d90661faff961fa3fa39d21e8088f718a17/src/main/java/com/valkryst/VTerminal/plaf/VTextFieldUI.java"
+first_commit_date = "2021-02-27"
+last_commit_date = "2024-11-13"
+test_file_content = "package com.valkryst.VTerminal.plaf;\n\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\n\nimport javax.swing.*;\nimport java.awt.*;\n\npublic class VTextFieldUITest {\n\tpublic VTextFieldUITest() throws UnsupportedLookAndFeelException {\n\t\tfinal var laf = VTerminalLookAndFeel.getInstance();\n\t\tUIManager.setLookAndFeel(laf);\n\t}\n\n\t@Test\n\tpublic void canGetMaximumSize() {\n\t\tfinal var component = new JTextField();\n\n\t\tfinal var laf = VTerminalLookAndFeel.getInstance();\n\t\tfinal var expectedHeight = laf.getTileHeight();\n\t\tfinal var expectedSize = new Dimension(2147483640, expectedHeight);\n\t}\n\n\t@Test\n\tpublic void canGetMinimumSize() {\n\t\tfinal var component = new JTextField();\n\n\t\tfinal var laf = VTerminalLookAndFeel.getInstance();\n\t\tfinal var expectedWidth = laf.getTileWidth();\n\t\tfinal var expectedHeight = laf.getTileHeight();\n\t\tfinal var expectedSize = new Dimension(expectedWidth, expectedHeight);\n\t}\n\n\t@Test\n\tpublic void canGetPreferredSize() {\n\t\tfinal var component = new JTextField();\n\t\tfinal var laf = VTerminalLookAndFeel.getInstance();\n\t\tfinal var expectedSize = new Dimension(laf.getTileWidth(), laf.getTileHeight());\n\t}\n}"

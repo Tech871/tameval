@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "open-thought/reasoning-gym"
+sha = "02b7fac86358f7ef6239608b0b738a5a03ecfe9e"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements-dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=reasoning_gym/algorithmic/caesar_cipher.py -m pytest -q --junit-xml=test_output.xml tests/test_caesar_cipher.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target reasoning_gym.algorithmic.caesar_cipher --unit-test tests.test_caesar_cipher --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target reasoning_gym/algorithmic/caesar_cipher.py --unit-test tests/test_caesar_cipher.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 2, 3, 4, 6, 7, 8, 10, 13, 14, 17, 18, 19, 20, 21, 22, 23, 25, 27, 28, 29, 32, 35, 36, 39, 42, 45, 46, 48, 49, 50, 52, 54, 55, 56, 58, 59, 60, 62, 63, 65, 67, 70, 71, 72, 75, 77, 95, 98, 99, 101, 121,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/test_caesar_cipher.py"
+focal_file_path = "reasoning_gym/algorithmic/caesar_cipher.py"
+test_file_url = "https://github.com/open-thought/reasoning-gym/blob/02b7fac86358f7ef6239608b0b738a5a03ecfe9e/tests/test_caesar_cipher.py"
+focal_file_url = "https://github.com/open-thought/reasoning-gym/blob/02b7fac86358f7ef6239608b0b738a5a03ecfe9e/reasoning_gym/algorithmic/caesar_cipher.py"
+first_commit_date = "2025-01-25"
+last_commit_date = "2025-04-04"
+test_file_content = "\nimport pytest\n\nfrom reasoning_gym.algorithmic.caesar_cipher import CaesarCipherConfig, CaesarCipherCurriculum, CaesarCipherDataset\n\n\ndef test_caesar_cipher_config_validation():\n    with pytest.raises(AssertionError):\n        config = CaesarCipherConfig(min_words=0)\n        config.validate()\n\n    with pytest.raises(AssertionError):\n        config = CaesarCipherConfig(min_words=10, max_words=5)\n        config.validate()\n\n    with pytest.raises(AssertionError):\n        config = CaesarCipherConfig(min_rotation=0)\n        config.validate()\n\n    with pytest.raises(AssertionError):\n        config = CaesarCipherConfig(max_rotation=26)\n        config.validate()\n\n\ndef test_caesar_cipher_deterministic():\n    config = CaesarCipherConfig(seed=42, size=10)\n    dataset1 = CaesarCipherDataset(config)\n    dataset2 = CaesarCipherDataset(config)\n\n    for i in range(len(dataset1)):\n        assert dataset1[i] == dataset2[i]\n\n\ndef test_caesar_cipher_encryption():\n    config = CaesarCipherConfig(size=1, seed=42)\n    dataset = CaesarCipherDataset(config)\n    text = \"HELLO\"\n    encrypted = dataset._caesar_encrypt(text, 1)\n    assert encrypted == \"IFMMP\"\n    encrypted = dataset._caesar_encrypt(\"XYZ\", 2)\n    assert encrypted == \"ZAB\"\n    encrypted = dataset._caesar_encrypt(\"HELLO WORLD\", 1)\n    assert encrypted == \"IFMMP XPSME\"\n\n\ndef test_caesar_cipher_encryption_v2():\n    config = CaesarCipherConfig(size=1, seed=42)\n    dataset = CaesarCipherDataset(config)\n    text = \"HELLO\"\n    encrypted = dataset._caesar_encrypt(text, 1)\n    assert encrypted == \"IFMMP\"\n    encrypted = dataset._caesar_encrypt(\"XYZ\", 2)\n    assert encrypted == \"ZAB\"\n    encrypted = dataset._caesar_encrypt(\"HELLO WORLD\", 1)\n    assert encrypted == \"IFMMP XPSME\"\n\n\ndef test_caesar_cipher_dataset_items():\n    config = CaesarCipherConfig(min_words=3, max_words=5, min_rotation=1, max_rotation=3, size=10, seed=42)\n    dataset = CaesarCipherDataset(config)\n\n    for i in range(len(dataset)):\n        item = dataset[i]\n        assert isinstance(item, dict)\n        assert \"question\" in item\n        assert \"answer\" in item\n        assert \"metadata\" in item\n        assert \"rotation\" in item[\"metadata\"]\n        assert \"cipher_text\" in item[\"metadata\"]\n        assert \"clear_text\" in item[\"metadata\"]\n        rotation = item[\"metadata\"][\"rotation\"]\n        assert config.min_rotation <= rotation <= config.max_rotation\n        clear_text = item[\"metadata\"][\"clear_text\"]\n        words = clear_text.split()\n        assert config.min_words <= len(words) <= config.max_words\n        assert all(word.isupper() and word.isalpha() for word in words)\n        cipher_text = item[\"metadata\"][\"cipher_text\"]\n        decrypted = dataset._caesar_encrypt(cipher_text, -rotation)\n        assert decrypted == clear_text\n\n\ndef test_caesar_cipher_dataset_items_v2():\n    config = CaesarCipherConfig(min_words=3, max_words=5, min_rotation=1, max_rotation=3, size=10, seed=42)\n    dataset = CaesarCipherDataset(config)\n\n    for i in range(len(dataset)):\n        item = dataset[i]\n        assert isinstance(item, dict)\n        assert \"question\" in item\n        assert \"answer\" in item\n        assert \"metadata\" in item\n        assert \"rotation\" in item[\"metadata\"]\n        assert \"cipher_text\" in item[\"metadata\"]\n        assert \"clear_text\" in item[\"metadata\"]\n        rotation = item[\"metadata\"][\"rotation\"]\n        assert config.min_rotation <= rotation <= config.max_rotation\n        clear_text = item[\"metadata\"][\"clear_text\"]\n        words = clear_text.split()\n        assert config.min_words <= len(words) <= config.max_words\n        assert all(word.isupper() and word.isalpha() for word in words)\n        cipher_text = item[\"metadata\"][\"cipher_text\"]\n        decrypted = dataset._caesar_encrypt(cipher_text, -rotation)\n        assert decrypted == clear_text\n\n\ndef test_caesar_cipher_iteration():\n    config = CaesarCipherConfig(size=5, seed=42)\n    dataset = CaesarCipherDataset(config)\n\n    items = list(dataset)\n    assert len(items) == config.size\n    assert items == list(dataset)\n\n\ndef test_caesar_cipher_iteration_v2():\n    config = CaesarCipherConfig(size=5, seed=42)\n    dataset = CaesarCipherDataset(config)\n\n    items = list(dataset)\n    assert len(items) == config.size\n    assert items == list(dataset)\n\n\ndef test_caesar_cipher_curriculum():\n    curriculum = CaesarCipherCurriculum()\n    base_value = {\"size\": 150, \"seed\": 1}\n\n    base_cfg: CaesarCipherConfig = curriculum.generate_configuration(base_value)\n    assert base_cfg.seed == 1\n    assert base_cfg.size == 150\n    assert base_cfg.min_rotation == 5\n    assert base_cfg.max_rotation == 15\n    assert base_cfg.min_words == 5\n    assert base_cfg.max_words == 15\n\n    curriculum.increment_attr_level(\"rotation\")\n    cfg = curriculum.generate_configuration(base_value)\n    assert cfg.min_rotation == 5\n    assert cfg.max_rotation == 25\n\n    curriculum.increment_attr_level(\"words\")\n    cfg = curriculum.generate_configuration(base_value)\n    assert cfg.min_words == 5\n    assert cfg.max_words == 25\n\n    curriculum.increment_attr_level(\"rotation\")\n    curriculum.increment_attr_level(\"words\")\n    cfg = curriculum.generate_configuration(base_value)\n    assert cfg.min_rotation == 5\n    assert cfg.max_rotation == 50\n    assert cfg.min_words == 5\n    assert cfg.max_words == 50\n\n    curriculum.decrement_attr_level(\"rotation\")\n    curriculum.decrement_attr_level(\"words\")\n    cfg = curriculum.generate_configuration(base_value)\n    assert cfg.min_rotation == 5\n    assert cfg.max_rotation == 25\n    assert cfg.min_words == 5\n    assert cfg.max_words == 25"

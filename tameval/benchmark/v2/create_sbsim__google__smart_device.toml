@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google/sbsim"
+sha = "67c5bb018e54295f59ab2060962bbbeeb5db8412"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=smart_control/simulator/smart_device.py -m pytest -q --junit-xml=test_output.xml smart_control/simulator/smart_device_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target smart_control.simulator.smart_device --unit-test smart_control.simulator.smart_device_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target smart_control/simulator/smart_device.py --unit-test smart_control/simulator/smart_device_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 11, 12, 14, 16, 19, 30, 31, 34, 37, 54, 55, 56, 57, 58, 59, 60, 62, 66, 68, 70, 74, 78, 82, 88, 90, 98, 111, 112, 113, 115, 116, 118, 124, 126, 128, 134, 136, 159, 175, 178, 179, 180, 182, 183, 188,]
+missed_lines = [ 64, 72, 76, 80, 96, 119, 129, 149, 152, 153, 155, 157,]
+
+[input_info]
+test_file_path = "smart_control/simulator/smart_device_test.py"
+focal_file_path = "smart_control/simulator/smart_device.py"
+test_file_url = "https://github.com/google/sbsim/blob/67c5bb018e54295f59ab2060962bbbeeb5db8412/smart_control/simulator/smart_device_test.py"
+focal_file_url = "https://github.com/google/sbsim/blob/67c5bb018e54295f59ab2060962bbbeeb5db8412/smart_control/simulator/smart_device.py"
+first_commit_date = "2024-08-21"
+last_commit_date = "2025-06-23"
+test_file_content = "\"\"\"Tests for smart_device.\"\"\"\n\nfrom absl.testing import absltest\nimport pandas as pd\n\nfrom smart_control.proto import smart_control_building_pb2\nfrom smart_control.simulator import smart_device\n\nclass SmartDeviceTest(absltest.TestCase):\n\n  def setUp(self):\n    super().setUp()\n\n    class Heater(smart_device.SmartDevice):\n      \"\"\"Heater device. Used for testing purposes.\"\"\"\n\n      def __init__(self):\n        observable_fields = {\n            'obs_temp': smart_device.AttributeInfo('temperature', float),\n            'obs_heat_setting': smart_device.AttributeInfo(\n                'heat_setting', float\n            ),\n            'obs_seconds_active': smart_device.AttributeInfo('seconds', int),\n            'obs_bad': smart_device.AttributeInfo('fake_field', float),\n        }\n\n        action_fields = {\n            'act_heat_setting': smart_device.AttributeInfo(\n                'heat_setting', float\n            ),\n            'act_bad': smart_device.AttributeInfo('fake_field', float),\n        }\n\n        super().__init__(\n            observable_fields,\n            action_fields,\n            smart_control_building_pb2.DeviceInfo.DeviceType.OTHER,\n            device_id='heater_id',\n            zone_id='zone_id',\n        )\n\n        self.temperature = 282.5\n        self.heat_setting = 300.0\n        self.seconds = 7\n\n    self.heater_class = Heater\n\n  def test_zone_id(self):\n    heater = self.heater_class()\n\n    self.assertEqual(heater.zone_id(), 'zone_id')\n\n  def test_observable_type(self):\n    heater = self.heater_class()\n\n    self.assertEqual(heater.get_observable_type('obs_temp'), float)\n\n  def test_set_action(self):\n    heater = self.heater_class()\n\n    heat_setting = 275.0\n\n    heater.set_action(\n        'act_heat_setting', heat_setting, pd.Timestamp('2021-09-01 10:00')\n    )\n\n    self.assertEqual(heater.heat_setting, heat_setting)\n\n  def test_declared_action_incorrect_value_type_raises_value_error(self):\n    heater = self.heater_class()\n\n    with self.assertRaises(ValueError):\n      heater.set_action(\n          'act_heat_setting', 'hello', pd.Timestamp('2021-09-01 10:00')\n      )\n\nif __name__ == '__main__':\n  absltest.main()\n"

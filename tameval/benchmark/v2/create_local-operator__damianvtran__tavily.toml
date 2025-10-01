@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "damianvtran/local-operator"
+sha = "2fd6ef34ce6fad7889fba35bbf5a1a49ff447720"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=local_operator/clients/tavily.py -m pytest -q --junit-xml=test_output.xml tests/unit/clients/test_tavily.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target local_operator.clients.tavily --unit-test tests.unit.clients.test_tavily --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target local_operator/clients/tavily.py --unit-test tests/unit/clients/test_tavily.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 83.0
+original_coverage = 93.0
+mutation_kill_rate = 93.0
+original_mutation_kill_rate = 93.0
+covered_lines = [ 0, 2, 3, 6, 17, 18, 19, 20, 21, 23, 25, 34, 46, 47, 48, 49, 50, 51, 53, 55, 64, 72, 83, 84, 85, 88, 126, 135, 136, 137, 138, 140, 141, 146, 147, 148, 153, 154,]
+missed_lines = [ 31, 61, 86, 149, 155, 156, 164, 165,]
+
+[input_info]
+test_file_path = "tests/unit/clients/test_tavily.py"
+focal_file_path = "local_operator/clients/tavily.py"
+test_file_url = "https://github.com/damianvtran/local-operator/blob/2fd6ef34ce6fad7889fba35bbf5a1a49ff447720/tests/unit/clients/test_tavily.py"
+focal_file_url = "https://github.com/damianvtran/local-operator/blob/2fd6ef34ce6fad7889fba35bbf5a1a49ff447720/local_operator/clients/tavily.py"
+first_commit_date = "2025-03-03"
+last_commit_date = "2025-03-03"
+test_file_content = "from typing import Any, Dict\nfrom unittest.mock import Mock, patch\n\nimport pytest\nfrom pydantic import SecretStr\n\nfrom local_operator.clients.tavily import TavilyClient, TavilyResponse, TavilyResult\n\n@pytest.fixture\ndef api_key() -> SecretStr:\n    \"\"\"Fixture for providing a test API key.\"\"\"\n    return SecretStr(\"test_api_key\")\n\n@pytest.fixture\ndef tavily_client(api_key: SecretStr) -> TavilyClient:\n    \"\"\"Fixture for creating a TavilyClient instance.\n\n    Args:\n        api_key (SecretStr): API key for the client.\n\n    Returns:\n        TavilyClient: An instance of TavilyClient.\n    \"\"\"\n    return TavilyClient(api_key=api_key)\n\n@pytest.fixture\ndef mock_response() -> Dict[str, Any]:\n    \"\"\"Fixture for providing a mock JSON response from the Tavily API.\n\n    Returns:\n        Dict[str, Any]: Mock JSON data that simulates a Tavily API response.\n    \"\"\"\n    return {\n        \"query\": \"What are the latest updates with agentic AI?\",\n        \"follow_up_questions\": None,\n        \"answer\": None,\n        \"images\": [],\n        \"results\": [\n            {\n                \"title\": \"The Current State and Future of Agentic AI - Sikich\",\n                \"url\": (\n                    \"https://www.sikich.com/insight/the-current-state-and-future-of-agentic-ai-\"\n                    \"insights-and-innovations/\"\n                ),\n                \"content\": \"The Current State and Future of Agentic AI - Sikich Services\",\n                \"score\": 0.7336813,\n                \"raw_content\": None,\n            },\n            {\n                \"title\": \"AutoGen v0.4: Reimagining the foundation of agentic AI\",\n                \"url\": \"https://www.microsoft.com/en-us/research/articles/autogen-v0-4/\",\n                \"content\": \"AutoGen v0.4: Reimagining the foundation of agentic AI\",\n                \"score\": 0.68748367,\n                \"raw_content\": None,\n            },\n        ],\n        \"response_time\": 2.17,\n    }\n\ndef test_search_with_optional_params(\n    tavily_client: TavilyClient, mock_response: Dict[str, Any]\n) -> None:\n    \"\"\"Test search with all optional parameters.\n\n    Args:\n        tavily_client (TavilyClient): The Tavily API client fixture.\n        mock_response (Dict[str, Any]): Mock JSON response.\n    \"\"\"\n    mock_requests_post = Mock()\n    mock_requests_post.return_value.status_code = 200\n    mock_requests_post.return_value.json.return_value = mock_response\n\n    with patch(\"requests.post\", mock_requests_post):\n        response = tavily_client.search(\n            query=\"test query\",\n            search_depth=\"advanced\",\n            include_domains=[\"example.com\"],\n            exclude_domains=[\"exclude.com\"],\n            include_answer=True,\n            include_raw_content=True,\n            include_images=True,\n            max_results=5,\n        )\n\n    assert isinstance(response, TavilyResponse)\n    # Verify that the payload contains all expected parameters\n    called_args = mock_requests_post.call_args[1][\"json\"]\n    assert called_args[\"query\"] == \"test query\"\n    assert called_args[\"search_depth\"] == \"advanced\"\n    assert called_args[\"include_domains\"] == [\"example.com\"]\n    assert called_args[\"exclude_domains\"] == [\"exclude.com\"]\n    assert called_args[\"include_answer\"] is True\n    assert called_args[\"include_raw_content\"] is True\n    assert called_args[\"include_images\"] is True\n    assert called_args[\"max_results\"] == 5\n"

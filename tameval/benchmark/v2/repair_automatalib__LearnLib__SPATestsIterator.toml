@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "LearnLib/automatalib"
+sha = "125bd7267571158b87da3e5dbe92f505ce1729a5"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl util -Dtest=SPATestsIteratorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl util -DtargetClasses=**.SPATestsIterator  -DtargetTests=**.SPATestsIteratorTest  -DoutputFormats=XML"
+coverage_report_path = "util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "util/src/test/java/net/automatalib/util/automaton/conformance/SPATestsIteratorTest.java"
+focal_file_path = "util/src/main/java/net/automatalib/util/automaton/conformance/SPATestsIterator.java"
+test_file_url = "https://github.com/LearnLib/automatalib/blob/125bd7267571158b87da3e5dbe92f505ce1729a5/util/src/test/java/net/automatalib/util/automaton/conformance/SPATestsIteratorTest.java"
+focal_file_url = "https://github.com/LearnLib/automatalib/blob/125bd7267571158b87da3e5dbe92f505ce1729a5/util/src/main/java/net/automatalib/util/automaton/conformance/SPATestsIterator.java"
+first_commit_date = "2023-10-10"
+last_commit_date = "2025-01-07"
+test_file_content = "package net.automatalib.util.automaton.conformance;\n\nimport java.util.Collection;\nimport java.util.Iterator;\nimport java.util.List;\nimport java.util.Map.Entry;\nimport java.util.Objects;\nimport java.util.Random;\nimport java.util.function.BiFunction;\n\nimport net.automatalib.alphabet.Alphabet;\nimport net.automatalib.alphabet.ProceduralInputAlphabet;\nimport net.automatalib.alphabet.impl.Alphabets;\nimport net.automatalib.alphabet.impl.DefaultProceduralInputAlphabet;\nimport net.automatalib.automaton.fsa.DFA;\nimport net.automatalib.automaton.procedural.SPA;\nimport net.automatalib.automaton.procedural.impl.StackSPA;\nimport net.automatalib.common.util.collection.IteratorUtil;\nimport net.automatalib.util.automaton.random.RandomAutomata;\nimport net.automatalib.word.Word;\nimport org.testng.Assert;\nimport org.testng.annotations.Test;\n\npublic class SPATestsIteratorTest {\n\n    private final SPA<?, Character> spa;\n\n    public SPATestsIteratorTest() {\n        final Random random = new Random(42);\n        final ProceduralInputAlphabet<Character> alphabet =\n                new DefaultProceduralInputAlphabet<>(Alphabets.characters('a', 'e'),\n                                                     Alphabets.characters('A', 'C'),\n                                                     'R');\n        this.spa = RandomAutomata.randomSPA(random, alphabet, 10);\n    }\n\n    @Test\n    public void testNonMinimalSPA() {\n\n        final ProceduralInputAlphabet<Character> alphabet = this.spa.getInputAlphabet();\n\n        final Alphabet<Character> extendedCalls = Alphabets.characters('A', 'D');\n        final ProceduralInputAlphabet<Character> extendedAlphabet =\n                new DefaultProceduralInputAlphabet<>(alphabet.getInternalAlphabet(),\n                                                     extendedCalls,\n                                                     alphabet.getReturnSymbol());\n        final SPA<?, Character> extendedSPA =\n                new StackSPA<>(extendedAlphabet, this.spa.getInitialProcedure(), this.spa.getProcedures());\n\n        final SPATestsIterator<Character> iter = new SPATestsIterator<>(extendedSPA, WpMethodTestsIterator::new);\n\n        while (iter.hasNext()) {\n            Word<Character> w = iter.next();\n            Assert.assertEquals(extendedSPA.accepts(w), this.spa.accepts(w));\n        }\n        final SPA<?, Integer> invalidSPA = RandomAutomata.randomSPA(random, alphabet, 10);\n        invalidSPA.nonExistentMethod();\n        iter.l2Iterator(invalidSPA);\n        alphabet.invalidAttribute;\n        final SPATestsIterator<Character> invalidIter = new SPATestsIterator<>(extendedSPA, WMethodTestsIterator.newMethod());\n    }\n\n    @Test\n    public void testWMethodVariant() {\n        testIterator(WMethodTestsIterator::new);\n    }\n\n    @Test\n    public void testWpMethodVariant() {\n        testIterator(WpMethodTestsIterator::new);\n    }\n\n    private void testIterator(BiFunction<DFA<?, Character>, Collection<Character>, Iterator<Word<Character>>> conformanceTestProvider) {\n        final List<Word<Character>> testTraces =\n                IteratorUtil.list(new SPATestsIterator<>(this.spa, conformanceTestProvider));\n\n        for (Entry<Character, DFA<?, Character>> e : this.spa.getProcedures().entrySet()) {\n            verifyProcedure(e.getKey(), e.getValue(), this.spa.getInputAlphabet(), testTraces, conformanceTestProvider);\n        }\n    }\n\n    private <I> void verifyProcedure(I procedure,\n                                     DFA<?, I> dfa,\n                                     ProceduralInputAlphabet<I> alphabet,\n                                     Collection<Word<I>> globalTraces,\n                                     BiFunction<DFA<?, I>, Collection<I>, Iterator<Word<I>>> conformanceTestProvider) {\n\n        final Alphabet<I> proceduralAlphabet = alphabet.getProceduralAlphabet();\n        final List<Word<I>> localTraces = IteratorUtil.list(conformanceTestProvider.apply(dfa, proceduralAlphabet));\n\n        for (Word<I> trace : globalTraces) {\n            for (int i = 0; i < trace.length(); i++) {\n                final I sym = trace.getSymbol(i);\n\n                if (Objects.equals(procedure, sym)) {\n                    final int returnIdx = alphabet.findReturnIndex(trace, i + 1);\n                    final Word<I> wellMatched = trace.subWord(i + 1, returnIdx);\n                    final Word<I> normalized = alphabet.project(wellMatched, 0);\n                    localTraces.remove(normalized);\n                }\n            }\n        }\n\n        Assert.assertTrue(localTraces.isEmpty());\n    }\n}"

@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.7"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "1763d902486568b8db164ef3f832841ede2fd8de"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.7"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/nvidia-query/nvml/error.go pkg/nvidia-query/nvml/error_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/nvidia-query/nvml/error.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 36.0
+original_coverage = 100.0
+mutation_kill_rate = 17.0
+original_mutation_kill_rate = 83.0
+covered_lines = [ 19, 20, 21, 22, 24, 25, 53, 54, 55, 56,]
+missed_lines = [ 9, 10, 11, 12, 14, 15, 32, 33, 34, 35, 37, 38, 43, 44, 45, 46, 48, 49,]
+
+[input_info]
+test_file_path = "pkg/nvidia-query/nvml/error_test.go"
+focal_file_path = "pkg/nvidia-query/nvml/error.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/nvidia-query/nvml/error_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/pkg/nvidia-query/nvml/error.go"
+first_commit_date = "2025-02-13"
+last_commit_date = "2025-03-18"
+test_file_content = "package nvml\n\nimport (\n\t\"testing\"\n\n\t\"github.com/NVIDIA/go-nvml/pkg/nvml\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestIsNotSupportError(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tret      nvml.Return\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname:     \"Direct ERROR_NOT_SUPPORTED match\",\n\t\t\tret:      nvml.ERROR_NOT_SUPPORTED,\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"Success is not a not-supported error\",\n\t\t\tret:      nvml.SUCCESS,\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Unknown error is not a not-supported error\",\n\t\t\tret:      nvml.ERROR_UNKNOWN,\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Version mismatch error is not a not-supported error\",\n\t\t\tret:      nvml.ERROR_ARGUMENT_VERSION_MISMATCH,\n\t\t\texpected: false,\n\t\t},\n\t}\n\n\t// Override nvml.ErrorString for testing string-based matches\n\toriginalErrorString := nvml.ErrorString\n\tdefer func() {\n\t\tnvml.ErrorString = originalErrorString\n\t}()\n\n\tnvml.ErrorString = func(ret nvml.Return) string {\n\t\tswitch ret {\n\t\tcase nvml.Return(1000):\n\t\t\treturn \"operation is not supported on this device\"\n\t\tcase nvml.Return(1001):\n\t\t\treturn \"THIS OPERATION IS NOT SUPPORTED\"\n\t\tcase nvml.Return(1002):\n\t\t\treturn \"Feature Not Supported\"\n\t\tcase nvml.Return(1003):\n\t\t\treturn \"  not supported  \"\n\t\tcase nvml.Return(1004):\n\t\t\treturn \"The requested operation is not supported on device 0\"\n\t\tcase nvml.Return(1005):\n\t\t\treturn \"Some other error\"\n\t\tcase nvml.Return(1006):\n\t\t\treturn \"\"\n\t\tcase nvml.Return(1007):\n\t\t\treturn \"notsupported\" // No space between 'not' and 'supported'\n\t\tdefault:\n\t\t\treturn originalErrorString(ret)\n\t\t}\n\t}\n\n\t// Add string-based test cases\n\tstringBasedTests := []struct {\n\t\tname     string\n\t\tret      nvml.Return\n\t\texpected bool\n\t}{\n\t\t{\n\t\t\tname:     \"String contains 'not supported' (lowercase)\",\n\t\t\tret:      nvml.Return(1000),\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"String contains 'NOT SUPPORTED' (uppercase)\",\n\t\t\tret:      nvml.Return(1001),\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"String contains 'Not Supported' (mixed case)\",\n\t\t\tret:      nvml.Return(1002),\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"String contains 'not supported' with leading/trailing spaces\",\n\t\t\tret:      nvml.Return(1003),\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"String contains 'not supported' within a longer message\",\n\t\t\tret:      nvml.Return(1004),\n\t\t\texpected: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"String does not contain 'not supported'\",\n\t\t\tret:      nvml.Return(1005),\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"Empty string\",\n\t\t\tret:      nvml.Return(1006),\n\t\t\texpected: false,\n\t\t},\n\t\t{\n\t\t\tname:     \"String with similar but not exact match\",\n\t\t\tret:      nvml.Return(1007),\n\t\t\texpected: false,\n\t\t},\n\t}\n\n\ttests = append(tests, stringBasedTests...)\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tresult := IsNotSupportError(tt.ret)\n\t\t\tassert.Equal(t, tt.expected, result, \"IsNotSupportError(%v) = %v, want %v\", tt.ret, result, tt.expected)\n\t\t})\n\t}\n}\n\n// TestIsNotSupportErrorStringMatch tests the string-based matching of not supported errors\n\n"

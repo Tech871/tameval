@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "Traego/scaled-mcp"
+sha = "53eccfe963832dc64cc9f82f559c0b8a01170c81"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/logger/slog.go internal/logger/slog_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/logger/slog.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 24.0
+original_coverage = 59.0
+mutation_kill_rate = 27.0
+original_mutation_kill_rate = 54.0
+covered_lines = [ 31, 32, 33, 34, 35, 36, 37, 38, 39, 43, 44, 45, 46, 47, 51, 52, 53, 56, 57, 58, 60, 64, 65, 66, 180, 181, 182, 189, 190,]
+missed_lines = [ 54, 55, 70, 71, 72, 73, 74, 75, 76, 77, 79, 80, 85, 86, 87, 92, 93, 94, 95, 96, 97, 98, 99, 101, 102, 107, 108, 109, 110, 113, 114, 115, 116, 117, 118, 119, 120, 122, 126, 127, 128, 131, 132, 133, 134, 135, 136, 137, 138, 140, 144, 145, 146, 149, 150, 151, 152, 153, 154, 155, 156, 158, 162, 163, 164, 167, 168, 169, 170, 171, 172, 173, 174, 176, 183, 184, 185, 186, 187, 188, 191, 192, 193, 194, 195, 196, 201, 202, 203, 206, 207, 208,]
+
+[input_info]
+test_file_path = "internal/logger/slog_test.go"
+focal_file_path = "internal/logger/slog.go"
+test_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/internal/logger/slog_test.go"
+focal_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/internal/logger/slog.go"
+first_commit_date = "2025-04-12"
+last_commit_date = "2025-04-15"
+test_file_content = "package logger\n\nimport (\n\t\"bytes\"\n\t\"encoding/json\"\n\t\"log/slog\"\n\t\"strconv\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\t\"github.com/tochemey/goakt/v3/log\"\n)\n\nfunc TestSlogDebug(t *testing.T) {\n\tt.Run(\"With Debug log level\", func(t *testing.T) {\n\t\t// create a bytes buffer that implements an io.Writer\n\t\tbuffer := new(bytes.Buffer)\n\t\t// create an instance of Log\n\t\tlogger := NewSlog(slog.NewJSONHandler(buffer, &slog.HandlerOptions{Level: slog.LevelDebug}))\n\t\t// assert Debug log\n\t\tlogger.Debug(\"test debug\")\n\t\texpected := \"test debug\"\n\t\tactual, err := extractMessage(buffer.Bytes())\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, expected, actual)\n\n\t\tlvl, err := extractLevel(buffer.Bytes())\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, log.DebugLevel.String(), strings.ToLower(lvl))\n\t\trequire.Equal(t, log.DebugLevel, logger.LogLevel())\n\n\t\t// reset the buffer\n\t\tbuffer.Reset()\n\t\t// assert Debug log\n\t\tname := \"world\"\n\t\tlogger.Debugf(\"hello %s\", name)\n\t\tactual, err = extractMessage(buffer.Bytes())\n\t\trequire.NoError(t, err)\n\t\texpected = \"hello world\"\n\t\trequire.Equal(t, expected, actual)\n\n\t\tlvl, err = extractLevel(buffer.Bytes())\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, log.DebugLevel.String(), strings.ToLower(lvl))\n\t\trequire.Equal(t, log.DebugLevel, logger.LogLevel())\n\t})\n\tt.Run(\"With Info log level\", func(t *testing.T) {\n\t\t// create a bytes buffer that implements an io.Writer\n\t\tbuffer := new(bytes.Buffer)\n\t\t// create an instance of Log\n\t\tlogger := NewSlog(slog.NewJSONHandler(buffer, &slog.HandlerOptions{Level: slog.LevelInfo}))\n\t\t// assert Debug log\n\t\tlogger.Debug(\"test debug\")\n\t\trequire.Empty(t, buffer.String())\n\t})\n\tt.Run(\"With Error log level\", func(t *testing.T) {\n\t\t// create a bytes buffer that implements an io.Writer\n\t\tbuffer := new(bytes.Buffer)\n\t\t// create an instance of Log\n\t\tlogger := NewSlog(slog.NewJSONHandler(buffer, &slog.HandlerOptions{Level: slog.LevelError}))\n\t\t// assert Debug log\n\t\tlogger.Debug(\"test debug\")\n\t\trequire.Empty(t, buffer.String())\n\t})\n}\n\n\n\n\n\nfunc extractMessage(bytes []byte) (string, error) {\n\t// a map container to decode the JSON structure into\n\tc := make(map[string]json.RawMessage)\n\n\t// unmarshal JSON\n\tif err := json.Unmarshal(bytes, &c); err != nil {\n\t\treturn \"\", err\n\t}\n\tfor k, v := range c {\n\t\tif k == \"msg\" {\n\t\t\treturn strconv.Unquote(string(v))\n\t\t}\n\t}\n\n\treturn \"\", nil\n}\n\nfunc extractLevel(bytes []byte) (string, error) {\n\t// a map container to decode the JSON structure into\n\tc := make(map[string]json.RawMessage)\n\n\t// unmarshal JSON\n\tif err := json.Unmarshal(bytes, &c); err != nil {\n\t\treturn \"\", err\n\t}\n\tfor k, v := range c {\n\t\tif k == \"level\" {\n\t\t\treturn strconv.Unquote(string(v))\n\t\t}\n\t}\n\n\treturn \"\", nil\n}\n"

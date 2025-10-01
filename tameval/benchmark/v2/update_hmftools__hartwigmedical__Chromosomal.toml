@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "29cf8b2f82f8ecc386c4cfb238757fa859b7eb06"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl hmf-common -Dtest=ChromosomalTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl hmf-common -DtargetClasses=**.Chromosomal  -DtargetTests=**.ChromosomalTest  -DoutputFormats=XML"
+coverage_report_path = "hmf-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "hmf-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 14.0
+original_coverage = 100.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 13,]
+missed_lines = [ 18, 20, 21, 22, 23, 24,]
+
+[input_info]
+test_file_path = "hmf-common/src/test/java/com/hartwig/hmftools/common/genome/chromosome/ChromosomalTest.java"
+focal_file_path = "hmf-common/src/main/java/com/hartwig/hmftools/common/genome/chromosome/Chromosomal.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/hmf-common/src/test/java/com/hartwig/hmftools/common/genome/chromosome/ChromosomalTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/hmf-common/src/main/java/com/hartwig/hmftools/common/genome/chromosome/Chromosomal.java"
+first_commit_date = "2025-07-23"
+last_commit_date = "2025-08-05"
+test_file_content = "package com.hartwig.hmftools.common.genome.chromosome;\n\nimport static junit.framework.TestCase.assertEquals;\n\nimport org.jetbrains.annotations.NotNull;\nimport org.junit.Test;\n\npublic class ChromosomalTest\n{\n    @Test\n    public void chrTest()\n    {\n        assertEquals(HumanChromosome._1, new IntChr(1).chr());\n    }\n\n    @Test(expected = IllegalArgumentException.class)\n    public void testUnknownChromosome()\n    {\n\n        new IntChr(123).chr();\n    }\n}\n\nrecord IntChr(int value) implements Chromosomal\n{\n    @NotNull\n    @Override\n    public String chromosome()\n    {\n        return \"\" + value;\n    }\n}"

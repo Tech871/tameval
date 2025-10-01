@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "cqframework/clinical-reasoning"
+sha = "1fed1a804b28ac47966530908e41cb26f6e82472"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl cqf-fhir-utility -Dtest=TryTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl cqf-fhir-utility -DtargetClasses=**.Try  -DtargetTests=**.TryTest  -DoutputFormats=XML"
+coverage_report_path = "cqf-fhir-utility/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "cqf-fhir-utility/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 79.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/monad/TryTest.java"
+focal_file_path = "cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/monad/Try.java"
+test_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/monad/TryTest.java"
+focal_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/monad/Try.java"
+first_commit_date = "2023-07-11"
+last_commit_date = "2025-06-02"
+test_file_content = "package org.opencds.cqf.fhir.utility.monad;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertInstanceOf;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nimport org.junit.jupiter.api.Test;\n\nclass TryTest {\n\n    @Test\n    void tryHasException() {\n        var exception = new Exception();\n        var t = Tries.ofException(exception);\n        assertTrue(t.hasException());\n        assertFalse(t.hasResult());\n        assertEquals(exception, t.exception());\n    }\n\n    @Test\n    void flatMap() {\n        var t = Tries.of(1);\n        var result = t.flatMap(i -> Tries.of(i + 1));\n        assertTrue(result.hasResult());\n        assertEquals(2, result.getOrThrow());\n\n        var e = new Exception();\n        t = Tries.<Integer>ofException(e);\n        result = t.flatMap(i -> Tries.of(i + 1));\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n        assertEquals(e, result.exception());\n\n        t = Tries.of(1);\n        result = t.flatMap(i -> {\n            throw new RuntimeException(\"runtime exception\");\n        });\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n        assertInstanceOf(RuntimeException.class, result.exception());\n\n        t = new Try<>(e, \"invalid\");\n        result = t.flatMap(i -> Tries.of(i + 1));\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n    }\n\n    @Test\n    void map() {\n        var t = Tries.of(1);\n        var result = t.map(i -> i + 1);\n        assertTrue(result.hasResult());\n        assertEquals(2, result.getOrThrow());\n\n        var e = new Exception();\n        t = Tries.<Integer>ofException(e);\n        result = t.map(i -> i + 1);\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n        assertEquals(e, result.exception());\n\n        t = Tries.of(1);\n        result = t.map(i -> {\n            throw new RuntimeException(\"runtime exception\");\n        });\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n        assertInstanceOf(RuntimeException.class, result.exception());\n\n        t = new Try<>(e);\n        result = t.map(i -> i + 1);\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n\n        t = new Try<>(\"invalid\", 1);\n        result = t.map(i -> i + 1);\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n\n        t = new Try<>(e, 1, \"extra\");\n        result = t.map(i -> i + 1);\n        assertFalse(result.hasResult());\n        assertTrue(result.hasException());\n    }\n}"

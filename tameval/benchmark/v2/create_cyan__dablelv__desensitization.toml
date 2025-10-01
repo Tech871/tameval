@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21.3"
+
+[repo_info]
+repository = "dablelv/cyan"
+sha = "fcc58af2bdddc5303fa3360f2616ed0178089988"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out strings/desensitization.go strings/desensitization_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting strings/desensitization.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = 90.0
+original_mutation_kill_rate = 90.0
+covered_lines = [ 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 58,]
+missed_lines = [ 55, 56, 57,]
+
+[input_info]
+test_file_path = "strings/desensitization_test.go"
+focal_file_path = "strings/desensitization.go"
+test_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/strings/desensitization_test.go"
+focal_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/strings/desensitization.go"
+first_commit_date = "2025-04-23"
+last_commit_date = "2025-04-23"
+test_file_content = "package strings\n\nimport (\n\t\"testing\"\n\n\t\"github.com/dablelv/cyan/enum\"\n)\n\nfunc TestEmailDesensitization(t *testing.T) {\n\ttests := []struct {\n\t\tname  string\n\t\temail string\n\t\twant  string\n\t}{\n\t\t{\n\t\t\tname:  \"empty email\",\n\t\t\temail: \"\",\n\t\t\twant:  \"\",\n\t\t},\n\t\t{\n\t\t\tname:  \"invalid email\",\n\t\t\temail: \"invalid\",\n\t\t\twant:  \"invalid\",\n\t\t},\n\t\t{\n\t\t\tname:  \"one char local part\",\n\t\t\temail: \"a@x.com\",\n\t\t\twant:  \"a***@x.com\",\n\t\t},\n\t\t{\n\t\t\tname:  \"two chars local part\",\n\t\t\temail: \"ab@x.com\",\n\t\t\twant:  \"ab***@x.com\",\n\t\t},\n\t\t{\n\t\t\tname:  \"three chars local part\",\n\t\t\temail: \"abc@x.com\",\n\t\t\twant:  \"abc***@x.com\",\n\t\t},\n\t\t{\n\t\t\tname:  \"more than three chars local part\",\n\t\t\temail: \"abcd@x.com\",\n\t\t\twant:  \"abc***@x.com\",\n\t\t},\n\t\t{\n\t\t\tname:  \"chinese local part\",\n\t\t\temail: \"中文邮箱@x.com\",\n\t\t\twant:  \"中文邮***@x.com\",\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := EmailDesensitization(tt.email); got != tt.want {\n\t\t\t\tt.Errorf(\"EmailDesensitization() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestPhoneDesensitization(t *testing.T) {\n\ttype args struct {\n\t\tregion string\n\t\tnumber string\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant string\n\t}{\n\t\t{\n\t\t\tname: \"mainland phone\",\n\t\t\targs: args{enum.PhoneCountryCodeMainland, \"13800138000\"},\n\t\t\twant: \"138****8000\",\n\t\t},\n\t\t{\n\t\t\tname: \"hong kong phone\",\n\t\t\targs: args{enum.PhoneCountryCodeHongKong, \"52123456\"},\n\t\t\twant: \"52****56\",\n\t\t},\n\t\t{\n\t\t\tname: \"macao phone\",\n\t\t\targs: args{enum.PhoneCountryCodeMacao, \"52123456\"},\n\t\t\twant: \"52****56\",\n\t\t},\n\t\t{\n\t\t\tname: \"taiwan phone\",\n\t\t\targs: args{enum.PhoneCountryCodeTaiwan, \"0912345678\"},\n\t\t\twant: \"09****678\",\n\t\t},\n\t\t{\n\t\t\tname: \"other region phone\",\n\t\t\targs: args{enum.PhoneCountryCodeJapan, \"07012345678\"},\n\t\t\twant: \"07****78\",\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := PhoneDesensitization(tt.args.region, tt.args.number); got != tt.want {\n\t\t\t\tt.Errorf(\"PhoneDesensitization() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n"

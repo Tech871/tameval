@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tensorflow/datasets"
+sha = "5afdc02a1a6ce1a5ded7e2395c7a3498216936bb"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=tensorflow_datasets/scripts/documentation/build_community_catalog.py -m pytest -q --junit-xml=test_output.xml tensorflow_datasets/scripts/documentation/build_community_catalog_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target tensorflow_datasets.scripts.documentation.build_community_catalog --unit-test tensorflow_datasets.scripts.documentation.build_community_catalog_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target tensorflow_datasets/scripts/documentation/build_community_catalog.py --unit-test tensorflow_datasets/scripts/documentation/build_community_catalog_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 52.0
+original_coverage = 58.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 21.0
+covered_lines = [ 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 42, 44, 47, 50, 55, 56, 57, 58, 61, 81, 85, 97, 102, 111, 122, 123, 124, 125, 126, 128, 129, 137, 138, 141, 142, 143, 145, 146, 150, 151, 152, 154, 155, 156, 158, 161, 163, 164, 169, 189, 194, 199, 200, 223, 236, 251, 282, 287, 289, 293, 296, 302, 303, 306, 307, 308, 310, 311, 314, 315, 318, 319, 321, 322, 324, 325, 328, 329, 330, 336, 337, 338, 339, 340, 341, 345, 347, 348, 350, 383, 386, 388, 394, 395, 398, 399, 400, 401, 403, 404, 407, 408, 411, 419, 432, 444, 450, 451, 454, 455, 462, 463, 464, 465, 468, 478, 481, 503, 516, 525, 533, 548, 575, 593, 613, 626,]
+missed_lines = [ 63, 67, 71, 78, 82, 91, 99, 104, 112, 113, 114, 115, 118, 119, 130, 148, 159, 171, 172, 179, 180, 181, 192, 224, 230, 237, 238, 243, 244, 248, 249, 254, 255, 257, 258, 259, 260, 261, 262, 264, 265, 274, 275, 276, 291, 294, 298, 299, 331, 332, 333, 334, 342, 343, 344, 355, 356, 357, 366, 367, 368, 369, 370, 387, 405, 409, 412, 421, 424, 430, 433, 436, 445, 488, 489, 495, 508, 512, 513, 520, 521, 522, 529, 530, 537, 538, 543, 544, 545, 550, 551, 555, 556, 559, 560, 561, 563, 564, 565, 567, 568, 569, 570, 571, 572, 580, 581, 584, 590, 597, 598, 599, 600, 601, 602, 603, 604, 605, 606, 607, 609, 610, 614, 620, 623, 627,]
+
+[input_info]
+test_file_path = "tensorflow_datasets/scripts/documentation/build_community_catalog_test.py"
+focal_file_path = "tensorflow_datasets/scripts/documentation/build_community_catalog.py"
+test_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/scripts/documentation/build_community_catalog_test.py"
+focal_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/scripts/documentation/build_community_catalog.py"
+first_commit_date = "2021-12-16"
+last_commit_date = "2025-06-02"
+test_file_content = "# coding=utf-8\n# Copyright 2025 The TensorFlow Datasets Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for build_community.\"\"\"\nfrom unittest import mock\n\nfrom etils import epath\n\nimport tensorflow_datasets as tfds  # pylint: disable=unused-import\nfrom tensorflow_datasets.core import naming\nfrom tensorflow_datasets.scripts.documentation import build_community_catalog\n\nDatasetSource = tfds.core.community.dataset_sources.DatasetSource\nDatasetPackage = tfds.core.community.register_package.DatasetPackage\nDatasetName = naming.DatasetName\n\ndef _create_dataset_package(namespace: str, name: str) -> DatasetPackage:\n  path = epath.Path(\n      f'github://huggingface/datasets/tree/master/datasets/{name}'\n  )\n  return DatasetPackage(\n      name=DatasetName(namespace_name=f'{namespace}:{name}'),\n      source=DatasetSource(root_path=path, filenames=[f'{name}.py']),\n  )\n\ndef _create_templates(\n    index_template: str = '',\n    dataset_details_template: str = '',\n    namespace_toc_template: str = '',\n) -> build_community_catalog.DocumentationTemplates:\n  return build_community_catalog.DocumentationTemplates(\n      index_template=index_template,\n      dataset_details_template=dataset_details_template,\n      namespace_toc_template=namespace_toc_template,\n  )\n\ndef _create_options() -> build_community_catalog._Options:\n  return build_community_catalog._Options(catalog_dir='/tmp')\n\ndef test_huggingface_dataset_documentation():\n  dataset = _create_dataset_package('community1', 'ds1')\n  templates = _create_templates()\n  dataset_doc = build_community_catalog.HuggingfaceDatasetDocumentation(\n      dataset=dataset, templates=templates, options=_create_options()\n  )\n  assert dataset_doc.extra_links() == [\n      '[Code](https://github.com/huggingface/datasets/blob/master/datasets/ds1)',\n      '[Huggingface](https://huggingface.co/datasets/ds1)',\n  ]\n  assert dataset_doc.huggingface_raw_info_url() == (\n      'https://huggingface.co/datasets/ds1/raw/main/dataset_infos.json'\n  )\n\n@mock.patch('tensorflow_datasets.core.github_api.github_path.get_content')\ndef test_huggingface_formatter_to_namespace_overview(get_content_mock):\n  get_content_mock.return_value = '{}'\n  namespace1 = 'huggingface'\n  datasets = [\n      _create_dataset_package(namespace1, 'ds1'),\n      _create_dataset_package(namespace1, 'ds2'),\n  ]\n  templates = _create_templates(dataset_details_template='{tfds_id}')\n  get_content_mock.return_value = '{}'\n  formatter = build_community_catalog.HuggingfaceFormatter(\n      namespace=namespace1,\n      datasets=datasets,\n      templates=templates,\n      options=_create_options(),\n  )\n  assert (\n      formatter.to_namespace_overview()\n      == \"\"\"\\\n# Huggingface datasets\n\nHuggingface has forked TFDS and provides a lot of text datasets. See\n[here](https://huggingface.co/docs/datasets/) for more documentation.\nNext you can find the list of all the datasets that can be used with TFDS.\n\n*  [ds1](huggingface/ds1.md)\n*  [ds2](huggingface/ds2.md)\n\"\"\"\n  )\n"

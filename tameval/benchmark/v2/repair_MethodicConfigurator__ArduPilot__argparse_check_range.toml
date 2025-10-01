@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "ArduPilot/MethodicConfigurator"
+sha = "8f14cac0abb19c133ba74e6693d4efb6385cb8f0"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=ardupilot_methodic_configurator/argparse_check_range.py -m pytest -q --junit-xml=test_output.xml tests/test_argparse_check_range.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target ardupilot_methodic_configurator.argparse_check_range --unit-test tests.test_argparse_check_range --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target ardupilot_methodic_configurator/argparse_check_range.py --unit-test tests/test_argparse_check_range.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 84.0
+original_coverage = 84.0
+mutation_kill_rate = 84.0
+original_mutation_kill_rate = 84.0
+covered_lines = [ 12, 13, 14, 15, 17, 20, 23, 24, 25, 26, 27, 29, 30, 31, 32, 34, 36, 37, 38, 39, 40, 42, 44, 45, 46, 47, 49, 51, 52, 54, 61, 62,]
+missed_lines = [ 64, 65, 66, 67, 68, 69,]
+
+[input_info]
+test_file_path = "tests/test_argparse_check_range.py"
+focal_file_path = "ardupilot_methodic_configurator/argparse_check_range.py"
+test_file_url = "https://github.com/ArduPilot/MethodicConfigurator/blob/8f14cac0abb19c133ba74e6693d4efb6385cb8f0/tests/test_argparse_check_range.py"
+focal_file_url = "https://github.com/ArduPilot/MethodicConfigurator/blob/8f14cac0abb19c133ba74e6693d4efb6385cb8f0/ardupilot_methodic_configurator/argparse_check_range.py"
+first_commit_date = "2024-12-02"
+last_commit_date = "2025-02-21"
+test_file_content = "\n\nimport unittest\nfrom argparse import ArgumentParser\n\nimport pytest\n\nfrom ardupilot_methodic_configurator.argparse_check_range import CheckRange\n\n\nclass TestCheckRange(unittest.TestCase):\n    def setUp(self) -> None:\n        self.parser = ArgumentParser()\n\n    def test_init_with_both_min_and_inf(self) -> None:\n        with pytest.raises(ValueError, match=\"either min or inf, but not both\"):\n            self.parser.add_argument(\"--test\", action=CheckRange, min=0, inf=0)\n\n    def test_init_with_both_max_and_sup(self) -> None:\n        with pytest.raises(ValueError, match=\"either max or sup, but not both\"):\n            self.parser.add_argument(\"--test\", action=CheckRange, max=10, sup=10)\n\n    def test_interval_with_min_and_max(self) -> None:\n        action = CheckRange(option_strings=[\"--test\"], dest=\"test\", min=0, max=10)\n        assert action.interval() == \"valid range: [0, 10]\"\n\n    def test_interval_with_inf_and_sup(self) -> None:\n        action = CheckRange(option_strings=[\"--test\"], dest=\"test\", inf=0, sup=10)\n        assert action.interval() == \"valid range: (0, 10)\"\n\n    def test_interval_with_no_bounds(self) -> None:\n        action = CheckRange(option_strings=[\"--test\"], dest=\"test\")\n        assert action.interval() == \"valid range: (-infinity, +infinity)\"\n\n    def test_call_with_non_number_value(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, min=0, max=10)\n        with pytest.raises(SystemExit) as excinfo:\n            self.parser.parse_args([\"--test\", \"non-number\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_invalid_non_numeric_input(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, min=0, max=10)\n        with pytest.raises(SystemExit) as excinfo:\n            args = self.parser.parse_args([\"--test\", \"abc\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_value_out_of_range(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, min=0, max=10)\n        with pytest.raises(SystemExit) as excinfo:\n            self.parser.parse_args([\"--test\", \"11\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_value_exceeding_max_bound(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, min=0, max=10)\n        with pytest.raises(SystemExit) as excinfo:\n            args = self.parser.parse_args([\"--test\", \"15\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_value_equal_to_inf(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, inf=0, sup=10)\n        with pytest.raises(SystemExit) as excinfo:\n            self.parser.parse_args([\"--test\", \"0\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_value_greater_than_inf_bound(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, inf=0, sup=10)\n        with pytest.raises(SystemExit) as excinfo:\n            args = self.parser.parse_args([\"--test\", \"-1\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_value_equal_to_sup(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, inf=0, sup=10)\n        with pytest.raises(SystemExit) as excinfo:\n            self.parser.parse_args([\"--test\", \"10\"])\n        assert str(excinfo.value) == \"2\"\n\n    def test_call_with_value_reaching_sup_bound(self) -> None:\n        self.parser.add_argument(\"--test\", action=CheckRange, inf=0, sup=10)\n        with pytest.raises(SystemExit) as excinfo:\n            args = self.parser.parse_args([\"--test\", \"11\"])\n        assert str(excinfo.value) == \"2\"\n\n\nif __name__ == \"__main__\":\n    unittest.main()"

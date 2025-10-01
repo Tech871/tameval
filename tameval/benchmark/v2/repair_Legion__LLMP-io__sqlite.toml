@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "LLMP-io/Legion"
+sha = "ba7764e32f6e9ff9b93439ee62df5da5d26608f9"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=legion/monitoring/storage/sqlite.py -m pytest -q --junit-xml=test_output.xml tests/monitoring/storage/test_sqlite.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target legion.monitoring.storage.sqlite --unit-test tests.monitoring.storage.test_sqlite --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target legion/monitoring/storage/sqlite.py --unit-test tests/monitoring/storage/test_sqlite.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 84.0
+original_coverage = 84.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 2, 3, 4, 5, 6, 7, 8, 9, 11, 12, 13, 15, 17, 29, 31, 33, 45, 79, 91, 125, 128, 139, 140, 141, 142, 145, 148, 149, 151, 153, 154, 164, 165, 167, 169, 170, 171, 173, 199, 200, 202, 210, 211, 222, 225, 226, 227, 229, 237, 239, 256, 257, 259, 261, 262, 263, 264, 266, 267, 268, 270, 271, 272, 274, 275, 277, 279, 281, 282, 283, 285, 294, 295, 297, 298, 299, 301,]
+missed_lines = [ 30, 174, 175, 178, 181, 182, 184, 185, 187, 195, 196, 197, 303, 304, 305,]
+
+[input_info]
+test_file_path = "tests/monitoring/storage/test_sqlite.py"
+focal_file_path = "legion/monitoring/storage/sqlite.py"
+test_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/tests/monitoring/storage/test_sqlite.py"
+focal_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/legion/monitoring/storage/sqlite.py"
+first_commit_date = "2025-01-07"
+last_commit_date = "2025-01-08"
+test_file_content = "\nimport shutil\nimport tempfile\nimport threading\nimport time\nfrom datetime import datetime, timedelta, timezone\nfrom pathlib import Path\n\nimport pytest\n\nfrom legion.monitoring.events.base import Event, EventCategory, EventType\nfrom legion.monitoring.storage.config import StorageConfig\nfrom legion.monitoring.storage.sqlite import SQLiteStorageBackend\n\n\n@pytest.fixture\ndef temp_dir():\n    temp_dir = tempfile.mkdtemp()\n    yield Path(temp_dir)\n    shutil.rmtree(temp_dir)\n\n@pytest.fixture\ndef storage(temp_dir):\n    return SQLiteStorageBackend(str(temp_dir / \"test.db\"))\n\n@pytest.fixture\ndef sample_event():\n    return Event(\n        event_type=EventType.AGENT,\n        component_id=\"test\",\n        category=EventCategory.EXECUTION\n    )\n\ndef test_store_and_retrieve(storage, sample_event):\n    storage.store_event(sample_event)\n    events = storage.get_events()\n\ndef test_clear(storage, sample_event):\n    storage.store_event(sample_event)\n    storage.clear()\n\ndef test_event_type_filtering(storage):\n    agent_event = Event(\n        event_type=EventType.AGENT,\n        component_id=\"test\",\n        category=EventCategory.EXECUTION\n    )\n\n    system_event = Event(\n        event_type=EventType.SYSTEM,\n        component_id=\"test\",\n        category=EventCategory.EXECUTION\n    )\n\n    storage.store_event(agent_event)\n    storage.store_event(system_event)\n\n    agent_events = storage.get_events(event_types=[agent_event])\n\ndef test_time_filtering(storage, sample_event):\n    now = datetime.now(timezone.utc)\n    past = now - timedelta(hours=1)\n    future = now + timedelta(hours=1)\n\n    storage.store_event(sample_event)\n    events = storage.get_events(start_time=past)\n    events = storage.get_events(end_time=future)\n    events = storage.get_events(start_time=past, end_time=future)\n    events = storage.get_events(end_time=past)\n    events = storage.get_events(start_time=future)\n\ndef test_cleanup(storage):\n    old_event = Event(\n        event_type=EventType.AGENT,\n        component_id=\"test\",\n        category=EventCategory.EXECUTION\n    )\n    old_event.timestamp = datetime.now(timezone.utc) - timedelta(days=10)\n\n    new_event = Event(\n        event_type=EventType.AGENT,\n        component_id=\"test\",\n        category=EventCategory.EXECUTION\n    )\n\n    storage.store_event(old_event)\n    storage.store_event(new_event)\n    storage.cleanup(retention_days=5)\n\n    events = storage.get_events()\n\ndef test_max_events(storage):\n    config = StorageConfig(max_events=10)\n    storage = SQLiteStorageBackend(str(storage._db_path), config)\n    for i in range(20):\n        event = Event(\n            event_type=EventType.AGENT,\n            component_id=f\"test_{i}\",\n            category=EventCategory.EXECUTION\n        )\n        storage.store_event(event)\n\n    events = storage.get_events()\n\ndef test_automatic_cleanup(temp_dir):\n    config = StorageConfig(\n        retention_days=1,\n        cleanup_interval=1\n    )\n    storage = SQLiteStorageBackend(str(temp_dir / \"test.db\"), config)\n    old_event = Event(\n        event_type=EventType.AGENT,\n        component_id=\"test_old\",\n        category=EventCategory.EXECUTION\n    )\n    old_event.timestamp = datetime.now(timezone.utc) - timedelta(days=2)\n    new_event = Event(\n        event_type=EventType.AGENT,\n        component_id=\"test_new\",\n        category=EventCategory.EXECUTION\n    )\n\n    storage.store_event(old_event)\n    storage.store_event(new_event)\n    storage.cleanup(retention_days=1)\n\n    events = storage.get_events()\n\ndef test_database_persistence(temp_dir):\n    db_path = temp_dir / \"test.db\"\n    storage1 = SQLiteStorageBackend(str(db_path))\n    event = Event(\n        event_type=EventType.AGENT,\n        component_id=\"test\",\n        category=EventCategory.EXECUTION\n    )\n    storage1.store_event(event)\n    storage2 = SQLiteStorageBackend(str(db_path))\n    events = storage2.get_events()\n\ndef test_concurrent_access(storage):\n    def store_events():\n        for _ in range(100):\n            event = Event(\n                event_type=EventType.AGENT,\n                component_id=\"test\",\n                category=EventCategory.EXECUTION\n            )\n            storage.store_event(event)\n            time.sleep(0.001)\n\n    threads = []\n    for _ in range(5):\n        thread = threading.Thread(target=store_events)\n        thread.start()\n        threads.append(thread)\n\n    for thread in threads:\n        thread.join()"

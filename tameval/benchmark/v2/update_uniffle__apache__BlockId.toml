@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl common -Dtest=BlockIdTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl common -DtargetClasses=**.BlockId  -DtargetTests=**.BlockIdTest  -DoutputFormats=XML"
+coverage_report_path = "common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 88.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "common/src/test/java/org/apache/uniffle/common/util/BlockIdTest.java"
+focal_file_path = "common/src/main/java/org/apache/uniffle/common/util/BlockId.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/test/java/org/apache/uniffle/common/util/BlockIdTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/main/java/org/apache/uniffle/common/util/BlockId.java"
+first_commit_date = "2024-02-23"
+last_commit_date = "2024-07-05"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *    http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.apache.uniffle.common.util;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\npublic class BlockIdTest {\n  @Test\n  public void test() {\n    // max value of blockId\n    assertEquals(854558029292503039L, BlockId.getBlockId(24287, 16777215, 1048575));\n    // just a random test\n    assertEquals(3518437418598500L, BlockId.getBlockId(100, 100, 100));\n    // min value of blockId\n    assertEquals(0L, BlockId.getBlockId(0, 0, 0));\n\n    BlockId blockId = BlockId.fromIds(100, 100, 100);\n    assertEquals(\"blockId[c80000c800064 (seq: 100, part: 100, task: 100)]\", blockId.toString());\n\n    final Throwable e1 =\n        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(262144, 0, 0));\n    assertEquals(\"Can't support sequence[262144], the max value should be 262143\", e1.getMessage());\n\n    final Throwable e2 =\n        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, 16777216, 0));\n    assertEquals(\n        \"Can't support partitionId[16777216], the max value should be 16777215\", e2.getMessage());\n\n    final Throwable e3 =\n        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, 0, 2097152));\n    assertEquals(\n        \"Can't support taskAttemptId[2097152], the max value should be 2097151\", e3.getMessage());\n\n    final Throwable e4 =\n        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(-1, 0, 0));\n    assertEquals(\"Can't support sequence[-1], the max value should be 262143\", e4.getMessage());\n\n    final Throwable e5 =\n        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, -1, 0));\n    assertEquals(\n        \"Can't support partitionId[-1], the max value should be 16777215\", e5.getMessage());\n\n    final Throwable e6 =\n        assertThrows(IllegalArgumentException.class, () -> BlockId.getBlockId(0, 0, -1));\n    assertEquals(\n        \"Can't support taskAttemptId[-1], the max value should be 2097151\", e6.getMessage());\n  }\n}"

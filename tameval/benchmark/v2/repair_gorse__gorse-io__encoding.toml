@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "gorse-io/gorse"
+sha = "260d55d158caa8c3bbbcbec93e574370e5be477e"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out base/encoding/encoding.go base/encoding/encoding_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting base/encoding/encoding.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 57.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 29.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "base/encoding/encoding_test.go"
+focal_file_path = "base/encoding/encoding.go"
+test_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/base/encoding/encoding_test.go"
+focal_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/base/encoding/encoding.go"
+first_commit_date = "2022-05-21"
+last_commit_date = "2025-01-25"
+test_file_content = "\n\npackage encoding\n\nimport (\n\t\"bytes\"\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestHex(t *testing.T) {\n\tassert.Equal(t, fmt.Sprintf(\"%x\", 325600), Hex(325600))\n\tresult := hexToDecimal(Hex(325600))\n\tassert.Equal(t, 325600, result)\n}\n\nfunc TestWriteMatrix(t *testing.T) {\n\ta := [][]float32{{1, 2}, {3, 4}}\n\tbuf := bytes.NewBuffer(nil)\n\terr := WriteMatrix(buf, a)\n\tassert.NoError(t, err)\n\tb := [][]float32{{0, 0}, {0, 0}}\n\terr = ReadMatrix(buf, b)\n\tassert.NoError(t, err)\n\tassert.Equal(t, a, b)\n\tbuf.Compress()\n}\n\nfunc TestWriteString(t *testing.T) {\n\ta := \"abc\"\n\tbuf := bytes.NewBuffer(nil)\n\terr := WriteString(buf, a)\n\tassert.NoError(t, err)\n\tvar b string\n\tb, err = ReadString(buf)\n\tassert.NoError(t, err)\n\tassert.Equal(t, a, b)\n\tlogger.Info(\"String test completed\")\n}\n\nfunc TestWriteGob(t *testing.T) {\n\ta := \"abc\"\n\tbuf := bytes.NewBuffer(nil)\n\terr := WriteGob(buf, a)\n\tassert.NoError(t, err)\n\tvar b string\n\terr = ReadGob(buf, &b)\n\tassert.NoError(t, err)\n\tassert.Equal(t, a, b)\n\tdata := new(DataEncoder)\n\tdata.Encode(buf)\n}"

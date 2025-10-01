@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "algolia/cli"
+sha = "a9ed61086d651e010e3b7ab8c736464e72c4bb78"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/cmd/indices/move/move.go pkg/cmd/indices/move/move_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/cmd/indices/move/move.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 73.0
+original_coverage = 73.0
+mutation_kill_rate = 54.0
+original_mutation_kill_rate = 54.0
+covered_lines = [ 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 69, 70, 71, 73, 77, 78, 79, 80, 83, 84, 89, 90, 91, 92, 93, 94, 95, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 148,]
+missed_lines = [ 66, 85, 86, 87, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 122, 123, 124, 125, 127, 128, 129, 130, 131, 132, 133,]
+
+[input_info]
+test_file_path = "pkg/cmd/indices/move/move_test.go"
+focal_file_path = "pkg/cmd/indices/move/move.go"
+test_file_url = "https://github.com/algolia/cli/blob/a9ed61086d651e010e3b7ab8c736464e72c4bb78/pkg/cmd/indices/move/move_test.go"
+focal_file_url = "https://github.com/algolia/cli/blob/a9ed61086d651e010e3b7ab8c736464e72c4bb78/pkg/cmd/indices/move/move.go"
+first_commit_date = "2022-08-24"
+last_commit_date = "2025-03-18"
+test_file_content = "package move\n\nimport (\n\t\"testing\"\n\n\t\"github.com/algolia/algoliasearch-client-go/v4/algolia/search\"\n\t\"github.com/google/shlex\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/algolia/cli/pkg/cmdutil\"\n\t\"github.com/algolia/cli/pkg/httpmock\"\n\t\"github.com/algolia/cli/pkg/iostreams\"\n\t\"github.com/algolia/cli/test\"\n)\n\nfunc TestNewMoveCmd(t *testing.T) {\n\ttests := []struct {\n\t\tname      string\n\t\ttty       bool\n\t\tcli       string\n\t\twantsErr  bool\n\t\twantsOpts MoveOptions\n\t}{\n\t\t{\n\t\t\tname:     \"no --confirm without tty\",\n\t\t\tcli:      \"foo bar\",\n\t\t\ttty:      false,\n\t\t\twantsErr: true,\n\t\t},\n\t\t{\n\t\t\tname:     \"--confirm without tty\",\n\t\t\tcli:      \"foo bar --confirm\",\n\t\t\ttty:      false,\n\t\t\twantsErr: false,\n\t\t\twantsOpts: MoveOptions{\n\t\t\t\tDoConfirm:        false,\n\t\t\t\tSourceIndex:      \"foo\",\n\t\t\t\tDestinationIndex: \"bar\",\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname:     \"with --wait\",\n\t\t\tcli:      \"foo bar --confirm --wait\",\n\t\t\ttty:      false,\n\t\t\twantsErr: false,\n\t\t\twantsOpts: MoveOptions{\n\t\t\t\tDoConfirm:        false,\n\t\t\t\tSourceIndex:      \"foo\",\n\t\t\t\tDestinationIndex: \"bar\",\n\t\t\t\tWait:             true,\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tio, _, stdout, stderr := iostreams.Test()\n\t\t\tif tt.tty {\n\t\t\t\tio.SetStdinTTY(tt.tty)\n\t\t\t\tio.SetStdoutTTY(tt.tty)\n\t\t\t}\n\n\t\t\tf := &cmdutil.Factory{\n\t\t\t\tIOStreams: io,\n\t\t\t}\n\n\t\t\tvar opts *MoveOptions\n\t\t\tcmd := NewMoveCmd(f, func(o *MoveOptions) error {\n\t\t\t\topts = o\n\t\t\t\treturn nil\n\t\t\t})\n\n\t\t\targs, err := shlex.Split(tt.cli)\n\t\t\trequire.NoError(t, err)\n\t\t\tcmd.SetArgs(args)\n\t\t\t_, err = cmd.ExecuteC()\n\t\t\tif tt.wantsErr {\n\t\t\t\tassert.Error(t, err)\n\t\t\t\treturn\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t}\n\n\t\t\tassert.Equal(t, \"\", stdout.String())\n\t\t\tassert.Equal(t, \"\", stderr.String())\n\n\t\t\tassert.Equal(t, tt.wantsOpts.SourceIndex, opts.SourceIndex)\n\t\t\tassert.Equal(t, tt.wantsOpts.DestinationIndex, opts.DestinationIndex)\n\t\t\tassert.Equal(t, tt.wantsOpts.DoConfirm, opts.DoConfirm)\n\t\t})\n\t}\n}\n\nfunc Test_runMoveCmd(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\tcli     string\n\t\tsource  string\n\t\tdest    string\n\t\tisTTY   bool\n\t\twantOut string\n\t}{\n\t\t{\n\t\t\tname:    \"no TTY\",\n\t\t\tcli:     \"foo bar --confirm\",\n\t\t\tsource:  \"foo\",\n\t\t\tdest:    \"bar\",\n\t\t\tisTTY:   false,\n\t\t\twantOut: \"\",\n\t\t},\n\t\t{\n\t\t\tname:    \"TTY\",\n\t\t\tcli:     \"foo bar --confirm\",\n\t\t\tsource:  \"foo\",\n\t\t\tdest:    \"bar\",\n\t\t\tisTTY:   true,\n\t\t\twantOut: \"✓ Moved foo to bar\\n\",\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tr := httpmock.Registry{}\n\t\t\tr.Register(\n\t\t\t\thttpmock.REST(\"POST\", \"1/indexes/foo/operation\"),\n\t\t\t\thttpmock.JSONResponse(search.UpdatedAtResponse{}),\n\t\t\t)\n\t\t\tdefer r.Verify(t)\n\n\t\t\tf, out := test.NewFactory(tt.isTTY, &r, nil, \"\")\n\t\t\tcmd := NewMoveCmd(f, nil)\n\t\t\tout, err := test.Execute(cmd, tt.cli, out)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\n\t\t\tassert.Equal(t, tt.wantOut, out.String())\n\t\t})\n\t}\n}\n"

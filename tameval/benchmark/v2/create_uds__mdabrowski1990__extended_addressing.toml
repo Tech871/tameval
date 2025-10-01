@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "mdabrowski1990/uds"
+sha = "81ca93afdc4ac9e386bbdebaf44ab0ac9cc22941"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=uds/can/addressing/extended_addressing.py -m pytest -q --junit-xml=test_output.xml tests/software_tests/can/addressing/test_extended_addressing.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target uds.can.addressing.extended_addressing --unit-test tests.software_tests.can.addressing.test_extended_addressing --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target uds/can/addressing/extended_addressing.py --unit-test tests/software_tests/can/addressing/test_extended_addressing.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 69.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 2, 4, 6, 7, 8, 9, 10, 19, 22, 23, 25, 26, 28, 34, 35, 36, 40, 42, 43, 83, 84, 95, 97, 98, 100, 105, 106, 118, 119,]
+missed_lines = [ 66, 67, 68, 69, 71, 72, 73, 74, 76, 115, 116, 130, 131,]
+
+[input_info]
+test_file_path = "tests/software_tests/can/addressing/test_extended_addressing.py"
+focal_file_path = "uds/can/addressing/extended_addressing.py"
+test_file_url = "https://github.com/mdabrowski1990/uds/blob/81ca93afdc4ac9e386bbdebaf44ab0ac9cc22941/tests/software_tests/can/addressing/test_extended_addressing.py"
+focal_file_url = "https://github.com/mdabrowski1990/uds/blob/81ca93afdc4ac9e386bbdebaf44ab0ac9cc22941/uds/can/addressing/extended_addressing.py"
+first_commit_date = "2025-07-29"
+last_commit_date = "2025-07-29"
+test_file_content = "import pytest\nfrom mock import Mock, patch\n\nfrom uds.can.addressing.extended_addressing import (\n    AddressingType,\n    CanAddressingFormat,\n    ExtendedCanAddressingInformation,\n    InconsistentArgumentsError,\n    UnusedArgumentError,\n)\n\nSCRIPT_LOCATION = \"uds.can.addressing.extended_addressing\"\n\nclass TestExtendedCanAddressingInformation:\n    \"\"\"Unit tests for `ExtendedCanAddressingInformation` class.\"\"\"\n\n    def setup_method(self):\n        self.mock_addressing_information = Mock(spec=ExtendedCanAddressingInformation)\n        # patching\n        self._patcher_validate_raw_byte = patch(f\"{SCRIPT_LOCATION}.validate_raw_byte\")\n        self.mock_validate_raw_byte = self._patcher_validate_raw_byte.start()\n        self._patcher_validate_raw_bytes = patch(f\"{SCRIPT_LOCATION}.validate_raw_bytes\")\n        self.mock_validate_raw_bytes = self._patcher_validate_raw_bytes.start()\n        self._patcher_validate_addressing_type = patch(f\"{SCRIPT_LOCATION}.AddressingType.validate_member\")\n        self.mock_validate_addressing_type = self._patcher_validate_addressing_type.start()\n        self._patcher_can_id_handler_class = patch(f\"{SCRIPT_LOCATION}.CanIdHandler\")\n        self.mock_can_id_handler_class = self._patcher_can_id_handler_class.start()\n\n    def teardown_method(self):\n        self._patcher_validate_raw_byte.stop()\n        self._patcher_validate_raw_bytes.stop()\n        self._patcher_validate_addressing_type.stop()\n        self._patcher_can_id_handler_class.stop()\n\n    # ADDRESSING_FORMAT\n\n    # AI_DATA_BYTES_NUMBER\n\n    # _validate_addressing_information\n\n    @pytest.mark.parametrize(\"rx_physical_params, tx_physical_params, rx_functional_params, tx_functional_params\", [\n        (\n                {\"can_id\": 1, \"target_address\": 0xAA},\n                {\"can_id\": 2, \"target_address\": 0xAA},\n                {\"can_id\": 3, \"target_address\": 0x12},\n                {\"can_id\": 3, \"target_address\": 0xFF},\n        ),\n        (\n                {\"can_id\": 0x4321, \"target_address\": 0x00},\n                {\"can_id\": 0x4322, \"target_address\": 0xFF},\n                {\"can_id\": 0x4323, \"target_address\": 0x00},\n                {\"can_id\": 0x4321, \"target_address\": 0xFF},\n        ),\n    ])\n    def test_validate_node_ai__inconsistent(self, rx_physical_params, tx_physical_params,\n                                            rx_functional_params, tx_functional_params):\n        self.mock_addressing_information.rx_physical_params = rx_physical_params\n        self.mock_addressing_information.tx_physical_params = tx_physical_params\n        self.mock_addressing_information.rx_functional_params = rx_functional_params\n        self.mock_addressing_information.tx_functional_params = tx_functional_params\n        with pytest.raises(InconsistentArgumentsError):\n            ExtendedCanAddressingInformation._validate_addressing_information(self.mock_addressing_information)\n\n    # validate_addressing_params\n\n    # is_compatible_can_id\n\n    @pytest.mark.parametrize(\"can_id, addressing_type\", [\n        (Mock(), Mock()),\n        (0x500, AddressingType.PHYSICAL),\n    ])\n    def test_is_compatible_can_id(self, can_id, addressing_type):\n        assert (ExtendedCanAddressingInformation.is_compatible_can_id(can_id, addressing_type)\n                == self.mock_can_id_handler_class.is_can_id.return_value)\n\n    # decode_can_id_ai_params\n\n    @pytest.mark.parametrize(\"can_id\", [Mock(), 0x1234])\n    def test_decode_can_id_ai_params(self, can_id):\n        assert ExtendedCanAddressingInformation.decode_can_id_ai_params(can_id) == {\n            \"addressing_type\": None,\n            \"target_address\": None,\n            \"source_address\": None,\n            \"priority\": None\n        }\n\n    # decode_data_bytes_ai_params\n\n    # encode_ai_data_bytes\n"

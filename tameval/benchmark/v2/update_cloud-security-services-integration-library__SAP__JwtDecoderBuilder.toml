@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "SAP/cloud-security-services-integration-library"
+sha = "bc3a37687860d8dd34ca2e26b45d942bd4a3e85b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl spring-security -Dtest=JwtDecoderBuilderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl spring-security -DtargetClasses=**.JwtDecoderBuilder  -DtargetTests=**.JwtDecoderBuilderTest  -DoutputFormats=XML"
+coverage_report_path = "spring-security/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "spring-security/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 82.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "spring-security/src/test/java/com/sap/cloud/security/spring/token/authentication/JwtDecoderBuilderTest.java"
+focal_file_path = "spring-security/src/main/java/com/sap/cloud/security/spring/token/authentication/JwtDecoderBuilder.java"
+test_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/spring-security/src/test/java/com/sap/cloud/security/spring/token/authentication/JwtDecoderBuilderTest.java"
+focal_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/spring-security/src/main/java/com/sap/cloud/security/spring/token/authentication/JwtDecoderBuilder.java"
+first_commit_date = "2021-02-16"
+last_commit_date = "2024-05-16"
+test_file_content = "/**\n * SPDX-FileCopyrightText: 2018-2023 SAP SE or an SAP affiliate company and Cloud Security Client Java contributors\n * <p>\n * SPDX-License-Identifier: Apache-2.0\n */\npackage com.sap.cloud.security.spring.token.authentication;\n\nimport com.sap.cloud.security.config.*;\nimport com.sap.cloud.security.token.validation.ValidationListener;\nimport org.apache.hc.client5.http.impl.classic.CloseableHttpClient;\nimport org.junit.jupiter.api.Test;\nimport org.mockito.Mockito;\nimport org.springframework.security.oauth2.jwt.JwtDecoder;\n\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport static org.junit.jupiter.api.Assertions.*;\nimport static org.mockito.Mockito.when;\n\nclass JwtDecoderBuilderTest {\n\tJwtDecoderBuilder cut = new JwtDecoderBuilder();\n\n\t@Test\n\tvoid withCacheConfiguration() {\n\t\tCacheConfiguration cacheConfiguration = Mockito.mock(CacheConfiguration.class);\n\t\tassertNotNull(cut.withCacheConfiguration(cacheConfiguration));\n\t}\n\n\t@Test\n\tvoid withHttpClient() {\n\t\tCloseableHttpClient mockHttpClient = Mockito.mock(CloseableHttpClient.class);\n\t\tassertNotNull(cut.withHttpClient(mockHttpClient));\n\t}\n\n\t@Test\n\tvoid buildWithoutConfiguration_IllegalStateException() {\n\t\tassertThrows(IllegalStateException.class, () -> cut.build());\n\t}\n\n\t@Test\n\tvoid buildHybridWithConfigurations() {\n\t\tOAuth2ServiceConfiguration configuration = OAuth2ServiceConfigurationBuilder\n\t\t\t\t.forService(Service.IAS)\n\t\t\t\t.withClientId(\"clientId\")\n\t\t\t\t.withProperty(ServiceConstants.URL, \"https://domain.myauth.com\")\n\t\t\t\t.build();\n\n\t\tcut.withIasServiceConfiguration(configuration);\n\t\tcut.withXsuaaServiceConfiguration(configuration);\n\t\tcut.withValidationListener(Mockito.mock(ValidationListener.class));\n\t\tJwtDecoder decoder = cut.build();\n\t\tassertTrue(decoder instanceof HybridJwtDecoder);\n\t}\n\n\t@Test\n\tvoid buildHybridWithMultipleXsuaaConfigurations() {\n\t\tOAuth2ServiceConfiguration iasConfiguration = OAuth2ServiceConfigurationBuilder\n\t\t\t\t.forService(Service.IAS)\n\t\t\t\t.withClientId(\"clientId\")\n\t\t\t\t.withProperty(ServiceConstants.URL, \"https://domain.myauth.com\")\n\t\t\t\t// .withProperty(CFConstants.IAS.DOMAIN, \"myauth.com\")\n\t\t\t\t.build();\n\n\t\tOAuth2ServiceConfiguration otherXsuaaConfiguration = Mockito.mock(OAuth2ServiceConfiguration.class);\n\t\twhen(otherXsuaaConfiguration.getClientId()).thenReturn(\"otherClientId\");\n\n\t\tList<OAuth2ServiceConfiguration> xsuaaConfigurations = new ArrayList<>();\n\t\txsuaaConfigurations.add(iasConfiguration);\n\t\txsuaaConfigurations.add(otherXsuaaConfiguration);\n\n\t\tcut.withIasServiceConfiguration(iasConfiguration);\n\t\tcut.withXsuaaServiceConfigurations(xsuaaConfigurations);\n\t\tcut.withValidationListener(Mockito.mock(ValidationListener.class));\n\t\tJwtDecoder decoder = cut.build();\n\t\tassertTrue(decoder instanceof HybridJwtDecoder);\n\t}\n}"

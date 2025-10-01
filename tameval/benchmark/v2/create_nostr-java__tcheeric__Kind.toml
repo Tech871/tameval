@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "tcheeric/nostr-java"
+sha = "19abaa18c086511e89c968e069c43797f55aac2d"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nostr-java-base -Dtest=KindTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nostr-java-base -DtargetClasses=**.Kind  -DtargetTests=**.KindTest  -DoutputFormats=XML"
+coverage_report_path = "nostr-java-base/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nostr-java-base/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 94.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 13, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 63, 66, 67, 72,]
+missed_lines = [ 64, 68, 77,]
+
+[input_info]
+test_file_path = "nostr-java-base/src/test/java/nostr/base/KindTest.java"
+focal_file_path = "nostr-java-base/src/main/java/nostr/base/Kind.java"
+test_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-base/src/test/java/nostr/base/KindTest.java"
+focal_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-base/src/main/java/nostr/base/Kind.java"
+first_commit_date = "2025-05-18"
+last_commit_date = "2025-08-11"
+test_file_content = "package nostr.base;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\nclass KindTest {\n\n\n    @Test\n    void testValueOfUnknownReturnsTextNote() {\n        Kind kind = Kind.valueOf(999);\n        assertEquals(Kind.TEXT_NOTE, kind);\n    }\n\n\n}\n"

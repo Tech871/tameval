@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "baalimago/clai"
+sha = "b45e13a52986e12878bc2314022787173f3c7c4b"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/utils/misc.go internal/utils/misc_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/utils/misc.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 70.0
+original_coverage = 70.0
+mutation_kill_rate = 81.0
+original_mutation_kill_rate = 81.0
+covered_lines = [ 18, 19, 20, 21, 22, 24, 25, 26, 27, 28, 30, 35, 36, 37, 38, 39,]
+missed_lines = [ 7, 8, 9, 10, 11, 12, 14,]
+
+[input_info]
+test_file_path = "internal/utils/misc_test.go"
+focal_file_path = "internal/utils/misc.go"
+test_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/utils/misc_test.go"
+focal_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/utils/misc.go"
+first_commit_date = "2024-04-14"
+last_commit_date = "2025-06-21"
+test_file_content = "package utils\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestGetFirstTokens(t *testing.T) {\n\ttests := []struct {\n\t\tname   string\n\t\tprompt []string\n\t\tn      int\n\t\twant   []string\n\t}{\n\t\t{\n\t\t\tname:   \"Empty prompt\",\n\t\t\tprompt: []string{},\n\t\t\tn:      5,\n\t\t\twant:   []string{},\n\t\t},\n\t\t{\n\t\t\tname:   \"Prompt with less than n tokens\",\n\t\t\tprompt: []string{\"Hello\", \"World\"},\n\t\t\tn:      5,\n\t\t\twant:   []string{\"Hello\", \"World\"},\n\t\t},\n\t\t{\n\t\t\tname:   \"Prompt with exactly n tokens\",\n\t\t\tprompt: []string{\"This\", \"is\", \"a\", \"test\", \"prompt\"},\n\t\t\tn:      5,\n\t\t\twant:   []string{\"This\", \"is\", \"a\", \"test\", \"prompt\"},\n\t\t},\n\t\t{\n\t\t\tname:   \"Prompt with more than n tokens\",\n\t\t\tprompt: []string{\"This\", \"is\", \"a\", \"longer\", \"test\", \"prompt\"},\n\t\t\tn:      4,\n\t\t\twant:   []string{\"This\", \"is\", \"a\", \"longer\"},\n\t\t},\n\t\t{\n\t\t\tname:   \"Prompt with empty tokens\",\n\t\t\tprompt: []string{\"\", \"Hello\", \"\", \"World\", \"\"},\n\t\t\tn:      3,\n\t\t\twant:   []string{\"Hello\", \"World\"},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgot := GetFirstTokens(tt.prompt, tt.n)\n\t\t\tif !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"GetFirstTokens() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestDeleteRange(t *testing.T) {\n\torig := []int{1, 2, 3, 4, 5, 6, 7, 8, 9}\n\n\tt.Run(\"middle range\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\tres, _ := DeleteRange(tt, 2, 5) // Should remove 3,4,5,6 (indices 2-5)\n\t\twant := []int{1, 2, 7, 8, 9}\n\t\tif !reflect.DeepEqual(res, want) {\n\t\t\tt.Errorf(\"DeleteRange() = %v, want %v\", res, want)\n\t\t}\n\t})\n\tt.Run(\"remove first\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\tres, _ := DeleteRange(tt, 0, 0)\n\t\twant := []int{2, 3, 4, 5, 6, 7, 8, 9}\n\t\tif !reflect.DeepEqual(res, want) {\n\t\t\tt.Errorf(\"DeleteRange(remove first) = %v, want %v\", res, want)\n\t\t}\n\t})\n\tt.Run(\"remove last\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\tres, _ := DeleteRange(tt, len(tt)-1, len(tt)-1)\n\t\twant := []int{1, 2, 3, 4, 5, 6, 7, 8}\n\t\tif !reflect.DeepEqual(res, want) {\n\t\t\tt.Errorf(\"DeleteRange(remove last) = %v, want %v\", res, want)\n\t\t}\n\t})\n\tt.Run(\"remove all\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\tres, _ := DeleteRange(tt, 0, len(tt)-1)\n\t\twant := []int{}\n\t\tif !reflect.DeepEqual(res, want) {\n\t\t\tt.Errorf(\"DeleteRange(remove all) = %v, want %v\", res, want)\n\t\t}\n\t})\n}\n\nfunc TestDeleteRangeInvalidInputs(t *testing.T) {\n\torig := []int{1, 2, 3, 4, 5}\n\n\tt.Run(\"invalid range start greater than end\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\t_, err := DeleteRange(tt, 3, 2)\n\t\tif err == nil {\n\t\t\tt.Errorf(\"DeleteRange() expected error for start greater than end, got nil\")\n\t\t}\n\t})\n\n\tt.Run(\"start index out of bounds\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\t_, err := DeleteRange(tt, -1, 2)\n\t\tif err == nil {\n\t\t\tt.Errorf(\"DeleteRange() expected error for start index out of bounds, got nil\")\n\t\t}\n\t})\n\n\tt.Run(\"end index out of bounds\", func(t *testing.T) {\n\t\ttt := make([]int, len(orig))\n\t\tcopy(tt, orig)\n\t\t_, err := DeleteRange(tt, 1, 10)\n\t\tif err == nil {\n\t\t\tt.Errorf(\"DeleteRange() expected error for end index out of bounds, got nil\")\n\t\t}\n\t})\n}\n"

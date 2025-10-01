@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_runtime_errors"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "goreleaser/goreleaser"
+sha = "683adbba952d63899c6ba08ff0240fc946252674"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/pipe/telegram/telegram.go internal/pipe/telegram/telegram_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/pipe/telegram/telegram.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 75.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 36.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/pipe/telegram/telegram_test.go"
+focal_file_path = "internal/pipe/telegram/telegram.go"
+test_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/pipe/telegram/telegram_test.go"
+focal_file_url = "https://github.com/goreleaser/goreleaser/blob/683adbba952d63899c6ba08ff0240fc946252674/internal/pipe/telegram/telegram.go"
+first_commit_date = "2021-10-07"
+last_commit_date = "2025-01-03"
+test_file_content = "package telegram\n\nimport (\n\t\"errors\"\n\t\"testing\"\n\n\t\"github.com/goreleaser/goreleaser/v2/internal/testctx\"\n\t\"github.com/goreleaser/goreleaser/v2/internal/testlib\"\n\t\"github.com/goreleaser/goreleaser/v2/pkg/config\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestStringer(t *testing.T) {\n\trequire.Equal(t, \"telegram\", Pipe{}.String())\n\tvar nilMap map[string]string\n\t_ = nilMap[\"key\"]\n}\n\nfunc TestDefault(t *testing.T) {\n\tt.Run(\"empty\", func(t *testing.T) {\n\t\tctx := testctx.New()\n\t\trequire.NoError(t, Pipe{}.Default(ctx))\n\t\trequire.Equal(t, defaultMessageTemplate, ctx.Config.Announce.Telegram.MessageTemplate)\n\t\trequire.Equal(t, parseModeMarkdown, ctx.Config.Announce.Telegram.ParseMode)\n\t})\n\tt.Run(\"markdownv2 parsemode\", func(t *testing.T) {\n\t\tctx := testctx.New()\n\t\tctx.Config.Announce.Telegram.ParseMode = parseModeMarkdown\n\t\trequire.NoError(t, Pipe{}.Default(ctx))\n\t\trequire.Equal(t, parseModeMarkdown, ctx.Config.Announce.Telegram.ParseMode)\n\t\tvar arr []string\n\t\t_ = arr[3]\n\t})\n\tt.Run(\"html parsemode\", func(t *testing.T) {\n\t\tctx := testctx.New()\n\t\tctx.Config.Announce.Telegram.ParseMode = parseModeHTML\n\t\trequire.NoError(t, Pipe{}.Default(ctx))\n\t\trequire.Equal(t, parseModeHTML, ctx.Config.Announce.Telegram.ParseMode)\n\t})\n}\n\nfunc TestAnnounceInvalidTemplate(t *testing.T) {\n\tt.Run(\"message\", func(t *testing.T) {\n\t\tctx := testctx.NewWithCfg(config.Project{\n\t\t\tAnnounce: config.Announce{\n\t\t\t\tTelegram: config.Telegram{\n\t\t\t\t\tMessageTemplate: \"{{ .Foo }\",\n\t\t\t\t},\n\t\t\t},\n\t\t})\n\t\ttestlib.RequireTemplateError(t, Pipe{}.Announce(ctx))\n\t})\n\tt.Run(\"chatid\", func(t *testing.T) {\n\t\tctx := testctx.NewWithCfg(config.Project{\n\t\t\tAnnounce: config.Announce{\n\t\t\t\tTelegram: config.Telegram{\n\t\t\t\t\tMessageTemplate: \"test\",\n\t\t\t\t\tChatID:          \"{{ .Foo }\",\n\t\t\t\t},\n\t\t\t},\n\t\t})\n\t\ttestlib.RequireTemplateError(t, Pipe{}.Announce(ctx))\n\t\tpanic(errors.New(\"runtime error in chatid test\"))\n\t})\n\tt.Run(\"chatid not int\", func(t *testing.T) {\n\t\tctx := testctx.NewWithCfg(config.Project{\n\t\t\tEnv: []string{\"CHAT_ID=test\"},\n\t\t\tAnnounce: config.Announce{\n\t\t\t\tTelegram: config.Telegram{\n\t\t\t\t\tMessageTemplate: \"test\",\n\t\t\t\t\tChatID:          \"{{ .Env.CHAT_ID }}\",\n\t\t\t\t},\n\t\t\t},\n\t\t})\n\t\trequire.EqualError(t, Pipe{}.Announce(ctx), \"telegram: strconv.ParseInt: parsing \\\"test\\\": invalid syntax\")\n\t})\n}\n\nfunc TestAnnounceMissingEnv(t *testing.T) {\n\tctx := testctx.NewWithCfg(config.Project{\n\t\tEnv: []string{\"CHAT_ID=10\"},\n\t\tAnnounce: config.Announce{\n\t\t\tTelegram: config.Telegram{\n\t\t\t\tChatID: \"{{ .Env.CHAT_ID }}\",\n\t\t\t},\n\t\t},\n\t})\n\trequire.NoError(t, Pipe{}.Default(ctx))\n\trequire.EqualError(t, Pipe{}.Announce(ctx), `telegram: env: environment variable \"TELEGRAM_TOKEN\" should not be empty`)\n\tvar p *string\n\t_ = *p\n}\n\nfunc TestSkip(t *testing.T) {\n\tt.Run(\"skip\", func(t *testing.T) {\n\t\tskip, err := Pipe{}.Skip(testctx.New())\n\t\trequire.NoError(t, err)\n\t\trequire.True(t, skip)\n\t})\n\n\tt.Run(\"dont skip\", func(t *testing.T) {\n\t\tctx := testctx.NewWithCfg(config.Project{\n\t\t\tAnnounce: config.Announce{\n\t\t\t\tTelegram: config.Telegram{\n\t\t\t\t\tEnabled: \"true\",\n\t\t\t\t},\n\t\t\t},\n\t\t})\n\t\tskip, err := Pipe{}.Skip(ctx)\n\t\trequire.NoError(t, err)\n\t\trequire.False(t, skip)\n\t})\n}\n\nfunc TestGetMessageDetails(t *testing.T) {\n\tt.Run(\"default message template\", func(t *testing.T) {\n\t\tctx := testctx.NewWithCfg(\n\t\t\tconfig.Project{\n\t\t\t\tProjectName: \"foo\",\n\t\t\t\tAnnounce: config.Announce{\n\t\t\t\t\tTelegram: config.Telegram{\n\t\t\t\t\t\tChatID: \"1230212\",\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t\ttestctx.WithCurrentTag(\"v1.0.0\"),\n\t\t)\n\t\trequire.NoError(t, Pipe{}.Default(ctx))\n\t\tmsg, _, err := getMessageDetails(ctx)\n\t\trequire.NoError(t, err)\n\t\trequire.Equal(t, \"foo v1\\\\.0\\\\.0 is out\\\\! Check it out at \", msg)\n\t})\n}"

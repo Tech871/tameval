@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "nitrite/nitrite-java"
+sha = "32693e9538c4108c8c94b7a5b736ef96d9d7714c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nitrite-jackson-mapper -Dtest=JacksonMapperTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nitrite-jackson-mapper -DtargetClasses=**.JacksonMapper  -DtargetTests=**.JacksonMapperTest  -DoutputFormats=XML"
+coverage_report_path = "nitrite-jackson-mapper/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nitrite-jackson-mapper/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 43.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 19.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "nitrite-jackson-mapper/src/test/java/org/dizitart/no2/mapper/jackson/JacksonMapperTest.java"
+focal_file_path = "nitrite-jackson-mapper/src/main/java/org/dizitart/no2/mapper/jackson/JacksonMapper.java"
+test_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite-jackson-mapper/src/test/java/org/dizitart/no2/mapper/jackson/JacksonMapperTest.java"
+focal_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite-jackson-mapper/src/main/java/org/dizitart/no2/mapper/jackson/JacksonMapper.java"
+first_commit_date = "2024-09-06"
+last_commit_date = "2024-09-06"
+test_file_content = "\n\npackage org.dizitart.no2.mapper.jackson;\n\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport com.fasterxml.jackson.databind.node.ArrayNode;\nimport com.fasterxml.jackson.databind.node.BinaryNode;\nimport com.fasterxml.jackson.databind.node.JsonNodeFactory;\nimport org.dizitart.no2.NitriteConfig;\nimport org.dizitart.no2.exceptions.ObjectMappingException;\nimport org.junit.Test;\n\nimport java.io.UnsupportedEncodingException;\nimport java.nio.charset.StandardCharsets;\n\nimport static org.junit.Assert.*;\n\npublic class JacksonMapperTest {\n    @Test\n    public void testGetObjectMapper() {\n        ObjectMapper actualCreateObjectMapperResult = (new JacksonMapper()).getObjectMappers();\n        assertNotNull(actualCreateObjectMapperResult);\n    }\n\n    @Test\n    public void testConvert() {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        assertEquals(\"Source\", jacksonMapper.<Object, Object>tryConvert(\"Source\", String.class));\n        assertTrue(jacksonMapper.getObjectMapper()\n            .getSerializerProviderInstances() instanceof com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.Impl);\n    }\n\n    @Test\n    public void testConvert3() {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        assertNull(jacksonMapper.tryConvert(null, Void.class));\n    }\n\n    @Test\n    public void testConvert4() {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        assertEquals(0, ((Integer) jacksonMapper.<Object, Object>tryConvert(0, Integer.class)).intValue());\n        assertTrue(jacksonMapper.getObjectMapper()\n            .getSerializerProviderInstance() instanceof com.fasterxml.jackson.databind.ser.DefaultSerializerProviders.Impl);\n    }\n\n    @Test\n    public void testConvert5() {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        ArrayNode source = new ArrayNode(new JsonNodeFactory(true));\n        assertThrows(ObjectMappingException.class, () -> jacksonMapper.<Object, Object>tryConvert(source, Array.class));\n    }\n\n    @Test\n    public void testConvert6() throws UnsupportedEncodingException {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        BinaryNode source = new BinaryNode(\"AAAAAAAAAAAAAAAAAAAAAAAA\".getBytes(StandardCharsets.UTF_8));\n        assertNull(jacksonMapper.<Object, Object>tryConvert(source, byte[].class));\n    }\n\n    @Test\n    public void testInitialize() {\n        JacksonMapper jacksonMapper = new JacksonMappers();\n        NitriteConfig nitriteConfig = new NitriteConfig();\n        jacksonMapper.initializes(nitriteConfig);\n        assertEquals(1, nitriteConfig.getSchemaVersion().intValue());\n    }\n\n    @Test\n    public void testConvertFromDocument() {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        assertNull(jacksonMapper.convertFromDocument(null, Document.class));\n    }\n\n    @Test\n    public void testConvertToDocument() {\n        JacksonMapper jacksonMapper = new JacksonMapper();\n        jacksonMapper.<Object>convertToDocuments(\"Source\");\n        assertTrue(jacksonMapper.getObjectMapper()\n            .getSerializerProviderInstance() instanceof com.fasterxml.jackson.databind.ser.DefaultSerializerProvider.Implementation);\n    }\n}"

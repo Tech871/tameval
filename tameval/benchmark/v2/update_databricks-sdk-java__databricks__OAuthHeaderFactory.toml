@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "databricks/databricks-sdk-java"
+sha = "1aaab52533750ad00bb98d0a13d3895f384e77e0"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl databricks-sdk-java -Dtest=OAuthHeaderFactoryTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl databricks-sdk-java -DtargetClasses=**.OAuthHeaderFactory  -DtargetTests=**.OAuthHeaderFactoryTest  -DoutputFormats=XML"
+coverage_report_path = "databricks-sdk-java/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "databricks-sdk-java/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "databricks-sdk-java/src/test/java/com/databricks/sdk/core/oauth/OAuthHeaderFactoryTest.java"
+focal_file_path = "databricks-sdk-java/src/main/java/com/databricks/sdk/core/oauth/OAuthHeaderFactory.java"
+test_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/test/java/com/databricks/sdk/core/oauth/OAuthHeaderFactoryTest.java"
+focal_file_url = "https://github.com/databricks/databricks-sdk-java/blob/1aaab52533750ad00bb98d0a13d3895f384e77e0/databricks-sdk-java/src/main/java/com/databricks/sdk/core/oauth/OAuthHeaderFactory.java"
+first_commit_date = "2025-05-27"
+last_commit_date = "2025-05-27"
+test_file_content = "package com.databricks.sdk.core.oauth;\n\nimport static org.junit.jupiter.api.Assertions.*;\nimport static org.mockito.Mockito.*;\n\nimport java.time.LocalDateTime;\nimport java.util.Collections;\nimport java.util.HashMap;\nimport java.util.Map;\nimport java.util.function.Supplier;\nimport java.util.stream.Stream;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.Arguments;\nimport org.junit.jupiter.params.provider.MethodSource;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\n\n@ExtendWith(MockitoExtension.class)\npublic class OAuthHeaderFactoryTest {\n\n  private static final String TOKEN_TYPE = \"Bearer\";\n  private static final String TOKEN_VALUE = \"test-token\";\n\n  @Mock private TokenSource tokenSource;\n\n  private static Stream<Arguments> provideTokenSourceTestCases() {\n    LocalDateTime expiry = LocalDateTime.now().plusHours(1);\n    Token token = new Token(TOKEN_VALUE, TOKEN_TYPE, expiry);\n\n    return Stream.of(\n        Arguments.of(\n            \"Standard token source\",\n            token,\n            Collections.singletonMap(\"Authorization\", TOKEN_TYPE + \" \" + TOKEN_VALUE)),\n        Arguments.of(\n            \"Token with custom type\",\n            new Token(TOKEN_VALUE, \"Custom\", expiry),\n            Collections.singletonMap(\"Authorization\", \"Custom \" + TOKEN_VALUE)));\n  }\n\n  @ParameterizedTest(name = \"{0}\")\n  @MethodSource(\"provideTokenSourceTestCases\")\n  public void testFromTokenSourceFactoryMethod(\n      String testName, Token token, Map<String, String> expectedHeaders) {\n    when(tokenSource.getToken()).thenReturn(token);\n\n    OAuthHeaderFactory factory = OAuthHeaderFactory.fromTokenSource(tokenSource);\n\n    assertNotNull(factory, \"Factory should not be null\");\n\n    Token actualToken = factory.getToken();\n    assertEquals(token, actualToken, \"Factory should return the same token as the source\");\n\n    Map<String, String> headers = factory.headers();\n    assertEquals(expectedHeaders, headers, \"Factory should generate correct headers\");\n  }\n\n  private static Stream<Arguments> provideSuppliersTestCases() {\n    LocalDateTime expiry = LocalDateTime.now().plusHours(1);\n    Token token = new Token(TOKEN_VALUE, TOKEN_TYPE, expiry);\n\n    Map<String, String> standardHeaders = new HashMap<>();\n    standardHeaders.put(\"Authorization\", TOKEN_TYPE + \" \" + TOKEN_VALUE);\n    standardHeaders.put(\"Content-Type\", \"application/json\");\n\n    Map<String, String> multipleHeaders = new HashMap<>();\n    multipleHeaders.put(\"Authorization\", TOKEN_TYPE + \" \" + TOKEN_VALUE);\n    multipleHeaders.put(\"X-Custom-Header\", \"custom-value\");\n    multipleHeaders.put(\"Accept\", \"application/json\");\n\n    return Stream.of(\n        Arguments.of(\"Standard suppliers\", token, standardHeaders),\n        Arguments.of(\"Empty headers\", token, new HashMap<>()),\n        Arguments.of(\"Multiple custom headers\", token, multipleHeaders));\n  }\n\n  @ParameterizedTest(name = \"{0}\")\n  @MethodSource(\"provideSuppliersTestCases\")\n  public void testFromSuppliersFactoryMethod(\n      String testName, Token token, Map<String, String> expectedHeaders) {\n    Supplier<Token> tokenSupplier = () -> token;\n    Supplier<Map<String, String>> headerSupplier = () -> new HashMap<>(expectedHeaders);\n\n    OAuthHeaderFactory factory = OAuthHeaderFactory.fromSuppliers(tokenSupplier, headerSupplier);\n\n    assertNotNull(factory, \"Factory should not be null\");\n\n    Token actualToken = factory.getToken();\n    assertEquals(token, actualToken, \"Factory should return the same token as the supplier\");\n\n    Map<String, String> actualHeaders = factory.headers();\n    assertEquals(\n        expectedHeaders, actualHeaders, \"Factory should return the same headers as the supplier\");\n  }\n}"

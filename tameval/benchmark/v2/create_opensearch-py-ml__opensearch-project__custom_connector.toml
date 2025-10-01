@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.10"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "opensearch-project/opensearch-py-ml"
+sha = "899cb82c8a383925501258dd30098bfa612e8af5"
+
+[run_info]
+docker_image = "python:3.10"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-dev.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=opensearch_py_ml/ml_commons/cli/ml_models/custom_connector.py -m pytest -q --junit-xml=test_output.xml tests/cli/test_ml_models/test_custom_connector.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target opensearch_py_ml.ml_commons.cli.ml_models.custom_connector --unit-test tests.cli.test_ml_models.test_custom_connector --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target opensearch_py_ml/ml_commons/cli/ml_models/custom_connector.py --unit-test tests/cli/test_ml_models/test_custom_connector.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 63.0
+original_coverage = 100.0
+mutation_kill_rate = 56.0
+original_mutation_kill_rate = 96.0
+covered_lines = [ 7, 8, 10, 12, 13, 16, 17, 21, 23, 51, 53, 58, 63, 70, 86, 94, 95, 97, 101, 102, 107, 108, 117, 118, 139, 140, 143, 144, 168,]
+missed_lines = [ 71, 74, 75, 76, 77, 78, 79, 80, 82, 83, 109, 116, 130, 133, 134, 170, 171,]
+
+[input_info]
+test_file_path = "tests/cli/test_ml_models/test_custom_connector.py"
+focal_file_path = "opensearch_py_ml/ml_commons/cli/ml_models/custom_connector.py"
+test_file_url = "https://github.com/opensearch-project/opensearch-py-ml/blob/899cb82c8a383925501258dd30098bfa612e8af5/tests/cli/test_ml_models/test_custom_connector.py"
+focal_file_url = "https://github.com/opensearch-project/opensearch-py-ml/blob/899cb82c8a383925501258dd30098bfa612e8af5/opensearch_py_ml/ml_commons/cli/ml_models/custom_connector.py"
+first_commit_date = "2025-05-27"
+last_commit_date = "2025-05-27"
+test_file_content = "# SPDX-License-Identifier: Apache-2.0\n# The OpenSearch Contributors require contributions made to\n# this file be licensed under the Apache-2.0 license or a\n# compatible open source license.\n# Any modifications Copyright OpenSearch Contributors. See\n# GitHub history for details.\n\nimport unittest\nfrom unittest.mock import Mock, patch\n\nfrom opensearch_py_ml.ml_commons.cli.ml_models.custom_connector import CustomConnector\n\nclass TestCustomConnector(unittest.TestCase):\n    def setUp(self):\n        self.mock_helper = Mock()\n        self.mock_save_config = Mock()\n        self.service_type = CustomConnector.AMAZON_OPENSEARCH_SERVICE\n        self.custom_connector = CustomConnector(service_type=self.service_type)\n        self.connector_role_prefix = \"test_role\"\n        self.connector_secret_name = \"test_secret_name\"\n        self.connector_role_inline_policy = {\n            \"Version\": \"2012-10-17\",\n            \"Statement\": [\n                {\"Effect\": \"Allow\", \"Action\": [\"s3:GetObject\"], \"Resource\": [\"*\"]}\n            ],\n        }\n        self.api_key = \"test_api_key\"\n        self.connector_body = {\n            \"name\": \"Test Model\",\n            \"description\": \"Test description\",\n            \"version\": \"1\",\n            \"parameters\": {\"api_name\": \"test_api_name\"},\n        }\n\n    def test_create_connector_with_secret(self):\n        \"\"\"Test creating custom connector with secret\"\"\"\n        # Setup\n        self.mock_helper.create_connector_with_secret.return_value = (\n            \"test_connector_id\",\n            \"test_role_arn\",\n            \"test_secret_arn\",\n        )\n\n        # Execute\n        result = self.custom_connector.create_connector(\n            helper=self.mock_helper,\n            save_config_method=self.mock_save_config,\n            connector_role_prefix=self.connector_role_prefix,\n            connector_secret_name=self.connector_secret_name,\n            required_policy=False,\n            required_secret=True,\n            api_key=self.api_key,\n            connector_body=self.connector_body,\n        )\n\n        # Verify method calls\n        self.mock_helper.create_connector_with_secret.assert_called_once()\n        self.assertTrue(result)\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

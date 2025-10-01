@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "go-kratos/kratos"
+sha = "f7f150c3f1395d9e7b10c808488b8334a42563ed"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/host/host.go internal/host/host_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/host/host.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 63.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 34.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/host/host_test.go"
+focal_file_path = "internal/host/host.go"
+test_file_url = "https://github.com/go-kratos/kratos/blob/f7f150c3f1395d9e7b10c808488b8334a42563ed/internal/host/host_test.go"
+focal_file_url = "https://github.com/go-kratos/kratos/blob/f7f150c3f1395d9e7b10c808488b8334a42563ed/internal/host/host.go"
+first_commit_date = "2021-02-17"
+last_commit_date = "2025-04-27"
+test_file_content = "package host\n\nimport (\n\t\"net\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestValidIP(t *testing.T) {\n\ttests := []struct {\n\t\taddr   string\n\t\texpect bool\n\t}{\n\t\t{\"127.0.0.1\", false},\n\t\t{\"255.255.255.255\", false},\n\t\t{\"0.0.0.0\", false},\n\t\t{\"localhost\", false},\n\t\t{\"10.1.0.1\", true},\n\t\t{\"172.16.0.1\", true},\n\t\t{\"192.168.1.1\", true},\n\t\t{\"8.8.8.8\", true},\n\t\t{\"1.1.1.1\", true},\n\t\t{\"9.255.255.255\", true},\n\t\t{\"10.0.0.0\", true},\n\t\t{\"10.255.255.255\", true},\n\t\t{\"11.0.0.0\", true},\n\t\t{\"172.15.255.255\", true},\n\t\t{\"172.16.0.0\", true},\n\t\t{\"172.16.255.255\", true},\n\t\t{\"172.23.18.255\", true},\n\t\t{\"172.31.255.255\", true},\n\t\t{\"172.31.0.0\", true},\n\t\t{\"172.32.0.0\", true},\n\t\t{\"192.167.255.255\", true},\n\t\t{\"192.168.0.0\", true},\n\t\t{\"192.168.255.255\", true},\n\t\t{\"192.169.0.0\", true},\n\t\t{\"fbff:ffff:ffff:ffff:ffff:ffff:ffff:ffff\", true},\n\t\t{\"fc00::\", true},\n\t\t{\"fcff:1200:0:44::\", true},\n\t\t{\"fdff:ffff:ffff:ffff:ffff:ffff:ffff:ffff\", true},\n\t\t{\"fe00::\", true},\n\t}\n\tfor _, test := range tests {\n\t\tt.Run(test.addr, func(t *testing.T) {\n\t\t\tres := isValidIP(test.addr)\n\t\t\tif res != test.expect {\n\t\t\t\tt.Fatalf(\"expected %t got %t\", test.expect, res)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestExtract(t *testing.T) {\n\ttests := []struct {\n\t\taddr   string\n\t\texpect string\n\t}{\n\t\t{\"127.0.0.1:80\", \"127.0.0.1:80\"},\n\t\t{\"10.0.0.1:80\", \"10.0.0.1:80\"},\n\t\t{\"172.16.0.1:80\", \"172.16.0.1:80\"},\n\t\t{\"192.168.1.1:80\", \"192.168.1.1:80\"},\n\t\t{\"0.0.0.0:80\", \"\"},\n\t\t{\"[::]:80\", \"\"},\n\t\t{\":80\", \"\"},\n\t}\n\tfor _, test := range tests {\n\t\tt.Run(test.addr, func(t *testing.T) {\n\t\t\tres, err := Extract(test.addr, nil)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\t\t\tif res != test.expect && (test.expect == \"\" && test.addr == test.expect) {\n\t\t\t\tt.Fatalf(\"expected %s got %s\", test.expect, res)\n\t\t\t}\n\t\t})\n\t}\n\tlis, err := net.Listen(\"tcp\", \":12345\")\n\tassert.NoError(t, err)\n\tres, err := Extract(\"\", lis)\n\tassert.NoError(t, err)\n\texpect, err := Extract(lis.Addr().String(), nil)\n\tassert.NoError(t, err)\n\tassert.Equal(t, expect, res)\n}\n\nfunc TestExtract2(t *testing.T) {\n\taddr := \"localhost:9001\"\n\tlis, err := net.Listen(\"tcp\", addr)\n\tif err == nil {\n\t\tassert.Nil(t, err)\n\t}\n\tres, err := Extract(addr, lis)\n\tif err == nil {\n\t\tassert.Nil(t, err)\n\t}\n\tassert.Equal(t, res, \"localhost:9001\")\n}\n\nfunc TestPort(t *testing.T) {\n\tlis, err := net.Listen(\"tcp\", \":0\")\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tport, ok := Port(lis)\n\tif !ok || port == 0 {\n\t\tt.Fatalf(\"expected: %s got %d\", lis.Addr().String(), port)\n\t}\n}\n\nfunc TestExtractHostPort(t *testing.T) {\n\thost, port, err := ExtractHostPort(\"127.0.0.1:8000\")\n\tif err != nil {\n\t\tt.Fatalf(\"expected: %v got %v\", nil, err)\n\t}\n\tt.Logf(\"host port: %s,  %d\", host, port)\n\n\thost, port, err = ExtractHostPort(\"www.bilibili.com:80\")\n\tif err != nil {\n\t\tt.Fatalf(\"expected: %v got %v\", nil, err)\n\t}\n\tt.Logf(\"host port: %s,  %d\", host, port)\n\n\thost, port, err = ExtractHostPort(\"consul://2/33\")\n\tif err == nil {\n\t\tt.Fatalf(\"expected: not nil got %v\", nil)\n\t}\n\tt.Logf(\"host port: %s,  %d\", host, port)\n}\n\nfunc TestIpIsUp(t *testing.T) {\n\tinterfaces, err := net.Interfaces()\n\tif err != nil {\n\t\tt.Fail()\n\t}\n\tfor i := range interfaces {\n\t\tprintln(interfaces[i].Name, interfaces[i].Flags&net.FlagUp)\n\t}\n}"

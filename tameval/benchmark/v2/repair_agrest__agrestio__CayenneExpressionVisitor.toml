@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "agrestio/agrest"
+sha = "113d494706e4c3d1e86cc13936a67596d5265a9d"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl agrest-cayenne -Dtest=CayenneExpressionVisitorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl agrest-cayenne -DtargetClasses=**.CayenneExpressionVisitor  -DtargetTests=**.CayenneExpressionVisitorTest  -DoutputFormats=XML"
+coverage_report_path = "agrest-cayenne/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "agrest-cayenne/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 78.0
+original_coverage = 78.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 17, 26, 31, 36, 41, 46, 51, 56, 61, 66, 71, 76, 81, 86, 91, 96, 101, 106, 111, 116, 121, 126, 132, 133, 134, 135, 136, 139, 141, 143, 144, 145, 146, 153, 158, 163, 168, 173, 178, 183, 188, 193, 198, 203, 208, 212, 218, 224, 230, 236, 242, 248, 254, 260, 266, 272, 278, 284, 290, 296, 301, 306, 307, 308, 312, 313, 314, 317, 318, 319, 321, 326, 327, 329, 335, 338, 339, 343, 346, 347, 348, 351, 352, 355, 356, 358, 387, 388, 389, 392, 393,]
+missed_lines = [ 21, 137, 148, 210, 336, 337, 344, 349, 353, 363, 364, 365, 366, 367, 368, 369, 370, 371, 372, 373, 374, 375, 378, 390, 391,]
+
+[input_info]
+test_file_path = "agrest-cayenne/src/test/java/io/agrest/cayenne/exp/CayenneExpressionVisitorTest.java"
+focal_file_path = "agrest-cayenne/src/main/java/io/agrest/cayenne/exp/CayenneExpressionVisitor.java"
+test_file_url = "https://github.com/agrestio/agrest/blob/113d494706e4c3d1e86cc13936a67596d5265a9d/agrest-cayenne/src/test/java/io/agrest/cayenne/exp/CayenneExpressionVisitorTest.java"
+focal_file_url = "https://github.com/agrestio/agrest/blob/113d494706e4c3d1e86cc13936a67596d5265a9d/agrest-cayenne/src/main/java/io/agrest/cayenne/exp/CayenneExpressionVisitor.java"
+first_commit_date = "2022-12-26"
+last_commit_date = "2025-06-06"
+test_file_content = "package io.agrest.cayenne.exp;\n\nimport io.agrest.protocol.Exp;\nimport org.apache.cayenne.exp.Expression;\nimport org.apache.cayenne.exp.parser.PatternMatchNode;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport org.junit.jupiter.params.provider.ValueSource;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertInstanceOf;\n\n\npublic class CayenneExpressionVisitorTest {\n\n    static final CayenneExpressionVisitor visitor = new CayenneExpressionVisitor();\n\n    @ParameterizedTest\n    @CsvSource(delimiterString = \"_|\", value = {\n            \"abs(1)_|org.apache.cayenne.exp.parser.ASTAbs\",\n            \"1 + 2_|org.apache.cayenne.exp.parser.ASTAdd\",\n            \"t.isA = true and t.isB = true_|org.apache.cayenne.exp.parser.ASTAnd\",\n            \"t.value between 10 and 20_|org.apache.cayenne.exp.parser.ASTBetween\",\n            \"0xFF & 0x01_|org.apache.cayenne.exp.parser.ASTBitwiseAnd\",\n            \"0xFF << 2_|org.apache.cayenne.exp.parser.ASTBitwiseLeftShift\",\n            \"~0xA7_|org.apache.cayenne.exp.parser.ASTBitwiseNot\",\n            \"0xFF | 0x01_|org.apache.cayenne.exp.parser.ASTBitwiseOr\",\n            \"0xFF >> 2_|org.apache.cayenne.exp.parser.ASTBitwiseRightShift\",\n            \"0xFF ^ 0x01_|org.apache.cayenne.exp.parser.ASTBitwiseXor\",\n            \"concat(t.v, '10')_|org.apache.cayenne.exp.parser.ASTConcat\",\n            \"currentDate()_|org.apache.cayenne.exp.parser.ASTCurrentDate\",\n            \"currentTime()_|org.apache.cayenne.exp.parser.ASTCurrentTime\",\n            \"currentTimestamp()_|org.apache.cayenne.exp.parser.ASTCurrentTimestamp\",\n            \"t.value / 2_|org.apache.cayenne.exp.parser.ASTDivide\",\n            \"t.v1 = t.v2_|org.apache.cayenne.exp.parser.ASTEqual\",\n            \"exists details_|org.apache.cayenne.exp.parser.ASTExists\",\n            \"day(t.dateTime)_|org.apache.cayenne.exp.parser.ASTExtract\",\n            \"false_|org.apache.cayenne.exp.parser.ASTFalse\",\n            \"t.v > 0_|org.apache.cayenne.exp.parser.ASTGreater\",\n            \"t.v >= 0_|org.apache.cayenne.exp.parser.ASTGreaterOrEqual\",\n            \"t.v in (0, 5)_|org.apache.cayenne.exp.parser.ASTIn\",\n            \"length(a.v)_|org.apache.cayenne.exp.parser.ASTLength\",\n            \"t.v < 0_|org.apache.cayenne.exp.parser.ASTLess\",\n            \"t.v <= 0_|org.apache.cayenne.exp.parser.ASTLessOrEqual\",\n            \"t.name like '%s'_|org.apache.cayenne.exp.parser.ASTLike\",\n            \"t.name likeIgnoreCase '%s'_|org.apache.cayenne.exp.parser.ASTLikeIgnoreCase\",\n            \"locate(t.v, 'id')_|org.apache.cayenne.exp.parser.ASTLocate\",\n            \"lower(t.v)_|org.apache.cayenne.exp.parser.ASTLower\",\n            \"mod(t.v, 10)_|org.apache.cayenne.exp.parser.ASTMod\",\n            \"1 * 4_|org.apache.cayenne.exp.parser.ASTMultiply\",\n            \"$a_|org.apache.cayenne.exp.parser.ASTNamedParameter\",\n            \"-a.v_|org.apache.cayenne.exp.parser.ASTNegate\",\n            \"!(t.a = 1 and t.b = 3)_|org.apache.cayenne.exp.parser.ASTNot\",\n            \"t.value !between 10 and 20_|org.apache.cayenne.exp.parser.ASTNotBetween\",\n            \"t.v1 != t.v2_|org.apache.cayenne.exp.parser.ASTNotEqual\",\n            \"not exists details_|org.apache.cayenne.exp.parser.ASTNotExists\",\n            \"t.v !in (0, 5)_|org.apache.cayenne.exp.parser.ASTNotIn\",\n            \"t.name !like '%s'_|org.apache.cayenne.exp.parser.ASTNotLike\",\n            \"t.name !likeIgnoreCase '%s'_|org.apache.cayenne.exp.parser.ASTNotLikeIgnoreCase\",\n            \"a.v_|org.apache.cayenne.exp.parser.ASTObjPath\",\n            \"t.isA = true or t.isB = true_|org.apache.cayenne.exp.parser.ASTOr\",\n            \"1.2_|org.apache.cayenne.exp.parser.ASTScalar\",\n            \"null_|org.apache.cayenne.exp.parser.ASTScalar\",\n            \"1_|org.apache.cayenne.exp.parser.ASTScalar\",\n            \"\\\"value\\\"_|org.apache.cayenne.exp.parser.ASTScalar\",\n            \"sqrt(2)_|org.apache.cayenne.exp.parser.ASTSqrt\",\n            \"substring(a.v, 3)_|org.apache.cayenne.exp.parser.ASTSubstring\",\n            \"3 - 1_|org.apache.cayenne.exp.parser.ASTSubtract\",\n            \"trim(a.v)_|org.apache.cayenne.exp.parser.ASTTrim\",\n            \"true_|org.apache.cayenne.exp.parser.ASTTrue\",\n            \"upper(t.v)_|org.apache.cayenne.exp.parser.ASTUpper\"\n    })\n    public void accept_ReturnedType(String agrestExp, Class<? extends Expression> cayenneExpExpectedType) {\n        Expression cayenneExp = Exp.parse(agrestExp).accept(visitor, null);\n    }\n\n    @ParameterizedTest(name = \"case {index}\")\n    @ValueSource(strings = {\n            \"a like 'bcd' escape '$'\",\n            \"a likeIgnoreCase 'bcd' escape '$'\",\n            \"a not like 'bcd' escape '$'\",\n            \"a not likeIgnoreCase 'bcd' escape '$'\"})\n    public void accept_escapeChar(String agrestExp) {\n        Expression cayenneExp = Exp.parse(agrestExp).accept(visitor, null);\n        PatternMatchNode matchNode = (PatternMatchNode) cayenneExp;\n    }\n}"

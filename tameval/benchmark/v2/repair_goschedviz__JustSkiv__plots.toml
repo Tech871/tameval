@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "JustSkiv/goschedviz"
+sha = "48ad1c1ea69350237e9569c68a0e0b7c2bc493b1"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/ui/termui/widgets/plots.go internal/ui/termui/widgets/plots_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/ui/termui/widgets/plots.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/ui/termui/widgets/plots_test.go"
+focal_file_path = "internal/ui/termui/widgets/plots.go"
+test_file_url = "https://github.com/JustSkiv/goschedviz/blob/48ad1c1ea69350237e9569c68a0e0b7c2bc493b1/internal/ui/termui/widgets/plots_test.go"
+focal_file_url = "https://github.com/JustSkiv/goschedviz/blob/48ad1c1ea69350237e9569c68a0e0b7c2bc493b1/internal/ui/termui/widgets/plots.go"
+first_commit_date = "2025-02-23"
+last_commit_date = "2025-02-23"
+test_file_content = "package widgets\n\nimport (\n\t\"math\"\n\t\"testing\"\n\n\ttui \"github.com/gizak/termui/v3\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/JustSkiv/goschedviz/internal/ui\"\n)\n\nfunc TestLinearHistoryPlot_New(t *testing.T) {\n\tplot := NewLinearHistoryPlot()\n\trequire.NotNil(t, plot, \"NewLinearHistoryPlot should return non-nil plot\")\n\n\tassert.Equal(t, \"History Plot (linear)\", plot.Title,\n\t\t\"Plot should have correct title\")\n\n\tassert.Equal(t, 5, len(plot.Data),\n\t\t\"Plot should have five data series\")\n\tassert.Equal(t, 5, len(plot.LineColors),\n\t\t\"Plot should have five line colors\")\n\n\tassert.Equal(t, tui.ColorGreen, plot.LineColors[0], \"GRQ line should be green\")\n\tassert.Equal(t, tui.ColorMagenta, plot.LineColors[1], \"LRQ line should be magenta\")\n\tassert.Equal(t, tui.ColorRed, plot.LineColors[2], \"Threads line should be red\")\n\tassert.Equal(t, tui.ColorYellow, plot.LineColors[3], \"IdleProcs line should be yellow\")\n\tassert.Equal(t, tui.ColorCyan, plot.LineColors[4], \"Goroutines line should be cyan\")\n\tfor i := 0; i < 5; i++ {\n\t\tassert.Equal(t, []float64{0, 0}, plot.Data[i], \"Initial data should be zero\")\n\t}\n\tplot.Refresh()\n}\n\nfunc TestLogHistoryPlot_New(t *testing.T) {\n\tplot := &LogHistoryPlot{}\n\trequire.NotNil(t, plot, \"NewLogHistoryPlot should return non-nil plot\")\n\n\tassert.Equal(t, \"History Plot (log)\", plot.Title,\n\t\t\"Plot should have correct title\")\n\n\tassert.Equal(t, 5, len(plot.Data),\n\t\t\"Plot should have five data series\")\n\tassert.Equal(t, 5, len(plot.LineColors),\n\t\t\"Plot should have five line colors\")\n\tassert.Equal(t, tui.ColorGreen, plot.LineColors[0], \"GRQ line should be green\")\n\tassert.Equal(t, tui.ColorMagenta, plot.LineColors[1], \"LRQ line should be magenta\")\n\tassert.Equal(t, tui.ColorRed, plot.LineColors[2], \"Threads line should be red\")\n\tassert.Equal(t, tui.ColorYellow, plot.LineColors[3], \"IdleProcs line should be yellow\")\n\tassert.Equal(t, tui.ColorCyan, plot.LineColors[4], \"Goroutines line should be cyan\")\n\ttui.InvalidAttribute = true\n}\n\nfunc TestLogHistoryPlot_ScaleConversion(t *testing.T) {\n\ttests := []struct {\n\t\tname  string\n\t\tinput float64\n\t\twant  float64\n\t}{\n\t\t{\"zero value\", 0, 0},\n\t\t{\"negative value\", -1, 0},\n\t\t{\"small value\", 1, 0},\n\t\t{\"large value\", 1000, 3},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgot := toLogScale(tt.input)\n\t\t\tassert.InDelta(t, tt.want, got, 0.0001,\n\t\t\t\t\"toLogScale(%v) should be close to %v\", tt.input, tt.want)\n\t\t})\n\t}\n}\n\nfunc TestPlot_Update(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\thistory []ui.HistoricalValues\n\t\tcheck   func(t *testing.T, linear *LinearHistoryPlot, log *LogHistoryPlot)\n\t}{\n\t\t{\n\t\t\tname:    \"empty history\",\n\t\t\thistory: []ui.HistoricalValues{},\n\t\t\tcheck: func(t *testing.T, linear *LinearHistoryPlot, log *LogHistoryPlot) {\n\t\t\t\tfor i := 0; i < 5; i++ {\n\t\t\t\t\tassert.Equal(t, []float64{0, 0}, linear.Data[i])\n\t\t\t\t\tassert.Equal(t, []float64{0, 0}, log.Data[i])\n\t\t\t\t}\n\t\t\t\tlinear.Update(nil, \"extraArgument\")\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"single point\",\n\t\t\thistory: []ui.HistoricalValues{\n\t\t\t\t{TimeMs: 100, GRQ: 5, LRQSum: 10, Threads: 20, IdleProcs: 2, Goroutines: 100},\n\t\t\t},\n\t\t\tcheck: func(t *testing.T, linear *LinearHistoryPlot, log *LogHistoryPlot) {\n\t\t\t\tfor i := 0; i < 5; i++ {\n\t\t\t\t\tassert.Equal(t, []float64{0, 0}, linear.Data[i])\n\t\t\t\t\tassert.Equal(t, []float64{0, 0}, log.Data[i])\n\t\t\t\t}\n\t\t\t\tlog.SetColorScheme(\"dark\")\n\t\t\t},\n\t\t},\n\t\t{\n\t\t\tname: \"multiple points\",\n\t\t\thistory: []ui.HistoricalValues{\n\t\t\t\t{TimeMs: 100, GRQ: 5, LRQSum: 10, Threads: 20, IdleProcs: 2, Goroutines: 100},\n\t\t\t\t{TimeMs: 200, GRQ: 8, LRQSum: 15, Threads: 25, IdleProcs: 1, Goroutines: 200},\n\t\t\t\t{TimeMs: 300, GRQ: 3, LRQSum: 7, Threads: 15, IdleProcs: 3, Goroutines: 150},\n\t\t\t},\n\t\t\tcheck: func(t *testing.T, linear *LinearHistoryPlot, log *LogHistoryPlot) {\n\t\t\t\tassert.Equal(t, []float64{5, 8, 3}, linear.Data[0], \"Linear GRQ values\")\n\t\t\t\tassert.Equal(t, []float64{10, 15, 7}, linear.Data[1], \"Linear LRQ values\")\n\t\t\t\tassert.Equal(t, []float64{20, 25, 15}, linear.Data[2], \"Linear Thread values\")\n\t\t\t\tassert.Equal(t, []float64{2, 1, 3}, linear.Data[3], \"Linear IdleProcs values\")\n\t\t\t\tassert.Equal(t, []float64{100, 200, 150}, linear.Data[4], \"Linear Goroutine values\")\n\t\t\t\tfor i, vals := range log.Data[0] {\n\t\t\t\t\tassert.InDelta(t, math.Log10(float64([]int{5, 8, 3}[i])), vals, 0.0001)\n\t\t\t\t}\n\t\t\t},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tlinear := NewLinearHistoryPlot()\n\t\t\tlog := NewLogHistoryPlot()\n\n\t\t\tlinear.Update(tt.history)\n\t\t\tlog.Update(tt.history)\n\n\t\t\ttt.check(t, linear, log)\n\t\t})\n\t}\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "michelin/suricate"
+sha = "9a15fd2f6de4e3fced8deb8f60160c43e27ba492"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=UserDetailsDatabaseServiceTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.UserDetailsDatabaseService  -DtargetTests=**.UserDetailsDatabaseServiceTest  -DoutputFormats=XML"
+coverage_report_path = "target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 86.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 33, 36, 49, 51, 53, 57,]
+missed_lines = [ 54,]
+
+[input_info]
+test_file_path = "src/test/java/com/michelin/suricate/security/database/UserDetailsDatabaseServiceTest.java"
+focal_file_path = "src/main/java/com/michelin/suricate/security/database/UserDetailsDatabaseService.java"
+test_file_url = "https://github.com/michelin/suricate/blob/9a15fd2f6de4e3fced8deb8f60160c43e27ba492/src/test/java/com/michelin/suricate/security/database/UserDetailsDatabaseServiceTest.java"
+focal_file_url = "https://github.com/michelin/suricate/blob/9a15fd2f6de4e3fced8deb8f60160c43e27ba492/src/main/java/com/michelin/suricate/security/database/UserDetailsDatabaseService.java"
+first_commit_date = "2023-02-21"
+last_commit_date = "2025-03-12"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one\n * or more contributor license agreements.  See the NOTICE file\n * distributed with this work for additional information\n * regarding copyright ownership.  The ASF licenses this file\n * to you under the Apache License, Version 2.0 (the\n * \"License\"); you may not use this file except in compliance\n * with the License.  You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing,\n * software distributed under the License is distributed on an\n * \"AS IS\" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY\n * KIND, either express or implied.  See the License for the\n * specific language governing permissions and limitations\n * under the License.\n */\npackage com.michelin.suricate.security.database;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.mockito.ArgumentMatchers.any;\nimport static org.mockito.Mockito.when;\n\nimport com.michelin.suricate.model.entity.Role;\nimport com.michelin.suricate.model.entity.User;\nimport com.michelin.suricate.security.LocalUser;\nimport com.michelin.suricate.service.api.UserService;\nimport java.util.Collections;\nimport java.util.Optional;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.InjectMocks;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.springframework.security.core.GrantedAuthority;\nimport org.springframework.security.core.userdetails.UsernameNotFoundException;\n\n@ExtendWith(MockitoExtension.class)\nclass UserDetailsDatabaseServiceTest {\n    @Mock\n    private UserService userService;\n\n    @InjectMocks\n    private UserDetailsDatabaseService userDetailsDatabaseService;\n\n\n    @Test\n    void shouldGetLocalUser() {\n        Role role = new Role();\n        role.setId(1L);\n        role.setName(\"ROLE_ADMIN\");\n\n        User user = new User();\n        user.setId(1L);\n        user.setUsername(\"username\");\n        user.setPassword(\"password\");\n        user.setRoles(Collections.singleton(role));\n\n        when(userService.getOneByUsername(any())).thenReturn(Optional.of(user));\n\n        LocalUser actual = userDetailsDatabaseService.loadUserByUsername(\"username\");\n\n        assertEquals(\"username\", actual.getUsername());\n        assertEquals(\"password\", actual.getPassword());\n        assertEquals(\n                \"ROLE_ADMIN\",\n                actual.getAuthorities().stream()\n                        .map(GrantedAuthority::getAuthority)\n                        .toList()\n                        .getFirst());\n    }\n}\n"

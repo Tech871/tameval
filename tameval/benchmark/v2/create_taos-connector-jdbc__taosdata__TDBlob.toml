@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "taosdata/taos-connector-jdbc"
+sha = "180ba59e0aa7793a85db8d1cc332722f324b0b9d"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=TDBlobTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.TDBlob  -DtargetTests=**.TDBlobTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 97.0
+original_coverage = 97.0
+mutation_kill_rate = 74.0
+original_mutation_kill_rate = 74.0
+covered_lines = [ 16, 17, 19, 20, 21, 22, 26, 27, 32, 34, 36, 40, 41, 44, 45, 48, 49, 50, 55, 56, 62, 63, 68, 71, 72, 75, 76, 77, 81, 82, 83, 85, 86, 89, 90, 92, 93, 94, 97, 99, 102, 103, 105, 107, 112, 113, 116, 120, 121, 122, 127, 132, 136, 137, 140, 141, 142, 147, 153, 154, 155, 157, 161, 164, 165, 168, 169, 172, 177, 178, 180, 185, 186, 187, 190, 191, 194, 198, 199, 200, 204, 205, 206,]
+missed_lines = [ 117, 128, 133,]
+
+[input_info]
+test_file_path = "src/test/java/com/taosdata/jdbc/common/TDBlobTest.java"
+focal_file_path = "src/main/java/com/taosdata/jdbc/common/TDBlob.java"
+test_file_url = "https://github.com/taosdata/taos-connector-jdbc/blob/180ba59e0aa7793a85db8d1cc332722f324b0b9d/src/test/java/com/taosdata/jdbc/common/TDBlobTest.java"
+focal_file_url = "https://github.com/taosdata/taos-connector-jdbc/blob/180ba59e0aa7793a85db8d1cc332722f324b0b9d/src/main/java/com/taosdata/jdbc/common/TDBlob.java"
+first_commit_date = "2025-07-26"
+last_commit_date = "2025-07-26"
+test_file_content = "package com.taosdata.jdbc.common;\n\nimport org.junit.After;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.io.IOException;\nimport java.io.InputStream;\nimport java.io.OutputStream;\nimport java.sql.Blob;\nimport java.sql.SQLException;\n\nimport static org.junit.Assert.*;\n\npublic class TDBlobTest {\n\n    private TDBlob writableBlob;\n    private TDBlob readOnlyBlob;\n    private final byte[] testData = {1, 2, 3, 4, 5};\n\n    @Before\n    public void setUp() {\n        writableBlob = new TDBlob(testData.clone(), false);\n        readOnlyBlob = new TDBlob(testData.clone(), true);\n    }\n\n    @After\n    public void tearDown() throws SQLException {\n        if (writableBlob != null) writableBlob.free();\n        if (readOnlyBlob != null) readOnlyBlob.free();\n    }\n\n    @Test\n    public void testLength() throws SQLException {\n        assertEquals(5, writableBlob.length());\n    }\n\n    @Test(expected = SQLException.class)\n    public void testLengthAfterFree() throws SQLException {\n        writableBlob.free();\n        writableBlob.length();\n    }\n\n    @Test\n    public void testGetBytes() throws SQLException {\n        // normal range\n        byte[] result = writableBlob.getBytes(1, 3);\n        assertArrayEquals(new byte[]{1, 2, 3}, result);\n\n        // length out range\n        result = writableBlob.getBytes(3, 10);\n        assertArrayEquals(new byte[]{3, 4, 5}, result);\n\n        // edge test\n        result = writableBlob.getBytes(5, 1);\n        assertArrayEquals(new byte[]{5}, result);\n    }\n\n    @Test(expected = SQLException.class)\n    public void testGetBytesPositionTooLow() throws SQLException {\n        writableBlob.getBytes(0, 1);\n    }\n\n    @Test(expected = SQLException.class)\n    public void testGetBytesPositionTooHigh() throws SQLException {\n        writableBlob.getBytes(6, 1);\n    }\n\n    @Test\n    public void testGetBinaryStream() throws SQLException, IOException {\n        InputStream is = writableBlob.getBinaryStream();\n        assertEquals(1, is.read());\n        assertEquals(2, is.read());\n        is.close();\n    }\n\n    @Test\n    public void testPositionBlobPattern() throws SQLException {\n        Blob pattern = new TDBlob(new byte[]{3, 4}, false);\n        assertEquals(3, writableBlob.position(pattern, 1));\n        assertEquals(-1, readOnlyBlob.position(pattern, 0));\n        assertEquals(-1, readOnlyBlob.position(pattern, 6));\n\n        // could not find\n        pattern = new TDBlob(new byte[]{6, 7}, false);\n        assertEquals(-1, writableBlob.position(pattern, 1));\n\n        // empty data\n        pattern = new TDBlob(new byte[]{}, false);\n        assertEquals(1, writableBlob.position(pattern, 1));\n    }\n\n    @Test\n    public void testPositionByteArrayPattern() throws SQLException {\n        // can be find\n        assertEquals(2, writableBlob.position(new byte[]{2, 3}, 1));\n\n        // find from position\n        assertEquals(4, writableBlob.position(new byte[]{4, 5}, 2));\n\n        // could not find\n        assertEquals(-1, writableBlob.position(new byte[]{6, 7}, 1));\n\n        // empty data\n        assertEquals(1, writableBlob.position(new byte[]{}, 1));\n\n        // Boyer-Moore test\n        byte[] longData = \"ABCABDABACDABABCABAB\".getBytes();\n        byte[] pattern = \"ABABCABAB\".getBytes();\n        TDBlob longBlob = new TDBlob(longData, true);\n        assertEquals(12, longBlob.position(pattern, 1));\n    }\n\n    @Test\n    public void testSetBytes() throws SQLException {\n        int result = writableBlob.setBytes(1, new byte[]{9, 8, 7});\n        assertEquals(3, result);\n        assertArrayEquals(new byte[]{9, 8, 7}, writableBlob.getBytes(1, 3));\n    }\n\n    @Test(expected = SQLException.class)\n    public void testSetBytesOnReadOnly() throws SQLException {\n        readOnlyBlob.setBytes(1, new byte[]{9, 8, 7});\n    }\n\n    @Test(expected = SQLException.class)\n    public void testSetBytesInvalidPosition() throws SQLException {\n        readOnlyBlob.setBytes(2, new byte[]{9, 8, 7});\n    }\n\n    @Test\n    public void testSetBytesWithOffset() throws SQLException {\n        int result = writableBlob.setBytes(1, new byte[]{9, 8, 7, 6}, 1, 2);\n        assertEquals(2, result);\n        assertArrayEquals(new byte[]{8, 7}, writableBlob.getBytes(1, 20));\n    }\n\n    @Test(expected = SQLException.class)\n    public void testSetBytesWithInvalidOffset() throws SQLException {\n        writableBlob.setBytes(1, new byte[]{1, 2}, 1, 2);\n    }\n\n    @Test(expected = SQLException.class)\n    public void testTruncate() throws SQLException {\n        writableBlob.truncate(2);\n    }\n\n    @Test\n    public void testFree() throws SQLException {\n        writableBlob.free();\n        writableBlob.free();\n    }\n\n    @Test\n    public void testGetBinaryStreamWithRange() throws SQLException, IOException {\n        InputStream is = writableBlob.getBinaryStream(2, 3);\n        assertEquals(2, is.read());\n        assertEquals(3, is.read());\n        assertEquals(4, is.read());\n        assertEquals(-1, is.read()); // 超出范围\n        is.close();\n    }\n\n    @Test(expected = SQLException.class)\n    public void testGetBinaryStreamInvalidRange() throws SQLException {\n        writableBlob.getBinaryStream(0, 1);\n    }\n\n    @Test\n    public void testSetBinaryStream() throws SQLException, IOException {\n        OutputStream os = writableBlob.setBinaryStream(1);\n        os.write(new byte[]{10, 20, 30});\n        os.close();\n\n        assertArrayEquals(new byte[]{10, 20, 30}, writableBlob.getBytes(1, 3));\n    }\n\n    @Test(expected = SQLException.class)\n    public void testSetBinaryStreamOnReadOnly() throws SQLException {\n        readOnlyBlob.setBinaryStream(1);\n    }\n\n    @Test(expected = SQLException.class)\n    public void testSetBinaryStreamInvalidPosition() throws SQLException {\n        writableBlob.setBinaryStream(2);\n    }\n\n    @Test\n    public void testTDOutputStream() throws IOException, SQLException {\n        OutputStream os = writableBlob.setBinaryStream(1);\n        os.write(1);\n        os.write(2);\n        os.write(3);\n        os.close();\n\n        assertArrayEquals(new byte[]{1, 2, 3}, writableBlob.getBytes(1, 3));\n    }\n}"

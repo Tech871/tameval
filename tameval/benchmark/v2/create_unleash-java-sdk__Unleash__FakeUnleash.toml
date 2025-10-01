@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "Unleash/unleash-java-sdk"
+sha = "41c6028287f707e1eac3d77d69eeb00f1039860a"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=FakeUnleashTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.FakeUnleash  -DtargetTests=**.FakeUnleashTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 55.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 12, 13, 14, 20, 23, 24, 25, 32, 33, 34, 35, 37, 38, 39, 41, 42, 43, 44, 46, 47, 49, 86, 87, 88, 89, 90, 91, 94, 95, 96, 98, 101, 102, 103, 104, 105, 106, 125, 126, 127, 129, 132, 133, 134, 136, 158, 160, 161, 162, 163, 165,]
+missed_lines = [ 56, 61, 62, 63, 64, 67, 72, 77, 82, 109, 110, 111, 113, 116, 117, 118, 119, 120, 121, 122, 139, 140, 141, 143, 168, 169, 171, 175, 176, 177, 182, 183, 185, 187, 193, 198, 199, 201, 203, 204, 205,]
+
+[input_info]
+test_file_path = "src/test/java/io/getunleash/FakeUnleashTest.java"
+focal_file_path = "src/main/java/io/getunleash/FakeUnleash.java"
+test_file_url = "https://github.com/Unleash/unleash-java-sdk/blob/41c6028287f707e1eac3d77d69eeb00f1039860a/src/test/java/io/getunleash/FakeUnleashTest.java"
+focal_file_url = "https://github.com/Unleash/unleash-java-sdk/blob/41c6028287f707e1eac3d77d69eeb00f1039860a/src/main/java/io/getunleash/FakeUnleash.java"
+first_commit_date = "2021-06-16"
+last_commit_date = "2025-06-12"
+test_file_content = "package io.getunleash;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\nimport io.getunleash.variant.Variant;\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.Optional;\nimport org.junit.jupiter.api.Test;\n\npublic class FakeUnleashTest {\n\n    @Test\n    void conditionally_enabling_a_feature_should_replace_always_enabled() throws Exception {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n        fakeUnleash.enable(\"t1\");\n        fakeUnleash.conditionallyEnable(\n                context -> \"expected_test_value\".equals(context.getProperties().get(\"test\")), \"t1\");\n\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"t1\",\n                                UnleashContext.builder()\n                                        .addProperty(\"test\", \"expected_test_value\")\n                                        .build()))\n                .isTrue();\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"t1\",\n                                UnleashContext.builder()\n                                        .addProperty(\"test\", \"unexpected_test_value\")\n                                        .build()))\n                .isFalse();\n    }\n\n    @Test\n    void unconditionally_enabling_a_feature_should_replace_conditionally_enabled()\n            throws Exception {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n        fakeUnleash.conditionallyEnable(\n                context -> \"expected_test_value\".equals(context.getProperties().get(\"test\")), \"t1\");\n        fakeUnleash.enable(\"t1\");\n\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"t1\",\n                                UnleashContext.builder()\n                                        .addProperty(\"test\", \"expected_test_value\")\n                                        .build()))\n                .isTrue();\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"t1\",\n                                UnleashContext.builder()\n                                        .addProperty(\"test\", \"unexpected_test_value\")\n                                        .build()))\n                .isTrue();\n    }\n\n    @Test\n    void should_conditionally_enable_feature_only_for_matching_context() throws Exception {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n        fakeUnleash.conditionallyEnable(\n                context -> \"expected_test_value\".equals(context.getProperties().get(\"test\")),\n                \"t1\",\n                \"t2\");\n\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"t1\",\n                                UnleashContext.builder()\n                                        .addProperty(\"test\", \"expected_test_value\")\n                                        .addProperty(\"other\", \"other\")\n                                        .build()))\n                .isTrue();\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"t2\",\n                                UnleashContext.builder()\n                                        .addProperty(\"test\", \"unexpected_test_value\")\n                                        .addProperty(\"other\", \"other\")\n                                        .build()))\n                .isFalse();\n        assertThat(fakeUnleash.isEnabled(\"t1\")).isFalse();\n        assertThat(fakeUnleash.isEnabled(\"unknown\")).isFalse();\n    }\n\n\n\n\n    @Test\n    void should_use_fallback_if_no_matchers_defined() {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"unknown-toggle\",\n                                UnleashContext.builder().addProperty(\"test\", \"v1\").build(),\n                                (name, context) -> true))\n                .isTrue();\n    }\n\n\n\n    @Test\n    public void should_disable_all_toggles() {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n        fakeUnleash.enable(\"t1\", \"t2\");\n        fakeUnleash.disableAll();\n\n        assertThat(fakeUnleash.isEnabled(\"t1\")).isFalse();\n    }\n\n\n    @Test\n    public void should_be_disabled_even_when_true_is_default() {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n        fakeUnleash.disable(\"t1\");\n\n        assertThat(fakeUnleash.isEnabled(\"t1\", true)).isFalse();\n    }\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n    @Test\n    public void all_enabled_and_exclusion_toggle_returns_expected_result() {\n        FakeUnleash fakeUnleash = new FakeUnleash();\n        fakeUnleash.enableAllExcept(\"my.feature.that.should.be.disabled\");\n        assertThat(\n                        fakeUnleash.isEnabled(\n                                \"my.feature.that.should.be.disabled\", (name, context) -> false))\n                .isFalse();\n    }\n}\n"

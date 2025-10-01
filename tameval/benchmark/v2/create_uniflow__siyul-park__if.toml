@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "siyul-park/uniflow"
+sha = "9a8c580db91d1ea6f709f700a463153d8aedf829"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugins/ctrl/pkg/node/if.go plugins/ctrl/pkg/node/if_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugins/ctrl/pkg/node/if.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 31, 32, 33, 37, 42, 43, 44, 45, 46, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59,]
+missed_lines = [ 34, 35, 36,]
+
+[input_info]
+test_file_path = "plugins/ctrl/pkg/node/if_test.go"
+focal_file_path = "plugins/ctrl/pkg/node/if.go"
+test_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/if_test.go"
+focal_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/if.go"
+first_commit_date = "2025-04-28"
+last_commit_date = "2025-06-01"
+test_file_content = "package node\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/go-faker/faker/v4\"\n\t\"github.com/siyul-park/uniflow/pkg/language/text\"\n\t\"github.com/siyul-park/uniflow/pkg/node\"\n\t\"github.com/siyul-park/uniflow/pkg/packet\"\n\t\"github.com/siyul-park/uniflow/pkg/port\"\n\t\"github.com/siyul-park/uniflow/pkg/process\"\n\t\"github.com/siyul-park/uniflow/pkg/types\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestIfNodeCodec_Compile(t *testing.T) {\n\tcodec := NewIfNodeCodec(text.NewCompiler())\n\n\tspec := &IfNodeSpec{\n\t\tWhen: \"\",\n\t}\n\n\tn, err := codec.Compile(spec)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\nfunc TestNewIfNode(t *testing.T) {\n\tn := NewIfNode(nil)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\nfunc TestIfNode_SendAndReceive(t *testing.T) {\n\tt.Run(\"SingleInputToFirstOutput\", func(t *testing.T) {\n\t\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\t\tdefer cancel()\n\n\t\tn := NewIfNode(func(_ context.Context, _ any) (bool, error) {\n\t\t\treturn true, nil\n\t\t})\n\t\tdefer n.Close()\n\n\t\tin := port.NewOut()\n\t\tin.Link(n.In(node.PortIn))\n\n\t\tout := port.NewIn()\n\t\tn.Out(node.PortOut).Link(out)\n\n\t\tproc := process.New()\n\t\tdefer proc.Exit(nil)\n\n\t\tinWriter := in.Open(proc)\n\t\toutReader := out.Open(proc)\n\n\t\tinPayload := types.NewMap(types.NewString(\"foo\"), types.NewString(\"bar\"))\n\t\tinPck := packet.New(inPayload)\n\n\t\tinWriter.Write(inPck)\n\n\t\tselect {\n\t\tcase outPck := <-outReader.Read():\n\t\t\trequire.Equal(t, inPayload, outPck.Payload())\n\t\t\toutReader.Receive(outPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\n\t\tselect {\n\t\tcase backPck := <-inWriter.Receive():\n\t\t\trequire.NotNil(t, backPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\t})\n\n\tt.Run(\"SingleInputToSecondOutput\", func(t *testing.T) {\n\t\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\t\tdefer cancel()\n\n\t\tn := NewIfNode(func(_ context.Context, _ any) (bool, error) {\n\t\t\treturn false, nil\n\t\t})\n\t\tdefer n.Close()\n\n\t\tin := port.NewOut()\n\t\tin.Link(n.In(node.PortIn))\n\n\t\tout1 := port.NewIn()\n\t\tn.Out(node.PortWithIndex(node.PortOut, 1)).Link(out1)\n\n\t\tproc := process.New()\n\t\tdefer proc.Exit(nil)\n\n\t\tinWriter := in.Open(proc)\n\t\toutReader1 := out1.Open(proc)\n\n\t\tinPayload := types.NewMap(types.NewString(\"foo\"), types.NewString(\"foo\"))\n\t\tinPck := packet.New(inPayload)\n\n\t\tinWriter.Write(inPck)\n\n\t\tselect {\n\t\tcase outPck := <-outReader1.Read():\n\t\t\trequire.Equal(t, inPayload, outPck.Payload())\n\t\t\toutReader1.Receive(outPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\n\t\tselect {\n\t\tcase backPck := <-inWriter.Receive():\n\t\t\trequire.NotNil(t, backPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\t})\n\n\tt.Run(\"SingleInputToSingleError\", func(t *testing.T) {\n\t\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\t\tdefer cancel()\n\n\t\tn := NewIfNode(func(_ context.Context, _ any) (bool, error) {\n\t\t\treturn false, errors.New(faker.Sentence())\n\t\t})\n\t\tdefer n.Close()\n\n\t\tin := port.NewOut()\n\t\tin.Link(n.In(node.PortIn))\n\n\t\terr := port.NewIn()\n\t\tn.Out(node.PortError).Link(err)\n\n\t\tproc := process.New()\n\t\tdefer proc.Exit(nil)\n\n\t\tinWriter := in.Open(proc)\n\t\terrReader := err.Open(proc)\n\n\t\tinPayload := types.NewMap(types.NewString(\"foo\"), types.NewString(\"bar\"))\n\t\tinPck := packet.New(inPayload)\n\n\t\tinWriter.Write(inPck)\n\n\t\tselect {\n\t\tcase outPck := <-errReader.Read():\n\t\t\terrReader.Receive(outPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\n\t\tselect {\n\t\tcase backPck := <-inWriter.Receive():\n\t\t\trequire.NotNil(t, backPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\t})\n}\n\nfunc BenchmarkIfNode_SendAndReceive(b *testing.B) {\n\tn := NewIfNode(func(_ context.Context, _ any) (bool, error) {\n\t\treturn true, nil\n\t})\n\tdefer n.Close()\n\n\tin := port.NewOut()\n\tin.Link(n.In(node.PortIn))\n\n\tout0 := port.NewIn()\n\tn.Out(node.PortWithIndex(node.PortOut, 0)).Link(out0)\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\n\tinWriter := in.Open(proc)\n\toutReader0 := out0.Open(proc)\n\n\tinPayload := types.NewMap(types.NewString(\"foo\"), types.NewString(\"bar\"))\n\tinPck := packet.New(inPayload)\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tinWriter.Write(inPck)\n\n\t\toutPck := <-outReader0.Read()\n\t\toutReader0.Receive(outPck)\n\n\t\t<-inWriter.Receive()\n\t}\n}\n"

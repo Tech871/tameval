@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "jhipster/jhipster-bom"
+sha = "7bdb0f60cf4739f065e4501400404b5f70b2ad9b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl jhipster-framework -Dtest=ReactiveWebExceptionHandlerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl jhipster-framework -DtargetClasses=**.ReactiveWebExceptionHandler  -DtargetTests=**.ReactiveWebExceptionHandlerTest  -DoutputFormats=XML"
+coverage_report_path = "jhipster-framework/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "jhipster-framework/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 80.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "jhipster-framework/src/test/java/tech/jhipster/web/rest/errors/ReactiveWebExceptionHandlerTest.java"
+focal_file_path = "jhipster-framework/src/main/java/tech/jhipster/web/rest/errors/ReactiveWebExceptionHandler.java"
+test_file_url = "https://github.com/jhipster/jhipster-bom/blob/7bdb0f60cf4739f065e4501400404b5f70b2ad9b/jhipster-framework/src/test/java/tech/jhipster/web/rest/errors/ReactiveWebExceptionHandlerTest.java"
+focal_file_url = "https://github.com/jhipster/jhipster-bom/blob/7bdb0f60cf4739f065e4501400404b5f70b2ad9b/jhipster-framework/src/main/java/tech/jhipster/web/rest/errors/ReactiveWebExceptionHandler.java"
+first_commit_date = "2022-10-20"
+last_commit_date = "2024-12-31"
+test_file_content = "package tech.jhipster.web.rest.errors;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nimport java.net.URI;\n\nimport org.apache.commons.logging.Log;\nimport org.apache.commons.logging.LogFactory;\nimport org.junit.jupiter.api.Test;\nimport org.springframework.http.HttpHeaders;\nimport org.springframework.http.HttpStatus;\nimport org.springframework.http.MediaType;\nimport org.springframework.http.ProblemDetail;\nimport org.springframework.http.ResponseEntity;\nimport org.springframework.mock.http.server.reactive.MockServerHttpRequest;\nimport org.springframework.mock.http.server.reactive.MockServerHttpResponse;\nimport org.springframework.web.server.ResponseStatusException;\nimport org.springframework.web.server.ServerWebExchange;\nimport org.springframework.web.server.WebHandler;\nimport org.springframework.web.server.adapter.WebHttpHandlerBuilder;\n\nimport com.fasterxml.jackson.core.JsonProcessingException;\nimport com.fasterxml.jackson.databind.JsonMappingException;\nimport com.fasterxml.jackson.databind.ObjectMapper;\n\nimport reactor.core.publisher.Mono;\n\npublic class ReactiveWebExceptionHandlerTest {\n    \n    // Constants\n    private static final MediaType RESPONSE_TYPE = MediaType.APPLICATION_PROBLEM_JSON;\n    private static Log logger = LogFactory.getLog(ReactiveWebExceptionHandlerTest.class);\n    private static final String TITLE_REASON = \"Test Reason\";\n    private static final HttpStatus HANDLED_RESPONSE_STATUS = HttpStatus.METHOD_NOT_ALLOWED;\n    private static final HttpStatus NOT_HANDLED_RESPONSE_STATUS = HttpStatus.INTERNAL_SERVER_ERROR;\n    private static final ResponseStatusException EXCEPTION_TO_HANDLE = new ResponseStatusException(HANDLED_RESPONSE_STATUS, TITLE_REASON);\n    private static final IllegalStateException EXCEPTION_NOT_TO_HANDLE = new IllegalStateException(\"Test Exception\");\n    private static final String PROBLEM_TYPE = \"http://test.com/testExceptionTranslation\";\n    private static final String expectedResponse = \"{\\\"type\\\":\\\"http://test.com/testExceptionTranslation\\\",\\\"title\\\":\\\"Test Reason\\\",\\\"status\\\":405,\\\"detail\\\":null,\\\"instance\\\":null,\\\"properties\\\":null}\";\n\n    @Test\n    void throwResponseStatusException() throws JsonMappingException, JsonProcessingException {\n        MockServerHttpRequest request = MockServerHttpRequest.get(\"/\").build();\n\t\tMockServerHttpResponse response = new MockServerHttpResponse();\n\n\t\tReactiveWebExceptionHandler exceptionHandler = new ReactiveWebExceptionHandler(new TestExceptionTranslation(), new ObjectMapper());\n\n\t\tWebHttpHandlerBuilder.webHandler(new TestWebHandler(EXCEPTION_TO_HANDLE))\n\t\t\t\t.exceptionHandler(exceptionHandler).build()\n\t\t\t\t.handle(request, response)\n\t\t\t\t.block();\n\t\t\n\t\tassertEquals(HANDLED_RESPONSE_STATUS, response.getStatusCode());\n        assertEquals(RESPONSE_TYPE, response.getHeaders().getContentType());\n        assertEquals(expectedResponse, response.getBodyAsString().block());\n    }\n    \n    @Test\n    void throwOtherException() throws JsonMappingException, JsonProcessingException {\n        MockServerHttpRequest request = MockServerHttpRequest.get(\"/\").build();\n        MockServerHttpResponse response = new MockServerHttpResponse();\n\n        ReactiveWebExceptionHandler exceptionHandler = new ReactiveWebExceptionHandler(new TestExceptionTranslation(), new ObjectMapper());\n\n        WebHttpHandlerBuilder.webHandler(new TestWebHandler(EXCEPTION_NOT_TO_HANDLE))\n                .exceptionHandler(exceptionHandler).build()\n                .handle(request, response)\n                .block();\n        \n        assertEquals(NOT_HANDLED_RESPONSE_STATUS, response.getStatusCode());\n    }\n    \n    private static ProblemDetail getProblemDetail() {\n        ProblemDetail problem = ProblemDetail.forStatus(EXCEPTION_TO_HANDLE.getStatusCode());\n        problem.setType(URI.create(PROBLEM_TYPE));\n        problem.setTitle(EXCEPTION_TO_HANDLE.getReason());\n        return problem;\n    } \n\n    private static class TestExceptionTranslation implements ExceptionTranslation {\n\n        @Override\n        public Mono<ResponseEntity<ProblemDetail>> handleAnyException(Throwable ex, ServerWebExchange request) {\n            logger.trace(\"Stub ExceptionTranslation handleAnyException invoked\");\n            ProblemDetail problem = getProblemDetail();\n            HttpHeaders header = new HttpHeaders();\n            header.setContentType(RESPONSE_TYPE);\n            return Mono.just(new ResponseEntity<>(problem, header, ((ResponseStatusException) ex).getStatusCode()));\n        }\n    }\n\n    private static class TestWebHandler implements WebHandler {  \n        private Throwable exception;\n        TestWebHandler(Throwable exception) {\n            this.exception = exception;\n        }\n\n        @Override\n        public Mono<Void> handle(org.springframework.web.server.ServerWebExchange exchange) {\n            logger.trace(\"StubHandler invoked.\");\n\t\t\treturn Mono.error(this.exception);\n        }\n\t}\n}"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "jeffotoni/quick"
+sha = "89f7be7048104f81431288179d7631ccbc2b3536"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out template/html/html.go template/html/html_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting template/html/html.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 36.0
+original_coverage = 43.0
+mutation_kill_rate = 26.0
+original_mutation_kill_rate = 40.0
+covered_lines = [ 37, 38, 39, 40, 41, 42, 43, 56, 57, 58, 65, 66, 67, 68, 107, 108, 109, 110, 112, 117, 122, 123, 124, 125, 126, 127, 128, 129, 130, 136, 145, 146, 153, 159, 163, 164, 165, 182, 183,]
+missed_lines = [ 46, 47, 48, 49, 50, 51, 52, 69, 70, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 102, 113, 114, 115, 118, 119, 120, 131, 132, 133, 147, 148, 149, 150, 154, 155, 156, 160, 161, 162, 166, 167, 168, 169, 170, 172, 173, 174, 175, 176, 177, 178, 179,]
+
+[input_info]
+test_file_path = "template/html/html_test.go"
+focal_file_path = "template/html/html.go"
+test_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/template/html/html_test.go"
+focal_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/template/html/html.go"
+first_commit_date = "2025-03-25"
+last_commit_date = "2025-03-25"
+test_file_content = "package html\n\nimport (\n\t\"bytes\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"testing\"\n)\n\n// createTestFiles prepares a temporary directory structure with a base template\n// (index.html) and a layout template (layouts/main.html) for testing purposes.\n//\n// To run:\n//\n//\tgo test -v -run ^createTestFiles$\nfunc createTestFiles(t *testing.T, baseDir string) {\n\tt.Helper()\n\n\terr := os.MkdirAll(filepath.Join(baseDir, \"layouts\"), 0755)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to create layout directory: %v\", err)\n\t}\n\n\t// Create index.html as the base template\n\tindexHTML := `\n\t\t<h1>{{ .Title }}</h1>\n\t\t<p>{{ .Message }}</p>\n\t`\n\terr = os.WriteFile(filepath.Join(baseDir, \"index.html\"), []byte(indexHTML), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to write index.html: %v\", err)\n\t}\n\n\t// Create layouts/main.html with a yield placeholder\n\tmainLayout := `\n\t\t<!DOCTYPE html>\n\t\t<html>\n\t\t<head><title>Layout</title></head>\n\t\t<body>{{ .yield }}</body>\n\t\t</html>\n\t`\n\terr = os.WriteFile(filepath.Join(baseDir, \"layouts\", \"main.html\"), []byte(mainLayout), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to write main.html: %v\", err)\n\t}\n}\n\n// TestRenderNoLayout ensures template rendering works without layout\n//\n// To run:\n//\n//\tgo test -v -run ^TestRenderNoLayout$\n\n// TestRenderWithLayout verifies rendering with a layout wrapper\n//\n// To run:\n//\n//\tgo test -v -run ^TestRenderWithLayout$\n\n// TestAddFunc checks that custom template functions are applied correctly\n//\n// To run:\n//\n//\tgo test -v -run ^TestAddFunc$\nfunc TestAddFunc(t *testing.T) {\n\tdir := t.TempDir()\n\n\ttemplateContent := `{{ upper .Name }}`\n\terr := os.WriteFile(filepath.Join(dir, \"hello.html\"), []byte(templateContent), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to write template: %v\", err)\n\t}\n\n\tengine := New(dir, \".html\")\n\tengine.AddFunc(\"upper\", strings.ToUpper)\n\n\tif err := engine.Load(); err != nil {\n\t\tt.Fatalf(\"load failed: %v\", err)\n\t}\n\n\tvar buf bytes.Buffer\n\terr = engine.Render(&buf, \"hello.html\", map[string]string{\"Name\": \"gopher\"})\n\tif err != nil {\n\t\tt.Fatalf(\"render failed: %v\", err)\n\t}\n\n\tif !strings.Contains(buf.String(), \"GOPHER\") {\n\t\tt.Errorf(\"expected 'GOPHER', got: %s\", buf.String())\n\t}\n}\n\n// TestTemplateNameAliases ensures that templates can be accessed using multiple aliases,\n// such as \"index\", \"index.html\", or full paths, and that they render the same content.\n//\n// To run:\n//\n//\tgo test -v -run ^TestTemplateNameAliases$\n\n// createTestTemplates sets up a temporary template structure including base and nested layouts.\n// It is used to test alias rendering and layout wrapping behavior.\nfunc createTestTemplates(tb testing.TB) string {\n\ttmpDir := tb.TempDir()\n\n\t// Create subfolders\n\tlayoutDir := filepath.Join(tmpDir, \"layouts\")\n\terr := os.MkdirAll(layoutDir, 0755)\n\tif err != nil {\n\t\ttb.Fatalf(\"failed to create layouts dir: %v\", err)\n\t}\n\n\t// index.html\n\twriteFile(tb, filepath.Join(tmpDir, \"index.html\"), `\n\t\t<h1>{{ .Title }}</h1>\n\t\t<p>{{ .Message }}</p>\n\t`)\n\n\t// layouts/main.html\n\twriteFile(tb, filepath.Join(layoutDir, \"main.html\"), `\n\t\t<html><body>\n\t\t<header><h2>Main Layout</h2></header>\n\t\t<div>{{ .yield }}</div>\n\t\t</body></html>\n\t`)\n\n\t// layouts/base.html\n\twriteFile(tb, filepath.Join(layoutDir, \"base.html\"), `\n\t\t<!DOCTYPE html>\n\t\t<html><body>\n\t\t<nav>Base Layout</nav>\n\t\t<section>{{ .yield }}</section>\n\t\t</body></html>\n\t`)\n\n\treturn tmpDir\n}\n\n// writeFile is a helper function to write a given content to a file at the specified path.\n// It trims leading/trailing spaces and fails the test if writing fails.\nfunc writeFile(tb testing.TB, path, content string) {\n\terr := os.WriteFile(path, []byte(strings.TrimSpace(content)), 0644)\n\tif err != nil {\n\t\ttb.Fatalf(\"failed to write file %s: %v\", path, err)\n\t}\n}\n"

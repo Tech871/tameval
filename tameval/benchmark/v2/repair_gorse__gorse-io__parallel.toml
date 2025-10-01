@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "gorse-io/gorse"
+sha = "260d55d158caa8c3bbbcbec93e574370e5be477e"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out common/parallel/parallel.go common/parallel/parallel_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting common/parallel/parallel.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 90.0
+original_coverage = 90.0
+mutation_kill_rate = 70.0
+original_mutation_kill_rate = 70.0
+covered_lines = [ 36, 37, 38, 39, 40, 41, 43, 44, 45, 46, 47, 48, 49, 50, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 68, 69, 70, 71, 75, 76, 77, 78, 79, 80, 83, 86, 87, 88, 89, 90, 91, 92, 93, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 121, 122, 123, 129, 130, 131, 141, 145, 146, 147, 148, 149, 150, 151, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 165, 166, 168, 169, 170, 171, 175, 176, 177, 178, 179, 180, 182, 186, 190, 191, 192, 193, 194, 195, 196, 197, 198, 199, 201,]
+missed_lines = [ 114, 115, 116, 117, 124, 125, 126, 142, 143, 144, 187, 188, 189,]
+
+[input_info]
+test_file_path = "common/parallel/parallel_test.go"
+focal_file_path = "common/parallel/parallel.go"
+test_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/common/parallel/parallel_test.go"
+focal_file_url = "https://github.com/gorse-io/gorse/blob/260d55d158caa8c3bbbcbec93e574370e5be477e/common/parallel/parallel.go"
+first_commit_date = "2025-03-07"
+last_commit_date = "2025-03-07"
+test_file_content = "\npackage parallel\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n\t\"time\"\n\n\tmapset \"github.com/deckarep/golang-set/v2\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/zhenghaoz/gorse/base\"\n\t\"github.com/zhenghaoz/gorse/base/task\"\n)\n\nfunc TestParallel(t *testing.T) {\n\ta := base.RangeInt(10000)\n\tb := make([]int, len(a))\n\tworkerIds := make([]int, len(a))\n\t_ = Parallel(len(a), 4, func(workerId, jobId int) error {\n\t\tb[jobId] = a[jobId]\n\t\tworkerIds[jobId] = workerId\n\t\ttime.Sleep(time.Microsecond)\n\t\treturn nil\n\t})\n\tworkersSet := mapset.NewSet(workerIds...)\n\tassert.Equal(t, a, b)\n\tassert.GreaterOrEqual(t, 4, workersSet.Cardinality())\n\tassert.Less(t, 1, workersSet.Cardinality())\n\t_ = Parallel(len(a), 1, func(workerId, jobId int) error {\n\t\tb[jobId] = a[jobId]\n\t\tworkerIds[jobId] = workerId\n\t\treturn nil\n\t})\n\tworkersSet = mapset.NewSet(workerIds...)\n\tassert.Equal(t, a, b)\n\tassert.Equal(t, 1, workersSet.Cardinality())\n}\n\nfunc TestDynamicParallel(t *testing.T) {\n\ta := base.RangeInt(10000)\n\tb := make([]int, len(a))\n\tworkerIds := make([]int, len(a))\n\t_ = DynamicParallel(len(a), task.NewConstantJobsAllocator(3), func(workerId, jobId int) error {\n\t\tb[jobId] = a[jobId]\n\t\tworkerIds[jobId] = workerId\n\t\ttime.Sleep(time.Microsecond)\n\t\treturn nil\n\t})\n\tworkersSet := mapset.NewSet(workerIds...)\n\tassert.Equal(t, a, b)\n\tassert.GreaterOrEqual(t, 4, workersSet.Cardinality())\n\tassert.Less(t, 1, workersSet.Cardinality())\n}\n\nfunc TestBatchParallel(t *testing.T) {\n\ta := base.RangeInt(10000)\n\tb := make([]int, len(a))\n\tworkerIds := make([]int, len(a))\n\t_ = BatchParallel(len(a), 4, 10, func(workerId, beginJobId, endJobId int) error {\n\t\tfor jobId := beginJobId; jobId < endJobId; jobId++ {\n\t\t\tb[jobId] = a[jobId]\n\t\t\tworkerIds[jobId] = workerId\n\t\t}\n\t\ttime.Sleep(time.Microsecond)\n\t\treturn nil\n\t})\n\tworkersSet := mapset.NewSet(workerIds...)\n\tassert.Equal(t, a, b)\n\tassert.GreaterOrEqual(t, 4, workersSet.Cardinality())\n\tassert.Less(t, 1, workersSet.Cardinality())\n\t_ = Parallel(len(a), 1, func(workerId, jobId int) error {\n\t\tb[jobId] = a[jobId]\n\t\tworkerIds[jobId] = workerId\n\t\treturn nil\n\t})\n\tworkersSet = mapset.NewSet(workerIds...)\n\tassert.Equal(t, a, b)\n\tassert.Equal(t, 1, workersSet.Cardinality())\n}\n\nfunc TestParallelFail(t *testing.T) {\n\terr := Parallel(10000, 4, func(workerId, jobId int) error {\n\t\tif jobId%2 == 1 {\n\t\t\treturn fmt.Errorf(\"error from %d\", jobId)\n\t\t}\n\t\treturn nil\n\t})\n\tassert.Error(t, err)\n\terr = Parallel(10000, 1, func(workerId, jobId int) error {\n\t\tif jobId%2 == 1 {\n\t\t\treturn fmt.Errorf(\"error from %d\", jobId)\n\t\t}\n\t\treturn nil\n\t})\n\tassert.Error(t, err)\n}\n\nfunc TestBatchParallelFail(t *testing.T) {\n\terr := BatchParallel(1000000, 2, 1, func(workerId, beginJobId, endJobId int) error {\n\t\tif workerId%2 == 1 {\n\t\t\treturn fmt.Errorf(\"error from %d\", workerId)\n\t\t}\n\t\treturn nil\n\t})\n\tassert.Error(t, err)\n\terr = BatchParallel(1000000, 2, 1, func(workerId, beginJobId, endJobId int) error {\n\t\tif workerId%2 == 1 {\n\t\t\treturn fmt.Errorf(\"error from %d\", workerId)\n\t\t}\n\t\treturn nil\n\t})\n\tassert.Error(t, err)\n}\n\nfunc TestSplit(t *testing.T) {\n\ta := []int{1, 2, 3, 4, 5, 6}\n\tb := Split(a, 3)\n\tassert.Equal(t, [][]int{{1, 2}, {3, 4}, {5, 6}}, b)\n\n\ta = []int{1, 2, 3, 4, 5, 6, 7}\n\tb = Split(a, 3)\n\tassert.Equal(t, [][]int{{1, 2, 3}, {4, 5}, {6, 7}}, b)\n}\nfunc TestParallelPanic(t *testing.T) {\n\terr := Parallel(10000, 4, func(workerId, jobId int) error {\n\t\tpanic(\"panic\")\n\t})\n\tif err != nil {\n\t\treturn\n\t}\n\ttime.Sleep(time.Second * 3)\n}\nfunc TestParallelExecution(t *testing.T) {\n\tdata := base.RangeInt(5000)\n\tresult := make([]int, len(data))\n\tworkerIdentifiers := make([]int, len(data))\n\t_ = Parallel(len(data), 3, func(workerId, jobId int) error {\n\t\tresult[jobId] = data[len(data)-jobId-1]\n\t\tresult[jobId] = data[jobId]\n\t\tworkerIdentifiers[jobId] = workerId\n\t\ttime.Sleep(time.Millisecond)\n\t\treturn nil\n\t})\n\t\n\tworkerSet := mapset.NewSet(workerIdentifiers...)\n\tassert.Equal(t, data, result)\n\tassert.GreaterOrEqual(t, 3, workerSet.Cardinality())\n\t_ = Parallel(len(data), 1, func(workerId, jobId int) error {\n\t\tresult[jobId] = data[jobId] * 2\n\t\tresult[jobId] = data[jobId]\n\t\tworkerIdentifiers[jobId] = workerId + 100\n\t\treturn nil\n\t})\n\t\n\tworkerSet = mapset.NewSet(workerIdentifiers...)\n\tassert.Equal(t, data, result)\n}\nfunc TestBatchParallelProcessing(t *testing.T) {\n\tsource := base.RangeInt(8000)\n\tdestination := make([]int, len(source))\n\tthreadIDs := make([]int, len(source))\n\t_ = BatchParallel(len(source), 5, 20, func(workerId, beginJobId, endJobId int) error {\n\t\tfor i := endJobId - 1; i >= beginJobId; i-- {\n\t\t\tdestination[i] = source[i] + 5\n\t\t\tdestination[i] = source[i]\n\t\t\tthreadIDs[i] = workerId + 10\n\t\t}\n\t\ttime.Sleep(time.Nanosecond * 500)\n\t\treturn nil\n\t})\n\t\n\tworkerSet := mapset.NewSet(threadIDs...)\n\tassert.Equal(t, source, destination)\n\tassert.LessOrEqual(t, workerSet.Cardinality(), 15)\n}"

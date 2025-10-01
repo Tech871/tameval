@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "bleemeo/glouton"
+sha = "61a5ed8e7e659a6e865a183aaa1328e85efdaab1"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out mqtt/client/fifo.go mqtt/client/fifo_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting mqtt/client/fifo.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 51.0
+original_coverage = 93.0
+mutation_kill_rate = 24.0
+original_mutation_kill_rate = 72.0
+covered_lines = [ 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 67, 68, 69, 70, 71, 72, 78, 79, 80, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 155, 156, 157, 158, 159, 160, 161, 178, 179, 180, 181, 182, 188, 189, 190, 191, 196, 197, 198, 208, 209, 210, 211, 212, 213, 214,]
+missed_lines = [ 81, 82, 83, 84, 85, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 117, 118, 119, 120, 121, 122, 125, 126, 127, 129, 130, 131, 132, 133, 134, 135, 136, 162, 163, 164, 166, 167, 168, 169, 170, 171, 174, 175, 176, 192, 193, 194, 200, 201, 202, 204, 205, 206,]
+
+[input_info]
+test_file_path = "mqtt/client/fifo_test.go"
+focal_file_path = "mqtt/client/fifo.go"
+test_file_url = "https://github.com/bleemeo/glouton/blob/61a5ed8e7e659a6e865a183aaa1328e85efdaab1/mqtt/client/fifo_test.go"
+focal_file_url = "https://github.com/bleemeo/glouton/blob/61a5ed8e7e659a6e865a183aaa1328e85efdaab1/mqtt/client/fifo.go"
+first_commit_date = "2023-06-12"
+last_commit_date = "2025-07-21"
+test_file_content = "// Copyright 2015-2025 Bleemeo\n//\n// bleemeo.com an infrastructure monitoring solution in the Cloud\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n// http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage client\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"fmt\"\n\t\"testing\"\n\t\"time\"\n\n)\n\nfunc TestSize(t *testing.T) {\n\tt.Parallel()\n\n\tfor size := 1; size < 1e6; size *= 10 {\n\t\tt.Run(fmt.Sprintf(\"%d sized fifo queue\", size), func(t *testing.T) {\n\t\t\tqueue := newFifo[int](size)\n\t\t\tctx, cancel := context.WithCancel(t.Context())\n\n\t\t\tlength := queue.Len()\n\t\t\tif length != 0 {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Unexpected queue length: got %d, want 0.\", length)\n\t\t\t}\n\n\t\t\tfor i := range size - 1 {\n\t\t\t\tqueue.Put(ctx, i)\n\t\t\t}\n\n\t\t\tlength = queue.Len()\n\t\t\tif length != size-1 {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Unexpected queue length: got %d, want %d.\", length, size-1)\n\t\t\t}\n\n\t\t\tadded := queue.PutNoWait(1)\n\t\t\tif !added {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Should have added item n°%d in %d-sized queue.\", size, size)\n\t\t\t}\n\n\t\t\tlength = queue.Len()\n\t\t\tif length != size {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Unexpected queue length: got %d, want %d.\", length, size)\n\t\t\t}\n\n\t\t\tadded = queue.PutNoWait(1)\n\t\t\tif added {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Should not have added item n°%d in %d-sized queue.\", size+1, size)\n\t\t\t}\n\n\t\t\tlength = queue.Len()\n\t\t\tif length != size {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Unexpected queue length: got %d, want %d.\", length, size)\n\t\t\t}\n\n\t\t\tqueue.Close()\n\n\t\t\tlength = queue.Len()\n\t\t\tif length != size {\n\t\t\t\tcancel()\n\t\t\t\tt.Fatalf(\"Unexpected queue length: got %d, want %d.\", length, size)\n\t\t\t}\n\n\t\t\tcancel()\n\t\t})\n\t}\n}\n\nfunc doesTimeout[T any](duration time.Duration, fn func(), queue *fifo[T]) (timedOut bool) {\n\tdone := make(chan struct{})\n\ttimer := time.NewTimer(duration)\n\n\tgo func() {\n\t\tfn()\n\t\tclose(done)\n\t}()\n\n\tselect {\n\tcase <-done:\n\t\treturn false\n\tcase <-timer.C:\n\t\tqueue.Close()\n\t\t<-done\n\n\t\treturn true\n\t}\n}\n\n\n\nvar errUnexpectedQueueStatus = errors.New(\"unexpected queue status\")\n\n// This test should be run with the -race flag.\n"

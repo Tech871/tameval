@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "LLMP-io/Legion"
+sha = "ba7764e32f6e9ff9b93439ee62df5da5d26608f9"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=legion/monitoring/monitors.py -m pytest -q --junit-xml=test_output.xml tests/monitoring/test_monitors.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target legion.monitoring.monitors --unit-test tests.monitoring.test_monitors --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target legion/monitoring/monitors.py --unit-test tests/monitoring/test_monitors.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 1, 3, 6, 7, 11, 12, 13, 16, 17, 20, 23, 24, 26, 29, 37, 38, 39, 40, 42, 55, 57, 61, 67, 71, 75, 78, 80, 88, 91, 94, 95, 97, 98, 99, 101, 113, 115, 117, 119, 121, 122,]
+missed_lines = [ 56, 58, 68, 72, 73, 76, 89, 92, 96, 111, 130,]
+
+[input_info]
+test_file_path = "tests/monitoring/test_monitors.py"
+focal_file_path = "legion/monitoring/monitors.py"
+test_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/tests/monitoring/test_monitors.py"
+focal_file_url = "https://github.com/LLMP-io/Legion/blob/ba7764e32f6e9ff9b93439ee62df5da5d26608f9/legion/monitoring/monitors.py"
+first_commit_date = "2025-01-07"
+last_commit_date = "2025-01-08"
+test_file_content = "import re\n\nimport pytest\n\nfrom legion.monitoring.events.base import Event, EventCategory, EventSeverity, EventType\nfrom legion.monitoring.monitors import Monitor, MonitorConfig\n\nclass TestMonitor:\n    \"\"\"Test suite for Monitor base class\"\"\"\n\n    def test_custom_config(self):\n        \"\"\"Test monitor initialization with custom config\"\"\"\n        config = MonitorConfig(\n            event_types={EventType.AGENT},\n            categories={EventCategory.EXECUTION},\n            min_severity=EventSeverity.WARNING,\n            component_patterns={re.compile(r\"agent-.*\")},\n            excluded_component_patterns={re.compile(r\".*-test\")},\n            sample_rate=0.5\n        )\n\n        monitor = Monitor(config)\n        assert monitor.config == config\n\n    def test_monitor_lifecycle(self):\n        \"\"\"Test monitor start/stop functionality\"\"\"\n        monitor = Monitor()\n        assert not monitor.is_active\n\n        monitor.start()\n        assert monitor.is_active\n\n        monitor.stop()\n        assert not monitor.is_active\n\n    def test_error_handling(self):\n        \"\"\"Test error handling during event processing\"\"\"\n        class ErrorMonitor(Monitor):\n            def _process_event_impl(self, event):\n                raise ValueError(\"Test error\")\n\n        monitor = ErrorMonitor()\n        monitor.start()\n\n        event = Event(\n            event_type=EventType.AGENT,\n            component_id=\"test\",\n            category=EventCategory.EXECUTION\n        )\n\n        with pytest.raises(ValueError):\n            monitor.process_event(event)\n\n        assert monitor._error_count == 1\n        assert monitor._event_count == 0\n"

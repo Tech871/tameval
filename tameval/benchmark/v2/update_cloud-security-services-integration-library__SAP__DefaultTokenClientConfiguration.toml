@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "SAP/cloud-security-services-integration-library"
+sha = "bc3a37687860d8dd34ca2e26b45d942bd4a3e85b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl token-client -Dtest=DefaultTokenClientConfigurationTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl token-client -DtargetClasses=**.DefaultTokenClientConfiguration  -DtargetTests=**.DefaultTokenClientConfigurationTest  -DoutputFormats=XML"
+coverage_report_path = "token-client/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "token-client/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "token-client/src/test/java/com/sap/cloud/security/client/DefaultTokenClientConfigurationTest.java"
+focal_file_path = "token-client/src/main/java/com/sap/cloud/security/client/DefaultTokenClientConfiguration.java"
+test_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/token-client/src/test/java/com/sap/cloud/security/client/DefaultTokenClientConfigurationTest.java"
+focal_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/token-client/src/main/java/com/sap/cloud/security/client/DefaultTokenClientConfiguration.java"
+first_commit_date = "2025-03-24"
+last_commit_date = "2025-06-10"
+test_file_content = "package com.sap.cloud.security.client;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\nimport java.util.Set;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\npublic class DefaultTokenClientConfigurationTest extends AbstractTokenClientConfigurationTest {\n\n  private DefaultTokenClientConfiguration config;\n\n  @BeforeEach\n  public void setUp() {\n    DefaultTokenClientConfiguration.setInstance(null);\n    config = DefaultTokenClientConfiguration.getInstance();\n  }\n\n  @Override\n  protected TokenClientConfiguration createConfig() {\n    return config;\n  }\n\n  @Test\n  public void setRetryEnabled_updatesValue() {\n    config.setRetryEnabled(true);\n    assertThat(config.isRetryEnabled()).isTrue();\n  }\n\n  @Test\n  public void setMaxRetryAttempts_updatesValue() {\n    config.setMaxRetryAttempts(5);\n    assertThat(config.getMaxRetryAttempts()).isEqualTo(5);\n  }\n\n  @Test\n  public void setRetryDelayTime_updatesValue() {\n    config.setRetryDelayTime(2000L);\n    assertThat(config.getRetryDelayTime()).isEqualTo(2000L);\n  }\n\n  @Test\n  public void setRetryStatusCodes_withIntegerSet_updatesValue() {\n    config.setRetryStatusCodes(Set.of(300, 301));\n    assertThat(config.getRetryStatusCodes()).containsExactlyInAnyOrder(300, 301);\n  }\n\n  @Test\n  public void testToString() {\n    final String result = config.toString();\n    assertThat(result).startsWith(\"DefaultTokenClientConfig{\");\n    assertThat(result).contains(\"isRetryEnabled=false\");\n    assertThat(result).contains(\"maxRetryAttempts=3\");\n    assertThat(result).contains(\"retryDelayTime=1000\");\n    assertThat(result).contains(\"retryStatusCodes='[\");\n    assertThat(result).contains(\"408\");\n    assertThat(result).contains(\"429\");\n    assertThat(result).contains(\"500\");\n    assertThat(result).contains(\"502\");\n    assertThat(result).contains(\"503\");\n    assertThat(result).contains(\"504\");\n  }\n\n  @Test\n  public void testStaticGetterAndSetter() {\n    DefaultTokenClientConfiguration.setInstance(null);\n    final DefaultTokenClientConfiguration newConfig = DefaultTokenClientConfiguration.getInstance();\n    assertThat(newConfig).isNotSameAs(config);\n    DefaultTokenClientConfiguration.setInstance(config);\n    assertThat(DefaultTokenClientConfiguration.getInstance()).isEqualTo(config);\n  }\n\n  @Test\n  public void defaultValues_areSetCorrectly() {\n    assertThat(config.isRetryEnabled()).isFalse();\n    assertThat(config.getMaxRetryAttempts()).isEqualTo(3);\n    assertThat(config.getRetryDelayTime()).isEqualTo(1000L);\n    assertThat(config.getRetryStatusCodes())\n        .containsExactlyInAnyOrder(408, 429, 500, 502, 503, 504);\n  }\n\n  @Test\n  public void setInstance_resetsSingleton() {\n    DefaultTokenClientConfiguration.setInstance(null);\n    final DefaultTokenClientConfiguration newConfig = DefaultTokenClientConfiguration.getInstance();\n    assertThat(newConfig).isNotSameAs(config);\n  }\n}"

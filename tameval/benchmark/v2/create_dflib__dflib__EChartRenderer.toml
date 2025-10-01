@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dflib/dflib"
+sha = "793212415a7486ca3cdbb7c6496f69acf4e0aa3d"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl dflib-jupyter -Dtest=EChartRendererTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl dflib-jupyter -DtargetClasses=**.EChartRenderer  -DtargetTests=**.EChartRendererTest  -DoutputFormats=XML"
+coverage_report_path = "dflib-jupyter/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "dflib-jupyter/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 57.0
+original_coverage = 57.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 17, 26, 28, 29, 30, 49, 50, 53, 54, 55, 58, 59, 62,]
+missed_lines = [ 34, 36, 38, 39, 40, 42, 66, 67, 68, 69,]
+
+[input_info]
+test_file_path = "dflib-jupyter/src/test/java/org/dflib/jupyter/render/EChartRendererTest.java"
+focal_file_path = "dflib-jupyter/src/main/java/org/dflib/jupyter/render/EChartRenderer.java"
+test_file_url = "https://github.com/dflib/dflib/blob/793212415a7486ca3cdbb7c6496f69acf4e0aa3d/dflib-jupyter/src/test/java/org/dflib/jupyter/render/EChartRendererTest.java"
+focal_file_url = "https://github.com/dflib/dflib/blob/793212415a7486ca3cdbb7c6496f69acf4e0aa3d/dflib-jupyter/src/main/java/org/dflib/jupyter/render/EChartRenderer.java"
+first_commit_date = "2024-05-25"
+last_commit_date = "2025-01-25"
+test_file_content = "package org.dflib.jupyter.render;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\npublic class EChartRendererTest {\n\n\n    @Test\n    void shouldResetDivId() {\n        EChartRenderer renderer = new EChartRenderer();\n\n        assertFalse(renderer.shouldResetDivId(\"d1\"));\n        assertTrue(renderer.shouldResetDivId(\"d1\"));\n        assertTrue(renderer.shouldResetDivId(\"d1\"));\n        assertFalse(renderer.shouldResetDivId(\"d2\"));\n    }\n\n    @Test\n    void shouldResetDivId_Limit() {\n        EChartRenderer renderer = new EChartRenderer();\n\n        for (int i = 0; i < EChartRenderer.MAX_CHARTS_TO_TRACK; i++) {\n            assertFalse(renderer.shouldResetDivId(\"d\" + i));\n        }\n\n        assertTrue(renderer.shouldResetDivId(\"d2\"));\n        assertTrue(renderer.shouldResetDivId(\"d500\"));\n        assertTrue(renderer.shouldResetDivId(\"d2000\"), \"Once the threshold is exceeded, all charts' ids should be reset\");\n    }\n}\n"

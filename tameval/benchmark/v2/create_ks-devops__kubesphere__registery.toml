@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "kubesphere/ks-devops"
+sha = "912f453210d5a51ed62b0b35c1073cd94f3601c2"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/kapis/gitops/v1alpha1/registery.go pkg/kapis/gitops/v1alpha1/registery_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/kapis/gitops/v1alpha1/registery.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 73.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 40.0
+covered_lines = [ 33, 34, 35, 36, 37, 38, 39, 40, 41, 47, 49,]
+missed_lines = [ 42, 43, 44, 45,]
+
+[input_info]
+test_file_path = "pkg/kapis/gitops/v1alpha1/registery_test.go"
+focal_file_path = "pkg/kapis/gitops/v1alpha1/registery.go"
+test_file_url = "https://github.com/kubesphere/ks-devops/blob/912f453210d5a51ed62b0b35c1073cd94f3601c2/pkg/kapis/gitops/v1alpha1/registery_test.go"
+focal_file_url = "https://github.com/kubesphere/ks-devops/blob/912f453210d5a51ed62b0b35c1073cd94f3601c2/pkg/kapis/gitops/v1alpha1/registery.go"
+first_commit_date = "2022-02-25"
+last_commit_date = "2025-03-13"
+test_file_content = "/*\nCopyright 2022 The KubeSphere Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage v1alpha1\n\nimport (\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/emicklei/go-restful/v3\"\n\t\"github.com/kubesphere/ks-devops/pkg/api/devops/v1alpha1\"\n\t\"github.com/kubesphere/ks-devops/pkg/config\"\n\t\"github.com/kubesphere/ks-devops/pkg/kapis/common\"\n\t\"github.com/kubesphere/ks-devops/pkg/kapis/gitops/v1alpha1/gitops\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"sigs.k8s.io/controller-runtime/pkg/client/fake\"\n)\n\nfunc TestArgoAPIsExist(t *testing.T) {\n\tschema, err := v1alpha1.SchemeBuilder.Register().Build()\n\tassert.Nil(t, err)\n\tcontainer := restful.NewContainer()\n\topt := &common.Options{\n\t\tGenericClient: gitops.Handler{\n\t\t\tClient: fake.NewClientBuilder().WithScheme(schema).Build(),\n\t\t},\n\t}\n\targoOption := &config.ArgoCDOption{Enabled: true, Namespace: \"argocd\"}\n\tfluxOption := &config.FluxCDOption{Enabled: false}\n\tAddToContainer(container, opt, argoOption, fluxOption)\n\ttype args struct {\n\t\tmethod string\n\t\turi    string\n\t}\n\n\ttests := []struct {\n\t\tname string\n\t\targs\n\t\tbody       string\n\t\texpectCode int\n\t}{\n\t\t{\n\t\t\tname: \"not found an application\",\n\t\t\targs: args{\n\t\t\t\tmethod: http.MethodGet,\n\t\t\t\turi:    \"/namespaces/fake-ns/applications\",\n\t\t\t},\n\t\t\texpectCode: http.StatusNotFound,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\thttpRequest, _ := http.NewRequest(tt.args.method, \"http://fake.com/kapis/gitops.kubesphere.io/v1alpha3\"+tt.args.uri, strings.NewReader(tt.body))\n\t\t\thttpRequest.Header.Set(\"Content-Type\", \"application/json\")\n\n\t\t\thttpWriter := httptest.NewRecorder()\n\t\t\tcontainer.Dispatch(httpWriter, httpRequest)\n\t\t\tassert.Equal(t, tt.expectCode, httpWriter.Code)\n\t\t})\n\t}\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "reflex-dev/reflex"
+sha = "7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=reflex/page.py -m pytest -q --junit-xml=test_output.xml tests/units/test_page.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target reflex.page --unit-test tests.units.test_page --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target reflex/page.py --unit-test tests/units/test_page.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 97.0
+original_coverage = 97.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 2, 4, 5, 6, 14, 17, 47, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 68, 70, 73, 76, 78, 119, 120, 123, 124,]
+missed_lines = [ 109,]
+
+[input_info]
+test_file_path = "tests/units/test_page.py"
+focal_file_path = "reflex/page.py"
+test_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/tests/units/test_page.py"
+focal_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/reflex/page.py"
+first_commit_date = "2023-07-27"
+last_commit_date = "2025-07-28"
+test_file_content = "from reflex import text\nfrom reflex.config import get_config\nfrom reflex.page import DECORATED_PAGES, page\n\n\ndef test_page_decorator():\n    def foo_():\n        return text(\"foo\")\n\n    DECORATED_PAGES.clear()\n    decorated_foo_ = page()(foo_)\n    page_data = DECORATED_PAGES.get(get_config().app_name, [])[0][1]\n    DECORATED_PAGES.clear()\n\n\ndef test_page_decorator_with_kwargs():\n    def foo_():\n        return text(\"foo\")\n\n    def load_foo():\n        return []\n\n    DECORATED_PAGES.clear()\n    decorated_foo_ = page(\n        route=\"foo\",\n        title=\"Foo\",\n        image=\"foo.png\",\n        description=\"Foo description\",\n        meta=[\"foo-meta\"],\n        script_tags=[\"foo-script\"],\n        on_load=load_foo,\n    )(foo_)\n    page_data = DECORATED_PAGES.get(get_config().app_name, [])[0][1]\n\n    DECORATED_PAGES.clear()"

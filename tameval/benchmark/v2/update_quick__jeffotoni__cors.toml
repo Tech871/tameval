@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "jeffotoni/quick"
+sha = "89f7be7048104f81431288179d7631ccbc2b3536"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out middleware/cors/cors.go middleware/cors/cors_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting middleware/cors/cors.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 62.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 40.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "middleware/cors/cors_test.go"
+focal_file_path = "middleware/cors/cors.go"
+test_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/middleware/cors/cors_test.go"
+focal_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/middleware/cors/cors.go"
+first_commit_date = "2023-02-22"
+last_commit_date = "2025-04-28"
+test_file_content = "package cors\n\nimport (\n\t\"net/http/httptest\"\n\t\"testing\"\n)\n\n// go test -v -failfast -count=1 -run ^TestNew$\n// go test -v -count=1 -failfast -cover -coverprofile=coverage.out -run ^TestNew$; go tool cover -html=coverage.out\nfunc TestNew(t *testing.T) {\n\ttype args struct {\n\t\tConfig Config\n\t}\n\n\ttests := []struct {\n\t\tname          string\n\t\targs          args\n\t\ttestCors      testCors\n\t\twantedHeaders map[string][]string\n\t}{\n\t\t{\n\t\t\tname:          \"success\",\n\t\t\targs:          args{},\n\t\t\ttestCors:      testCorsSuccess,\n\t\t\twantedHeaders: successDefaultCorsHeaders,\n\t\t},\n\t\t{\n\t\t\tname: \"success_default\",\n\t\t\targs: args{\n\t\t\t\tConfig: ConfigDefault,\n\t\t\t},\n\t\t\ttestCors:      testCorsSuccess,\n\t\t\twantedHeaders: successDefaultCorsHeaders,\n\t\t},\n\t\t{\n\t\t\tname: \"success_CustomConfig\",\n\t\t\targs: args{\n\t\t\t\tConfig: Config{\n\t\t\t\t\tAllowedOrigins:       []string{\"*\"},\n\t\t\t\t\tAllowedMethods:       []string{\"GET\", \"POST\"},\n\t\t\t\t\tAllowedHeaders:       []string{},\n\t\t\t\t\tExposedHeaders:       []string{},\n\t\t\t\t\tMaxAge:               500,\n\t\t\t\t\tAllowCredentials:     true,\n\t\t\t\t\tAllowPrivateNetwork:  true,\n\t\t\t\t\tOptionsPassthrough:   true,\n\t\t\t\t\tOptionsSuccessStatus: 0,\n\t\t\t\t\tDebug:                true,\n\t\t\t\t},\n\t\t\t},\n\t\t\ttestCors:      testCorsSuccess,\n\t\t\twantedHeaders: successCustomCorsHeaders,\n\t\t},\n\t}\n\n\tfor _, ti := range tests {\n\t\tt.Run(ti.name, func(tt *testing.T) {\n\n\t\t\tt.Logf(\"==== TEST %s ====\", ti.name)\n\t\t\th := New(ti.args.Config)\n\t\t\ta := h(ti.testCors.HandlerFunc)\n\t\t\trec := httptest.NewRecorder()\n\t\t\ta.ServeHTTP(rec, ti.testCors.Request)\n\t\t\tresp := rec.Result()\n\n\t\t\tfor k := range resp.Header {\n\t\t\t\tif !isHeaderEqual(resp.Header[k], ti.wantedHeaders[k]) {\n\t\t\t\t\ttt.Errorf(\"the headers are not equal!\\ncome:\\n%v\\n\\nwant:\\n%v\\n\\n\", resp.Header[k], successDefaultCorsHeaders[k])\n\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t}\n}\n\n// go test -v -failfast -count=1 -run ^TestDefault$\n// go test -v -count=1 -failfast -cover -coverprofile=coverage.out -run ^TestDefault$; go tool cover -html=coverage.out\nfunc TestDefault(t *testing.T) {\n\tt.Run(\"success_default\", func(tt *testing.T) {\n\t\tdefConfig := Default()\n\t\tif defConfig.Debug != ConfigDefault.Debug {\n\t\t\ttt.Errorf(\"config in debug is not same\")\n\t\t}\n\n\t\tif defConfig.MaxAge != ConfigDefault.MaxAge {\n\t\t\ttt.Errorf(\"config in MaxAge is not same\")\n\t\t}\n\n\t\tif !isHeaderEqualDefault(defConfig.AllowedHeaders, ConfigDefault.AllowedHeaders) {\n\t\t\ttt.Errorf(\"config in allowedHeaders is not same, come: %v | want: %v\", defConfig.AllowedHeaders, ConfigDefault.AllowedHeaders)\n\t\t}\n\n\t\tif !isHeaderEqualDefault(defConfig.AllowedMethods, ConfigDefault.AllowedMethods) {\n\t\t\ttt.Errorf(\"config in allowedMethods is not same\")\n\t\t}\n\n\t\tif !isHeaderEqual(defConfig.AllowedOrigins, ConfigDefault.AllowedOrigins) {\n\t\t\ttt.Errorf(\"config in allowedOrigins is not same\")\n\t\t}\n\n\t\tif defConfig.AllowPrivateNetwork != ConfigDefault.AllowPrivateNetwork {\n\t\t\ttt.Errorf(\"config in AllowPrivateNetwork is not same\")\n\t\t}\n\t})\n\n\tt.Run(\"success_custom\", func(tt *testing.T) {\n\t\tdefConfig := Default(Config{\n\t\t\tAllowedOrigins:       []string{},\n\t\t\tAllowedMethods:       []string{},\n\t\t\tAllowedHeaders:       []string{},\n\t\t\tExposedHeaders:       []string{},\n\t\t\tMaxAge:               1,\n\t\t\tAllowCredentials:     false,\n\t\t\tAllowPrivateNetwork:  true,\n\t\t\tOptionsPassthrough:   false,\n\t\t\tOptionsSuccessStatus: 0,\n\t\t\tDebug:                true,\n\t\t})\n\t\tif defConfig.Debug == ConfigDefault.Debug {\n\t\t\ttt.Errorf(\"config in debug is not your config\")\n\t\t}\n\n\t\tif defConfig.MaxAge == ConfigDefault.MaxAge {\n\t\t\ttt.Errorf(\"config in MaxAge is not your config\")\n\t\t}\n\n\t\tif isHeaderEqualDefault(defConfig.AllowedHeaders, ConfigDefault.AllowedHeaders) {\n\t\t\ttt.Errorf(\"config in allowedHeaders is not your config\")\n\t\t}\n\n\t\tif isHeaderEqualDefault(defConfig.AllowedMethods, ConfigDefault.AllowedMethods) {\n\t\t\ttt.Errorf(\"config in allowedMethods is not your config\")\n\t\t}\n\n\t\tif isHeaderEqual(defConfig.AllowedOrigins, ConfigDefault.AllowedOrigins) {\n\t\t\ttt.Errorf(\"config in allowedOrigins is not your config\")\n\t\t}\n\n\t\tif defConfig.AllowPrivateNetwork == ConfigDefault.AllowPrivateNetwork {\n\t\t\ttt.Errorf(\"config in AllowPrivateNetwork is not your your config\")\n\t\t}\n\t})\n}\n\n// go test -bench=. -benchtime=1s -benchmem\nfunc BenchmarkNew(b *testing.B) {\n\tfor i := 0; i < b.N; i++ {\n\t\tNew()\n\t}\n}\n\n// go test -bench=. -benchtime=1s -benchmem\nfunc BenchmarkDefault(b *testing.B) {\n\tfor i := 0; i < b.N; i++ {\n\t\tDefault()\n\t}\n}"

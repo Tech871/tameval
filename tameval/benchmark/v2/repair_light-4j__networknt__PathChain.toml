@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "networknt/light-4j"
+sha = "e6d76041442a1265369701cef8141b88c027f15c"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl handler-config -Dtest=PathChainTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl handler-config -DtargetClasses=**.PathChain  -DtargetTests=**.PathChainTest  -DoutputFormats=XML"
+coverage_report_path = "handler-config/target/site/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "handler-config/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 69.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "handler-config/src/test/java/com/networknt/handler/PathChainTest.java"
+focal_file_path = "handler-config/src/main/java/com/networknt/handler/config/PathChain.java"
+test_file_url = "https://github.com/networknt/light-4j/blob/e6d76041442a1265369701cef8141b88c027f15c/handler-config/src/test/java/com/networknt/handler/PathChainTest.java"
+focal_file_url = "https://github.com/networknt/light-4j/blob/e6d76041442a1265369701cef8141b88c027f15c/handler-config/src/main/java/com/networknt/handler/config/PathChain.java"
+first_commit_date = "2024-02-29"
+last_commit_date = "2025-03-06"
+test_file_content = "\n\n\nimport com.networknt.handler.config.PathChain;\n\npublic class PathChainTest {\n\n    @Test\n    public void validate_Path() {\n        PathChain chain = new PathChain();\n        chain.setPath(\"/my/path\");\n        chain.setMethod(\"GET\");\n        chain.validate(\"unit test config\");\n    }\n\n    @Test\n    public void validate_Source() {\n        PathChain chain = new PathChain();\n        chain.setSource(\"a.source.Class\");\n        chain.validate(\"unit test config\");\n    }\n\n    @Test\n    public void validate_NeitherPathNorSource() {\n        PathChain chain = new PathChain();\n        chain.setPath(\"/my/path\");\n        chain.setMethod(\"MAGIC\");\n        try {\n            chain.validate(\"unit test config\");\n            Assert.fail(\"Expected exception\");\n        } catch (Exception e) {\n            System.out.println(e.toString());\n            String ex_message = \"Bad paths element in unit test config [ Invalid HTTP method: MAGIC ]\";\n            Assert.assertEquals(ex_message, e.getMessage());\n        }\n    }\n\n    @Test\n    public void validate_BadMethod() {\n        PathChain chain = new PathChain();\n        chain.setMethod(\"GET\");\n        try {\n            chain.validate(\"unit test config\");\n            Assert.fail(\"Expected exception\");\n        } catch (Exception e) {\n            System.out.println(e.toString());\n            String ex_message = \"Bad paths element in unit test config [ You must specify either path or source | It is possible that serviceId is missing from the values.yml and it is mandatory. ]\";\n            Assert.assertEquals(ex_message, e.getMessage());\n        }\n    }\n\n    @Test\n    public void validate_SourceWithPathAndMethod() {\n        PathChain chain = new PathChain();\n        chain.setSource(\"some.source.Class\");\n        chain.setPath(\"/some/path\");\n        chain.setMethod(\"GET\");\n        try {\n            chain.validate(\"some unit test\");\n            Assert.fail(\"Expected exception\");\n        } catch (Exception e) {\n            System.out.println(e.toString());\n            String ex_message = \"Bad paths element in some unit test [ \" +\n                \"Conflicting source: some.source.Class and path: /some/path | \" +\n                \"Conflicting source: some.source.Class and method: GET ]\";\n            Assert.assertEquals(ex_message, e.getMessage());\n        }\n    }\n\n    @Test\n    public void validate_SourceWithPath() {\n        PathChain chain = new PathChain();\n        chain.setSource(\"some.source.Class\");\n        chain.setPath(\"/some/path\");\n        try {\n            chain.validate(\"some unit test\");\n            Assert.fail(\"Expected exception\");\n        } catch (Exception e) {\n            System.out.println(e.toString());\n            String ex_message = \"Bad paths element in some unit test [ Conflicting source: some.source.Class and path: /some/path ]\";\n            Assert.assertEquals(ex_message, e.getMessage());\n        }\n    }\n\n    @Test\n    public void validate_SourceWithMethod() {\n        PathChain chain = new PathChain();\n        chain.setSource(\"some.source.Class\");\n        chain.setMethod(\"GET\");\n        try {\n            chain.validate(\"some unit test\");\n            Assert.fail(\"Expected exception\");\n        } catch (Exception e) {\n            System.out.println(e.toString());\n            String ex_message = \"Bad paths element in some unit test [ Conflicting source: some.source.Class and method: GET ]\";\n            Assert.assertEquals(ex_message, e.getMessage());\n        }\n    }\n\n}"

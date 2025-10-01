@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "agrestio/agrest"
+sha = "113d494706e4c3d1e86cc13936a67596d5265a9d"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl agrest-cayenne -Dtest=EntityPathCacheTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl agrest-cayenne -DtargetClasses=**.EntityPathCache  -DtargetTests=**.EntityPathCacheTest  -DoutputFormats=XML"
+coverage_report_path = "agrest-cayenne/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "agrest-cayenne/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 57.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "agrest-cayenne/src/test/java/io/agrest/cayenne/path/EntityPathCacheTest.java"
+focal_file_path = "agrest-cayenne/src/main/java/io/agrest/cayenne/path/EntityPathCache.java"
+test_file_url = "https://github.com/agrestio/agrest/blob/113d494706e4c3d1e86cc13936a67596d5265a9d/agrest-cayenne/src/test/java/io/agrest/cayenne/path/EntityPathCacheTest.java"
+focal_file_url = "https://github.com/agrestio/agrest/blob/113d494706e4c3d1e86cc13936a67596d5265a9d/agrest-cayenne/src/main/java/io/agrest/cayenne/path/EntityPathCache.java"
+first_commit_date = "2022-01-01"
+last_commit_date = "2025-03-22"
+test_file_content = "package io.agrest.cayenne.path;\n\nimport io.agrest.AgException;\nimport org.apache.cayenne.map.DataMap;\nimport org.apache.cayenne.map.DbAttribute;\nimport org.apache.cayenne.map.DbEntity;\nimport org.apache.cayenne.map.ObjAttribute;\nimport org.apache.cayenne.map.ObjEntity;\nimport org.apache.cayenne.map.ObjRelationship;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport java.sql.Types;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\npublic class EntityPathCacheTest {\n\n    private ObjEntity x;\n\n    @BeforeEach\n    public void setUp() {\n\n        DataMap map = new DataMap();\n\n        DbEntity dy = new DbEntity(\"Y\");\n        dy.addAttribute(new DbAttribute(\"pk1\", Types.INTEGER));\n        dy.getAttribute(\"pk1\").setPrimaryKey(true);\n        map.addDbEntity(dy);\n\n        ObjEntity y = new ObjEntity(\"Y\");\n        y.setDbEntityName(\"Y\");\n        y.setClassName(\"test.Y\");\n        y.addAttribute(new ObjAttribute(\"name\", \"java.lang.String\", x));\n        map.addObjEntity(y);\n\n        DbEntity dx = new DbEntity(\"X\");\n        dx.addAttribute(new DbAttribute(\"pkx1\", Types.VARCHAR, 42));\n        dx.getAttribute(\"pkx1\").setPrimaryKey(true);\n        map.addDbEntity(dx);\n\n        ObjEntity x = new ObjEntity(\"X\");\n        x.setDbEntityName(\"X\");\n        x.addAttribute(new ObjAttribute(\"name\", \"java.lang.String\"));\n        x.addRelationship(new ObjRelationship(\"y\", \"someString\"));\n        x.getRelationship(\"y\").setTargetEntityName(\"Y\");\n        map.addObjEntity(x);\n\n        this.x = x;\n    }\n\n    @Test\n    public void getOrCreate_Attribute() {\n        EntityPathCache cache = new EntityPathCache(x);\n        PathDescriptor pd = cache.getOrCreate(\"name\");\n        assertNotNull(pd);\n        assertTrue(pd.isAttributeOrId());\n        assertEquals(\"java.lang.String\", pd.getType());\n        assertEquals(\"name\", pd.getPathExp().getPath());\n        assertSame(pd, cache.getOrCreate(\"name\"));\n    }\n\n    @Test\n    public void getOrCreate_Relationship() {\n        EntityPathCache cache = new EntityPathCache(x);\n        PathDescriptor pd = cache.getOrCreate(\"y\");\n        assertNotNull(pd);\n        assertFalse(pd.isAttributeOrId());\n        assertEquals(\"test.Y\", pd.getType());\n        assertEquals(\"y\", pd.getPathExp().getPath());\n        assertSame(pd, cache.getOrCreate(\"y\"));\n    }\n\n    @Test\n    public void getOrCreate_RelatedAttribute() {\n        EntityPathCache cache = new EntityPathCache(x);\n        PathDescriptor pd = cache.getOrCreate(\"y.name\");\n        assertNotNull(pd);\n        assertTrue(pd.isAttributeOrId());\n        assertEquals(\"java.lang.String\", pd.getType());\n        assertEquals(\"y.name\", pd.getPathExp().getPath());\n        assertSame(pd, cache.getOrCreate(\"y.name\"));\n    }\n\n    @Test\n    public void tesGetOrCreate_BadPath() {\n        EntityPathCache cache = new EntityPathCache(x);\n        assertThrows(AgException.class, () -> cache.getOrCreate(\"y.xyz\"));\n    }\n\n    @Test\n    public void getOrCreate_OuterRelatedAttribute() {\n        EntityPathCache cache = new EntityPathCache(x);\n        PathDescriptor pd = cache.getOrCreate(\"y+.name\");\n        assertNotNull(pd);\n        assertTrue(pd.isAttributeOrId());\n        assertEquals(\"java.lang.String\", pd.getType());\n        assertEquals(\"y+.name\", pd.getPathExp().getPath());\n        assertSame(pd, cache.getOrCreate(\"y+.name\"));\n        assertNotSame(pd, cache.getOrCreate(\"y.name\"));\n    }\n}"

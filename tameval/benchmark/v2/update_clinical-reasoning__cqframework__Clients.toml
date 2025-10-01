@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "cqframework/clinical-reasoning"
+sha = "1fed1a804b28ac47966530908e41cb26f6e82472"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl cqf-fhir-utility -Dtest=ClientsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl cqf-fhir-utility -DtargetClasses=**.Clients  -DtargetTests=**.ClientsTest  -DoutputFormats=XML"
+coverage_report_path = "cqf-fhir-utility/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "cqf-fhir-utility/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 51.0
+original_coverage = 61.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 50, 51, 53, 83, 84, 85, 87, 88, 98, 100, 111, 112, 114, 115, 116, 117, 118, 119, 121, 197, 199, 200, 209, 210, 212, 213, 214, 215, 216, 217, 228, 230, 231, 232, 234, 274, 276, 277, 278, 279, 284, 285, 286, 288, 289, 290, 291, 292, 294,]
+missed_lines = [ 36, 37, 39, 66, 67, 68, 70, 131, 133, 144, 145, 147, 148, 149, 150, 151, 152, 154, 164, 166, 177, 178, 180, 181, 182, 183, 184, 185, 187, 243, 245, 246, 247, 249, 252, 254, 255, 257, 258, 259, 260, 261, 262, 264, 280, 281, 282,]
+
+[input_info]
+test_file_path = "cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/client/ClientsTest.java"
+focal_file_path = "cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/client/Clients.java"
+test_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/test/java/org/opencds/cqf/fhir/utility/client/ClientsTest.java"
+focal_file_url = "https://github.com/cqframework/clinical-reasoning/blob/1fed1a804b28ac47966530908e41cb26f6e82472/cqf-fhir-utility/src/main/java/org/opencds/cqf/fhir/utility/client/Clients.java"
+first_commit_date = "2023-08-31"
+last_commit_date = "2024-05-27"
+test_file_content = "package org.opencds.cqf.fhir.utility.client;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nimport ca.uhn.fhir.context.FhirContext;\nimport ca.uhn.fhir.rest.client.api.IGenericClient;\nimport ca.uhn.fhir.rest.client.interceptor.BasicAuthInterceptor;\nimport java.util.Collections;\nimport java.util.List;\nimport org.hl7.fhir.dstu3.model.Endpoint;\nimport org.hl7.fhir.dstu3.model.StringType;\nimport org.junit.jupiter.api.Test;\n\nclass ClientsTest {\n    @Test\n    void createClient() {\n        IGenericClient client = Clients.forUrl(FhirContext.forR4Cached(), \"http://test.com\");\n\n        assertNotNull(client);\n        assertEquals(\"http://test.com\", client.getServerBase());\n    }\n\n    @Test\n    void registerAuth() {\n        IGenericClient client = Clients.forUrl(FhirContext.forR4Cached(), \"http://test.com\");\n        Clients.registerBasicAuth(client, \"user\", \"password\");\n\n        List<Object> interceptors = client.getInterceptorService().getAllRegisteredInterceptors();\n\n        Object authInterceptor = interceptors.get(0);\n        assertTrue(authInterceptor instanceof BasicAuthInterceptor);\n    }\n\n    @Test\n    void registerHeaders() {\n        IGenericClient client = Clients.forUrl(FhirContext.forR4Cached(), \"http://test.com\");\n        Clients.registerHeaders(client, \"Basic: XYZ123\");\n\n        List<Object> interceptors = client.getInterceptorService().getAllRegisteredInterceptors();\n\n        Object interceptor = interceptors.get(0);\n        assertTrue(interceptor instanceof HeaderInjectionInterceptor);\n    }\n\n    @Test\n    void rejectInvalidHeaders() {\n        IGenericClient client = Clients.forUrl(FhirContext.forR4Cached(), \"http://test.com\");\n        assertThrows(IllegalArgumentException.class, () -> {\n            Clients.registerHeaders(client, \"BasicXYZ123\");\n        });\n    }\n\n    @Test\n    void clientForEndpoint() {\n        Endpoint endpoint = new Endpoint();\n        endpoint.setAddress(\"http://test.com\");\n\n        endpoint.setHeader(Collections.singletonList(new StringType(\"Basic: XYZ123\")));\n        IGenericClient client = Clients.forEndpoint(endpoint);\n\n        assertEquals(\"http://test.com\", client.getServerBase());\n        List<Object> interceptors = client.getInterceptorService().getAllRegisteredInterceptors();\n\n        Object interceptor = interceptors.get(0);\n        assertTrue(interceptor instanceof HeaderInjectionInterceptor);\n    }\n}"

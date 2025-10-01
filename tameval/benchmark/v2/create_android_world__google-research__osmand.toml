@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-research/android_world"
+sha = "05afc97ecab2ad235e2fc2a40e740f0102a3bcbc"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_world/task_evals/single/osmand.py -m pytest -q --junit-xml=test_output.xml android_world/task_evals/single/osmand_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_world.task_evals.single.osmand --unit-test android_world.task_evals.single.osmand_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_world/task_evals/single/osmand.py --unit-test android_world/task_evals/single/osmand_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 55.0
+original_coverage = 72.0
+mutation_kill_rate = 38.0
+original_mutation_kill_rate = 38.0
+covered_lines = [ 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 31, 32, 33, 36, 39, 42, 59, 62, 76, 79, 89, 90, 91, 92, 95, 97, 98, 99, 102, 105, 127, 142, 143, 145, 146, 149, 150, 153, 156, 167, 173, 199, 202, 205, 208, 209, 218, 222, 227, 240, 245, 246, 250, 278, 281, 282, 283, 284, 285, 286, 287, 296, 298, 304, 305, 309, 332, 333, 334, 337, 338, 346, 372, 383, 384, 385, 386, 389, 392, 393, 404, 405, 417, 425, 444, 449, 450,]
+missed_lines = [ 115, 118, 119, 120, 121, 122, 124, 144, 147, 151, 184, 186, 187, 188, 189, 190, 191, 192, 193, 196, 224, 225, 228, 229, 230, 231, 234, 237, 238, 242, 243, 247, 267, 268, 270, 271, 272, 273, 299, 300, 301, 302, 306, 318, 324, 325, 326, 343, 362, 363, 364, 365, 366, 367, 368, 369, 406, 407, 408, 411, 412, 419, 420, 421, 426, 430, 431, 441, 442, 446, 447, 451, 454, 455,]
+
+[input_info]
+test_file_path = "android_world/task_evals/single/osmand_test.py"
+focal_file_path = "android_world/task_evals/single/osmand.py"
+test_file_url = "https://github.com/google-research/android_world/blob/05afc97ecab2ad235e2fc2a40e740f0102a3bcbc/android_world/task_evals/single/osmand_test.py"
+focal_file_url = "https://github.com/google-research/android_world/blob/05afc97ecab2ad235e2fc2a40e740f0102a3bcbc/android_world/task_evals/single/osmand.py"
+first_commit_date = "2024-05-16"
+last_commit_date = "2025-06-02"
+test_file_content = "# Copyright 2025 The android_world Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\nimport random\nfrom typing import Any\nfrom xml.etree import ElementTree\n\nfrom absl.testing import absltest\nfrom android_world.task_evals.single import osmand\nfrom android_world.task_evals.utils import sqlite_schema_utils\n\nclass TestOsmAndFavorite(absltest.TestCase):\n\n  def test_favorites_contains_coords(self):\n    favorites = ElementTree.fromstring(\"\"\"\n        <gpx xmlns=\"http://www.topografix.com/GPX/1/1\">\n          <wpt lat=\"47.1069970\" lon=\"9.5274854\"><name>Triesen</name></wpt>\n        </gpx>\n        \"\"\")\n\n    coords_are_contained = osmand._favorites_contains(\n        favorites, \"47.1069970, 9.5274854\"\n    )\n\n    self.assertTrue(coords_are_contained)\n\nclass TestOsmAndTrack(absltest.TestCase):\n\n  def test_lookup_unknown_target_waypoint(self):\n    waypoint_name_not_in_preloaded_map_locations = \"Obock\"\n\n    self.assertIsNone(\n        osmand._lookup_location_coords(\n            waypoint_name_not_in_preloaded_map_locations\n        )\n    )\n\n  def test_lookup_coords_just_returns_coords(self):\n    self.assertEqual(\n        (-1.234, 56.7), osmand._lookup_location_coords(\"-1.234, 56.7\")\n    )\n\n  def test_lookup_target_waypoints_throws_on_unknown(self):\n    known_waypoint = next(iter(osmand._PRELOADED_MAP_LOCATIONS))\n    coords_waypoint = \"-1.234, 56.7\"\n    waypoint_name_not_in_preloaded_map_locations = \"Obock\"\n\n    with self.assertRaisesWithLiteralMatch(\n        ValueError,\n        \"Unable to look up coordinates for waypoint location parameter(s)\"\n        ' \"Obock\". Only lat/lon coordinate strings or exact names from'\n        \" _PRELOADED_MAP_LOCATIONS supported.\",\n    ):\n      osmand._lookup_target_waypoints([\n          known_waypoint,\n          coords_waypoint,\n          waypoint_name_not_in_preloaded_map_locations,\n      ])\n\n  def test_track_points_parsing(self):\n    track_xml = ElementTree.fromstring(\"\"\"\n        <gpx xmlns=\"http://www.topografix.com/GPX/1/1\">\n          <trk>\n            <trkseg>\n              <trkpt lat=\"47.0687992\" lon=\"9.5061564\"/>\n            </trkseg>\n          </trk>\n        </gpx>\n        \"\"\")\n\n    self.assertSequenceEqual(\n        [(47.0687992, 9.5061564)], list(osmand._track_points(track_xml))\n    )\n\nif __name__ == \"__main__\":\n  absltest.main()\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "citrusframework/citrus-simulator"
+sha = "e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl simulator-spring-boot -Dtest=StringFilterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl simulator-spring-boot -DtargetClasses=**.StringFilter  -DtargetTests=**.StringFilterTest  -DoutputFormats=XML"
+coverage_report_path = "simulator-spring-boot/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "simulator-spring-boot/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 64.0
+original_coverage = 64.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 47, 48, 56, 57, 58, 59, 64, 73, 83, 84, 93, 103, 104, 108, 119, 122, 125, 126, 128, 129, 130, 137, 143,]
+missed_lines = [ 112, 113, 120, 123, 131, 144, 145, 146, 147, 148, 149, 150, 151,]
+
+[input_info]
+test_file_path = "simulator-spring-boot/src/test/java/org/citrusframework/simulator/service/filter/StringFilterTest.java"
+focal_file_path = "simulator-spring-boot/src/main/java/org/citrusframework/simulator/service/filter/StringFilter.java"
+test_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/test/java/org/citrusframework/simulator/service/filter/StringFilterTest.java"
+focal_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/main/java/org/citrusframework/simulator/service/filter/StringFilter.java"
+first_commit_date = "2023-11-20"
+last_commit_date = "2025-01-09"
+test_file_content = "/*\n * Copyright the original author or authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.citrusframework.simulator.service.filter;\n\nimport org.junit.jupiter.api.Test;\n\nimport java.util.Arrays;\nimport java.util.List;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotSame;\nimport static org.junit.jupiter.api.Assertions.assertNull;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass StringFilterTest {\n\n    @Test\n    void testConstructor() {\n        StringFilter filter = new StringFilter();\n        assertNull(filter.getEquals());\n        assertNull(filter.getNotEquals());\n        assertNull(filter.getIn());\n        assertNull(filter.getNotIn());\n        assertNull(filter.getContains());\n        assertNull(filter.getDoesNotContain());\n    }\n\n    @Test\n    void testCopyConstructor() {\n        StringFilter original = new StringFilter();\n        original.setEquals(\"testEquals\");\n        original.setNotEquals(\"testNotEquals\");\n        original.setIn(Arrays.asList(\"test1\", \"test2\"));\n        original.setNotIn(Arrays.asList(\"test3\", \"test4\"));\n        original.setContains(\"testContains\");\n        original.setDoesNotContain(\"testDoesNotContain\");\n\n        StringFilter copy = new StringFilter(original);\n\n        assertEquals(original, copy);\n        assertNotSame(original.getIn(), copy.getIn());\n        assertNotSame(original.getNotIn(), copy.getNotIn());\n    }\n\n    @Test\n    void testGettersAndSetters() {\n        StringFilter filter = new StringFilter();\n        String testValue = \"testValue\";\n        List<String> testList = Arrays.asList(\"test1\", \"test2\");\n\n        filter.setEquals(testValue);\n        assertEquals(testValue, filter.getEquals());\n\n        filter.setNotEquals(testValue);\n        assertEquals(testValue, filter.getNotEquals());\n\n        filter.setIn(testList);\n        assertEquals(testList, filter.getIn());\n\n        filter.setNotIn(testList);\n        assertEquals(testList, filter.getNotIn());\n\n        filter.setContains(testValue);\n        assertEquals(testValue, filter.getContains());\n\n        filter.setDoesNotContain(testValue);\n        assertEquals(testValue, filter.getDoesNotContain());\n    }\n\n    @Test\n    void testCopy() {\n        StringFilter original = new StringFilter();\n        original.setEquals(\"testEquals\");\n        StringFilter copy = original.copy();\n\n        assertEquals(original, copy);\n        assertNotSame(original, copy);\n    }\n\n    @Test\n    void testEqualsAndHashCode() {\n        StringFilter filter1 = new StringFilter();\n        StringFilter filter2 = new StringFilter();\n\n        assertEquals(filter1, filter2);\n        assertEquals(filter1.hashCode(), filter2.hashCode());\n\n        filter1.setEquals(\"test\");\n        assertNotEquals(filter1, filter2);\n\n        filter2.setEquals(\"test\");\n        assertEquals(filter1, filter2);\n        assertEquals(filter1.hashCode(), filter2.hashCode());\n    }\n\n    @Test\n    void testToString() {\n        StringFilter filter = new StringFilter();\n        filter.setEquals(\"testEquals\");\n        assertTrue(filter.toString().contains(\"testEquals\"));\n    }\n}\n"

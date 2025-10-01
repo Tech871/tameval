@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "kmbhm1/supabase-pydantic"
+sha = "0a62448b7c42eef16ec885ccedaebe42a51f9fbf"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=supabase_pydantic/util/writers/factories.py -m pytest -q --junit-xml=test_output.xml tests/unit/writers/test_factories.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target supabase_pydantic.util.writers.factories --unit-test tests.unit.writers.test_factories --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target supabase_pydantic/util/writers/factories.py --unit-test tests/unit/writers/test_factories.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 53.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = [ 0, 1, 2, 3, 4, 7, 8, 9,]
+missed_lines = [ 34, 35, 36, 37, 38, 46, 47,]
+
+[input_info]
+test_file_path = "tests/unit/writers/test_factories.py"
+focal_file_path = "supabase_pydantic/util/writers/factories.py"
+test_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/tests/unit/writers/test_factories.py"
+focal_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/supabase_pydantic/util/writers/factories.py"
+first_commit_date = "2024-07-26"
+last_commit_date = "2025-08-10"
+test_file_content = "import pytest\nfrom unittest.mock import patch\nfrom supabase_pydantic.util.constants import FrameWorkType, OrmType\nfrom supabase_pydantic.util.dataclasses import TableInfo\nfrom supabase_pydantic.util.writers.abstract_classes import AbstractFileWriter\nfrom supabase_pydantic.util.writers.pydantic_writers import PydanticFastAPIWriter, PydanticJSONAPIWriter\nfrom supabase_pydantic.util.writers.sqlalchemy_writers import SqlAlchemyFastAPIWriter, SqlAlchemyJSONAPIWriter\nfrom supabase_pydantic.util.writers.factories import FileWriterFactory  # Make sure the import path is correct\n\n\n@pytest.fixture\ndef table_info():\n    return [TableInfo(name='test_table', columns=[])]\n\n\n@pytest.fixture\ndef file_path():\n    return 'test_path.py'\n\n\n@pytest.mark.parametrize(\n    'file_type,framework_type,expected_writer',\n    [\n        (OrmType.SQLALCHEMY, FrameWorkType.FASTAPI, SqlAlchemyFastAPIWriter),\n        (OrmType.SQLALCHEMY, FrameWorkType.FASTAPI_JSONAPI, SqlAlchemyJSONAPIWriter),\n        (OrmType.PYDANTIC, FrameWorkType.FASTAPI, PydanticFastAPIWriter),\n        (OrmType.PYDANTIC, FrameWorkType.FASTAPI_JSONAPI, PydanticJSONAPIWriter),\n    ],\n)\ndef test_get_file_writer_valid_cases(table_info, file_path, file_type, framework_type, expected_writer):\n    writer = FileWriterFactory.get_file_writer(table_info, file_path, file_type, framework_type)\n    assert isinstance(writer, expected_writer), f'Expected {expected_writer}, got {type(writer)}'\n\n\ndef test_get_file_writer_invalid_cases(table_info, file_path):\n    with pytest.raises(ValueError) as excinfo:\n        FileWriterFactory.get_file_writer(table_info, file_path, OrmType.PYDANTIC, FrameWorkType)\n    assert 'Unsupported file type or framework type' in str(excinfo.value)"

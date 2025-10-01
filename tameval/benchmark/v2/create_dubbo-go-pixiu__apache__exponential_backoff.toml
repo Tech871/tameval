@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "apache/dubbo-go-pixiu"
+sha = "1f7c7364d47baa7567b762843e6ee39020be179e"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/cluster/retry/exponentialbackoff/exponential_backoff.go pkg/cluster/retry/exponentialbackoff/exponential_backoff_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/cluster/retry/exponentialbackoff/exponential_backoff.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 65.0
+original_coverage = 100.0
+mutation_kill_rate = 40.0
+original_mutation_kill_rate = 73.0
+covered_lines = [ 42, 43, 44, 61, 67, 68, 69, 70, 71, 72, 73, 75, 76, 83, 84, 85, 86, 87, 88, 89, 94, 98, 103, 104, 105, 106, 107, 108,]
+missed_lines = [ 62, 63, 64, 79, 80, 81, 90, 91, 92, 95, 96, 97, 99, 100, 101,]
+
+[input_info]
+test_file_path = "pkg/cluster/retry/exponentialbackoff/exponential_backoff_test.go"
+focal_file_path = "pkg/cluster/retry/exponentialbackoff/exponential_backoff.go"
+test_file_url = "https://github.com/apache/dubbo-go-pixiu/blob/1f7c7364d47baa7567b762843e6ee39020be179e/pkg/cluster/retry/exponentialbackoff/exponential_backoff_test.go"
+focal_file_url = "https://github.com/apache/dubbo-go-pixiu/blob/1f7c7364d47baa7567b762843e6ee39020be179e/pkg/cluster/retry/exponentialbackoff/exponential_backoff.go"
+first_commit_date = "2025-08-08"
+last_commit_date = "2025-08-08"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage exponentialbackoff\n\nimport (\n\t\"testing\"\n\t\"time\"\n)\n\n// TestExponentialBackoffRetry_Factory verifies the creation of policies via the factory.\n\n// TestExponentialBackoffRetry_Attempts verifies the number of attempts.\n\n// TestExponentialBackoffRetry_Timing verifies the backoff delay.\nfunc TestExponentialBackoffRetry_Timing(t *testing.T) {\n\tinitialInterval := 20 * time.Millisecond\n\tmultiplier := 2.0\n\tmaxJitter := 100 * time.Millisecond\n\n\tconfig := map[string]any{\n\t\t\"times\":           uint(3),\n\t\t\"initialInterval\": initialInterval.String(),\n\t\t\"maxInterval\":     \"1s\",\n\t\t\"multiplier\":      multiplier,\n\t}\n\tpolicy, _ := newExponentialBackoffRetry(config)\n\n\t// 1st attempt: no delay\n\tstart := time.Now()\n\tif !policy.Attempt() {\n\t\tt.Fatal(\"first attempt failed\")\n\t}\n\telapsed := time.Since(start)\n\tif elapsed >= initialInterval {\n\t\tt.Errorf(\"first attempt should have no delay, but took %v\", elapsed)\n\t}\n\n\t// 2nd attempt (1st retry): delay should be ~20ms\n\texpectedDelay1 := initialInterval\n\tstart = time.Now()\n\tif !policy.Attempt() {\n\t\tt.Fatal(\"second attempt failed\")\n\t}\n\telapsed = time.Since(start)\n\tif elapsed < expectedDelay1 || elapsed > expectedDelay1+maxJitter {\n\t\tt.Errorf(\"expected ~%v delay for 2nd attempt, but got %v\", expectedDelay1, elapsed)\n\t}\n\n\t// 3rd attempt (2nd retry): delay should be ~40ms\n\texpectedDelay2 := time.Duration(float64(initialInterval) * multiplier)\n\tstart = time.Now()\n\tif !policy.Attempt() {\n\t\tt.Fatal(\"third attempt failed\")\n\t}\n\telapsed = time.Since(start)\n\tif elapsed < expectedDelay2 || elapsed > expectedDelay2+maxJitter {\n\t\tt.Errorf(\"expected ~%v delay for 3rd attempt, but got %v\", expectedDelay2, elapsed)\n\t}\n}\n\n// TestExponentialBackoffRetry_Reset verifies the policy can be reused after reset.\n"

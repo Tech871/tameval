@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dromara/disjob"
+sha = "fe566cf310a9c72a66058d100c30d40d1cada980"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl disjob-common -Dtest=DatePeriodsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl disjob-common -DtargetClasses=**.DatePeriods  -DtargetTests=**.DatePeriodsTest  -DoutputFormats=XML"
+coverage_report_path = "disjob-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "disjob-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 81.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = [ 39, 44, 49, 54, 59, 64, 69, 74, 79, 84, 89, 94, 99, 106, 107, 108, 109, 121, 122, 124, 125, 126, 127, 131, 135, 139, 143, 144, 148, 149, 156, 157, 158, 159, 162, 166, 171,]
+
+[input_info]
+test_file_path = "disjob-common/src/test/java/cn/ponfee/disjob/common/date/DatePeriodsTest.java"
+focal_file_path = "disjob-common/src/main/java/cn/ponfee/disjob/common/date/DatePeriods.java"
+test_file_url = "https://github.com/dromara/disjob/blob/fe566cf310a9c72a66058d100c30d40d1cada980/disjob-common/src/test/java/cn/ponfee/disjob/common/date/DatePeriodsTest.java"
+focal_file_url = "https://github.com/dromara/disjob/blob/fe566cf310a9c72a66058d100c30d40d1cada980/disjob-common/src/main/java/cn/ponfee/disjob/common/date/DatePeriods.java"
+first_commit_date = "2023-05-03"
+last_commit_date = "2025-04-12"
+test_file_content = "/*\n * Copyright 2022-2024 Ponfee (http://www.ponfee.cn/)\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     https://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage cn.ponfee.disjob.common.date;\n\nimport cn.ponfee.disjob.common.util.Bytes;\nimport org.apache.commons.codec.DecoderException;\nimport org.apache.commons.codec.binary.Hex;\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\n\nimport java.text.ParseException;\nimport java.util.Date;\n\n/**\n * DatePeriods Test\n *\n * @author Ponfee\n */\npublic class DatePeriodsTest {\n\n\n\n\n\n    @Test\n    public void test() throws DecoderException {\n        String hex = \"0cb703fbc86a41b0\";\n        byte[] bytes = Hex.decodeHex(hex.toCharArray());\n        long number = Bytes.toLong(bytes);\n        System.out.println(number);\n        System.out.println(Long.toHexString(number));\n        Assertions.assertEquals(\"cb703fbc86a41b0\", Long.toHexString(number));\n        Assertions.assertEquals(\"0cb703fbc86a41b0\", Bytes.encodeHex(Bytes.toBytes(number)));\n    }\n}\n"

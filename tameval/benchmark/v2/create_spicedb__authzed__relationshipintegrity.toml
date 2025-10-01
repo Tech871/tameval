@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "authzed/spicedb"
+sha = "449c43d3c8dbb72defa98dfd097392c2fa137870"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/datastore/proxy/relationshipintegrity.go internal/datastore/proxy/relationshipintegrity_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/datastore/proxy/relationshipintegrity.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 32.0
+original_coverage = 43.0
+mutation_kill_rate = 23.0
+original_mutation_kill_rate = 33.0
+covered_lines = [ 47, 48, 49, 66, 67, 68, 69, 70, 71, 76, 77, 78, 79, 80, 97, 98, 99, 100, 101, 102, 103, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 118, 119, 120, 121, 122, 132, 133, 138, 142, 143, 148, 149, 150, 151, 156, 163, 164, 165, 166, 167, 168, 170, 171, 172, 173, 174, 175, 176, 195, 196, 197, 215, 216, 226, 232, 237, 238, 239, 300, 301, 306, 307, 313, 314, 315, 316, 391, 392, 393, 394, 395, 396, 397, 402, 408, 409, 410, 411, 412, 413, 416,]
+missed_lines = [ 50, 51, 52, 54, 55, 56, 58, 59, 60, 62, 63, 64, 72, 73, 74, 81, 82, 83, 85, 86, 87, 89, 90, 91, 93, 94, 95, 134, 135, 136, 144, 145, 146, 152, 153, 154, 159, 160, 161, 179, 180, 181, 183, 184, 185, 187, 188, 189, 191, 192, 193, 199, 200, 201, 203, 204, 205, 207, 208, 209, 211, 212, 213, 217, 218, 219, 220, 221, 223, 227, 228, 229, 233, 234, 235, 241, 242, 243, 244, 246, 247, 248, 249, 250, 252, 255, 258, 259, 260, 261, 262, 263, 264, 265, 266, 267, 268, 269, 270, 271, 272, 273, 274, 275, 276, 279, 281, 282, 283, 288, 291, 292, 293, 302, 303, 304, 308, 309, 310, 311, 318, 319, 320, 325, 326, 327, 328, 329, 331, 332, 333, 334, 335, 336, 338, 339, 340, 341, 343, 344, 345, 350, 351, 352, 354, 355, 356, 358, 359, 360, 362, 363, 364, 366, 367, 368, 370, 371, 372, 374, 375, 376, 378, 379, 380, 398, 399, 400, 403, 404, 405, 422, 423, 424, 425, 432, 433, 434, 435, 436, 438, 439, 440, 442, 443, 444, 445, 446, 447, 448, 450, 451, 452, 454, 455, 456, 457, 458, 459, 460,]
+
+[input_info]
+test_file_path = "internal/datastore/proxy/relationshipintegrity_test.go"
+focal_file_path = "internal/datastore/proxy/relationshipintegrity.go"
+test_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/internal/datastore/proxy/relationshipintegrity_test.go"
+focal_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/internal/datastore/proxy/relationshipintegrity.go"
+first_commit_date = "2024-09-03"
+last_commit_date = "2025-03-18"
+test_file_content = "package proxy\n\nimport (\n\t\"context\"\n\t\"encoding/hex\"\n\t\"fmt\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/authzed/spicedb/internal/datastore/dsfortesting\"\n\t\"github.com/authzed/spicedb/pkg/datastore\"\n\t\"github.com/authzed/spicedb/pkg/tuple\"\n)\n\nvar DefaultKeyForTesting = KeyConfig{\n\tID: \"defaultfortest\",\n\tBytes: (func() []byte {\n\t\tb, err := hex.DecodeString(\"000102030405060708090A0B0C0D0E0FF0E0D0C0B0A090807060504030201000\")\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\treturn b\n\t})(),\n\tExpiredAt: nil,\n}\n\nvar toBeExpiredKeyForTesting = KeyConfig{\n\tID: \"expiredkeyfortest\",\n\tBytes: (func() []byte {\n\t\tb, err := hex.DecodeString(\"000102030405060708090A0B0C0D0E0FF0E0D0C0B0A090807060504030201222\")\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\treturn b\n\t})(),\n}\n\nvar expiredKeyForTesting = KeyConfig{\n\tID: \"expiredkeyfortest\",\n\tBytes: (func() []byte {\n\t\tb, err := hex.DecodeString(\"000102030405060708090A0B0C0D0E0FF0E0D0C0B0A090807060504030201222\")\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\treturn b\n\t})(),\n\tExpiredAt: (func() *time.Time {\n\t\tt, err := time.Parse(\"2006-01-02\", \"2021-01-01\")\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\treturn &t\n\t})(),\n}\n\n\n\n\n\nfunc TestBasicIntegrityFailureDueToWriteWithExpiredKey(t *testing.T) {\n\tds, err := dsfortesting.NewMemDBDatastoreForTesting(0, 5*time.Second, 1*time.Hour)\n\trequire.NoError(t, err)\n\n\t// Create a proxy with the to-be-expired key and write some relationships.\n\tepds, err := NewRelationshipIntegrityProxy(ds, toBeExpiredKeyForTesting, nil)\n\trequire.NoError(t, err)\n\n\t// Write some relationships.\n\t_, err = epds.ReadWriteTx(t.Context(), func(ctx context.Context, tx datastore.ReadWriteTransaction) error {\n\t\treturn tx.WriteRelationships(t.Context(), []tuple.RelationshipUpdate{\n\t\t\ttuple.Create(tuple.MustParse(\"resource:foo#viewer@user:tom\")),\n\t\t\ttuple.Create(tuple.MustParse(\"resource:foo#viewer@user:fred\")),\n\t\t\ttuple.Touch(tuple.MustParse(\"resource:bar#viewer@user:sarah\")),\n\t\t})\n\t})\n\trequire.NoError(t, err)\n\n\tpds, err := NewRelationshipIntegrityProxy(ds, DefaultKeyForTesting, []KeyConfig{\n\t\texpiredKeyForTesting,\n\t})\n\trequire.NoError(t, err)\n\n\t// Read them back and ensure the read fails.\n\theadRev, err := pds.HeadRevision(t.Context())\n\trequire.NoError(t, err)\n\n\treader := pds.SnapshotReader(headRev)\n\titer, err := reader.QueryRelationships(\n\t\tt.Context(),\n\t\tdatastore.RelationshipsFilter{OptionalResourceType: \"resource\"},\n\t)\n\trequire.NoError(t, err)\n\n\t_, err = datastore.IteratorToSlice(iter)\n\trequire.Error(t, err)\n\trequire.ErrorContains(t, err, \"is signed by an expired key\")\n}\n\n\nfunc BenchmarkQueryRelsWithIntegrity(b *testing.B) {\n\tfor _, withIntegrity := range []bool{true, false} {\n\t\tb.Run(fmt.Sprintf(\"withIntegrity=%t\", withIntegrity), func(b *testing.B) {\n\t\t\tds, err := dsfortesting.NewMemDBDatastoreForTesting(0, 5*time.Second, 1*time.Hour)\n\t\t\trequire.NoError(b, err)\n\n\t\t\tpds, err := NewRelationshipIntegrityProxy(ds, DefaultKeyForTesting, nil)\n\t\t\trequire.NoError(b, err)\n\n\t\t\t_, err = pds.ReadWriteTx(b.Context(), func(ctx context.Context, tx datastore.ReadWriteTransaction) error {\n\t\t\t\tfor i := 0; i < 1000; i++ {\n\t\t\t\t\trel := tuple.MustParse(fmt.Sprintf(\"resource:foo#viewer@user:user-%d\", i))\n\t\t\t\t\tif err := tx.WriteRelationships(b.Context(), []tuple.RelationshipUpdate{\n\t\t\t\t\t\ttuple.Create(rel),\n\t\t\t\t\t}); err != nil {\n\t\t\t\t\t\treturn err\n\t\t\t\t\t}\n\t\t\t\t}\n\n\t\t\t\treturn nil\n\t\t\t})\n\t\t\trequire.NoError(b, err)\n\n\t\t\theadRev, err := pds.HeadRevision(b.Context())\n\t\t\trequire.NoError(b, err)\n\n\t\t\tb.ResetTimer()\n\t\t\tfor i := 0; i < b.N; i++ {\n\t\t\t\tvar reader datastore.Reader\n\t\t\t\tif withIntegrity {\n\t\t\t\t\treader = pds.SnapshotReader(headRev)\n\t\t\t\t} else {\n\t\t\t\t\treader = ds.SnapshotReader(headRev)\n\t\t\t\t}\n\t\t\t\titer, err := reader.QueryRelationships(\n\t\t\t\t\tb.Context(),\n\t\t\t\t\tdatastore.RelationshipsFilter{OptionalResourceType: \"resource\"},\n\t\t\t\t)\n\t\t\t\trequire.NoError(b, err)\n\n\t\t\t\t_, err = datastore.IteratorToSlice(iter)\n\t\t\t\trequire.NoError(b, err)\n\t\t\t}\n\t\t\tb.StopTimer()\n\t\t})\n\t}\n}\n\nfunc BenchmarkComputeRelationshipHash(b *testing.B) {\n\tconfig := &hmacConfig{\n\t\tkeyID: \"defaultfortest\",\n\t\tpool:  poolForKey(DefaultKeyForTesting.Bytes),\n\t}\n\n\trel := tuple.MustParse(\"resource:foo#viewer@user:tom\")\n\tfor i := 0; i < b.N; i++ {\n\t\t_, err := computeRelationshipHash(rel, config)\n\t\trequire.NoError(b, err)\n\t}\n}\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "VictoriaMetrics/VictoriaMetrics"
+sha = "099b2fdba79582dcc1c32a604b587deaf32270db"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/protoparser/protoparserutil/compress_reader.go lib/protoparser/protoparserutil/compress_reader_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/protoparser/protoparserutil/compress_reader.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 78.0
+original_coverage = 78.0
+mutation_kill_rate = 40.0
+original_mutation_kill_rate = 40.0
+covered_lines = [ 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 45, 46, 47, 49, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 98, 99, 100, 102, 103, 104, 105, 106, 114, 115, 116, 120, 121, 122, 123, 124, 132, 133, 134, 146, 147, 148, 149, 150, 151, 155, 156, 157, 161, 164, 168, 169, 170, 171, 172, 173, 176, 177, 178, 179, 180, 181, 185, 188, 189, 190, 194, 195, 196, 197, 198, 204, 205, 206,]
+missed_lines = [ 42, 43, 44, 89, 90, 107, 108, 109, 110, 111, 125, 126, 127, 128, 129, 152, 153, 154, 158, 159, 160, 165, 166, 167, 182, 183, 184, 199, 200, 201,]
+
+[input_info]
+test_file_path = "lib/protoparser/protoparserutil/compress_reader_test.go"
+focal_file_path = "lib/protoparser/protoparserutil/compress_reader.go"
+test_file_url = "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/099b2fdba79582dcc1c32a604b587deaf32270db/lib/protoparser/protoparserutil/compress_reader_test.go"
+focal_file_url = "https://github.com/VictoriaMetrics/VictoriaMetrics/blob/099b2fdba79582dcc1c32a604b587deaf32270db/lib/protoparser/protoparserutil/compress_reader.go"
+first_commit_date = "2025-03-18"
+last_commit_date = "2025-03-18"
+test_file_content = "package protoparserutil\n\nimport (\n\t\"bytes\"\n\t\"compress/gzip\"\n\t\"compress/zlib\"\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/golang/snappy\"\n\n\t\"github.com/VictoriaMetrics/VictoriaMetrics/lib/encoding/zstd\"\n\t\"github.com/VictoriaMetrics/VictoriaMetrics/lib/flagutil\"\n)\n\nfunc TestReadUncompressedData_Success(t *testing.T) {\n\tf := func(encoding string) {\n\t\t// Prepare data for the compression\n\t\tdata := make([]byte, 64*1024)\n\t\tfor i := range data {\n\t\t\tdata[i] = byte(i)\n\t\t}\n\n\t\t// Compress the data with the given encoding into encodedData\n\t\tvar encodedData []byte\n\t\tswitch encoding {\n\t\tcase \"zstd\":\n\t\t\tencodedData = zstd.CompressLevel(nil, data, 1)\n\t\tcase \"snappy\":\n\t\t\tencodedData = snappy.Encode(nil, data)\n\t\tcase \"gzip\":\n\t\t\tvar bb bytes.Buffer\n\t\t\tw := gzip.NewWriter(&bb)\n\t\t\t_, err := w.Write(data)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatalf(\"unexpected error when encoding gzip data: %s\", err)\n\t\t\t}\n\t\t\t_ = w.Close()\n\t\t\tencodedData = bb.Bytes()\n\t\tcase \"deflate\":\n\t\t\tvar bb bytes.Buffer\n\t\t\tw := zlib.NewWriter(&bb)\n\t\t\t_, err := w.Write(data)\n\t\t\tif err != nil {\n\t\t\t\tt.Fatalf(\"unexpected error when encoding zlib data: %s\", err)\n\t\t\t}\n\t\t\t_ = w.Close()\n\t\t\tencodedData = bb.Bytes()\n\t\tcase \"\", \"none\":\n\t\t\tencodedData = data\n\t\t}\n\n\t\tr := bytes.NewBuffer(encodedData)\n\t\tmaxDataLenFlag := newTestDataLenFlag(len(data))\n\t\terr := ReadUncompressedData(r, encoding, maxDataLenFlag, func(result []byte) error {\n\t\t\tif !bytes.Equal(result, data) {\n\t\t\t\treturn fmt.Errorf(\"unexpected result\\ngot\\n%q\\nwant\\n%q\", result, data)\n\t\t\t}\n\t\t\treturn nil\n\t\t})\n\t\tif err != nil {\n\t\t\tt.Fatalf(\"unexpected error for encoding=%q: %s\", encoding, err)\n\t\t}\n\t}\n\n\tf(\"zstd\")\n\tf(\"snappy\")\n\tf(\"gzip\")\n\tf(\"deflate\")\n\tf(\"\")\n\tf(\"none\")\n}\n\nfunc TestReadUncompressedData_InvalidEncoding(t *testing.T) {\n\tr := bytes.NewBuffer([]byte(\"foo bar baz\"))\n\tencoding := \"unsupported-encoding\"\n\tmaxDataLenFlag := newTestDataLenFlag(10000)\n\terr := ReadUncompressedData(r, encoding, maxDataLenFlag, func(result []byte) error {\n\t\tpanic(fmt.Errorf(\"unexpected data read: %q\", result))\n\t})\n\tif err == nil {\n\t\tt.Fatalf(\"expecting non-nil error for unsupported encoding\")\n\t}\n}\n\nfunc TestReadUncompressedData_TooBigSize(t *testing.T) {\n\tdata := make([]byte, 64*1024)\n\tfor i := range data {\n\t\tdata[i] = byte(i)\n\t}\n\tencodedData := snappy.Encode(nil, data)\n\tr := bytes.NewBuffer(encodedData)\n\tmaxDataLenFlag := newTestDataLenFlag(len(data) - 1)\n\terr := ReadUncompressedData(r, \"snappy\", maxDataLenFlag, func(result []byte) error {\n\t\tpanic(fmt.Errorf(\"unexpected dtaa read: %q\", result))\n\t})\n\tif err == nil {\n\t\tt.Fatalf(\"expecting non-nil error for too long data\")\n\t}\n}\n\nfunc newTestDataLenFlag(n int) *flagutil.Bytes {\n\treturn &flagutil.Bytes{\n\t\tN:    int64(n),\n\t\tName: \"fake-flag\",\n\t}\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "quantumlib/OpenFermion"
+sha = "39667a6f66a4a87ed80b7d255198a39c826f17cb"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/openfermion/transforms/opconversions/term_reordering.py -m pytest -q --junit-xml=test_output.xml src/openfermion/transforms/opconversions/term_reordering_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.openfermion.transforms.opconversions.term_reordering --unit-test src.openfermion.transforms.opconversions.term_reordering_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/openfermion/transforms/opconversions/term_reordering.py --unit-test src/openfermion/transforms/opconversions/term_reordering_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 80.0
+original_coverage = 100.0
+mutation_kill_rate = 7.0
+original_mutation_kill_rate = 7.0
+covered_lines = [ 13, 14, 16, 17, 20, 41, 42, 45, 46, 47, 48, 49, 52, 53, 54, 56, 57, 58, 61, 85, 87, 88, 89, 90, 92, 97, 98, 99, 100, 146, 147, 149, 152, 185, 187, 188, 194, 196, 197, 198, 199, 202, 203, 204, 205, 209, 210, 213, 218, 221, 222, 225, 226, 227, 228, 231, 232, 235, 259, 260, 261, 262, 263, 264, 268, 269, 270, 274, 283, 285, 286, 287, 290, 291, 294, 314, 315, 317, 319, 320, 322, 323, 324, 325, 326,]
+missed_lines = [ 93, 94, 95, 102, 103, 104, 105, 106, 107, 108, 120, 132, 133, 134, 138, 141, 189, 190, 192, 275, 278,]
+
+[input_info]
+test_file_path = "src/openfermion/transforms/opconversions/term_reordering_test.py"
+focal_file_path = "src/openfermion/transforms/opconversions/term_reordering.py"
+test_file_url = "https://github.com/quantumlib/OpenFermion/blob/39667a6f66a4a87ed80b7d255198a39c826f17cb/src/openfermion/transforms/opconversions/term_reordering_test.py"
+focal_file_url = "https://github.com/quantumlib/OpenFermion/blob/39667a6f66a4a87ed80b7d255198a39c826f17cb/src/openfermion/transforms/opconversions/term_reordering.py"
+first_commit_date = "2020-08-01"
+last_commit_date = "2025-06-05"
+test_file_content = "#   Licensed under the Apache License, Version 2.0 (the \"License\");\n#   you may not use this file except in compliance with the License.\n#   You may obtain a copy of the License at\n#\n#       http://www.apache.org/licenses/LICENSE-2.0\n#\n#   Unless required by applicable law or agreed to in writing, software\n#   distributed under the License is distributed on an \"AS IS\" BASIS,\n#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n#   See the License for the specific language governing permissions and\n#   limitations under the License.\n\"\"\"Tests for term_reordering.\"\"\"\n\nimport unittest\nimport itertools\nimport numpy\n\nfrom openfermion.hamiltonians import number_operator\nfrom openfermion.ops.operators import FermionOperator, BosonOperator, QuadOperator\nfrom openfermion.transforms.opconversions import jordan_wigner, get_fermion_operator\nfrom openfermion.testing.testing_utils import random_interaction_operator\nfrom openfermion.utils import up_then_down\n\nfrom openfermion.transforms.opconversions.term_reordering import (\n    normal_ordered,\n    normal_ordered_ladder_term,\n    chemist_ordered,\n    reorder,\n)\n\nclass ChemistOrderingTest(unittest.TestCase):\n    def test_convert_forward_back(self):\n        n_qubits = 6\n        random_operator = get_fermion_operator(random_interaction_operator(n_qubits))\n        chemist_operator = chemist_ordered(random_operator)\n        normalized_chemist = normal_ordered(chemist_operator)\n        difference = normalized_chemist - normal_ordered(random_operator)\n        self.assertAlmostEqual(0.0, difference.induced_norm())\n\n    def test_exception(self):\n        n_qubits = 6\n        random_operator = get_fermion_operator(random_interaction_operator(n_qubits))\n        bad_term = ((2, 1), (3, 1))\n        random_operator += FermionOperator(bad_term)\n        with self.assertRaises(TypeError):\n            chemist_ordered(random_operator)\n\n    def test_form(self):\n        n_qubits = 6\n        random_operator = get_fermion_operator(random_interaction_operator(n_qubits))\n        chemist_operator = chemist_ordered(random_operator)\n        for term, _ in chemist_operator.terms.items():\n            if len(term) == 2 or not term:\n                pass\n            else:\n                self.assertTrue(term[0][1])\n                self.assertTrue(term[2][1])\n                self.assertFalse(term[1][1])\n                self.assertFalse(term[3][1])\n                self.assertTrue(term[0][0] > term[2][0])\n                self.assertTrue(term[1][0] > term[3][0])\n\nclass TestNormalOrdering(unittest.TestCase):\n\n    def test_fermion_number(self):\n        number_op2 = FermionOperator(((2, 1), (2, 0)))\n        self.assertTrue(number_op2 == normal_ordered(number_op2))\n\n    def test_fermion_offsite_reversed(self):\n        op = FermionOperator(((3, 0), (2, 1)))\n        expected = -FermionOperator(((2, 1), (3, 0)))\n        self.assertTrue(expected == normal_ordered(op))\n\n    def test_fermion_double_create_separated(self):\n        op = FermionOperator(((3, 1), (2, 0), (3, 1)))\n        expected = FermionOperator((), 0.0)\n        self.assertTrue(expected == normal_ordered(op))\n\n    def test_fermion_triple(self):\n        op_132 = FermionOperator(((1, 1), (3, 0), (2, 0)))\n        op_123 = FermionOperator(((1, 1), (2, 0), (3, 0)))\n        op_321 = FermionOperator(((3, 0), (2, 0), (1, 1)))\n\n        self.assertTrue(op_132 == normal_ordered(-op_123))\n        self.assertTrue(op_132 == normal_ordered(op_132))\n        self.assertTrue(op_132 == normal_ordered(op_321))\n\n    def test_quad_triple(self):\n        op_132 = QuadOperator(((1, 'p'), (3, 'q'), (2, 'q')))\n        op_123 = QuadOperator(((1, 'p'), (2, 'q'), (3, 'q')))\n        op_321 = QuadOperator(((3, 'q'), (2, 'q'), (1, 'p')))\n\n        self.assertTrue(op_132 == normal_ordered(op_123))\n        self.assertTrue(op_132 == normal_ordered(op_132))\n        self.assertTrue(op_132 == normal_ordered(op_321))\n\nclass TestReorder(unittest.TestCase):\n\n    def test_up_then_down(self):\n        for LadderOp in (FermionOperator, BosonOperator):\n            operator = LadderOp('1^ 2^ 3 4', -3.17)\n            reordered = reorder(operator, up_then_down)\n            reordered = reorder(reordered, up_then_down, reverse=True)\n\n            self.assertEqual(reordered.terms, operator.terms)\n            self.assertEqual(up_then_down(6, 8), 3)\n            self.assertEqual(up_then_down(3, 8), 5)\n"

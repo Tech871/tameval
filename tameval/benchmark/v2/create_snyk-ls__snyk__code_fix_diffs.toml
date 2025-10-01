@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "37ef5edff63f9b37597e8df6c0b25dadb7068ba1"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/avito-tech/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out domain/ide/command/code_fix_diffs.go domain/ide/command/code_fix_diffs_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting domain/ide/command/code_fix_diffs.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 53.0
+original_coverage = 53.0
+mutation_kill_rate = 32.0
+original_mutation_kill_rate = 32.0
+covered_lines = [ 49, 50, 51, 52, 57, 61, 62, 63, 68, 69, 70, 71, 72, 73, 75, 76, 77, 79, 84, 89, 94, 95, 96, 99, 100, 101, 102, 103, 105, 106, 107, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,]
+missed_lines = [ 45, 46, 47, 53, 54, 55, 58, 59, 60, 64, 65, 66, 80, 81, 82, 85, 86, 87, 90, 91, 92, 93, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 133, 134, 135,]
+
+[input_info]
+test_file_path = "domain/ide/command/code_fix_diffs_test.go"
+focal_file_path = "domain/ide/command/code_fix_diffs.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/domain/ide/command/code_fix_diffs_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/domain/ide/command/code_fix_diffs.go"
+first_commit_date = "2024-03-05"
+last_commit_date = "2025-03-11"
+test_file_content = "/*\n * © 2024 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage command\n\nimport (\n\t\"context\"\n\t\"runtime\"\n\t\"testing\"\n\n\t\"github.com/creachadair/jrpc2\"\n\t\"github.com/google/uuid\"\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/snyk/snyk-ls/domain/snyk\"\n\t\"github.com/snyk/snyk-ls/infrastructure/code\"\n\t\"github.com/snyk/snyk-ls/infrastructure/snyk_api\"\n\t\"github.com/snyk/snyk-ls/internal/notification\"\n\t\"github.com/snyk/snyk-ls/internal/testutil\"\n\t\"github.com/snyk/snyk-ls/internal/types\"\n)\n\nfunc Test_codeFixDiffs_Command(t *testing.T) {\n\n}\n\ntype mockIssueProvider struct {\n}\ntype ServerImplMock struct{}\n\nfunc (b *ServerImplMock) Callback(_ context.Context, _ string, _ any) (*jrpc2.Response, error) { // todo: check if better way exists, mocking? go mock / testify\n\treturn nil, nil\n}\nfunc (b *ServerImplMock) Notify(_ context.Context, _ string, _ any) error {\n\treturn nil\n}\n\nfunc (m mockIssueProvider) Issues() snyk.IssuesByFile {\n\tpanic(\"this should not be called\")\n}\n\nfunc (m mockIssueProvider) IssuesForFile(path types.FilePath) []types.Issue {\n\tpanic(\"this should not be called\")\n}\n\nfunc (m mockIssueProvider) IssuesForRange(path types.FilePath, r types.Range) []types.Issue {\n\tpanic(\"this should not be called\")\n}\nfunc (m mockIssueProvider) Issue(key string) types.Issue {\n\treturn &snyk.Issue{ID: key}\n}\n\nfunc Test_codeFixDiffs_Execute(t *testing.T) {\n\tc := testutil.UnitTest(t)\n\tinstrumentor := code.NewCodeInstrumentor()\n\tsnykCodeClient := &code.FakeSnykCodeClient{\n\t\tUnifiedDiffSuggestions: []code.AutofixUnifiedDiffSuggestion{\n\t\t\t{\n\t\t\t\tFixId:               uuid.NewString(),\n\t\t\t\tUnifiedDiffsPerFile: nil,\n\t\t\t},\n\t\t},\n\t}\n\tsnykApiClient := &snyk_api.FakeApiClient{CodeEnabled: true}\n\tcodeScanner := &code.Scanner{\n\t\tBundleUploader: code.NewBundler(c, snykCodeClient, instrumentor),\n\t\tSnykApiClient:  snykApiClient,\n\t\tC:              c,\n\t}\n\tcut := codeFixDiffs{\n\t\tnotifier:    notification.NewMockNotifier(),\n\t\tcodeScanner: codeScanner,\n\t\tc:           c,\n\t\tsrv:         &ServerImplMock{},\n\t}\n\tif runtime.GOOS == \"windows\" {\n\t\tcodeScanner.AddBundleHash(\"\\\\folderPath\", \"bundleHash\")\n\t} else {\n\t\tcodeScanner.AddBundleHash(\"/folderPath\", \"bundleHash\")\n\t}\n\tt.Run(\"happy path\", func(t *testing.T) {\n\t\tcut.issueProvider = mockIssueProvider{}\n\n\t\tcut.command = types.CommandData{\n\t\t\tArguments: []any{\"file:///folderPath\", \"file:///folderPath/issuePath\", \"issueId\"},\n\t\t}\n\n\t\tsuggestions, err := cut.Execute(context.Background())\n\n\t\t// Code fix diffs command doesn't return suggestions anymore\n\t\t// TODO: handle getting the suggestions\n\t\trequire.Emptyf(t, suggestions, \"suggestions should not be empty\")\n\t\trequire.NoError(t, err)\n\t})\n\n\tt.Run(\"unhappy - file not beneath folder\", func(t *testing.T) {\n\t\tcut.issueProvider = mockIssueProvider{}\n\t\tcut.command = types.CommandData{\n\t\t\tArguments: []any{\"file:///folderPath\", \"file:///anotherFolder/issuePath\", \"issueId\"},\n\t\t}\n\n\t\tsuggestions, err := cut.Execute(context.Background())\n\n\t\trequire.Emptyf(t, suggestions, \"suggestions should be empty\")\n\t\trequire.Error(t, err)\n\t})\n\n\tt.Run(\"unhappy - folder empty\", func(t *testing.T) {\n\t\tcut.issueProvider = mockIssueProvider{}\n\t\tcut.command = types.CommandData{\n\t\t\tArguments: []any{\"\", \"file:///anotherFolder/issuePath\", \"issueId\"},\n\t\t}\n\n\t\tsuggestions, err := cut.Execute(context.Background())\n\n\t\trequire.Emptyf(t, suggestions, \"suggestions should be empty\")\n\t\trequire.Error(t, err)\n\t})\n\n\tt.Run(\"unhappy - file empty\", func(t *testing.T) {\n\t\tcut.issueProvider = mockIssueProvider{}\n\t\tcut.command = types.CommandData{\n\t\t\tArguments: []any{\"file://folder\", \"\", \"issueId\"},\n\t\t}\n\n\t\tsuggestions, err := cut.Execute(context.Background())\n\n\t\trequire.Emptyf(t, suggestions, \"suggestions should be empty\")\n\t\trequire.Error(t, err)\n\t})\n}\n"

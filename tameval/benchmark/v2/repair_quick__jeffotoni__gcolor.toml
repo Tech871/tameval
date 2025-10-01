@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "jeffotoni/quick"
+sha = "89f7be7048104f81431288179d7631ccbc2b3536"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out gcolor/gcolor.go gcolor/gcolor_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting gcolor/gcolor.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 33.0
+covered_lines = [ 75, 76, 77, 81, 82, 83, 84, 88, 89, 90, 91, 94, 95, 96, 97, 100, 101, 102, 103, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 123, 124, 125, 129, 130, 131, 134, 135, 136, 139, 140, 141, 142,]
+missed_lines = []
+
+[input_info]
+test_file_path = "gcolor/gcolor_test.go"
+focal_file_path = "gcolor/gcolor.go"
+test_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/gcolor/gcolor_test.go"
+focal_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/gcolor/gcolor.go"
+first_commit_date = "2025-05-27"
+last_commit_date = "2025-05-27"
+test_file_content = "package gcolor\n\nimport (\n\t\"bytes\"\n\t\"os\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestStyleSprint(t *testing.T) {\n\tstyled := New().Fg(\"red\").Bg(\"black\").Bold().Underline().Sprint(\"test\")\n\tif !strings.Contains(styled, \"test\") {\n\t\tt.Error(\"Sprint should include original text\")\n\t}\n\tif !strings.HasPrefix(styled, \"\\033[\") {\n\t\tt.Error(\"Sprint should contain ANSI prefix\")\n\t}\n\tif !strings.HasSuffix(styled, ansiReset) {\n\t\tt.Error(\"Sprint should end with reset code\")\n\t}\n}\n\nfunc VerifyStyleSprintFunctionality(t *testing.T) {\n\tresult := New().Fg(\"red\").Bg(\"black\").Bold().Underline().Sprint(\"sample\")\n\tif !strings.Contains(result, \"sample\") {\n\t\tt.Error(\"Sprint should include original text\")\n\t}\n\tif !strings.HasPrefix(result, \"\\033[\") {\n\t\tt.Error(\"Sprint should contain ANSI prefix\")\n\t}\n\tif !strings.HasSuffix(result, ansiReset) {\n\t\tt.Error(\"Sprint should end with reset code\")\n\t}\n}\n\nfunc TestStyleSprintf(t *testing.T) {\n\tmsg := New().Fg(\"green\").Sprintf(\"hello %s\", \"world\")\n\tif !strings.Contains(msg, \"hello world\") {\n\t\tt.Error(\"Sprintf should return formatted and styled string\")\n\t}\n}\n\nfunc ConfirmStyleSprintfFunctionality(t *testing.T) {\n\toutput := New().Fg(\"green\").Sprintf(\"verify %s\", \"functionality\")\n\tif !strings.Contains(output, \"verify functionality\") {\n\t\tt.Error(\"Sprintf should return formatted and styled string\")\n\t}\n}\n\nfunc TestFluentAPI(t *testing.T) {\n\tstyle := New().Fg(\"blue\").Bg(\"white\").Bold().Underline()\n\tstyled := style.Sprint(\"fluent\")\n\tif !strings.Contains(styled, \"fluent\") {\n\t\tt.Error(\"Fluent API should build correct styled string\")\n\t}\n}\n\nfunc CheckChainedStyleMethods(t *testing.T) {\n\tbuilder := New().Fg(\"blue\").Bg(\"white\").Bold().Underline()\n\ttext := builder.Sprint(\"method chaining\")\n\tif !strings.Contains(text, \"method chaining\") {\n\t\tt.Error(\"Chained style methods should produce correct styled output\")\n\t}\n}\n\nfunc TestEmptyStyle(t *testing.T) {\n\tstyled := New().Sprint(\"plain\")\n\tif !strings.HasSuffix(styled, ansiReset) {\n\t\tt.Error(\"Even empty style should end with reset\")\n\t}\n\tif !strings.Contains(styled, \"plain\") {\n\t\tt.Error(\"Original text should remain intact\")\n\t}\n}\n\nfunc EnsureNoStylesIncludeReset(t *testing.T) {\n\tunstyled := New().Sprint(\"simple\")\n\tif !strings.HasSuffix(unstyled, ansiReset) {\n\t\tt.Error(\"Even empty style should end with reset\")\n\t}\n\tif !strings.Contains(unstyled, \"simple\") {\n\t\tt.Error(\"Original text should remain intact\")\n\t}\n}\n\nfunc TestStylePrint(t *testing.T) {\n\tr, w, _ := os.Pipe()\n\tsaved := os.Stdout\n\tos.Stdout = w\n\n\tNew().Fg(\"cyan\").Print(\"print test\")\n\n\tw.Close()\n\tos.Stdout = saved\n\n\tvar buf bytes.Buffer\n\t_, _ = buf.ReadFrom(r)\n\toutput := buf.String()\n\n\tif !strings.Contains(output, \"print test\") {\n\t\tt.Error(\"Print should write styled text to stdout\")\n\t}\n}\n\nfunc TestStylePrintln(t *testing.T) {\n\tr, w, _ := os.Pipe()\n\tsaved := os.Stdout\n\tos.Stdout = w\n\n\tNew().Fg(\"purple\").Println(\"print line\")\n\n\tw.Close()\n\tos.Stdout = saved\n\n\tvar buf bytes.Buffer\n\t_, _ = buf.ReadFrom(r)\n\toutput := buf.String()\n\n\tif !strings.Contains(output, \"print line\") {\n\t\tt.Error(\"Println should write styled text with newline to stdout\")\n\t}\n\tif !strings.HasSuffix(output, \"\\n\") {\n\t\tt.Error(\"Println output should end with newline\")\n\t}\n}"

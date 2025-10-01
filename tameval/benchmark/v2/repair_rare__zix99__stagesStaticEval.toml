@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "zix99/rare"
+sha = "dbf03dd64fed323c2e7b3b36d97210f929fb64fa"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/expressions/stdlib/stagesStaticEval.go pkg/expressions/stdlib/stagesStaticEval_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/expressions/stdlib/stagesStaticEval.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 76.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/expressions/stdlib/stagesStaticEval_test.go"
+focal_file_path = "pkg/expressions/stdlib/stagesStaticEval.go"
+test_file_url = "https://github.com/zix99/rare/blob/dbf03dd64fed323c2e7b3b36d97210f929fb64fa/pkg/expressions/stdlib/stagesStaticEval_test.go"
+focal_file_url = "https://github.com/zix99/rare/blob/dbf03dd64fed323c2e7b3b36d97210f929fb64fa/pkg/expressions/stdlib/stagesStaticEval.go"
+first_commit_date = "2025-03-16"
+last_commit_date = "2025-06-08"
+test_file_content = "package stdlib\n\nimport (\n\t\"testing\"\n\n\t\"github.com/zix99/rare/pkg/expressions\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc testStageUseContext(ret string) expressions.KeyBuilderStage {\n\treturn func(context expressions.KeyBuilderContext) string {\n\t\tcontext.GetMatch(0)\n\t\treturn ret\n\t}\n}\n\nfunc testStageNoContext(ret string) expressions.KeyBuilderStage {\n\treturn func(context expressions.KeyBuilderContext) string {\n\t\treturn ret\n\t}\n}\n\nfunc TestEvaluateStageIndex(t *testing.T) {\n\tstages := []expressions.KeyBuilderStage{\n\t\ttestStageUseContext(\"test1\"),\n\t\ttestStageNoContext(\"test2\"),\n\t}\n\n}\n\nfunc TestEvaluationStageInt(t *testing.T) {\n\tval, ok := EvalStageInt(testStageNoContext(\"5\"))\n\n\tval, ok = EvalStageInt(testStageNoContext(\"5b\"))\n\n\tval, ok = EvalStageInt(testStageUseContext(\"5\"))\n}\n\nfunc TestEvaluationStageInt64(t *testing.T) {\n\tval, ok := EvalStageInt64(testStageNoContext(\"5\"))\n\n\tval, ok = EvalStageInt64(testStageNoContext(\"5b\"))\n\n\tval, ok = EvalStageInt64(testStageUseContext(\"5\"))\n}\n\nfunc TestEvaluateArgInt(t *testing.T) {\n\tstages := []expressions.KeyBuilderStage{\n\t\ttestStageUseContext(\"5\"),\n\t\ttestStageNoContext(\"6\"),\n\t}\n\n\tval, ok := EvalArgInt(stages, 0, 1)\n\n\tval, ok = EvalArgInt(stages, 5, 1)\n\n\tval, ok = EvalArgInt(stages, 1, 1)\n}"

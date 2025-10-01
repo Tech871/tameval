@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "taosdata/taosadapter"
+sha = "2e4a8bb5b4d61bb7a6f5b5a722fc038f8c8d1270"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugin/nodeexporter/parser.go plugin/nodeexporter/parser_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugin/nodeexporter/parser.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 80.0
+original_coverage = 84.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 44, 45, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 77, 78, 82, 83, 84, 85, 86, 91, 94, 95, 96, 97, 98, 106, 107, 108, 109, 110, 111, 112, 114, 118, 119, 120, 121, 122, 123, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 145, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 164, 165, 166, 167, 168, 169, 171,]
+missed_lines = [ 33, 34, 35, 36, 37, 38, 40, 42, 46, 47, 48, 79, 80, 81, 100, 101, 102, 139, 140, 141, 142, 143, 158, 159,]
+
+[input_info]
+test_file_path = "plugin/nodeexporter/parser_test.go"
+focal_file_path = "plugin/nodeexporter/parser.go"
+test_file_url = "https://github.com/taosdata/taosadapter/blob/2e4a8bb5b4d61bb7a6f5b5a722fc038f8c8d1270/plugin/nodeexporter/parser_test.go"
+focal_file_url = "https://github.com/taosdata/taosadapter/blob/2e4a8bb5b4d61bb7a6f5b5a722fc038f8c8d1270/plugin/nodeexporter/parser.go"
+first_commit_date = "2024-05-10"
+last_commit_date = "2025-06-21"
+test_file_content = "package nodeexporter\n\nimport (\n\t\"net/http\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\nconst validUniqueGauge = `# HELP cadvisor_version_info A metric with a constant '1' value labeled by kernel version, OS version, docker version, cadvisor version & cadvisor revision.\n# TYPE cadvisor_version_info gauge\ncadvisor_version_info{cadvisorRevision=\"\",cadvisorVersion=\"\",dockerVersion=\"1.8.2\",kernelVersion=\"3.10.0-229.20.1.el7.x86_64\",osVersion=\"CentOS Linux 7 (Core)\"} 1\n`\n\nconst validUniqueCounter = `# HELP get_token_fail_count Counter of failed Token() requests to the alternate token source\n# TYPE get_token_fail_count counter\nget_token_fail_count 0\n`\n\nconst validUniqueSummary = `# HELP http_request_duration_microseconds The HTTP request latencies in microseconds.\n# TYPE http_request_duration_microseconds summary\nhttp_request_duration_microseconds{handler=\"prometheus\",quantile=\"0.5\"} 552048.506\nhttp_request_duration_microseconds{handler=\"prometheus\",quantile=\"0.9\"} 5.876804288e+06\nhttp_request_duration_microseconds{handler=\"prometheus\",quantile=\"0.99\"} 5.876804288e+06\nhttp_request_duration_microseconds_sum{handler=\"prometheus\"} 1.8909097205e+07\nhttp_request_duration_microseconds_count{handler=\"prometheus\"} 9\n`\n\nconst validUniqueHistogram = `# HELP apiserver_request_latencies Response latency distribution in microseconds for each verb, resource and client.\n# TYPE apiserver_request_latencies histogram\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"125000\"} 1994\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"250000\"} 1997\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"500000\"} 2000\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"1e+06\"} 2005\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"2e+06\"} 2012\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"4e+06\"} 2017\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"8e+06\"} 2024\napiserver_request_latencies_bucket{resource=\"bindings\",verb=\"POST\",le=\"+Inf\"} 2025\napiserver_request_latencies_sum{resource=\"bindings\",verb=\"POST\"} 1.02726334e+08\napiserver_request_latencies_count{resource=\"bindings\",verb=\"POST\"} 2025\n`\n\nfunc TestParseValidPrometheus(t *testing.T) {\n\t// Gauge value\n\tmetrics, err := Parse([]byte(validUniqueGauge), http.Header{}, false)\n\trequire.NoError(t, err)\n\trequire.Len(t, metrics, 1)\n\trequire.Equal(t, \"cadvisor_version_info\", metrics[0].Name())\n\trequire.Equal(t, map[string]interface{}{\n\t\t\"gauge\": float64(1),\n\t}, metrics[0].Fields())\n\trequire.Equal(t, map[string]string{\n\t\t\"osVersion\":        \"CentOS Linux 7 (Core)\",\n\t\t\"cadvisorRevision\": \"\",\n\t\t\"cadvisorVersion\":  \"\",\n\t\t\"dockerVersion\":    \"1.8.2\",\n\t\t\"kernelVersion\":    \"3.10.0-229.20.1.el7.x86_64\",\n\t}, metrics[0].Tags())\n\n\t// Counter value\n\tmetrics, err = Parse([]byte(validUniqueCounter), http.Header{}, false)\n\trequire.NoError(t, err)\n\trequire.Len(t, metrics, 1)\n\trequire.Equal(t, \"get_token_fail_count\", metrics[0].Name())\n\trequire.Equal(t, map[string]interface{}{\n\t\t\"counter\": float64(0),\n\t}, metrics[0].Fields())\n\trequire.Equal(t, map[string]string{}, metrics[0].Tags())\n\n\t// Summary data\n\t//SetDefaultTags(map[string]string{})\n\tmetrics, err = Parse([]byte(validUniqueSummary), http.Header{}, false)\n\trequire.NoError(t, err)\n\trequire.Len(t, metrics, 1)\n\trequire.Equal(t, \"http_request_duration_microseconds\", metrics[0].Name())\n\trequire.Equal(t, map[string]interface{}{\n\t\t\"0.5\":   552048.506,\n\t\t\"0.9\":   5.876804288e+06,\n\t\t\"0.99\":  5.876804288e+06,\n\t\t\"count\": 9.0,\n\t\t\"sum\":   1.8909097205e+07,\n\t}, metrics[0].Fields())\n\trequire.Equal(t, map[string]string{\"handler\": \"prometheus\"}, metrics[0].Tags())\n\n\t// histogram data\n\tmetrics, err = Parse([]byte(validUniqueHistogram), http.Header{}, false)\n\trequire.NoError(t, err)\n\trequire.Len(t, metrics, 1)\n\trequire.Equal(t, \"apiserver_request_latencies\", metrics[0].Name())\n\trequire.Equal(t, map[string]interface{}{\n\t\t\"500000\": 2000.0,\n\t\t\"count\":  2025.0,\n\t\t\"sum\":    1.02726334e+08,\n\t\t\"250000\": 1997.0,\n\t\t\"2e+06\":  2012.0,\n\t\t\"4e+06\":  2017.0,\n\t\t\"8e+06\":  2024.0,\n\t\t\"+Inf\":   2025.0,\n\t\t\"125000\": 1994.0,\n\t\t\"1e+06\":  2005.0,\n\t}, metrics[0].Fields())\n\trequire.Equal(t,\n\t\tmap[string]string{\"verb\": \"POST\", \"resource\": \"bindings\"},\n\t\tmetrics[0].Tags())\n}\n\n\n\n\nfunc strPtr(s string) *string {\n\treturn &s\n}\n"

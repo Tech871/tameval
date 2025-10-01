@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "reflex-dev/reflex"
+sha = "7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=reflex/components/core/banner.py -m pytest -q --junit-xml=test_output.xml tests/units/components/core/test_banner.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target reflex.components.core.banner --unit-test tests.units.components.core.test_banner --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target reflex/components/core/banner.py --unit-test tests/units/components/core/test_banner.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 80.0
+original_coverage = 80.0
+mutation_kill_rate = 66.0
+original_mutation_kill_rate = 66.0
+covered_lines = [ 2, 4, 5, 6, 7, 8, 9, 10, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 28, 33, 37, 42, 46, 50, 55, 58, 59, 65, 77, 83, 91, 94, 184, 185, 198, 201, 202, 211, 212, 225, 228, 231, 232, 241, 242, 243, 256, 259, 260, 270, 273, 285, 291, 294, 297, 298, 307, 319, 322, 323, 472, 473, 474, 475, 476,]
+missed_lines = [ 100, 101, 102, 111, 112, 113, 116, 117, 120, 135, 138, 142, 179, 195, 332, 334, 350,]
+
+[input_info]
+test_file_path = "tests/units/components/core/test_banner.py"
+focal_file_path = "reflex/components/core/banner.py"
+test_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/tests/units/components/core/test_banner.py"
+focal_file_url = "https://github.com/reflex-dev/reflex/blob/7acc7d9bb472d6e3a0e9df64bcbc5019d66fc788/reflex/components/core/banner.py"
+first_commit_date = "2023-12-21"
+last_commit_date = "2025-07-07"
+test_file_content = "from reflex.components.core.banner import (\n    ConnectionBanner,\n    ConnectionModal,\n    ConnectionPulser,\n    WebsocketTargetURL,\n)\nfrom reflex.components.radix.themes.base import RadixThemesComponent\nfrom reflex.components.radix.themes.typography.text import Text\n\n\ndef test_websocket_target_url():\n    url = WebsocketTargetURL.create()\n    var_data = url._get_all_var_data()\n    assert var_data is not None\n    assert sorted(key for key, _ in var_data.imports) == sorted(\n        (\"$/utils/state\", \"$/env.json\")\n    )\n\n\ndef test_connection_banner():\n    banner = ConnectionBanner.create()\n    _imports = banner._get_all_imports(collapse=True)\n    assert sorted(_imports) == sorted(\n        (\n            \"react\",\n            \"$/utils/context\",\n            \"$/utils/state\",\n            RadixThemesComponent.create().library or \"\",\n            \"$/env.json\",\n        )\n    )\n\n    msg = \"Connection error\"\n    custom_banner = ConnectionBanner.create(Text.create(msg))\n    assert msg in str(custom_banner.render())\n\n\ndef test_connection_modal():\n    modal = ConnectionModal.create()\n    _imports = modal._get_all_imports(collapse=True)\n    assert sorted(_imports) == sorted(\n        (\n            \"react\",\n            \"$/utils/context\",\n            \"$/utils/state\",\n            RadixThemesComponent.create().library or \"\",\n            \"$/env.json\",\n        )\n    )\n\n    msg = \"Connection error\"\n    custom_modal = ConnectionModal.create(Text.create(msg))\n    assert msg in str(custom_modal.render())\n\n\ndef test_connection_pulser():\n    pulser = ConnectionPulser.create()\n    _custom_code = pulser._get_all_custom_code()\n    _imports = pulser._get_all_imports(collapse=True)\n"

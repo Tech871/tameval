@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "jeffotoni/quick"
+sha = "89f7be7048104f81431288179d7631ccbc2b3536"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out middleware/healthcheck/healthcheck.go middleware/healthcheck/healthcheck_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting middleware/healthcheck/healthcheck.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 70.0
+original_coverage = 78.0
+mutation_kill_rate = 67.0
+original_mutation_kill_rate = 73.0
+covered_lines = [ 60, 61, 62, 63, 64, 65, 66, 67, 68, 76, 77, 78, 80, 96, 97, 98, 99, 106, 107, 108, 111, 112, 113, 116, 117, 118, 119, 127,]
+missed_lines = [ 71, 72, 73, 84, 85, 86, 87, 100, 101, 102, 123, 124,]
+
+[input_info]
+test_file_path = "middleware/healthcheck/healthcheck_test.go"
+focal_file_path = "middleware/healthcheck/healthcheck.go"
+test_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/middleware/healthcheck/healthcheck_test.go"
+focal_file_url = "https://github.com/jeffotoni/quick/blob/89f7be7048104f81431288179d7631ccbc2b3536/middleware/healthcheck/healthcheck.go"
+first_commit_date = "2025-03-22"
+last_commit_date = "2025-04-28"
+test_file_content = "package healthcheck\n\nimport (\n\t\"testing\"\n\n\t\"github.com/jeffotoni/quick\"\n)\n\n// TestHealthcheck tests the healthcheck middleware with custom endpoint.\nfunc TestHealthcheckWithCustomEndpoint(t *testing.T) {\n\tq := quick.New()\n\tq.Use(New(Options{\n\t\tEndpoint: \"/v1/health\",\n\t\tApp:      q,\n\t\tProbe: func(c *quick.Ctx) bool {\n\t\t\treturn true\n\t\t},\n\t}))\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/v1/health\",\n\t})\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tif err := resp.AssertStatus(quick.StatusOK); err != nil {\n\t\tt.Error(err)\n\t}\n\tif err := resp.AssertString(\"OK\"); err != nil {\n\t\tt.Error(err)\n\t}\n}\n\n// TestHealthcheckEndpoint tests the healthcheck middleware with default endpoint.\nfunc TestHealthcheckEndpoint(t *testing.T) {\n\tq := quick.New()\n\tq.Use(New(\n\t\tOptions{\n\t\t\tApp: q,\n\t\t},\n\t))\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/healthcheck\",\n\t})\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\n\tif err := resp.AssertStatus(quick.StatusOK); err != nil {\n\t\tt.Error(err)\n\t}\n\n\tif err := resp.AssertString(\"OK\"); err != nil {\n\t\tt.Error(err)\n\t}\n}\n\n// TestHealthcheckProbeFalse tests when Probe returns false (service unavailable).\nfunc TestHealthcheckProbeFalse(t *testing.T) {\n\tq := quick.New()\n\tq.Use(New(Options{\n\t\tApp: q,\n\t\tProbe: func(c *quick.Ctx) bool {\n\t\t\treturn false\n\t\t},\n\t}))\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/healthcheck\",\n\t})\n\tif err != nil {\n\t\tt.Fatalf(\"Unexpected error: %v\", err)\n\t}\n\tif err := resp.AssertStatus(quick.StatusServiceUnavailable); err != nil {\n\t\tt.Error(err)\n\t}\n}\n\n// TestHealthcheckMethodNotAllowed tests when method is not GET.\n// func TestHealthcheckMethodNotAllowed(t *testing.T) {\n// \tq := quick.New()\n// \tq.Use(New(Options{\n// \t\tApp: q,\n// \t}))\n\n// \tresp, err := q.Qtest(quick.QuickTestOptions{\n// \t\tMethod: quick.MethodPost, // POST instead of GET\n// \t\tURI:    \"/healthcheck\",\n// \t})\n// \tif err != nil {\n// \t\tt.Fatalf(\"Unexpected error: %v\", err)\n// \t}\n// \tif err := resp.AssertStatus(quick.StatusMethodNotAllowed); err != nil {\n// \t\tt.Error(err)\n// \t}\n// }\n\n// TestHealthcheckWithNextSkipping tests when Next() returns true (skips route logic).\nfunc TestHealthcheckWithNextSkipping(t *testing.T) {\n\tq := quick.New()\n\tq.Use(New(Options{\n\t\tApp: q,\n\t\tNext: func(c *quick.Ctx) bool {\n\t\t\treturn true // Always skip\n\t\t},\n\t}))\n\n\tresp, err := q.Qtest(quick.QuickTestOptions{\n\t\tMethod: quick.MethodGet,\n\t\tURI:    \"/healthcheck\",\n\t})\n\tif err != nil {\n\t\tt.Fatalf(\"Unexpected error: %v\", err)\n\t}\n\tif err := resp.AssertStatus(quick.StatusNotFound); err != nil {\n\t\tt.Error(err)\n\t}\n}"

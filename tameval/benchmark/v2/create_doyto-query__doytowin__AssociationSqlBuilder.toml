@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "doytowin/doyto-query"
+sha = "27754a721c6c437edcb2a8936d4c4a6212125d03"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl doyto-query-sql -Dtest=AssociationSqlBuilderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl doyto-query-sql -DtargetClasses=**.AssociationSqlBuilder  -DtargetTests=**.AssociationSqlBuilderTest  -DoutputFormats=XML"
+coverage_report_path = "doyto-query-sql/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "doyto-query-sql/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 52, 53, 54, 55, 56, 58, 59, 60, 61, 63, 64, 65, 66, 67, 68, 71, 72, 73, 76, 77, 80, 84, 85, 86, 87, 88, 89, 95, 96, 97, 98, 99, 104, 105, 106, 107, 108,]
+missed_lines = [ 113, 114, 115, 120, 121, 122, 127, 128, 129, 134, 135, 136,]
+
+[input_info]
+test_file_path = "doyto-query-sql/src/test/java/win/doyto/query/sql/AssociationSqlBuilderTest.java"
+focal_file_path = "doyto-query-sql/src/main/java/win/doyto/query/sql/AssociationSqlBuilder.java"
+test_file_url = "https://github.com/doytowin/doyto-query/blob/27754a721c6c437edcb2a8936d4c4a6212125d03/doyto-query-sql/src/test/java/win/doyto/query/sql/AssociationSqlBuilderTest.java"
+focal_file_url = "https://github.com/doytowin/doyto-query/blob/27754a721c6c437edcb2a8936d4c4a6212125d03/doyto-query-sql/src/main/java/win/doyto/query/sql/AssociationSqlBuilder.java"
+first_commit_date = "2021-12-19"
+last_commit_date = "2025-03-07"
+test_file_content = "/*\n * Copyright © 2019-2025 DoytoWin, Inc.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage win.doyto.query.sql;\n\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport win.doyto.query.core.UniqueKey;\n\nimport java.util.Arrays;\nimport java.util.LinkedHashSet;\nimport java.util.Set;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\n/**\n * AssociationSqlBuilderTest\n *\n * @author f0rb on 2021-12-17\n */\nclass AssociationSqlBuilderTest {\n\n    private AssociationSqlBuilder<Integer, Integer> associationSqlBuilder;\n\n    @BeforeEach\n    void setUp() {\n        associationSqlBuilder = new AssociationSqlBuilder<>(\"user\", \"role\");\n    }\n\n    @Test\n    void testSelectK1ColumnByK2Id() {\n        assertEquals(\"SELECT user_id FROM a_user_and_role WHERE role_id = ?\",\n                     associationSqlBuilder.getSelectK1ColumnByK2Id());\n    }\n\n    @Test\n    void testSelectK2ColumnByK1Id() {\n        assertEquals(\"SELECT role_id FROM a_user_and_role WHERE user_id = ?\",\n                     associationSqlBuilder.getSelectK2ColumnByK1Id());\n    }\n\n    @Test\n    void testDeleteByK1() {\n        assertEquals(\"DELETE FROM a_user_and_role WHERE user_id = ?\",\n                     associationSqlBuilder.getDeleteByK1());\n    }\n\n    @Test\n    void testDeleteByK2() {\n        assertEquals(\"DELETE FROM a_user_and_role WHERE role_id = ?\",\n                     associationSqlBuilder.getDeleteByK2());\n    }\n\n    private Set<UniqueKey<Integer, Integer>> testKeys() {\n        return new LinkedHashSet<>(Arrays.asList(new UniqueKey<>(1, 1), new UniqueKey<>(2, 3)));\n    }\n\n    @Test\n    void testInsert() {\n        SqlAndArgs sqlAndArgs = associationSqlBuilder.buildInsert(testKeys());\n        assertThat(sqlAndArgs.getSql())\n                .isEqualTo(\"INSERT IGNORE INTO a_user_and_role (user_id, role_id) VALUES (?, ?), (?, ?)\");\n        assertThat(sqlAndArgs.getArgs()).containsExactly(1, 1, 2, 3);\n    }\n\n    @Test\n    void testDelete() {\n        SqlAndArgs sqlAndArgs = associationSqlBuilder.buildDelete(testKeys());\n        assertThat(sqlAndArgs.getSql())\n                .isEqualTo(\"DELETE FROM a_user_and_role WHERE (user_id, role_id) IN ((?, ?), (?, ?))\");\n        assertThat(sqlAndArgs.getArgs()).containsExactly(1, 1, 2, 3);\n    }\n\n    @Test\n    void testCount() {\n        SqlAndArgs sqlAndArgs = associationSqlBuilder.buildCount(testKeys());\n        assertThat(sqlAndArgs.getSql())\n                .isEqualTo(\"SELECT count(*) FROM a_user_and_role WHERE (user_id, role_id) IN ((?, ?), (?, ?))\");\n        assertThat(sqlAndArgs.getArgs()).containsExactly(1, 1, 2, 3);\n    }\n\n    @Test\n    void testInsertWithUser() {\n        associationSqlBuilder.withCreateUserColumn(\"create_user_id\");\n        SqlAndArgs sqlAndArgs = associationSqlBuilder.buildInsert(testKeys(), 1);\n        assertThat(sqlAndArgs.getSql())\n                .isEqualTo(\"INSERT IGNORE INTO a_user_and_role (user_id, role_id, create_user_id) VALUES (?, ?, 1), (?, ?, 1)\");\n        assertThat(sqlAndArgs.getArgs()).containsExactly(1, 1, 2, 3);\n    }\n}"

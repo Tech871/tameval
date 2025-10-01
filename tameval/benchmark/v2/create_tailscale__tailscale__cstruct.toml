@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "tailscale/tailscale"
+sha = "6bbf98bef457b4403f27da79eb1861e6197ab539"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/avito-tech/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out util/cstruct/cstruct.go util/cstruct/cstruct_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting util/cstruct/cstruct.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 61.0
+original_coverage = 61.0
+mutation_kill_rate = 59.0
+original_mutation_kill_rate = 59.0
+covered_lines = [ 34, 35, 36, 40, 41, 42, 43, 44, 45, 48, 49, 50, 51, 57, 58, 59, 60, 61, 62, 63, 64, 65, 69, 70, 71, 96, 102, 107, 108, 112, 117, 118, 119, 120, 121, 125, 130, 131, 132, 133, 134, 138, 143, 144, 145, 146, 147, 151, 156, 157, 164, 165, 166, 169, 170, 171, 174, 175, 176,]
+missed_lines = [ 52, 53, 54, 74, 75, 76, 79, 80, 81, 82, 84, 85, 86, 87, 88, 97, 98, 99, 103, 104, 105, 106, 113, 114, 115, 126, 127, 128, 139, 140, 141, 152, 153, 154, 158, 159, 160,]
+
+[input_info]
+test_file_path = "util/cstruct/cstruct_test.go"
+focal_file_path = "util/cstruct/cstruct.go"
+test_file_url = "https://github.com/tailscale/tailscale/blob/6bbf98bef457b4403f27da79eb1861e6197ab539/util/cstruct/cstruct_test.go"
+focal_file_url = "https://github.com/tailscale/tailscale/blob/6bbf98bef457b4403f27da79eb1861e6197ab539/util/cstruct/cstruct.go"
+first_commit_date = "2022-08-28"
+last_commit_date = "2025-01-13"
+test_file_content = "// Copyright (c) Tailscale Inc & AUTHORS\n// SPDX-License-Identifier: BSD-3-Clause\n\npackage cstruct\n\nimport (\n\t\"errors\"\n\t\"fmt\"\n\t\"io\"\n\t\"testing\"\n)\n\nfunc TestPadBytes(t *testing.T) {\n\ttestCases := []struct {\n\t\toffset int\n\t\tsize   int\n\t\twant   int\n\t}{\n\t\t// No padding at beginning of structure\n\t\t{0, 1, 0},\n\t\t{0, 2, 0},\n\t\t{0, 4, 0},\n\t\t{0, 8, 0},\n\n\t\t// No padding for single bytes\n\t\t{1, 1, 0},\n\n\t\t// Single byte padding\n\t\t{1, 2, 1},\n\t\t{3, 4, 1},\n\n\t\t// Multi-byte padding\n\t\t{1, 4, 3},\n\t\t{2, 8, 6},\n\t}\n\tfor _, tc := range testCases {\n\t\tt.Run(fmt.Sprintf(\"%d_%d_%d\", tc.offset, tc.size, tc.want), func(t *testing.T) {\n\t\t\tgot := padBytes(tc.offset, tc.size)\n\t\t\tif got != tc.want {\n\t\t\t\tt.Errorf(\"got=%d; want=%d\", got, tc.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestDecoder(t *testing.T) {\n\tt.Run(\"UnsignedTypes\", func(t *testing.T) {\n\t\tdec := func(n int) *Decoder {\n\t\t\tbuf := make([]byte, n)\n\t\t\tbuf[0] = 1\n\n\t\t\td := NewDecoder(buf)\n\n\t\t\t// Use t.Cleanup to perform an assertion on this\n\t\t\t// decoder after the test code is finished with it.\n\t\t\tt.Cleanup(func() {\n\t\t\t\tif err := d.Err(); err != nil {\n\t\t\t\t\tt.Fatal(err)\n\t\t\t\t}\n\t\t\t})\n\t\t\treturn d\n\t\t}\n\t\tif got := dec(2).Uint16(); got != 1 {\n\t\t\tt.Errorf(\"uint16: got=%d; want=1\", got)\n\t\t}\n\t\tif got := dec(4).Uint32(); got != 1 {\n\t\t\tt.Errorf(\"uint32: got=%d; want=1\", got)\n\t\t}\n\t\tif got := dec(8).Uint64(); got != 1 {\n\t\t\tt.Errorf(\"uint64: got=%d; want=1\", got)\n\t\t}\n\t\tif got := dec(pointerSize / 8).Uintptr(); got != 1 {\n\t\t\tt.Errorf(\"uintptr: got=%d; want=1\", got)\n\t\t}\n\t})\n\n\tt.Run(\"SignedTypes\", func(t *testing.T) {\n\t\tdec := func(n int) *Decoder {\n\t\t\t// Make a buffer of the exact size that consists of 0xff bytes\n\t\t\tbuf := make([]byte, n)\n\t\t\tfor i := range n {\n\t\t\t\tbuf[i] = 0xff\n\t\t\t}\n\n\t\t\td := NewDecoder(buf)\n\n\t\t\t// Use t.Cleanup to perform an assertion on this\n\t\t\t// decoder after the test code is finished with it.\n\t\t\tt.Cleanup(func() {\n\t\t\t\tif err := d.Err(); err != nil {\n\t\t\t\t\tt.Fatal(err)\n\t\t\t\t}\n\t\t\t})\n\t\t\treturn d\n\t\t}\n\t\tif got := dec(2).Int16(); got != -1 {\n\t\t\tt.Errorf(\"int16: got=%d; want=-1\", got)\n\t\t}\n\t\tif got := dec(4).Int32(); got != -1 {\n\t\t\tt.Errorf(\"int32: got=%d; want=-1\", got)\n\t\t}\n\t\tif got := dec(8).Int64(); got != -1 {\n\t\t\tt.Errorf(\"int64: got=%d; want=-1\", got)\n\t\t}\n\t})\n\n\tt.Run(\"InsufficientData\", func(t *testing.T) {\n\t\tdec := func(n int) *Decoder {\n\t\t\t// Make a buffer that's too small and contains arbitrary bytes\n\t\t\tbuf := make([]byte, n-1)\n\t\t\tfor i := range n - 1 {\n\t\t\t\tbuf[i] = 0xAD\n\t\t\t}\n\n\t\t\t// Use t.Cleanup to perform an assertion on this\n\t\t\t// decoder after the test code is finished with it.\n\t\t\td := NewDecoder(buf)\n\t\t\tt.Cleanup(func() {\n\t\t\t\tif err := d.Err(); err == nil || !errors.Is(err, io.EOF) {\n\t\t\t\t\tt.Errorf(\"(n=%d) expected io.EOF; got=%v\", n, err)\n\t\t\t\t}\n\t\t\t})\n\t\t\treturn d\n\t\t}\n\n\t\tdec(2).Uint16()\n\t\tdec(4).Uint32()\n\t\tdec(8).Uint64()\n\t\tdec(pointerSize / 8).Uintptr()\n\n\t\tdec(2).Int16()\n\t\tdec(4).Int32()\n\t\tdec(8).Int64()\n\t})\n\n\tt.Run(\"Bytes\", func(t *testing.T) {\n\t\td := NewDecoder([]byte(\"hello worldasdf\"))\n\t\tt.Cleanup(func() {\n\t\t\tif err := d.Err(); err != nil {\n\t\t\t\tt.Fatal(err)\n\t\t\t}\n\t\t})\n\n\t\tbuf := make([]byte, 11)\n\t\td.Bytes(buf)\n\t\tif got := string(buf); got != \"hello world\" {\n\t\t\tt.Errorf(\"bytes: got=%q; want=%q\", got, \"hello world\")\n\t\t}\n\t})\n}\n"

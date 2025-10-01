@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "milvus-io/milvus"
+sha = "16efcda5c46748062abcfe563f70e1e2e53d0da1"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/streamingnode/server/walmanager/wal_state.go internal/streamingnode/server/walmanager/wal_state_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/streamingnode/server/walmanager/wal_state.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/streamingnode/server/walmanager/wal_state_test.go"
+focal_file_path = "internal/streamingnode/server/walmanager/wal_state.go"
+test_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/internal/streamingnode/server/walmanager/wal_state_test.go"
+focal_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/internal/streamingnode/server/walmanager/wal_state.go"
+first_commit_date = "2024-07-05"
+last_commit_date = "2025-02-22"
+test_file_content = "package walmanager\n\nimport (\n\t\"context\"\n\t\"sync\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/cockroachdb/errors\"\n\t\"github.com/stretchr/testify/assert\"\n\n\t\"github.com/milvus-io/milvus/internal/mocks/streamingnode/server/mock_wal\"\n\t\"github.com/milvus-io/milvus/pkg/streaming/util/types\"\n)\n\nfunc TestInitialWALState(t *testing.T) {\n\tcurrentState := initialCurrentWALState\n\n\tassert.Equal(t, types.InitialTerm, currentState.Term())\n\tassert.False(t, currentState.Available())\n\tassert.Nil(t, currentState.GetWAL())\n\tassert.NoError(t, currentState.GetLastError())\n\n\tassert.Equal(t, toStateString(currentState), \"(-1,false)\")\n\n\texpectedState := initialExpectedWALState\n\tassert.Equal(t, types.InitialTerm, expectedState.Term())\n\tassert.False(t, expectedState.Available())\n\tassert.Zero(t, expectedState.GetPChannelInfo())\n\tassert.Equal(t, context.Background(), expectedState.Context())\n\tassert.Equal(t, toStateString(expectedState), \"(-1,false)\")\n}\n\nfunc TestAvailableCurrentWALState(t *testing.T) {\n\tl := mock_wal.NewMockWAL(t)\n\tl.EXPECT().Channel().Return(types.PChannelInfo{\n\t\tTerm: 1,\n\t})\n\n\tstate := newAvailableCurrentState(l)\n\tassert.Equal(t, int64(1), state.Term())\n\tassert.True(t, state.Available())\n\tassert.Equal(t, l, state.GetWAL())\n\tassert.Nil(t, state.GetLastError())\n\n\tassert.Equal(t, toStateString(state), \"(1,true)\")\n}\n\nfunc TestUnavailableCurrentWALState(t *testing.T) {\n\terr := errors.New(\"test\")\n\tstate := newUnavailableCurrentState(1, err)\n\n\tassert.Equal(t, int64(1), state.Term())\n\tassert.False(t, state.Available())\n\tassert.Nil(t, state.GetWAL())\n\tassert.ErrorIs(t, state.GetLastError(), err)\n\n\tassert.Equal(t, toStateString(state), \"(1,false)\")\n}\n\nfunc TestAvailableExpectedWALState(t *testing.T) {\n\tchannel := types.PChannelInfo{}\n\tstate := newAvailableExpectedState(context.Background(), channel)\n\n\tassert.Equal(t, int64(0), state.Term())\n\tassert.True(t, state.Available())\n\tassert.Equal(t, context.Background(), state.Context())\n\tassert.Equal(t, channel, state.GetPChannelInfo())\n\n\tassert.Equal(t, toStateString(state), \"(0,true)\")\n}\n\nfunc TestUnavailableExpectedWALState(t *testing.T) {\n\tstate := newUnavailableExpectedState(1)\n\n\tassert.Equal(t, int64(1), state.Term())\n\tassert.False(t, state.Available())\n\tassert.Zero(t, state.GetPChannelInfo())\n\tassert.Equal(t, context.Background(), state.Context())\n\n\tassert.Equal(t, toStateString(state), \"(1,false)\")\n}\n\nfunc TestIsStateBefore(t *testing.T) {\n\t// initial state comparison.\n\tassert.False(t, isStateBefore(initialCurrentWALState, initialExpectedWALState))\n\tassert.False(t, isStateBefore(initialExpectedWALState, initialCurrentWALState))\n\n\tl := mock_wal.NewMockWAL(t)\n\tl.EXPECT().Channel().Return(types.PChannelInfo{\n\t\tTerm: 1,\n\t})\n\n\tcases := []walState{\n\t\tnewAvailableCurrentState(l),\n\t\tnewUnavailableCurrentState(1, nil),\n\t\tnewAvailableExpectedState(context.Background(), types.PChannelInfo{\n\t\t\tTerm: 3,\n\t\t}),\n\t\tnewUnavailableExpectedState(5),\n\t}\n\tfor _, s := range cases {\n\t\tassert.True(t, isStateBefore(initialCurrentWALState, s))\n\t\tassert.True(t, isStateBefore(initialExpectedWALState, s))\n\t\tassert.False(t, isStateBefore(s, initialCurrentWALState))\n\t\tassert.False(t, isStateBefore(s, initialExpectedWALState))\n\t}\n\tfor i, s1 := range cases {\n\t\tfor _, s2 := range cases[:i] {\n\t\t\tassert.True(t, isStateBefore(s2, s1))\n\t\t\tassert.False(t, isStateBefore(s1, s2))\n\t\t}\n\t}\n}\n\nfunc TestStateWithCond(t *testing.T) {\n\tstateCond := newWALStateWithCond(initialCurrentWALState)\n\tassert.Equal(t, initialCurrentWALState, stateCond.GetState())\n\n\t// test notification.\n\twg := sync.WaitGroup{}\n\ttargetState := newUnavailableCurrentState(10, nil)\n\tfor i := 0; i < 5; i++ {\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\t\t\toldState := stateCond.GetState()\n\t\t\tfor {\n\t\t\t\tif !isStateBefore(oldState, targetState) {\n\t\t\t\t\tbreak\n\t\t\t\t}\n\n\t\t\t\terr := stateCond.WatchChanged(context.Background(), oldState)\n\t\t\t\tassert.NoError(t, err)\n\t\t\t\tnewState := stateCond.GetState()\n\t\t\t\tassert.True(t, isStateBefore(oldState, newState))\n\t\t\t\toldState = newState\n\t\t\t}\n\t\t}()\n\t\twg.Add(1)\n\t\tgo func() {\n\t\t\tdefer wg.Done()\n\n\t\t\toldState := stateCond.GetState()\n\t\t\tfor i := int64(0); i < 10; i++ {\n\t\t\t\tvar newState currentWALState\n\t\t\t\tif i%2 == 0 {\n\t\t\t\t\tl := mock_wal.NewMockWAL(t)\n\t\t\t\t\tl.EXPECT().Channel().Return(types.PChannelInfo{\n\t\t\t\t\t\tTerm: i % 2,\n\t\t\t\t\t}).Maybe()\n\t\t\t\t\tnewState = newAvailableCurrentState(l)\n\t\t\t\t} else {\n\t\t\t\t\tnewState = newUnavailableCurrentState(i%3, nil)\n\t\t\t\t}\n\t\t\t\tstateCond.SetStateAndNotify(newState)\n\n\t\t\t\t// updated state should never before old state.\n\t\t\t\tstateNow := stateCond.GetState()\n\t\t\t\tassert.False(t, isStateBefore(stateNow, oldState))\n\t\t\t\toldState = stateNow\n\t\t\t}\n\t\t\tstateCond.SetStateAndNotify(targetState)\n\t\t}()\n\t}\n\n\tch := make(chan struct{})\n\tgo func() {\n\t\twg.Wait()\n\t\tclose(ch)\n\t}()\n\tselect {\n\tcase <-time.After(time.Second * 3):\n\t\tt.Errorf(\"test should never block\")\n\tcase <-ch:\n\t}\n\n\t// test cancel.\n\tctx, cancel := context.WithTimeout(context.Background(), time.Second)\n\tdefer cancel()\n\terr := stateCond.WatchChanged(ctx, targetState)\n\tassert.ErrorIs(t, err, context.DeadlineExceeded)\n}"

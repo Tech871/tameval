@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "29cf8b2f82f8ecc386c4cfb238757fa859b7eb06"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl gene-utils -Dtest=ProbeUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl gene-utils -DtargetClasses=**.ProbeUtils  -DtargetTests=**.ProbeUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "gene-utils/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "gene-utils/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 90.0
+original_coverage = 90.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 14, 19, 24, 30, 36, 42, 48, 54, 60,]
+missed_lines = [ 10,]
+
+[input_info]
+test_file_path = "gene-utils/src/test/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeUtilsTest.java"
+focal_file_path = "gene-utils/src/main/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeUtils.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/gene-utils/src/test/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeUtilsTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/gene-utils/src/main/java/com/hartwig/hmftools/geneutils/paneldesign/ProbeUtils.java"
+first_commit_date = "2025-07-31"
+last_commit_date = "2025-07-31"
+test_file_content = "package com.hartwig.hmftools.geneutils.paneldesign;\n\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.maxProbeEndOverlapping;\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.maxProbeEndWithoutGap;\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.minProbeStartOverlapping;\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.minProbeStartWithoutGap;\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.probeRegionCenteredAt;\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.probeRegionEndingAt;\nimport static com.hartwig.hmftools.geneutils.paneldesign.ProbeUtils.probeRegionStartingAt;\n\nimport static org.junit.Assert.assertEquals;\n\nimport com.hartwig.hmftools.common.region.BaseRegion;\n\nimport org.junit.Test;\n\npublic class ProbeUtilsTest\n{\n    private static final int PROBE_START = 100;\n    private static final int PROBE_CENTRE = 159;\n    private static final int PROBE_END = 219;\n\n    @Test\n    public void testProbeRegionStartingAt()\n    {\n        assertEquals(new BaseRegion(PROBE_START, PROBE_END), probeRegionStartingAt(PROBE_START));\n    }\n\n    @Test\n    public void testProbeRegionCenteredAt()\n    {\n        assertEquals(new BaseRegion(PROBE_START, PROBE_END), probeRegionCenteredAt(PROBE_CENTRE));\n    }\n\n    @Test\n    public void testProbeRegionEndingAt()\n    {\n        assertEquals(new BaseRegion(PROBE_START, PROBE_END), probeRegionEndingAt(PROBE_END));\n    }\n\n    @Test\n    public void testMinProbeStartContaining()\n    {\n        assertEquals(PROBE_START, ProbeUtils.minProbeStartContaining(PROBE_END));\n    }\n\n    @Test\n    public void testMaxProbeEndContaining()\n    {\n        assertEquals(PROBE_END, ProbeUtils.maxProbeEndContaining(PROBE_START));\n    }\n\n    @Test\n    public void testMinProbeStartOverlapping()\n    {\n        assertEquals(PROBE_START, minProbeStartOverlapping(new BaseRegion(PROBE_END, PROBE_END + 10)));\n    }\n\n    @Test\n    public void testMaxProbeEndOverlapping()\n    {\n        assertEquals(PROBE_END, maxProbeEndOverlapping(new BaseRegion(PROBE_START - 10, PROBE_START)));\n    }\n\n    @Test\n    public void testMinProbeStartWithoutGap()\n    {\n        assertEquals(PROBE_START, minProbeStartWithoutGap(new BaseRegion(PROBE_END + 1, PROBE_END + 10)));\n    }\n\n    @Test\n    public void testMaxProbeEndWithoutGap()\n    {\n        assertEquals(PROBE_END, maxProbeEndWithoutGap(new BaseRegion(PROBE_START - 10, PROBE_START - 1)));\n    }\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-java"
+sha = "0d031dbf7b6729e10550725b08238918a4ceeca8"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-java-core -Dtest=JarUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-java-core -DtargetClasses=**.JarUtils  -DtargetTests=**.JarUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-java-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-java-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 73.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 75, 76, 77, 79, 80, 93, 98, 120, 121, 122, 123, 124, 150, 151, 175, 178, 179, 180, 186, 187, 189, 191, 192, 217, 218, 219, 220, 244, 245, 275, 276, 277, 305, 306, 307, 359, 360, 361, 362, 363, 364, 366, 367, 369, 370, 371, 372, 375, 376, 379, 380, 383, 385,]
+missed_lines = [ 78, 94, 95, 96, 152, 176, 188, 339, 340, 341, 342, 343, 346, 347, 348, 349, 353, 355, 356, 373,]
+
+[input_info]
+test_file_path = "microsphere-java-core/src/test/java/io/microsphere/util/jar/JarUtilsTest.java"
+focal_file_path = "microsphere-java-core/src/main/java/io/microsphere/util/jar/JarUtils.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/0d031dbf7b6729e10550725b08238918a4ceeca8/microsphere-java-core/src/test/java/io/microsphere/util/jar/JarUtilsTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/0d031dbf7b6729e10550725b08238918a4ceeca8/microsphere-java-core/src/main/java/io/microsphere/util/jar/JarUtils.java"
+first_commit_date = "2024-04-08"
+last_commit_date = "2025-07-30"
+test_file_content = "/**\n *\n */\npackage io.microsphere.util.jar;\n\nimport io.microsphere.filter.JarEntryFilter;\nimport io.microsphere.util.ClassLoaderUtils;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\n\nimport javax.annotation.Nonnull;\nimport java.io.File;\nimport java.io.IOException;\nimport java.net.URL;\nimport java.util.jar.JarEntry;\nimport java.util.jar.JarFile;\n\nimport static io.microsphere.io.FileUtils.deleteDirectory;\nimport static io.microsphere.net.URLUtils.ofURL;\nimport static io.microsphere.util.ClassLoaderUtils.getClassLoader;\nimport static io.microsphere.util.ClassLoaderUtils.getClassResource;\nimport static io.microsphere.util.SystemUtils.JAVA_IO_TMPDIR;\nimport static io.microsphere.util.jar.JarUtils.MANIFEST_RESOURCE_PATH;\nimport static io.microsphere.util.jar.JarUtils.assertJarURLProtocol;\nimport static io.microsphere.util.jar.JarUtils.extract;\nimport static io.microsphere.util.jar.JarUtils.findJarEntry;\nimport static io.microsphere.util.jar.JarUtils.resolveJarAbsolutePath;\nimport static io.microsphere.util.jar.JarUtils.resolveRelativePath;\nimport static io.microsphere.util.jar.JarUtils.toJarFile;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertSame;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\n/**\n * {@link JarUtils} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see JarUtilsTest\n * @since 1.0.0\n */\nclass JarUtilsTest {\n\n    private final static File tempDirectory = new File(JAVA_IO_TMPDIR);\n\n    private final static File targetDirectory = new File(tempDirectory, \"jar-util-extract\");\n\n    private final ClassLoader classLoader = getClassLoader(getClass());\n\n    private URL resourceURL;\n\n    @BeforeEach\n    void setUp() throws IOException {\n        deleteDirectory(targetDirectory);\n        targetDirectory.mkdirs();\n        this.resourceURL = getClassResource(classLoader, Nonnull.class);\n    }\n\n\n\n\n\n\n    public void testToJarFileOnException() throws Exception {\n        assertThrows(IllegalArgumentException.class, () -> {\n            URL url = new URL(\"http://www.google.com\");\n            JarFile jarFile = toJarFile(url);\n        });\n    }\n\n    @Test\n    void testFindJarEntry() throws Exception {\n        URL resourceURL = getClassResource(classLoader, Nonnull.class);\n        JarEntry jarEntry = findJarEntry(resourceURL);\n        assertNotNull(jarEntry);\n    }\n\n    @Test\n    void testExtract() throws IOException {\n        String jarAbsolutePath = resolveJarAbsolutePath(resourceURL);\n        extract(new File(jarAbsolutePath), targetDirectory);\n    }\n\n}\n"

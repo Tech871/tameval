@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "microbus-io/fabric"
+sha = "55cc62f52e58a2f8386b6086061b17a7d133fea3"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out mem/mem.go mem/mem_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting mem/mem.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 82.0
+original_coverage = 82.0
+mutation_kill_rate = 65.0
+original_mutation_kill_rate = 65.0
+covered_lines = [ 28, 29, 30, 31, 32, 33, 34, 35, 36, 50, 51, 52, 53, 54, 55, 57, 61, 65, 66, 67, 68, 69, 70, 75, 79, 80, 81, 82,]
+missed_lines = [ 62, 63, 64, 76, 77, 78,]
+
+[input_info]
+test_file_path = "mem/mem_test.go"
+focal_file_path = "mem/mem.go"
+test_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/mem/mem_test.go"
+focal_file_url = "https://github.com/microbus-io/fabric/blob/55cc62f52e58a2f8386b6086061b17a7d133fea3/mem/mem.go"
+first_commit_date = "2025-07-12"
+last_commit_date = "2025-07-12"
+test_file_content = "/*\nCopyright (c) 2023-2025 Microbus LLC and various contributors\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n\thttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage mem\n\nimport (\n\t\"bytes\"\n\t\"testing\"\n\t\"unsafe\"\n\n\t\"github.com/microbus-io/testarossa\"\n)\n\nfunc TestMem_Recycle(t *testing.T) {\n\t// No parallel\n\ttt := testarossa.For(t)\n\n\tblock1 := Alloc(1024)\n\ttt.Equal(0, len(block1))\n\ttt.Equal(1024, cap(block1))\n\tblock1[:1][0] = '1'\n\ttt.Equal([]byte(\"1\"), block1[:1])\n\n\tblock2 := Alloc(1024)\n\ttt.Equal(0, len(block2))\n\ttt.Equal(1024, cap(block2))\n\tblock2[:1][0] = '2'\n\ttt.Equal([]byte(\"2\"), block2[:1])\n\ttt.NotEqual([]byte(\"2\"), block1[:1])\n\n\tFree(block1)\n\n\tblock3 := Alloc(1024)\n\ttt.Equal(0, len(block3))\n\ttt.Equal(1024, cap(block3))\n\ttt.Equal(unsafe.SliceData(block1), unsafe.SliceData(block3))\n\ttt.Equal([]byte(\"1\"), block1[:1])\n}\n\nfunc TestMem_Grow(t *testing.T) {\n\t// No parallel\n\ttt := testarossa.For(t)\n\n\tblock1 := Alloc(2<<10 + 1)\n\ttt.Len(block1, 0)\n\ttt.Equal(4<<10, cap(block1))\n\n\tbuf := append(block1, bytes.Repeat([]byte{'1'}, 1<<10)...)\n\ttt.Len(buf, 1<<10)\n\ttt.Equal(4<<10, cap(buf))\n\ttt.Equal(byte('1'), block1[:1][0])\n\tbuf[0] = '2'\n\ttt.Equal(byte('2'), block1[:1][0])\n\n\tbuf = append(buf, bytes.Repeat([]byte{'1'}, 4<<10)...)\n\ttt.Len(buf, 5<<10)\n\ttt.True(cap(buf) >= 5<<10)\n\ttt.Len(block1, 0)\n\ttt.Equal(byte('2'), block1[:1][0])\n\tbuf[0] = '3'\n\ttt.Equal(byte('2'), block1[:1][0])\n\n\tbuf = nil\n\tFree(block1)\n\n\tblock2 := Alloc(2<<10 + 2)\n\ttt.Len(block2, 0)\n\ttt.Equal(4<<10, cap(block2))\n\ttt.Equal(byte('2'), block2[:1][0])\n}\n\nfunc TestMem_TooLarge(t *testing.T) {\n\t// No parallel\n\ttt := testarossa.For(t)\n\n\tblock1 := Alloc(1 << (12 + 1 + 10 + 1)) // 8MB\n\tblock1 = append(block1, []byte(\"X2865374563X\")...)\n\tFree(block1)\n\tblock2 := Alloc(1 << (12 + 1 + 10 + 1)) // Same 8MB\n\ttt.NotEqual([]byte(\"X2865374563X\"), block2[:12])\n\tFree(block2)\n}\n\nfunc TestMem_Copy(t *testing.T) {\n\t// No parallel\n\ttt := testarossa.For(t)\n\n\tsrc := Alloc(1<<10 + 16)\n\tsrc = append(src, bytes.Repeat([]byte{'1'}, 1<<10)...)\n\n\tdest := Copy(src)\n\ttt.Equal(src, dest)\n\ttt.Equal(len(src), len(dest))\n\n\tsrc[0] = byte('2')\n\ttt.Equal(byte('1'), dest[0])\n\n\tFree(src)\n\ttt.Equal(bytes.Repeat([]byte{'1'}, 1<<10), dest)\n\tFree(dest)\n}\n"

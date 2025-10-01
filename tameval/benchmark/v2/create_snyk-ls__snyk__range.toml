@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.6"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "37ef5edff63f9b37597e8df6c0b25dadb7068ba1"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.6"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/types/range.go internal/types/range_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/types/range.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = 70.0
+covered_lines = [ 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 69, 70, 71, 72, 73, 74, 75, 79, 80, 81, 82, 83, 84, 85,]
+missed_lines = [ 31, 32, 33, 47, 48, 49, 76, 77, 78,]
+
+[input_info]
+test_file_path = "internal/types/range_test.go"
+focal_file_path = "internal/types/range.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/internal/types/range_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/37ef5edff63f9b37597e8df6c0b25dadb7068ba1/internal/types/range.go"
+first_commit_date = "2025-02-21"
+last_commit_date = "2025-02-21"
+test_file_content = "/*\n * © 2022-2025 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage types\n\nimport \"testing\"\n\n//nolint:dupl // test cases differ by a boolean\n\n//nolint:dupl // test cases differ by a boolean\nfunc Test_Range_Overlaps(t *testing.T) {\n\tr := Range{\n\t\tStart: Position{5, 10},\n\t\tEnd:   Position{6, 20},\n\t}\n\ttests := []struct {\n\t\tname       string\n\t\totherRange Range\n\t\twant       bool\n\t}{\n\t\t{\"Other Range on different line\", Range{Start: Position{Line: 4, Character: 1}, End: Position{Line: 4, Character: 20}}, false},\n\t\t{\"Other Range on same line but left of range\", Range{Start: Position{Line: 5, Character: 1}, End: Position{Line: 5, Character: 9}}, false},\n\t\t{\"Other Range on end line but right of range\", Range{Start: Position{Line: 6, Character: 21}, End: Position{Line: 6, Character: 22}}, false},\n\t\t{\"Other Range starts in range and ends outside\", Range{Start: Position{Line: 5, Character: 11}, End: Position{Line: 7, Character: 20}}, true},\n\t\t{\"Other Range starts before range and ends in range\", Range{Start: Position{Line: 5, Character: 1}, End: Position{Line: 5, Character: 20}}, true},\n\t\t{\"Other Range starts before range on different line and ends in range\", Range{Start: Position{Line: 3, Character: 1}, End: Position{Line: 5, Character: 20}}, true},\n\t\t{\"Other Range starts in range and ends within range\", Range{Start: Position{Line: 5, Character: 11}, End: Position{Line: 5, Character: 19}}, true},\n\t\t{\"Other Range exactly the same\", r, true},\n\t\t{\"Other Range starts exactly with range and ends within range\", Range{Start: Position{Line: 5, Character: 10}, End: Position{Line: 5, Character: 19}}, true},\n\t\t{\"Other Range starts within range and ends exactly with range\", Range{Start: Position{Line: 5, Character: 11}, End: Position{Line: 5, Character: 20}}, true},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := r.Overlaps(tt.otherRange); got != tt.want {\n\t\t\t\tt.Errorf(\"Overlaps() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n"

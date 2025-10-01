@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "redruin1/factorio-draftsman"
+sha = "4a795c6530c6d5ea2571c8a234164da22928a4a1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=draftsman/data/fluids.py -m pytest -q --junit-xml=test_output.xml test/data/test_fluids.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target draftsman.data.fluids --unit-test test.data.test_fluids --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target draftsman/data/fluids.py --unit-test test/data/test_fluids.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 95.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 67.0
+covered_lines = [ 2, 4, 6, 7, 9, 10, 11, 12, 13, 14, 54, 65, 66, 69, 82, 94, 98, 101, 103,]
+missed_lines = [ 95,]
+
+[input_info]
+test_file_path = "test/data/test_fluids.py"
+focal_file_path = "draftsman/data/fluids.py"
+test_file_url = "https://github.com/redruin1/factorio-draftsman/blob/4a795c6530c6d5ea2571c8a234164da22928a4a1/test/data/test_fluids.py"
+focal_file_url = "https://github.com/redruin1/factorio-draftsman/blob/4a795c6530c6d5ea2571c8a234164da22928a4a1/draftsman/data/fluids.py"
+first_commit_date = "2023-11-23"
+last_commit_date = "2025-08-07"
+test_file_content = "# test_fluids.py\n\nfrom draftsman.data import fluids\nfrom draftsman.error import InvalidFluidError\n\nimport pytest\n\n\nclass TestFluidData:\n    def test_add_fluid(self):\n        fluids.add_fluid(\"custom-fluid\")\n        assert fluids.raw[\"custom-fluid\"] == {\n            \"name\": \"custom-fluid\",\n            \"order\": \"\",\n            \"default_temperature\": 25,\n            \"type\": \"fluid\",\n        }\n\n    def test_get_temperature_range(self):\n        assert fluids.get_temperature_range(\"water\") == (15, 100)\n        assert fluids.get_temperature_range(\"steam\") == (15, 1000)\n        assert fluids.get_temperature_range(\"petroleum-gas\") == (25, 25)\n\n        with pytest.raises(InvalidFluidError):\n            fluids.get_temperature_range(\"incorrect\")"

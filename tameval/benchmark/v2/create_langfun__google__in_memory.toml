@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "google/langfun"
+sha = "11d646e44baaea09bb792c3428a8f71ba742363b"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=langfun/core/llms/cache/in_memory.py -m pytest -q --junit-xml=test_output.xml langfun/core/llms/cache/in_memory_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target langfun.core.llms.cache.in_memory --unit-test langfun.core.llms.cache.in_memory_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target langfun/core/llms/cache/in_memory.py --unit-test langfun/core/llms/cache/in_memory_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 72.0
+original_coverage = 100.0
+mutation_kill_rate = 97.0
+original_mutation_kill_rate = 97.0
+covered_lines = [ 15, 16, 17, 18, 19, 20, 21, 24, 25, 28, 35, 36, 37, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 52, 53, 58, 60, 62, 64, 66, 68, 69, 70, 71, 76, 86, 91, 96, 97, 99, 101, 103, 105, 107, 114, 121, 122, 123, 124, 126, 128, 129, 130, 131, 134, 135, 137, 138, 139, 140, 141, 144, 145,]
+missed_lines = [ 73, 74, 78, 79, 80, 81, 83, 84, 92, 93, 94, 109, 110, 111, 112, 116, 117, 119, 158, 159, 160, 161, 163, 164,]
+
+[input_info]
+test_file_path = "langfun/core/llms/cache/in_memory_test.py"
+focal_file_path = "langfun/core/llms/cache/in_memory.py"
+test_file_url = "https://github.com/google/langfun/blob/11d646e44baaea09bb792c3428a8f71ba742363b/langfun/core/llms/cache/in_memory_test.py"
+focal_file_url = "https://github.com/google/langfun/blob/11d646e44baaea09bb792c3428a8f71ba742363b/langfun/core/llms/cache/in_memory.py"
+first_commit_date = "2023-09-21"
+last_commit_date = "2025-01-05"
+test_file_content = "# Copyright 2023 The Langfun Authors\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\"\"\"Tests for language model.\"\"\"\n\nimport copy\nimport os\nimport tempfile\nimport time\nimport unittest\n\nimport langfun.core as lf\nfrom langfun.core.llms import fake\nfrom langfun.core.llms.cache import base\nfrom langfun.core.llms.cache import in_memory\n\nimport pyglove as pg\n\n\nclass InMemoryLMCacheTest(unittest.TestCase):\n\n\n  def test_cache_with_modalities(self):\n\n    class CustomModality(lf.Modality):\n      content: str\n\n      def to_bytes(self):\n        return self.content.encode()\n\n    cache = in_memory.InMemory()\n    lm = fake.StaticSequence(['1', '2', '3', '4', '5', '6'], cache=cache)\n    lm(lf.UserMessage('hi <<[[image]]>>', image=CustomModality('foo')))\n    lm(lf.UserMessage('hi <<[[image]]>>', image=CustomModality('bar')))\n    self.assertEqual(\n        list(cache.keys()),\n        [\n            (\n                'hi <<[[image]]>><image>acbd18db</image>',\n                (None, None, 1, 40, None, None),\n                0,\n            ),\n            (\n                'hi <<[[image]]>><image>37b51d19</image>',\n                (None, None, 1, 40, None, None),\n                0,\n            ),\n        ],\n    )\n\n\n\n\n  def test_save_load(self):\n    pg.set_load_handler(pg.symbolic.default_load_handler)\n    pg.set_save_handler(pg.symbolic.default_save_handler)\n\n    cache = in_memory.InMemory()\n    lm1 = fake.StaticSequence(['1', '2', '3'], cache=cache)\n    lm2 = fake.Echo(cache=cache)\n\n    self.assertEqual(lm1('a'), '1')\n    self.assertEqual(lm2('a'), 'a')\n    self.assertEqual(cache.stats.num_updates, 2)\n\n    tmp_dir = tempfile.gettempdir()\n    path = os.path.join(tmp_dir, 'memory.json')\n\n    # Path does not exist at the moment.\n    cache1 = in_memory.InMemory(path)\n    self.assertEqual(len(cache1._cache), 0)\n\n    # Now save the cache to path.\n    with self.assertRaisesRegex(ValueError, '`path` must be specified'):\n      cache.save()\n    cache.save(path)\n\n    cache2 = in_memory.InMemory(path)\n    self.assertEqual(cache2._cache, cache._cache)\n\n    # Do nothing since there is no updates.\n    self.assertEqual(cache2.stats.num_updates, 0)\n    cache2.save()\n\n    lm1 = fake.StaticSequence(['x', 'y'], cache=cache2)\n    lm2 = fake.Echo(cache=cache2)\n\n    self.assertEqual(lm1('a'), '1')\n    self.assertEqual(lm2('a'), 'a')\n\n    # A new entry.\n    self.assertEqual(lm2('b'), 'b')\n    self.assertEqual(lm2('c'), 'c')\n    self.assertEqual(cache2.stats.num_updates, 2)\n    cache2.save()\n\n    # Corrupted file.\n    pg.io.writefile(path, 'bad_content')\n    cache3 = in_memory.InMemory(path)\n    self.assertEqual(len(cache3), 0)\n\n\n\n\n\n\nif __name__ == '__main__':\n  unittest.main()\n"

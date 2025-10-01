@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.20"
+
+[repo_info]
+repository = "rulego/rulego"
+sha = "22ba0b1e693a9fafb84858dffec8ff8cf5509925"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out utils/reflect/reflect.go utils/reflect/reflect_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting utils/reflect/reflect.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 54.0
+mutation_kill_rate = 34.0
+original_mutation_kill_rate = 41.0
+covered_lines = [ 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 67, 68, 78, 114, 115, 116, 117, 118, 119, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 139, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 157, 167, 168, 169, 170, 171, 172, 173, 175, 176, 177, 185, 186, 187, 188, 189, 190, 191, 192, 193, 194, 195, 198,]
+missed_lines = [ 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 69, 70, 71, 72, 73, 74, 75, 76, 77, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 132, 133, 134, 135, 136, 137, 158, 159, 160, 161, 162, 163, 164, 165, 166, 178, 179, 180, 181, 182,]
+
+[input_info]
+test_file_path = "utils/reflect/reflect_test.go"
+focal_file_path = "utils/reflect/reflect.go"
+test_file_url = "https://github.com/rulego/rulego/blob/22ba0b1e693a9fafb84858dffec8ff8cf5509925/utils/reflect/reflect_test.go"
+focal_file_url = "https://github.com/rulego/rulego/blob/22ba0b1e693a9fafb84858dffec8ff8cf5509925/utils/reflect/reflect.go"
+first_commit_date = "2023-09-28"
+last_commit_date = "2025-06-08"
+test_file_content = "/*\n * Copyright 2023 The RuleGo Authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage reflect\n\nimport (\n\t\"github.com/rulego/rulego/test/assert\"\n\t\"testing\"\n\n\t\"github.com/rulego/rulego/api/types\"\n)\n\n// FunctionsNodeConfiguration 节点配置\ntype FunctionsNodeConfiguration struct {\n\tFunctionName string `label:\"函数名称\" desc:\"调用的函数名称\" required:\"true\"`\n}\n\n// FunctionsNode 测试节点实现\ntype FunctionsNode struct {\n\tConfig  FunctionsNodeConfiguration\n\tHasVars bool\n}\n\nfunc (x *FunctionsNode) Type() string {\n\treturn \"functions\"\n}\n\nfunc (x *FunctionsNode) New() types.Node {\n\treturn &FunctionsNode{Config: FunctionsNodeConfiguration{\n\t\tFunctionName: \"test\",\n\t}}\n}\n\nfunc (x *FunctionsNode) Init(ruleConfig types.Config, configuration types.Configuration) error {\n\treturn nil\n}\n\nfunc (x *FunctionsNode) OnMsg(ctx types.RuleContext, msg types.RuleMsg) {}\n\nfunc (x *FunctionsNode) Destroy() {}\n\nfunc TestGetComponentConfig(t *testing.T) {\n\tnode := &FunctionsNode{}\n\tty, configField, _ := GetComponentConfig(node)\n\n\tassert.Equal(t, \"FunctionsNode\", ty.Name())\n\tassert.Equal(t, \"Config\", configField.Name)\n}\n\nfunc TestGetComponentForm(t *testing.T) {\n\tnode := &FunctionsNode{\n\t\tConfig: FunctionsNodeConfiguration{\n\t\t\tFunctionName: \"test\",\n\t\t},\n\t}\n\tform := GetComponentForm(node)\n\n\tassert.Equal(t, \"functions\", form.Type)\n\tassert.Equal(t, \"FunctionsNode\", form.Label)\n\tassert.Equal(t, 1, len(form.Fields))\n\tassert.Equal(t, \"functionName\", form.Fields[0].Name)\n\tassert.Equal(t, \"string\", form.Fields[0].Type)\n\tassert.Equal(t, \"test\", form.Fields[0].DefaultValue)\n\tassert.Equal(t, \"函数名称\", form.Fields[0].Label)\n\tassert.Equal(t, \"调用的函数名称\", form.Fields[0].Desc)\n\tassert.True(t, form.Fields[0].Rules[0][\"required\"].(bool))\n}"

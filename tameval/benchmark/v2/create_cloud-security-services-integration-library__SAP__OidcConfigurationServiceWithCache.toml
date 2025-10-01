@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "SAP/cloud-security-services-integration-library"
+sha = "bc3a37687860d8dd34ca2e26b45d942bd4a3e85b"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl java-security -Dtest=OidcConfigurationServiceWithCacheTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl java-security -DtargetClasses=**.OidcConfigurationServiceWithCache  -DtargetTests=**.OidcConfigurationServiceWithCacheTest  -DoutputFormats=XML"
+coverage_report_path = "java-security/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "java-security/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 97.0
+original_coverage = 97.0
+mutation_kill_rate = 86.0
+original_mutation_kill_rate = 86.0
+covered_lines = [ 27, 29, 31, 33, 41, 53, 54, 65, 66, 68, 69, 80, 81, 83, 84, 99, 100, 101, 102, 103, 104, 105, 107, 109, 113, 114, 115, 116, 117, 119, 123, 126, 130, 131, 133,]
+missed_lines = [ 124,]
+
+[input_info]
+test_file_path = "java-security/src/test/java/com/sap/cloud/security/token/validation/validators/OidcConfigurationServiceWithCacheTest.java"
+focal_file_path = "java-security/src/main/java/com/sap/cloud/security/token/validation/validators/OidcConfigurationServiceWithCache.java"
+test_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/java-security/src/test/java/com/sap/cloud/security/token/validation/validators/OidcConfigurationServiceWithCacheTest.java"
+focal_file_url = "https://github.com/SAP/cloud-security-services-integration-library/blob/bc3a37687860d8dd34ca2e26b45d942bd4a3e85b/java-security/src/main/java/com/sap/cloud/security/token/validation/validators/OidcConfigurationServiceWithCache.java"
+first_commit_date = "2020-02-10"
+last_commit_date = "2024-02-16"
+test_file_content = "/**\n * SPDX-FileCopyrightText: 2018-2023 SAP SE or an SAP affiliate company and Cloud Security Client Java contributors\n * <p>\n * SPDX-License-Identifier: Apache-2.0\n */\npackage com.sap.cloud.security.token.validation.validators;\n\nimport com.sap.cloud.security.xsuaa.client.OAuth2ServiceEndpointsProvider;\nimport com.sap.cloud.security.xsuaa.client.OAuth2ServiceException;\nimport com.sap.cloud.security.xsuaa.client.OidcConfigurationService;\nimport org.assertj.core.api.Assertions;\nimport org.junit.Before;\nimport org.junit.Test;\nimport org.mockito.Mockito;\n\nimport java.io.IOException;\nimport java.net.URI;\nimport java.security.NoSuchAlgorithmException;\nimport java.security.spec.InvalidKeySpecException;\n\nimport static org.assertj.core.api.Assertions.assertThatThrownBy;\nimport static org.mockito.ArgumentMatchers.any;\nimport static org.mockito.Mockito.times;\nimport static org.mockito.Mockito.when;\n\npublic class OidcConfigurationServiceWithCacheTest {\n\tOidcConfigurationServiceWithCache cut;\n\tOidcConfigurationService oidcConfigServiceMock;\n\tOAuth2ServiceEndpointsProvider oidcEndpointsProviderMock;\n\tURI DISCOVERY_URI = URI.create(\"https://myauth.com/.well-known/oidc-config\");\n\n\t@Before\n\tpublic void setup() throws IOException {\n\t\toidcEndpointsProviderMock = Mockito.mock(OAuth2ServiceEndpointsProvider.class);\n\t\toidcConfigServiceMock = Mockito.mock(OidcConfigurationService.class);\n\t\twhen(oidcConfigServiceMock.retrieveEndpoints(any()))\n\t\t\t\t.thenReturn(oidcEndpointsProviderMock);\n\n\t\tcut = OidcConfigurationServiceWithCache.getInstance().withOidcConfigurationService(oidcConfigServiceMock);\n\t}\n\n\t@Test\n\tpublic void getFreshInstance() {\n\t\tAssertions.assertThat(cut).isNotSameAs(OidcConfigurationServiceWithCache.getInstance());\n\t}\n\n\t@Test\n\tpublic void changeCacheConfiguration() {\n\t\tcut = cut.withCacheSize(1001).withCacheTime(600);\n\n\t\tassertThatThrownBy(() -> {\n\t\t\tcut = cut.withCacheSize(1000).withCacheTime(600);\n\t\t}).isInstanceOf(IllegalArgumentException.class).hasMessageContainingAll(\"size\");\n\n\t\tassertThatThrownBy(() -> {\n\t\t\tcut = cut.withCacheSize(1001).withCacheTime(599);\n\t\t}).isInstanceOf(IllegalArgumentException.class).hasMessageContainingAll(\"validity\");\n\n\t\tassertThatThrownBy(() -> {\n\t\t\tcut = cut.withCacheSize(1001).withCacheTime(901);\n\t\t}).isInstanceOf(IllegalArgumentException.class).hasMessageContainingAll(\"validity\");\n\t}\n\n\t@Test\n\tpublic void retrieveEndpoints() throws OAuth2ServiceException, InvalidKeySpecException, NoSuchAlgorithmException {\n\t\tOAuth2ServiceEndpointsProvider endpointsProvider = cut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\t\tAssertions.assertThat(endpointsProvider).isSameAs(oidcEndpointsProviderMock);\n\n\t\tMockito.verify(oidcConfigServiceMock, times(1))\n\t\t\t\t.retrieveEndpoints(DISCOVERY_URI);\n\t}\n\n\t@Test\n\tpublic void getCachedEndpoints() throws OAuth2ServiceException {\n\t\tOAuth2ServiceEndpointsProvider endpointsProvider = cut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\n\t\tOAuth2ServiceEndpointsProvider cachedEndpointsProvider = cut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\t\tAssertions.assertThat(cachedEndpointsProvider).isNotNull();\n\t\tAssertions.assertThat(cachedEndpointsProvider).isSameAs(endpointsProvider);\n\n\t\tMockito.verify(oidcConfigServiceMock, times(1))\n\t\t\t\t.retrieveEndpoints(DISCOVERY_URI);\n\t}\n\n\t@Test\n\tpublic void retrieveNoEndpoints_returnsNull()\n\t\t\tthrows OAuth2ServiceException, InvalidKeySpecException, NoSuchAlgorithmException {\n\t\tcut.withOidcConfigurationService(Mockito.mock(OidcConfigurationService.class));\n\t\tOAuth2ServiceEndpointsProvider endpointsProvider = cut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\t\tAssertions.assertThat(endpointsProvider).isNull();\n\t}\n\n\t@Test\n\tpublic void requestFails_throwsException() throws OAuth2ServiceException {\n\t\twhen(oidcConfigServiceMock.retrieveEndpoints(any()))\n\t\t\t\t.thenThrow(new OAuth2ServiceException(\"Currently unavailable\"));\n\n\t\tassertThatThrownBy(() -> {\n\t\t\tcut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\t\t}).isInstanceOf(OAuth2ServiceException.class).hasMessageStartingWith(\"Currently unavailable\");\n\t}\n\n\t@Test\n\tpublic void retrieveEndpoints_afterCacheWasCleared()\n\t\t\tthrows OAuth2ServiceException, InvalidKeySpecException, NoSuchAlgorithmException {\n\t\tcut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\n\t\tcut.clearCache();\n\n\t\tOAuth2ServiceEndpointsProvider cachedEndpointsProvider = cut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\t\tAssertions.assertThat(cachedEndpointsProvider).isNotNull();\n\n\t\tMockito.verify(oidcConfigServiceMock, times(2))\n\t\t\t\t.retrieveEndpoints(DISCOVERY_URI);\n\t}\n\n\t@Test\n\tpublic void retrieveEndpointsForAnotherIssuer()\n\t\t\tthrows OAuth2ServiceException {\n\t\tcut.getOrRetrieveEndpoints(DISCOVERY_URI);\n\t\tcut.getOrRetrieveEndpoints(URI.create(\"http://another/url\"));\n\n\t\tMockito.verify(oidcConfigServiceMock, times(2))\n\t\t\t\t.retrieveEndpoints(any());\n\t}\n\n}\n"

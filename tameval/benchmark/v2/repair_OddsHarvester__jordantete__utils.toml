@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jordantete/OddsHarvester"
+sha = "4a9c2a492c144b7c68c26841d2f4eaf0cace6b48"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/utils/utils.py -m pytest -q --junit-xml=test_output.xml tests/utils/test_utils.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.utils.utils --unit-test tests.utils.test_utils --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/utils/utils.py --unit-test tests/utils/test_utils.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 91.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/utils/test_utils.py"
+focal_file_path = "src/utils/utils.py"
+test_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/tests/utils/test_utils.py"
+focal_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/src/utils/utils.py"
+first_commit_date = "2025-01-15"
+last_commit_date = "2025-08-13"
+test_file_content = "from unittest.mock import patch\n\nimport pytest\n\nfrom src.utils.sport_market_constants import (\n    BaseballMarket,\n    BaseballOverUnderMarket,\n    BasketballAsianHandicapMarket,\n    BasketballMarket,\n    BasketballOverUnderMarket,\n    FootballAsianHandicapMarket,\n    FootballEuropeanHandicapMarket,\n    FootballMarket,\n    FootballOverUnderMarket,\n    IceHockeyMarket,\n    IceHockeyOverUnderMarket,\n    RugbyHandicapMarket,\n    RugbyLeagueMarket,\n    RugbyOverUnderMarket,\n    RugbyUnionMarket,\n    Sport,\n    TennisAsianHandicapGamesMarket,\n    TennisAsianHandicapSetsMarket,\n    TennisCorrectScoreMarket,\n    TennisMarket,\n    TennisOverUnderGamesMarket,\n    TennisOverUnderSetsMarket,\n)\nfrom src.utils.utils import clean_html_text, get_supported_markets, is_running_in_docker\n\nEXPECTED_MARKETS = {\n    Sport.FOOTBALL: [\n        *[market.value for market in FootballMarket],\n        *[market.value for market in FootballOverUnderMarket],\n        *[market.value for market in FootballEuropeanHandicapMarket],\n        *[market.value for market in FootballAsianHandicapMarket],\n    ],\n    Sport.TENNIS: [\n        *[market.value for market in TennisMarket],\n        *[market.value for market in TennisOverUnderSetsMarket],\n        *[market.value for market in TennisOverUnderGamesMarket],\n        *[market.value for market in TennisAsianHandicapGamesMarket],\n        *[market.value for market in TennisAsianHandicapSetsMarket],\n        *[market.value for market in TennisCorrectScoreMarket],\n    ],\n    Sport.BASKETBALL: [\n        *[market.value for market in BasketballMarket],\n        *[market.value for market in BasketballAsianHandicapMarket],\n        *[market.value for market in BasketballOverUnderMarket],\n    ],\n    Sport.RUGBY_LEAGUE: [\n        *[market.value for market in RugbyLeagueMarket],\n        *[market.value for market in RugbyOverUnderMarket],\n        *[market.value for market in RugbyHandicapMarket],\n    ],\n    Sport.RUGBY_UNION: [\n        *[market.value for market in RugbyUnionMarket],\n        *[market.value for market in RugbyOverUnderMarket],\n        *[market.value for market in RugbyHandicapMarket],\n    ],\n    Sport.ICE_HOCKEY: [\n        *[market.value for market in IceHockeyMarket],\n        *[market.value for market in IceHockeyOverUnderMarket],\n    ],\n    Sport.BASEBALL: [\n        *[market.value for market in BaseballMarket],\n        *[market.value for market in BaseballOverUnderMarket],\n    ],\n}\n\n\n@pytest.mark.parametrize(\n    (\"sport_enum\", \"expected\"),\n    [\n        (Sport.FOOTBALL, EXPECTED_MARKETS[Sport.FOOTBALL]),\n        (Sport.TENNIS, EXPECTED_MARKETS[Sport.TENNIS]),\n        (Sport.BASKETBALL, EXPECTED_MARKETS[Sport.BASKETBALL]),\n        (Sport.RUGBY_LEAGUE, EXPECTED_MARKETS[Sport.RUGBY_LEAGUE]),\n        (Sport.RUGBY_UNION, EXPECTED_MARKETS[Sport.RUGBY_UNION]),\n        (Sport.ICE_HOCKEY, EXPECTED_MARKETS[Sport.ICE_HOCKEY]),\n        (Sport.BASEBALL, EXPECTED_MARKETS[Sport.BASEBALL]),\n    ],\n)\ndef test_get_supported_markets_enum(sport_enum, expected):\n\n\n@pytest.mark.parametrize(\n    (\"sport_str\", \"expected\"),\n    [\n        (\"football\", EXPECTED_MARKETS[Sport.FOOTBALL]),\n        (\"tennis\", EXPECTED_MARKETS[Sport.TENNIS]),\n        (\"basketball\", EXPECTED_MARKETS[Sport.BASKETBALL]),\n        (\"rugby-league\", EXPECTED_MARKETS[Sport.RUGBY_LEAGUE]),\n        (\"rugby-union\", EXPECTED_MARKETS[Sport.RUGBY_UNION]),\n        (\"ice-hockey\", EXPECTED_MARKETS[Sport.ICE_HOCKEY]),\n        (\"baseball\", EXPECTED_MARKETS[Sport.BASEBALL]),\n    ],\n)\ndef test_get_supported_markets_string(sport_str, expected):\n\n\n@pytest.mark.parametrize(\n    (\"sport_str_mixed_case\", \"expected\"),\n    [\n        (\"FooTbAlL\", EXPECTED_MARKETS[Sport.FOOTBALL]),\n        (\"TENNIS\", EXPECTED_MARKETS[Sport.TENNIS]),\n        (\"BaseBall\", EXPECTED_MARKETS[Sport.BASEBALL]),\n    ],\n)\ndef test_get_supported_markets_case_insensitive(sport_str_mixed_case, expected):\n\n\ndef test_get_supported_markets_unconfigured_sport():\n    with patch(\"src.utils.utils.SPORT_MARKETS_MAPPING\", {}):\n        with pytest.raises(ValueError) as excinfo:\n            get_supported_markets(Sport.FOOTBALL)\n\n\ndef test_sport_markets_mapping_consistency():\n    from src.utils.utils import SPORT_MARKETS_MAPPING\n\n    for sport in Sport:\n\n\n@patch(\"os.path.exists\", return_value=True)\ndef test_is_running_in_docker_true(mock_exists):\n\n\n@patch(\"os.path.exists\", return_value=False)\ndef test_is_running_in_docker_false(mock_exists):\n\n\n@patch(\"os.path.exists\", side_effect=PermissionError(\"Permission denied\"))\ndef test_is_running_in_docker_permission_error(mock_exists):\n\n\ndef test_clean_html_text():\n\n\n\n\n\n\n    html_with_sup = \"6:3, 6:4, 1:6, 7:6<div><sup>4</sup></div>\"\n    expected_clean = \"6:3, 6:4, 1:6, 7:64\"\n    complex_html = \"\"\"\n    <div class=\"score\">\n        <span>Set 1: 6-3</span>\n        <span>Set 2: 6-4</span>\n        <span>Set 3: 1-6</span>\n        <span>Set 4: 7-6<sup>4</sup></span>\n    </div>"

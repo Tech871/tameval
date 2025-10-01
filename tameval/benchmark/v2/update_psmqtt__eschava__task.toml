@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "eschava/psmqtt"
+sha = "8a1c5601cdd494b206ab54de57930d4a398e73d3"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/task.py -m pytest -q --junit-xml=test_output.xml src/task_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.task --unit-test src.task_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/task.py --unit-test src/task_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 23.0
+original_coverage = 50.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 3, 4, 5, 6, 7, 8, 10, 11, 12, 13, 15, 16, 17, 18, 20, 32, 35, 38, 96, 126, 148, 149, 161, 162, 168, 208, 239, 240, 246, 257, 300,]
+missed_lines = [ 105, 106, 107, 108, 109, 111, 112, 113, 116, 117, 120, 123, 124, 128, 129, 131, 132, 133, 134, 137, 139, 140, 141, 142, 143, 146, 150, 151, 152, 153, 154, 155, 156, 157, 159, 166, 172, 174, 175, 176, 177, 179, 180, 181, 182, 183, 184, 185, 187, 188, 189, 190, 192, 193, 194, 195, 196, 198, 200, 201, 202, 203, 205, 206, 215, 216, 219, 220, 223, 224, 225, 226, 228, 230, 231, 232, 235, 237, 244, 251, 252, 253, 254, 255, 264, 265, 266, 267, 270, 271, 273, 287, 288, 289, 290, 293, 294, 295, 296, 298, 307, 308,]
+
+[input_info]
+test_file_path = "src/task_test.py"
+focal_file_path = "src/task.py"
+test_file_url = "https://github.com/eschava/psmqtt/blob/8a1c5601cdd494b206ab54de57930d4a398e73d3/src/task_test.py"
+focal_file_url = "https://github.com/eschava/psmqtt/blob/8a1c5601cdd494b206ab54de57930d4a398e73d3/src/task.py"
+first_commit_date = "2022-10-31"
+last_commit_date = "2025-03-13"
+test_file_content = "# Copyright (c) 2016 psmqtt project\n# Licensed under the MIT License.  See LICENSE file in the project root for full license information.\n\nimport unittest\nimport pytest\n\nfrom .task import Task\n\n@pytest.mark.unit\nclass TestTask(unittest.TestCase):\n\n    def test_topic_from_task(self):\n\n        testcases = [\n            {\n                \"prefix\": \"prefix/\",\n                \"input_task\": {\"task\": \"my_task\", \"params\": []},\n                \"expected_topic_name\": \"prefix/my_task\"\n            },\n            {\n                \"prefix\": \"prefix/\",\n                \"input_task\": {\"task\": \"another_task\", \"params\": [\"param1\", \"param2\"]},\n                \"expected_topic_name\": \"prefix/another_task/param1/param2\"\n            },\n            # with empty params:\n            {\n                \"prefix\": \"prefix/\",\n                \"input_task\": {\"task\": \"yet_another_task\", \"params\": [\"\", \"param1\", \"\", \"param2\", \"\"]},\n                \"expected_topic_name\": \"prefix/yet_another_task/param1/param2\"\n            },\n            # with slashes in params:\n            {\n                \"prefix\": \"prefix/\",\n                \"input_task\": {\"task\": \"slashed_task\", \"params\": [\"param1\", \"/\", \"param/2\", \"\"]},\n                \"expected_topic_name\": \"prefix/slashed_task/param1/|/param|2\"\n            },\n            # with integer params:\n            {\n                \"prefix\": \"prefix/\",\n                \"input_task\": {\"task\": \"integer_task\", \"params\": [\"param1\", 123, \"param2\"]},\n                \"expected_topic_name\": \"prefix/integer_task/param1/123/param2\"\n            },\n            # empty prefix:\n            {\n                \"prefix\": \"\",\n                \"input_task\": {\"task\": \"no_prefix_task\", \"params\": [\"param1\", \"/\", \"param/2\", \"\"]},\n                \"expected_topic_name\": \"no_prefix_task/param1/|/param|2\"\n            },\n\n        ]\n\n        for t in testcases:\n            task = Task(t[\"input_task\"][\"task\"], t[\"input_task\"][\"params\"], \"\", \"\", 0, 0)\n            topic = task._topic_from_task(t[\"prefix\"])\n            self.assertEqual(topic.get_topic(), t[\"expected_topic_name\"])"

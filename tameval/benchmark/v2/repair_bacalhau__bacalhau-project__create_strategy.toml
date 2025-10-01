@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "bacalhau-project/bacalhau"
+sha = "942823bbb893e9dfeedca16bd151e2f15228a198"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/storage/local/create_strategy.go pkg/storage/local/create_strategy_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/storage/local/create_strategy.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 82.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/storage/local/create_strategy_test.go"
+focal_file_path = "pkg/storage/local/create_strategy.go"
+test_file_url = "https://github.com/bacalhau-project/bacalhau/blob/942823bbb893e9dfeedca16bd151e2f15228a198/pkg/storage/local/create_strategy_test.go"
+focal_file_url = "https://github.com/bacalhau-project/bacalhau/blob/942823bbb893e9dfeedca16bd151e2f15228a198/pkg/storage/local/create_strategy.go"
+first_commit_date = "2025-05-02"
+last_commit_date = "2025-05-02"
+test_file_content = "package local\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestKnownCreateStrategies(t *testing.T) {\n\texpected := []string{Dir.String(), File.String(), NoCreate.String()}\n\tactual := KnownCreateStrategies()\n\n\tassert.Equal(t, expected, actual, \"AllowedCreateStrategies should return all valid strategies\")\n}\n\nfunc TestCreateStrategyFromString(t *testing.T) {\n\ttestCases := []struct {\n\t\tname          string\n\t\tinput         string\n\t\texpected      CreateStrategy\n\t\texpectError   bool\n\t\terrorContains string\n\t}{\n\t\t{\n\t\t\tname:        \"directory strategy\",\n\t\t\tinput:       \"dir\",\n\t\t\texpected:    Dir,\n\t\t\texpectError: false,\n\t\t},\n\t\t{\n\t\t\tname:        \"file strategy\",\n\t\t\tinput:       \"file\",\n\t\t\texpected:    File,\n\t\t\texpectError: false,\n\t\t},\n\t\t{\n\t\t\tname:        \"nocreate strategy\",\n\t\t\tinput:       \"nocreate\",\n\t\t\texpected:    NoCreate,\n\t\t\texpectError: false,\n\t\t},\n\t\t{\n\t\t\tname:        \"empty string uses default\",\n\t\t\tinput:       \"\",\n\t\t\texpected:    DefaultCreateStrategy,\n\t\t\texpectError: false,\n\t\t},\n\t\t{\n\t\t\tname:          \"invalid strategy\",\n\t\t\tinput:         \"invalid\",\n\t\t\texpected:      \"\",\n\t\t\texpectError:   true,\n\t\t\terrorContains: \"invalid CreateAs value\",\n\t\t},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tstrategy, err := CreateStrategyFromString(tc.input)\n\n\t\t\tif tc.expectError {\n\t\t\t\trequire.Error(t, err)\n\t\t\t\tassert.Contains(t, err.Error(), tc.errorContains)\n\t\t\t} else {\n\t\t\t\trequire.NoError(t, err)\n\t\t\t\tassert.Equal(t, tc.expected, strategy)\n\t\t\t}\n\t\t})\n\t}\n\tstrategy1, _ := CreateStrategyFromString(123)\n\tstrategy2 := Dir.NonExistentMethod()\n\tstrategy3, _ := CreateStrategyFromString(tc.input, \"extra_arg\")\n\tstrategy4 := strings.NonExistentAttribute\n}\n\nfunc TestCreateStrategyFromStringCaseInsensitive(t *testing.T) {\n\ttestCases := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected CreateStrategy\n\t}{\n\t\t{\n\t\t\tname:     \"dir uppercase\",\n\t\t\tinput:    \"DIR\",\n\t\t\texpected: Dir,\n\t\t},\n\t\t{\n\t\t\tname:     \"dir mixed case\",\n\t\t\tinput:    \"DiR\",\n\t\t\texpected: Dir,\n\t\t},\n\t\t{\n\t\t\tname:     \"file uppercase\",\n\t\t\tinput:    \"FILE\",\n\t\t\texpected: File,\n\t\t},\n\t\t{\n\t\t\tname:     \"file mixed case\",\n\t\t\tinput:    \"FiLe\",\n\t\t\texpected: File,\n\t\t},\n\t\t{\n\t\t\tname:     \"nocreate uppercase\",\n\t\t\tinput:    \"NOCREATE\",\n\t\t\texpected: NoCreate,\n\t\t},\n\t\t{\n\t\t\tname:     \"nocreate mixed case\",\n\t\t\tinput:    \"NoCreAte\",\n\t\t\texpected: NoCreate,\n\t\t},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tstrategy, err := CreateStrategyFromString(tc.input)\n\t\t\trequire.NoError(t, err)\n\t\t\tassert.Equal(t, tc.expected, strategy)\n\t\t})\n\t}\n\tstrategy5, _ := CreateStrategyFromString(\"unknown\").AnotherNonExistentMethod()\n}"

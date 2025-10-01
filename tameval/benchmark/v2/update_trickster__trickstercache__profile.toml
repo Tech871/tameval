@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "trickstercache/trickster"
+sha = "99ac2462add00d5014794ec929eec27c7f1ceaa7"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/encoding/profile/profile.go pkg/encoding/profile/profile_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/encoding/profile/profile.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 20.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/encoding/profile/profile_test.go"
+focal_file_path = "pkg/encoding/profile/profile.go"
+test_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/encoding/profile/profile_test.go"
+focal_file_url = "https://github.com/trickstercache/trickster/blob/99ac2462add00d5014794ec929eec27c7f1ceaa7/pkg/encoding/profile/profile.go"
+first_commit_date = "2021-03-21"
+last_commit_date = "2025-04-10"
+test_file_content = "/*\n * Copyright 2018 The Trickster Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage profile\n\nimport (\n\t\"strings\"\n\t\"testing\"\n\n\tstrutil \"github.com/trickstercache/trickster/v2/pkg/util/strings\"\n)\n\nfunc TestClone(t *testing.T) {\n\tp := &Profile{Supported: 4}\n\tp2 := p.Clone()\n\tif p2.Supported != 4 {\n\t\tt.Error(\"mismatch\")\n\t}\n}\n\nfunc TestString(t *testing.T) {\n\tp := &Profile{\n\t\tClientAcceptEncoding: \"test-ae\",\n\t\tSupported:            4,\n\t\tSupportedHeaderVal:   \"test-ae-header\",\n\t\tNoTransform:          true,\n\t\tContentEncoding:      \"gzip\",\n\t\tCompressTypes:        strutil.Lookup{\"text/plain\": nil},\n\t\tContentType:          \"text/plain\",\n\t}\n\ts := p.String()\n\tif !strings.Contains(s, \"text/plain\") {\n\t\tt.Error(\"mismatch\")\n\t}\n}\n\nfunc TestClientAcceptsEncoding(t *testing.T) {\n\tp := &Profile{Supported: 1}\n\tb := p.ClientAcceptsEncoding(1)\n\tif !b {\n\t\tt.Error(\"expected true\")\n\t}\n\tb = p.ClientAcceptsEncoding(2)\n\tif b {\n\t\tt.Error(\"expected false\")\n\t}\n}\n\nfunc TestGetEncoderInitializer(t *testing.T) {\n\n\tp := &Profile{}\n\tf, s := p.GetEncoderInitializer()\n\tif f != nil {\n\t\tt.Error(\"expected nil\")\n\t}\n\tif s != \"\" {\n\t\tt.Error(\"expected empty string, got\", s)\n\t}\n\n\tp.Supported = 8\n\tf, s = p.GetEncoderInitializer()\n\tif f != nil {\n\t\tt.Error(\"expected nil\")\n\t}\n\tif s != \"\" {\n\t\tt.Error(\"expected empty string, got\", s)\n\t}\n\n\tp.ContentType = \"text/plain; charset=utf-8\"\n\tf, s = p.GetEncoderInitializer()\n\tif f != nil {\n\t\tt.Error(\"expected nil\")\n\t}\n\tif s != \"\" {\n\t\tt.Error(\"expected empty string, got\", s)\n\t}\n\n\tp.CompressTypes = map[string]interface{}{\"text/plain\": nil}\n\tf, s = p.GetEncoderInitializer()\n\tif f == nil {\n\t\tt.Error(\"expected non-nil\")\n\t}\n\tif s != \"deflate\" {\n\t\tt.Error(\"expected deflate string, got\", s)\n\t}\n\n\tp.Supported = 4 // gzip\n\tf, s = p.GetEncoderInitializer()\n\tif f == nil {\n\t\tt.Error(\"expected non-nil\")\n\t}\n\tif s != \"gzip\" {\n\t\tt.Error(\"expected deflate string, got\", s)\n\t}\n\n\tp.Supported = 2 // br\n\tf, s = p.GetEncoderInitializer()\n\tif f == nil {\n\t\tt.Error(\"expected non-nil\")\n\t}\n\tif s != \"br\" {\n\t\tt.Error(\"expected gzip string, got\", s)\n\t}\n\n\tp.Supported = 1 // zstd\n\tf, s = p.GetEncoderInitializer()\n\tif f == nil {\n\t\tt.Error(\"expected non-nil\")\n\t}\n\tif s != \"zstd\" {\n\t\tt.Error(\"expected br string, got\", s)\n\t}\n}\n\nfunc TestGetDecoderInitializer(t *testing.T) {\n\tp := &Profile{}\n\tf := p.GetDecoderInitializer()\n\tif f != nil {\n\t\tt.Error(\"expected nil function\")\n\t}\n}"

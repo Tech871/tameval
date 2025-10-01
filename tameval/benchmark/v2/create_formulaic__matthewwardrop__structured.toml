@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "matthewwardrop/formulaic"
+sha = "46eb1f26c79d3f999c12738cde6b11f875c7c9c8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=formulaic/utils/structured.py -m pytest -q --junit-xml=test_output.xml tests/parser/types/test_structured.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target formulaic.utils.structured --unit-test tests.parser.types.test_structured --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target formulaic/utils/structured.py --unit-test tests/parser/types/test_structured.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 47.0
+original_coverage = 99.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 2, 3, 4, 5, 6, 16, 18, 19, 22, 83, 85, 92, 97, 98, 99, 101, 105, 106, 107, 109, 113, 114, 115, 117, 118, 120, 121, 125, 127, 128, 133, 135, 136, 143, 192, 199, 200, 201, 202, 203, 204, 205, 207, 209, 211, 225, 226, 228, 229, 230, 232, 234, 312, 334, 335, 416, 417, 430, 433, 434, 435, 436, 437, 442, 443, 444, 445, 448, 467, 480, 500, 501, 502, 504, 505, 506, 507, 508, 510, 515, 518, 519, 521, 522, 524, 525, 527, 528, 529, 530, 532, 533, 534, 535, 537, 538, 539, 540, 541, 542, 544, 545,]
+missed_lines = [ 93, 110, 141, 175, 176, 177, 178, 179, 180, 181, 182, 183, 185, 227, 259, 260, 264, 265, 271, 273, 274, 276, 277, 279, 281, 288, 289, 290, 291, 292, 293, 296, 298, 299, 300, 301, 302, 304, 306, 307, 308, 309, 310, 321, 322, 323, 361, 362, 365, 366, 370, 371, 373, 374, 378, 379, 380, 382, 383, 388, 389, 393, 395, 396, 397, 398, 400, 402, 418, 419, 420, 421, 422, 423, 424, 431, 438, 446, 449, 450, 452, 453, 454, 455, 456, 458, 459, 461, 463, 468, 469, 470, 471, 472, 473, 474, 475, 476, 481, 482, 483, 484, 485, 486, 487, 488, 491, 492, 493, 494, 498, 511, 512, 513, 516,]
+
+[input_info]
+test_file_path = "tests/parser/types/test_structured.py"
+focal_file_path = "formulaic/utils/structured.py"
+test_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/tests/parser/types/test_structured.py"
+focal_file_url = "https://github.com/matthewwardrop/formulaic/blob/46eb1f26c79d3f999c12738cde6b11f875c7c9c8/formulaic/utils/structured.py"
+first_commit_date = "2024-12-03"
+last_commit_date = "2025-01-07"
+test_file_content = "import pickle\nimport re\nfrom io import BytesIO\n\nimport pytest\n\nfrom formulaic.utils.structured import Structured\n\nclass TestStructured:\n\n    def test__flatten(self):\n        assert set(\n            Structured(\"Hi\", a=\"Hello\", b=Structured(c=\"Greetings\"))._flatten()\n        ) == {\"Hi\", \"Hello\", \"Greetings\"}\n        assert set(Structured((1, 2), a=3, b=(4, 5))._flatten()) == {1, 2, 3, 4, 5}\n        assert set(Structured((1, Structured(2, b=(3, 4))))._flatten()) == {1, 2, 3, 4}\n\n    def test_iteration(self):\n        assert list(Structured()) == []\n        assert list(Structured(\"a\")) == [\"a\"]\n        assert list(Structured([\"a\", \"b\", \"c\"])) == [\"a\", \"b\", \"c\"]\n        assert len(Structured([\"a\", \"b\", \"c\"])) == 3\n        assert list(Structured(b=\"b\", c=\"c\")) == [\"b\", \"c\"]\n        assert list(Structured(c=\"c\", b=\"b\")) == [\"c\", \"b\"]\n        assert list(Structured(\"a\", b=\"b\", c=\"c\")) == [\"a\", \"b\", \"c\"]\n        assert list(Structured(\"a\", b=\"b\", c=[\"c\"])) == [\"a\", \"b\", [\"c\"]]\n        assert list(Structured(\"a\", b=\"b\", c=(\"c\",))) == [\"a\", \"b\", (\"c\",)]\n        assert len(Structured(\"a\", b=\"b\", c=(\"c\",))) == 3\n\n    def test_repr(self):\n        assert repr(Structured(\"a\")) == \"root:\\n    'a'\"\n        assert repr(Structured(\"a\", b=\"b\")) == \"root:\\n    'a'\\n.b:\\n    'b'\"\n        assert (\n            repr(Structured((\"a\",), b=(\"b\", \"c\")))\n            == \"root:\\n    [0]:\\n        'a'\\n.b:\\n    [0]:\\n        'b'\\n    [1]:\\n        'c'\"\n        )\n\n        # Verify that string representations correctly avoid use of `repr`\n        assert str(Structured(\"a\")) == \"root:\\n    a\"\n        assert str(Structured(\"a\", b=\"b\")) == \"root:\\n    a\\n.b:\\n    b\"\n\n    def test_pickleable(self):\n        o = BytesIO()\n        s = Structured(\"a\", b=\"b\", c=(\"c\", \"d\"))\n        pickle.dump(s, o)\n        o.seek(0)\n        s2 = pickle.load(o)\n        assert s2._to_dict() == {\n            \"root\": \"a\",\n            \"b\": \"b\",\n            \"c\": (\"c\", \"d\"),\n        }\n"

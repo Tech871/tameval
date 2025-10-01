@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jordantete/OddsHarvester"
+sha = "4a9c2a492c144b7c68c26841d2f4eaf0cace6b48"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=src/core/url_builder.py -m pytest -q --junit-xml=test_output.xml tests/core/test_url_builder.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target src.core.url_builder --unit-test tests.core.test_url_builder --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target src/core/url_builder.py --unit-test tests/core/test_url_builder.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 91.0
+original_coverage = 97.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 84.0
+covered_lines = [ 0, 2, 3, 4, 7, 12, 13, 31, 33, 34, 36, 37, 39, 40, 41, 47, 50, 52, 54, 55, 68, 69, 70, 72, 73, 87, 89, 92, 94, 95, 97,]
+missed_lines = [ 42, 48, 90,]
+
+[input_info]
+test_file_path = "tests/core/test_url_builder.py"
+focal_file_path = "src/core/url_builder.py"
+test_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/tests/core/test_url_builder.py"
+focal_file_url = "https://github.com/jordantete/OddsHarvester/blob/4a9c2a492c144b7c68c26841d2f4eaf0cace6b48/src/core/url_builder.py"
+first_commit_date = "2025-01-15"
+last_commit_date = "2025-06-24"
+test_file_content = "import pytest\nfrom src.core.url_builder import URLBuilder\nfrom src.utils.constants import ODDSPORTAL_BASE_URL\nfrom src.utils.sport_league_constants import SPORTS_LEAGUES_URLS_MAPPING\nfrom src.utils.sport_market_constants import Sport\n\nSPORTS_LEAGUES_URLS_MAPPING[Sport.FOOTBALL] = {\n    \"england-premier-league\": f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league\",\n    \"la-liga\": f\"{ODDSPORTAL_BASE_URL}/football/spain/la-liga\",\n}\nSPORTS_LEAGUES_URLS_MAPPING[Sport.TENNIS] = {\n    \"atp-tour\": f\"{ODDSPORTAL_BASE_URL}/tennis/atp-tour\",\n}\n\n@pytest.mark.parametrize(\n    \"sport, league, season, expected_url\",\n    [\n        # Valid cases with specific seasons\n        (\"football\", \"england-premier-league\", \"2023-2024\", f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league-2023-2024/results/\"),\n        (\"tennis\", \"atp-tour\", \"2024-2025\", f\"{ODDSPORTAL_BASE_URL}/tennis/atp-tour-2024-2025/results/\"),\n        # Current season cases\n        (\"football\", \"england-premier-league\", \"current\", f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league/results/\"),\n        (\"football\", \"england-premier-league\", \"\", f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league/results/\"),\n        (\"football\", \"england-premier-league\", None, f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league/results/\"),\n        # Single year format\n        (\"tennis\", \"atp-tour\", \"2024\", f\"{ODDSPORTAL_BASE_URL}/tennis/atp-tour-2024/results/\"),\n    ]\n)\ndef test_get_historic_matches_url(sport, league, season, expected_url):\n    assert URLBuilder.get_historic_matches_url(sport, league, season) == expected_url\n\ndef test_get_historic_matches_url_invalid_season():\n    with pytest.raises(ValueError, match=\"Invalid season format: 20-2024. Expected format: 'YYYY', 'YYYY-YYYY', or 'current'.\"):\n        URLBuilder.get_historic_matches_url(\"football\", \"england-premier-league\", \"20-2024\")\n\n@pytest.mark.parametrize(\n    \"sport, date, league, expected_url\",\n    [\n        # With league\n        (\"football\", \"2025-02-10\", \"england-premier-league\", f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league\"),\n        # Without league\n        (\"football\", \"2025-02-10\", None, f\"{ODDSPORTAL_BASE_URL}/matches/football/2025-02-10/\"),\n    ]\n)\ndef test_get_upcoming_matches_url(sport, date, league, expected_url):\n    assert URLBuilder.get_upcoming_matches_url(sport, date, league) == expected_url\n\n@pytest.mark.parametrize(\n    \"sport, league, expected_url\",\n    [\n        (\"football\", \"england-premier-league\", f\"{ODDSPORTAL_BASE_URL}/football/england/premier-league\"),\n        (\"tennis\", \"atp-tour\", f\"{ODDSPORTAL_BASE_URL}/tennis/atp-tour\"),\n    ]\n)\ndef test_get_league_url(sport, league, expected_url):\n    assert URLBuilder.get_league_url(sport, league) == expected_url\n\ndef test_get_league_url_invalid_sport():\n    \"\"\"Test get_league_url raises ValueError for unsupported sport.\"\"\"\n    with pytest.raises(ValueError, match=\"'handball' is not a valid Sport\"):\n        URLBuilder.get_league_url(\"handball\", \"champions-league\")\n\ndef test_get_league_url_invalid_league():\n    with pytest.raises(ValueError, match=\"Invalid league 'random-league' for sport 'football'. Available: england-premier-league, la-liga\"):\n        URLBuilder.get_league_url(\"football\", \"random-league\")"

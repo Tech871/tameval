@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "fuinorg/ddd-4-java"
+sha = "86927604a71932ab96e7ba8af1f9aafdcd67d73e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl core -Dtest=HasEntityTypeConstantValidatorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl core -DtargetClasses=**.HasEntityTypeConstantValidator  -DtargetTests=**.HasEntityTypeConstantValidatorTest  -DoutputFormats=XML"
+coverage_report_path = "core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 92.0
+original_coverage = 92.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 11, 17, 18, 23, 24, 25, 26, 27, 29, 30, 31, 33, 34, 35, 36, 38, 39, 40, 42, 43, 44, 45, 52, 53, 54, 58, 59, 60, 61, 63, 64, 66, 67, 68, 70, 71, 73, 74, 75, 90, 91, 92, 94, 97,]
+missed_lines = [ 46, 47, 76, 77,]
+
+[input_info]
+test_file_path = "core/src/test/java/org/fuin/ddd4j/core/HasEntityTypeConstantValidatorTest.java"
+focal_file_path = "core/src/main/java/org/fuin/ddd4j/core/HasEntityTypeConstantValidator.java"
+test_file_url = "https://github.com/fuinorg/ddd-4-java/blob/86927604a71932ab96e7ba8af1f9aafdcd67d73e/core/src/test/java/org/fuin/ddd4j/core/HasEntityTypeConstantValidatorTest.java"
+focal_file_url = "https://github.com/fuinorg/ddd-4-java/blob/86927604a71932ab96e7ba8af1f9aafdcd67d73e/core/src/main/java/org/fuin/ddd4j/core/HasEntityTypeConstantValidator.java"
+first_commit_date = "2025-04-18"
+last_commit_date = "2025-04-18"
+test_file_content = "/**\n * Copyright (C) 2013 Future Invent Informationsmanagement GmbH. All rights\n * reserved. <http://www.fuin.org/>\n * <p>\n * This library is free software; you can redistribute it and/or modify it under\n * the terms of the GNU Lesser General Public License as published by the Free\n * Software Foundation; either version 3 of the License, or (at your option) any\n * later version.\n * <p>\n * This library is distributed in the hope that it will be useful, but WITHOUT\n * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS\n * FOR A PARTICULAR PURPOSE. See the GNU Lesser General Public License for more\n * details.\n * <p>\n * You should have received a copy of the GNU Lesser General Public License\n * along with this library. If not, see <http://www.gnu.org/licenses/>.\n */\npackage org.fuin.ddd4j.core;\n\nimport jakarta.validation.ConstraintViolation;\nimport jakarta.validation.Validation;\nimport jakarta.validation.Validator;\nimport jakarta.validation.ValidatorFactory;\nimport org.junit.jupiter.api.BeforeAll;\nimport org.junit.jupiter.api.Test;\n\nimport java.util.Set;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.assertj.core.api.Assertions.assertThatThrownBy;\n\npublic final class HasEntityTypeConstantValidatorTest {\n\n    private static final String FIELD_NAME = \"TYPE\";\n\n    private static Validator validator;\n\n    @BeforeAll\n    static void beforeAll() {\n        try (final ValidatorFactory validatorFactory = Validation.buildDefaultValidatorFactory()) {\n            validator = validatorFactory.getValidator();\n        }\n    }\n\n    @Test\n    public void testValid() {\n        assertThat(validator.validate(new MyClassValid())).isEmpty();\n        assertThat(HasEntityTypeConstantValidator.extractValue(MyClassValid.class, FIELD_NAME)).isEqualTo(new StringBasedEntityType(\"XYZ\"));\n    }\n\n    @Test\n    public void testNotStatic() {\n\n        assertThat(first(validator.validate(new MyClassNotStatic()))).contains(\"#1\");\n\n        assertThatThrownBy(\n                () -> HasEntityTypeConstantValidator.extractValue(MyClassNotStatic.class, FIELD_NAME))\n                .isInstanceOf(IllegalArgumentException.class)\n                .hasMessageContaining(\"#1\");\n\n    }\n\n    @Test\n    public void testNotPublic() {\n\n        assertThat(first(validator.validate(new MyClassNotPublic()))).contains(\"#2\");\n\n        assertThatThrownBy(\n                () -> HasEntityTypeConstantValidator.extractValue(MyClassNotPublic.class, FIELD_NAME))\n                .isInstanceOf(IllegalArgumentException.class)\n                .hasMessageContaining(\"#2\");\n\n    }\n\n    @Test\n    public void testWrongReturnType() {\n\n        assertThat(first(validator.validate(new MyClassWrongType()))).contains(\"#3\");\n\n        assertThatThrownBy(\n                () -> HasEntityTypeConstantValidator.extractValue(MyClassWrongType.class, FIELD_NAME))\n                .isInstanceOf(IllegalArgumentException.class)\n                .hasMessageContaining(\"#3\");\n\n    }\n\n    @Test\n    public void testWrongReturn() {\n\n        assertThat(first(validator.validate(new MyClassNullValue()))).contains(\"#4\");\n\n        assertThatThrownBy(\n                () -> HasEntityTypeConstantValidator.extractValue(MyClassNullValue.class, FIELD_NAME))\n                .isInstanceOf(IllegalArgumentException.class)\n                .hasMessageContaining(\"#4\");\n\n    }\n\n    @Test\n    public void testNoMethod() {\n\n        assertThat(first(validator.validate(new MyClassNoField()))).contains(\"#2\");\n\n        assertThatThrownBy(\n                () -> HasEntityTypeConstantValidator.extractValue(MyClassNoField.class, FIELD_NAME))\n                .isInstanceOf(IllegalArgumentException.class)\n                .hasMessageContaining(\"#2\");\n\n    }\n\n    @Test\n    public void testNotFinal() {\n\n        assertThat(first(validator.validate(new MyClassNotFinal()))).contains(\"#5\");\n\n        assertThatThrownBy(\n                () -> HasEntityTypeConstantValidator.extractValue(MyClassNotFinal.class, FIELD_NAME))\n                .isInstanceOf(IllegalArgumentException.class)\n                .hasMessageContaining(\"#5\");\n\n    }\n\n    private static String first(Set<?> violations) {\n        return violations.stream().map(v -> ((ConstraintViolation<?>) v).getMessage()).findFirst().orElse(null);\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassValid {\n        public static final EntityType TYPE = new StringBasedEntityType(\"XYZ\");\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassNotStatic {\n        public final EntityType TYPE = new StringBasedEntityType(\"XYZ\");\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassNotPublic {\n        protected static final EntityType TYPE = new StringBasedEntityType(\"XYZ\");\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassNoField {\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassWrongType {\n        public static final Integer TYPE = 123;\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassNullValue {\n        public static final EntityType TYPE = null;\n    }\n\n    @HasEntityTypeConstant\n    public static final class MyClassNotFinal {\n        public static EntityType TYPE = new StringBasedEntityType(\"XYZ\");\n    }\n\n\n}\n"

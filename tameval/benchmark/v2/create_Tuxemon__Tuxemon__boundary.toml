@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Tuxemon/Tuxemon"
+sha = "1431208586118b46e9d7860fd55618f0b117726d"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=tuxemon/boundary.py -m pytest -q --junit-xml=test_output.xml tests/tuxemon/test_boundary.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target tuxemon.boundary --unit-test tests.tuxemon.test_boundary --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target tuxemon/boundary.py --unit-test tests/tuxemon/test_boundary.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 98.0
+original_coverage = 98.0
+mutation_kill_rate = 76.0
+original_mutation_kill_rate = 76.0
+covered_lines = [ 2, 5, 17, 18, 19, 20, 21, 23, 30, 31, 33, 52, 53, 55, 56, 57, 58, 60, 61, 65, 66, 68, 86, 87, 89, 90, 91, 92, 94, 99, 100, 102, 106, 107, 109, 119, 124, 137, 142, 143,]
+missed_lines = [ 95,]
+
+[input_info]
+test_file_path = "tests/tuxemon/test_boundary.py"
+focal_file_path = "tuxemon/boundary.py"
+test_file_url = "https://github.com/Tuxemon/Tuxemon/blob/1431208586118b46e9d7860fd55618f0b117726d/tests/tuxemon/test_boundary.py"
+focal_file_url = "https://github.com/Tuxemon/Tuxemon/blob/1431208586118b46e9d7860fd55618f0b117726d/tuxemon/boundary.py"
+first_commit_date = "2025-03-04"
+last_commit_date = "2025-03-04"
+test_file_content = "# SPDX-License-Identifier: GPL-3.0\n# Copyright (c) 2014-2025 William Edwards <shadowapex@gmail.com>, Benjamin Bean <superman2k5@gmail.com>\nimport unittest\n\nfrom tuxemon.boundary import BoundaryChecker\n\n\nclass TestBoundaryChecker(unittest.TestCase):\n    def setUp(self):\n        self.checker = BoundaryChecker()\n\n    def test_initial_boundaries(self):\n        self.assertEqual(self.checker.invalid_x, (-1, 0))\n        self.assertEqual(self.checker.invalid_y, (-1, 0))\n\n    def test_update_boundaries(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertEqual(self.checker.invalid_x, (0, 10))\n        self.assertEqual(self.checker.invalid_y, (0, 20))\n\n    def test_is_within_boundaries_valid(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertTrue(self.checker.is_within_boundaries((5, 15)))\n\n    def test_is_within_boundaries_invalid_x(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertFalse(self.checker.is_within_boundaries((-2, 15)))\n        self.assertFalse(self.checker.is_within_boundaries((12, 15)))\n\n    def test_is_within_boundaries_invalid_y(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertFalse(self.checker.is_within_boundaries((5, -2)))\n        self.assertFalse(self.checker.is_within_boundaries((5, 22)))\n\n    def test_repr(self):\n        self.checker.update_boundaries((5, 7))\n        self.assertEqual(\n            repr(self.checker),\n            \"BoundaryChecker(invalid_x=(0, 5), invalid_y=(0, 7))\",\n        )\n\n    def test_is_within_boundaries_on_edge_x_low(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertTrue(self.checker.is_within_boundaries((0, 15)))\n\n    def test_is_within_boundaries_on_edge_x_high(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertFalse(self.checker.is_within_boundaries((10, 15)))\n\n    def test_is_within_boundaries_on_edge_y_low(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertTrue(self.checker.is_within_boundaries((5, 0)))\n\n    def test_is_within_boundaries_on_edge_y_high(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertFalse(self.checker.is_within_boundaries((5, 20)))\n\n    def test_is_within_boundaries_zero_zero(self):\n        self.checker.update_boundaries((10, 20))\n        self.assertTrue(self.checker.is_within_boundaries((0, 0)))\n\n    def test_get_boundary_validity_valid(self):\n        self.checker.update_boundaries((10, 20))\n        valid_x, valid_y = self.checker.get_boundary_validity((5, 15))\n        self.assertTrue(valid_x)\n        self.assertTrue(valid_y)\n\n    def test_get_boundary_validity_invalid_x(self):\n        self.checker.update_boundaries((10, 20))\n        valid_x, valid_y = self.checker.get_boundary_validity((-2, 15))\n        self.assertFalse(valid_x)\n        self.assertTrue(valid_y)\n\n    def test_get_boundary_validity_invalid_y(self):\n        self.checker.update_boundaries((10, 20))\n        valid_x, valid_y = self.checker.get_boundary_validity((5, -2))\n        self.assertTrue(valid_x)\n        self.assertFalse(valid_y)\n\n    def test_set_area(self):\n        self.checker.set_area((2, 3), (4, 5), (10, 20))\n        self.assertEqual(self.checker.invalid_x, (2, 6))\n        self.assertEqual(self.checker.invalid_y, (3, 8))\n\n    def test_set_area_out_of_bounds_x(self):\n        with self.assertRaises(ValueError):\n            self.checker.set_area((11, 3), (4, 5), (10, 20))\n\n    def test_set_area_out_of_bounds_y(self):\n        with self.assertRaises(ValueError):\n            self.checker.set_area((2, 21), (4, 5), (10, 20))\n\n    def test_set_area_negative_size(self):\n        with self.assertRaises(ValueError):\n            self.checker.set_area((2, 3), (-4, 5), (10, 20))\n\n    def test_set_area_zero_size(self):\n        with self.assertRaises(ValueError):\n            self.checker.set_area((2, 3), (0, 5), (10, 20))\n\n    def test_set_area_from_center(self):\n        self.checker.set_area_from_center((5, 10), 3, (10, 20))\n        self.assertEqual(self.checker.invalid_x, (2, 8))\n        self.assertEqual(self.checker.invalid_y, (7, 13))\n\n    def test_set_area_from_center_out_of_bounds_x(self):\n        self.checker.set_area_from_center((9, 10), 3, (10, 20))\n        self.assertEqual(self.checker.invalid_x, (6, 10))\n\n    def test_set_area_from_center_out_of_bounds_y(self):\n        self.checker.set_area_from_center((5, 19), 3, (10, 20))\n        self.assertEqual(self.checker.invalid_y, (16, 20))\n\n    def test_set_area_from_center_negative_radius(self):\n        with self.assertRaises(ValueError):\n            self.checker.set_area_from_center((5, 10), -3, (10, 20))\n\n    def test_reset_to_default(self):\n        self.checker.update_boundaries((10, 20))\n        self.checker.reset_to_default()\n        self.assertEqual(self.checker.invalid_x, (-1, 0))\n        self.assertEqual(self.checker.invalid_y, (-1, 0))\n"

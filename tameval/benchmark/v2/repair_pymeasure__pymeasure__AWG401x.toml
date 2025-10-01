@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pymeasure/pymeasure"
+sha = "03452744481f5dd366eb1ee3764bff3995e384d1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=pymeasure/instruments/activetechnologies/AWG401x.py -m pytest -q --junit-xml=test_output.xml tests/instruments/activetechnologies/test_AWG401x.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target pymeasure.instruments.activetechnologies.AWG401x --unit-test tests.instruments.activetechnologies.test_AWG401x --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target pymeasure/instruments/activetechnologies/AWG401x.py --unit-test tests/instruments/activetechnologies/test_AWG401x.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0.0
+original_coverage = 63.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 39.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/instruments/activetechnologies/test_AWG401x.py"
+focal_file_path = "pymeasure/instruments/activetechnologies/AWG401x.py"
+test_file_url = "https://github.com/pymeasure/pymeasure/blob/03452744481f5dd366eb1ee3764bff3995e384d1/tests/instruments/activetechnologies/test_AWG401x.py"
+focal_file_url = "https://github.com/pymeasure/pymeasure/blob/03452744481f5dd366eb1ee3764bff3995e384d1/pymeasure/instruments/activetechnologies/AWG401x.py"
+first_commit_date = "2022-07-22"
+last_commit_date = "2025-03-07"
+test_file_content = "\n\nfrom pymeasure.test import expected_protocol\nfrom pymeasure.instruments import Instrument\n\nfrom pymeasure.instruments.activetechnologies import AWG401x_AFG\nfrom pymeasure.instruments.activetechnologies.AWG401x import ChannelAFG, SequenceEntry\n\n\nclass SequencerInstrument(Instrument):\n\n    def __init__(self, adapter, **kwargs):\n        super().__init__(adapter, \"SequencerInstrument\", **kwargs)\n        self.waveforms = {}\n        self.se = SequenceEntry(self, 1, 7)\nAFG_init_comm = [\n    (\"SOURce1:INITDELay? MINimum\", \"1\"),\n    (\"SOURce1:INITDELay? MAXimum\", \"2\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:LOW? MINimum\", \"1\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:LOW? MAXimum\", \"2\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:HIGH? MINimum\", \"1\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:HIGH? MAXimum\", \"2\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:AMPLitude? MINimum\", \"VPP1\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:AMPLitude? MAXimum\", \"VPP2\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:OFFSet? MINimum\", \"1\"),\n    (\"SOURce1:VOLTage:LEVel:IMMediate:OFFSet? MAXimum\", \"2\"),\n    (\"SOURce1:VOLTage:BASELINE:OFFSET? MINimum\", \"1\"),\n    (\"SOURce1:VOLTage:BASELINE:OFFSET? MAXimum\", \"2\"),\n    (\"SOURce1:FREQuency? MINimum\", \"1\"),\n    (\"SOURce1:FREQuency? MAXimum\", \"2\"),\n    (\"SOURce1:PHASe:ADJust? MINimum\", \"1\"),\n    (\"SOURce1:PHASe:ADJust? MAXimum\", \"2\"),\n    (\"SOURce2:INITDELay? MINimum\", \"1\"),\n    (\"SOURce2:INITDELay? MAXimum\", \"2\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:LOW? MINimum\", \"1\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:LOW? MAXimum\", \"2\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:HIGH? MINimum\", \"1\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:HIGH? MAXimum\", \"2\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:AMPLitude? MINimum\", \"VPP1\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:AMPLitude? MAXimum\", \"VPP2\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:OFFSet? MINimum\", \"1\"),\n    (\"SOURce2:VOLTage:LEVel:IMMediate:OFFSet? MAXimum\", \"2\"),\n    (\"SOURce2:VOLTage:BASELINE:OFFSET? MINimum\", \"1\"),\n    (\"SOURce2:VOLTage:BASELINE:OFFSET? MAXimum\", \"2\"),\n    (\"SOURce2:FREQuency? MINimum\", \"1\"),\n    (\"SOURce2:FREQuency? MAXimum\", \"2\"),\n    (\"SOURce2:PHASe:ADJust? MINimum\", \"1\"),\n    (\"SOURce2:PHASe:ADJust? MAXimum\", \"2\"),\n    (\"*IDN?\", \"x,AWG4012\"),\n]\n\n\ndef test_AFG_init():\n    with expected_protocol(\n            AWG401x_AFG,\n            AFG_init_comm,\n    ) as inst:\n        assert len(inst.channels) == 2\n        assert isinstance(inst.ch_1, ChannelAFG)\n\n\ndef test_AFG_frequency_setter():\n    with expected_protocol(\n            AWG401x_AFG,\n            [*AFG_init_comm,\n             (\"SOURce2:FREQuency 1.5\", None),\n             ],\n    ) as inst:\n        inst.ch_2.frequency = 1.5\n\n\ndef test_AFG_frequency_getter():\n    with expected_protocol(\n            AWG401x_AFG,\n            [*AFG_init_comm,\n             (\"SOURce2:FREQuency?\", \"1.5\"),\n             ],\n    ) asinst:\n        assert inst.ch_2.frequency == 1.5\nSequence_init_comm = [\n    (\"SEQuence:ELEM7:LENGth? MINimum\", \"1\"),\n    (\"SEQuence:ELEM7:LENGth? MAXimum\", \"2\"),\n    (\"SEQuence:ELEM7:LOOP:COUNt? MINimum\", \"1\"),\n    (\"SEQuence:ELEM7:LOOP:COUNt? MAXimum\", \"2\"),\n    (\"SEQuence:ELEM7:AMPlitude1? MINimum\", \"1\"),\n    (\"SEQuence:ELEM7:AMPlitude1? MAXimum\", \"2\"),\n    (\"SEQuence:ELEM7:OFFset1? MINimum\", \"1\"),\n    (\"SEQuence:ELEM7:OFFset1? MAXimum\", \"2\"),\n    (\"SEQuence:ELEM7:VOLTage:HIGH1? MINimum\", \"1\"),\n    (\"SEQuence:ELEM7:VOLTage:HIGH1? MAXimum\", \"2\"),\n    (\"SEQuence:ELEM7:VOLTage:LOW1? MINimum\", \"1\"),\n    (\"SEQuence:ELEM7:VOLTage:LOW1? MAXimum\", \"2\"),\n]\n\n\ndef test_SequenceEntry_init():\n    with expected_protocol(\n            SequencerInstrument,\n            Sequence_init_comm,\n    ):\n        pass\n\n\ndef test_SequenceEntry_voltage_amplitude_setter():\n    with expected_protocol(\n            SequencerInstrument,\n            [*Sequence_init_comm,\n             (\"SEQuence:ELEM7:AMPlitude1 1.5\", None)],\n    ) as inst:\n        inst.se.ch_1.voltage_amplitude = 1.5\n\n\ndef test_SequenceEntry_voltage_amplitude_getter():\n    with expected_protocol(\n            SequencerInstrument,\n            [*Sequence_init_comm,\n             (\"SEQuence:ELEM7:AMPlitude1?\", \"1.5\")],\n    ) as inst:\n        assert inst.se.ch_1.voltage_amplitude == 1.5"

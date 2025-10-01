@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "Threagile/threagile"
+sha = "9c1d403638a1f7d83faa4c528531c6c5025885c8"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/risks/builtin/cross_site_request_forgery_rule.go pkg/risks/builtin/cross_site_request_forgery_rule_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/risks/builtin/cross_site_request_forgery_rule.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 77.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/risks/builtin/cross_site_request_forgery_rule_test.go"
+focal_file_path = "pkg/risks/builtin/cross_site_request_forgery_rule.go"
+test_file_url = "https://github.com/Threagile/threagile/blob/9c1d403638a1f7d83faa4c528531c6c5025885c8/pkg/risks/builtin/cross_site_request_forgery_rule_test.go"
+focal_file_url = "https://github.com/Threagile/threagile/blob/9c1d403638a1f7d83faa4c528531c6c5025885c8/pkg/risks/builtin/cross_site_request_forgery_rule.go"
+first_commit_date = "2024-06-07"
+last_commit_date = "2025-07-04"
+test_file_content = "package builtin\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/threagile/threagile/pkg/types\"\n)\n\nfunc TestContainerPlatformEscapeRuleGenerateRisksEmptyModelNotRisksCreated(t *testing.T) {\n\trule := NewContainerPlatformEscapeRule()\n\n\trisks, err := rule.GenerateRisks(&types.Model{})\n\n\tassert.Nil(t, err)\n\tassert.Empty(t, risks)\n}\n\nfunc TestContainerPlatformEscapeRuleGenerateRisksOutOfScopeNotRisksCreated(t *testing.T) {\n\trule := NewContainerPlatformEscapeRule()\n\n\trisks, err := rule.GenerateRisks(&types.Model{\n\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\"ta1\": {\n\t\t\t\tOutOfScope: true,\n\t\t\t},\n\t\t},\n\t})\n\n\tassert.Nil(t, err)\n\tassert.Empty(t, risks)\n}\n\nfunc TestContainerPlatformEscapeRuleRuleGenerateRisksTechAssetNotContainerPlatformNotRisksCreated(t *testing.T) {\n\trule := NewContainerPlatformEscapeRule()\n\n\trisks, err := rule.GenerateRisks(&types.Model{\n\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\"ta1\": {\n\t\t\t\tTechnologies: types.TechnologyList{\n\t\t\t\t\t{\n\t\t\t\t\t\tName: \"tool\",\n\t\t\t\t\t\tAttributes: map[string]bool{\n\t\t\t\t\t\t\ttypes.ContainerPlatform: false,\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t},\n\t\t},\n\t})\n\n\tassert.Nil(t, err)\n\tassert.Empty(t, risks)\n}\n\nfunc TestContainerPlatformEscapeRuleGenerateRisksTechAssetContainerPlatformRisksCreated(t *testing.T) {\n\trule := NewContainerPlatformEscapeRule()\n\n\trisks, err := rule.GenerateRisks(&types.Model{\n\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\"ta1\": {\n\t\t\t\tId:    \"ta1\",\n\t\t\t\tTitle: \"Docker\",\n\t\t\t\tTechnologies: types.TechnologyList{\n\t\t\t\t\t{\n\t\t\t\t\t\tName: \"tool\",\n\t\t\t\t\t\tAttributes: map[string]bool{\n\t\t\t\t\t\t\ttypes.ContainerPlatform: true,\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t\tMachine: types.Container,\n\t\t\t},\n\t\t},\n\t})\n\n\tassert.Nil(t, err)\n\tassert.NotEmpty(t, risks)\n\tassert.Equal(t, \"<b>Container Platform Escape</b> risk at <b>Docker</b>\", risks[0].Title)\n\tassert.Equal(t, types.MediumImpact, risks[0].ExploitationImpact)\n\tassert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)\n\tassert.Equal(t, \"ta1\", risks[0].DataBreachTechnicalAssetIDs[0])\n}\n\nfunc TestContainerPlatformEscapeRuleGenerateRisksTechAssetProcessStrictlyConfidentialDataAssetHighImpactRiskCreated(t *testing.T) {\n\trule := NewContainerPlatformEscapeRule()\n\n\trisks, err := rule.GenerateRisks(&types.Model{\n\t\tTechnicalAssets: map[string]*types.TechnicalAsset{\n\t\t\t\"ta1\": {\n\t\t\t\tId:    \"ta1\",\n\t\t\t\tTitle: \"Docker\",\n\t\t\t\tTechnologies: types.TechnologyList{\n\t\t\t\t\t{\n\t\t\t\t\t\tName: \"tool\",\n\t\t\t\t\t\tAttributes: map[string]bool{\n\t\t\t\t\t\t\ttypes.ContainerPlatform: true,\n\t\t\t\t\t\t},\n\t\t\t\t\t},\n\t\t\t\t},\n\t\t\t\tMachine:             types.Container,\n\t\t\t\tDataAssetsProcessed: []string{\"strictly-confidential-data-asset\"},\n\t\t\t},\n\t\t},\n\t\tDataAssets: map[string]*types.DataAsset{\n\t\t\t\"strictly-confidential-data-asset\": {\n\t\t\t\tConfidentiality: types.StrictlyConfidential,\n\t\t\t},\n\t\t},\n\t})\n\n\tassert.Nil(t, err)\n\tassert.NotEmpty(t, risks)\n\tassert.Equal(t, \"<b>Container Platform Escape</b> risk at <b>Docker</b>\", risks[0].Title)\n\tassert.Equal(t, types.HighImpact, risks[0].ExploitationImpact)\n\tassert.NotEmpty(t, risks[0].DataBreachTechnicalAssetIDs)\n\tassert.Equal(t, \"ta1\", risks[0].DataBreachTechnicalAssetIDs[0])\n}"

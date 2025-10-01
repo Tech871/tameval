@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "funilrys/PyFunceble"
+sha = "6fc0974a65e0987945afdfaed9e7a21dc6ad9894"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.test.txt && pip install -r requirements.win.txt && pip install -r requirements.dev.txt && pip install -r requirements.txt && pip install -r requirements.docs.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=PyFunceble/query/whois/converter/expiration_date.py -m pytest -q --junit-xml=test_output.xml tests/query/whois/converter/test_expiration_date.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target PyFunceble.query.whois.converter.expiration_date --unit-test tests.query.whois.converter.test_expiration_date --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target PyFunceble/query/whois/converter/expiration_date.py --unit-test tests/query/whois/converter/test_expiration_date.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 90.0
+original_coverage = 100.0
+mutation_kill_rate = 91.0
+original_mutation_kill_rate = 96.0
+covered_lines = [ 52, 54, 55, 56, 57, 60, 65, 98, 102, 103, 107, 186, 193, 227, 236, 237, 250, 253, 257, 259, 264, 265, 269, 270, 272, 275, 282, 283, 286, 288, 289, 291, 292, 293, 295, 305, 306, 309, 310, 315, 317, 318, 320, 323,]
+missed_lines = [ 251, 254, 273, 307, 325,]
+
+[input_info]
+test_file_path = "tests/query/whois/converter/test_expiration_date.py"
+focal_file_path = "PyFunceble/query/whois/converter/expiration_date.py"
+test_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/tests/query/whois/converter/test_expiration_date.py"
+focal_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/PyFunceble/query/whois/converter/expiration_date.py"
+first_commit_date = "2020-12-19"
+last_commit_date = "2025-02-23"
+test_file_content = "\"\"\"\nThe tool to check the availability or syntax of domain, IP or URL.\n\n::\n\n\n    ██████╗ ██╗   ██╗███████╗██╗   ██╗███╗   ██╗ ██████╗███████╗██████╗ ██╗     ███████╗\n    ██╔══██╗╚██╗ ██╔╝██╔════╝██║   ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██║     ██╔════╝\n    ██████╔╝ ╚████╔╝ █████╗  ██║   ██║██╔██╗ ██║██║     █████╗  ██████╔╝██║     █████╗\n    ██╔═══╝   ╚██╔╝  ██╔══╝  ██║   ██║██║╚██╗██║██║     ██╔══╝  ██╔══██╗██║     ██╔══╝\n    ██║        ██║   ██║     ╚██████╔╝██║ ╚████║╚██████╗███████╗██████╔╝███████╗███████╗\n    ╚═╝        ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚══════╝╚═════╝ ╚══════╝╚══════╝\n\nTests of our expiration date extractor.\n\nAuthor:\n    Nissar Chababy, @funilrys, contactTATAfunilrysTODTODcom\n\nSpecial thanks:\n    https://pyfunceble.github.io/special-thanks.html\n\nContributors:\n    https://pyfunceble.github.io/contributors.html\n\nProject link:\n    https://github.com/funilrys/PyFunceble\n\nProject documentation:\n    https://docs.pyfunceble.com\n\nProject homepage:\n    https://pyfunceble.github.io/\n\nLicense:\n::\n\n\n    Copyright 2017, 2018, 2019, 2020, 2021, 2021 Nissar Chababy\n\n    Licensed under the Apache License, Version 2.0 (the \"License\");\n    you may not use this file except in compliance with the License.\n    You may obtain a copy of the License at\n\n        https://www.apache.org/licenses/LICENSE-2.0\n\n    Unless required by applicable law or agreed to in writing, software\n    distributed under the License is distributed on an \"AS IS\" BASIS,\n    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n    See the License for the specific language governing permissions and\n    limitations under the License.\n\"\"\"\n\nimport unittest\nfrom typing import List\n\nfrom PyFunceble.query.whois.converter.expiration_date import ExpirationDateExtractor\n\n\nclass TestExpirationDateExtractor(unittest.TestCase):\n    \"\"\"\n    Tests our interface for the extraction of expiration date.\n    \"\"\"\n\n    DATE_SAMPLES: List[str] = [\n        \"02-jan-2017\",\n        \"02.01.2017\",\n        \"02/01/2017\",\n        \"2017-01-02\",\n        \"2017.01.02\",\n        \"2017/01/02\",\n        \"2017.01.02 15:00:00\",\n        \"20170102 15:00:00\",\n        \"2017-01-02 15:00:00\",\n        \"02.01.2017 15:00:00\",\n        \"02-Jan-2017 15:00:00 UTC\",\n        \"2017/01/02 01:00:00 (+0900)\",\n        \"2017/01/02 01:00:00\",\n        \"Mon Jan 02 15:00:00 GMT 2017\",\n        \"Mon Jan 02 2017\",\n        \"2017-01-02T15:00:00\",\n        \"2017-01-02T15:00:00Z\",\n        \"2017-01-02T15:00:00+0200\",\n        \"2017-01-02T15:00:00+0200.622265+03:00\",\n        \"2017-01-02T15:00:00+0200.622265\",\n        \"2017-01-02T23:59:59.0Z\",\n        \"02-01-2017\",\n        \"2017. 01. 02.\",\n        \"2017-01-02T00:00:00+13:00\",\n        \"20170102\",\n        \"02-Jan-2017\",\n        \"02.1.2017\",\n        \"02 Jan 2017\",\n        \"02-January-2017\",\n        \"2017-Jan-02.\",\n        \"Mon Jan 02 15:00:00 2017\",\n        \"January 02 2017-Jan-02\",\n        \"2.1.2017\",\n        \"20170102000000\",\n        \"January  2 2017\",\n        \"2nd January 2017\",\n    ]\n\n    EXPIRATION_DATE_MARKERS: List[str] = [\n        \"expire: \",\n        \"expire on: \",\n        \"Expiry Date: \",\n        \"free-date \",\n        \"expires: \",\n        \"Expiration date: \",\n        \"Expiry date: \",\n        \"Expire Date: \",\n        \"renewal date: \",\n        \"Expires: \",\n        \"validity: \",\n        \"Expiration Date             : \",\n        \"Expiry : \",\n        \"expires at: \",\n        \"domain_datebilleduntil: \",\n        \"Data de expiração / Expiration Date (dd/mm/yyyy): \",\n        \"Fecha de expiración (Expiration date): \",\n        \"[Expires on] \",\n        \"status:      OK-UNTIL \",\n        \"renewal: \",\n        \"expires............: \",\n        \"expire-date: \",\n        \"Exp date: \",\n        \"Valid-date \",\n        \"Expires On: \",\n        \"Fecha de vencimiento: \",\n        \"Expiration:......... \",\n        \"Fecha de Vencimiento: \",\n        \"Registry Expiry Date: \",\n        \"Expires on..............: \",\n        \"Expiration Time: \",\n        \"Expiration Date: \",\n        \"Expired: \",\n        \"Date d'expiration: \",\n        \"expiration date: \",\n    ]\n\n    def setUp(self) -> None:\n        \"\"\"\n        Setups everything needed for the tests.\n        \"\"\"\n\n        self.converter = ExpirationDateExtractor()\n\n    def tearDown(self) -> None:\n        \"\"\"\n        Destroys everything needed for the tests.\n        \"\"\"\n\n        del self.converter\n\n\n\n    def test_get_converted(self) -> None:\n        \"\"\"\n        Tests the method which let us get the converted data.\n        \"\"\"\n\n        expected = \"02-jan-2017\"\n\n        for marker in self.EXPIRATION_DATE_MARKERS:\n            for date_sample in self.DATE_SAMPLES:\n                test_line = f\"{marker} {date_sample}\"\n\n                self.converter.data_to_convert = test_line\n\n                actual = self.converter.get_converted()\n\n                self.assertEqual(expected, actual)\n\n\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+
+[repo_info]
+repository = "imarkoff/Marble-shell-theme"
+sha = "2aeb348f1915b8d28cf7fb2081ff9458115d2f44"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=scripts/utils/global_theme/gdm_preparer.py -m pytest -q --junit-xml=test_output.xml tests/utils/global_theme/test_gdm_preparer.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target scripts.utils.global_theme.gdm_preparer --unit-test tests.utils.global_theme.test_gdm_preparer --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target scripts/utils/global_theme/gdm_preparer.py --unit-test tests/utils/global_theme/test_gdm_preparer.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 95.0
+original_coverage = 100.0
+mutation_kill_rate = 80.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 2, 3, 4, 5, 6, 9, 19, 33, 34, 36, 37, 39, 40, 41, 42, 44, 49, 54, 55, 57, 58, 59, 61, 66, 68, 70, 71, 73, 75, 76, 78, 79, 81, 84, 85, 87,]
+missed_lines = [ 46, 47,]
+
+[input_info]
+test_file_path = "tests/utils/global_theme/test_gdm_preparer.py"
+focal_file_path = "scripts/utils/global_theme/gdm_preparer.py"
+test_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/tests/utils/global_theme/test_gdm_preparer.py"
+focal_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/scripts/utils/global_theme/gdm_preparer.py"
+first_commit_date = "2025-04-12"
+last_commit_date = "2025-04-13"
+test_file_content = "import os\nimport shutil\nimport unittest\nfrom unittest.mock import MagicMock, patch\n\nfrom scripts import config\nfrom scripts.types.theme_base import ThemeBase\nfrom scripts.utils.global_theme.gdm_preparer import GDMThemePreparer\n\nclass DummyTheme(ThemeBase):\n    def __init__(self):\n        super().__init__()\n        self.temp_folder = None\n        self.main_styles = None\n\n    def prepare(self):\n        pass\n\n    def install(self, hue: int, name: str, sat: float | None = None):\n        pass\n\nclass TestGDMThemePreparer(unittest.TestCase):\n    def setUp(self):\n        self.temp_folder = os.path.join(config.temp_tests_folder, \"gdm_preparer\")\n\n        self.gresource = self._mock_gresource(self.temp_folder)\n        self.theme_builder = self._mock_builder()\n\n        self.mock_logger = MagicMock()\n        self.logger_factory = MagicMock()\n        self.logger_factory.create_logger.return_value = self.mock_logger\n\n        self.preparer = GDMThemePreparer(\n            temp_folder=self.temp_folder,\n            default_mode=\"light\",\n            is_filled=True,\n            gresource=self.gresource,\n            theme_builder=self.theme_builder,\n            logger_factory=self.logger_factory,\n            files_labeler_factory=MagicMock(),\n        )\n\n    @staticmethod\n    def _mock_gresource(temp_folder):\n        gresource = MagicMock()\n        gresource.temp_folder = temp_folder\n        gresource.extract = MagicMock()\n        gresource.use_backup_gresource = MagicMock()\n        return gresource\n\n    @staticmethod\n    def _mock_builder():\n        theme_builder = MagicMock()\n        theme_builder.with_temp_folder.return_value = theme_builder\n        theme_builder.with_theme_name.return_value = theme_builder\n        theme_builder.with_mode.return_value = theme_builder\n        theme_builder.filled.return_value = theme_builder\n        theme_builder.with_logger_factory.return_value = theme_builder\n        theme_builder.with_reset_dependencies.return_value = theme_builder\n        theme_builder.build.return_value = DummyTheme()\n        return theme_builder\n\n    def tearDown(self):\n        shutil.rmtree(self.temp_folder, ignore_errors=True)\n\n    @patch(\"os.listdir\")\n    def test_preparer_assigns_correct_labels(self, mock_listdir):\n        test_files = [\"gnome-shell-dark.css\", \"gnome-shell-light.css\", \"gnome-shell.css\"]\n        mock_listdir.return_value = test_files\n\n        themes = self.preparer.prepare()\n\n        expected_labels = {\n            \"gnome-shell-dark.css\": \"dark\",\n            \"gnome-shell-light.css\": \"light\",\n            \"gnome-shell.css\": \"light\"  # Uses default_mode\n        }\n\n        for theme_obj in themes:\n            file_name = os.path.basename(theme_obj.theme_file)\n            self.assertEqual(theme_obj.label, expected_labels[file_name])\n"

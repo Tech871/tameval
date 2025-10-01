@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "citrusframework/citrus-simulator"
+sha = "e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl simulator-ui -Dtest=SpaWebFilterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl simulator-ui -DtargetClasses=**.SpaWebFilter  -DtargetTests=**.SpaWebFilterTest  -DoutputFormats=XML"
+coverage_report_path = "simulator-ui/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "simulator-ui/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "simulator-ui/src/test/java/org/citrusframework/simulator/ui/filter/SpaWebFilterTest.java"
+focal_file_path = "simulator-ui/src/main/java/org/citrusframework/simulator/ui/filter/SpaWebFilter.java"
+test_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-ui/src/test/java/org/citrusframework/simulator/ui/filter/SpaWebFilterTest.java"
+focal_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-ui/src/main/java/org/citrusframework/simulator/ui/filter/SpaWebFilter.java"
+first_commit_date = "2023-10-16"
+last_commit_date = "2024-05-14"
+test_file_content = "package org.citrusframework.simulator.ui.filter;\n\nimport jakarta.servlet.FilterChain;\nimport jakarta.servlet.RequestDispatcher;\nimport jakarta.servlet.ServletException;\nimport jakarta.servlet.http.HttpServletRequest;\nimport jakarta.servlet.http.HttpServletResponse;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.Arguments;\nimport org.junit.jupiter.params.provider.MethodSource;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.springframework.security.web.util.matcher.RequestMatcher;\n\nimport java.io.IOException;\nimport java.util.stream.Stream;\n\nimport static org.mockito.Mockito.doReturn;\nimport static org.mockito.Mockito.never;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\n@ExtendWith(MockitoExtension.class)\nclass SpaWebFilterTest {\n\n    private static final String H2_CONSOLE_PATH = \"/h2-console\";\n\n    @Mock\n    private RequestMatcher simulatorRestRequestMatcherMock;\n\n    @Mock\n    private HttpServletRequest requestMock;\n\n    @Mock\n    private HttpServletResponse responseMock;\n\n    @Mock\n    private FilterChain filterChainMock;\n\n    @Mock\n    private RequestDispatcher requestDispatcherMock;\n\n    private SpaWebFilter fixture;\n\n    public static Stream<Arguments> shouldNotForwardPathToIndexHtml() {\n        return Stream.of(\n            Arguments.of(\"/api\", \"\"),\n            Arguments.of(\"/api/somepath\", \"\"),\n            Arguments.of(H2_CONSOLE_PATH, \"\"),\n            Arguments.of(\"/v3/api-docs\", \"\"),\n            Arguments.of(\"/v3/api-docs/somepath\", \"\"),\n            Arguments.of(\"/some/absolute/path.\", \"\"),\n            Arguments.of(\"path/without/leading/slash\", \"\"),\n            Arguments.of(\"/server-1/api\", \"/server-1\"),\n            Arguments.of(\"/server-1/api/somepath\", \"/server-1\"),\n            Arguments.of(\"/server-1/v3/api-docs\", \"/server-1\"),\n            Arguments.of(\"/server-1/v3/api-docs/somepath\", \"/server-1\"),\n            Arguments.of(\"/server-1/some/absolute/path.\", \"/server-1\"),\n            Arguments.of(\"/server-1path/without/leading/slash\", \"/server-1\")\n        );\n    }\n\n    @BeforeEach\n    void beforeEachSetup() {\n        fixture = new SpaWebFilter(H2_CONSOLE_PATH, simulatorRestRequestMatcherMock);\n    }\n\n    @MethodSource\n    @ParameterizedTest\n    void shouldNotForwardPathToIndexHtml(String requestUri, String contextPath) throws ServletException, IOException {\n        when(requestMock.getRequestURI()).thenReturn(requestUri);\n        when(requestMock.getContextPath()).thenReturn(contextPath);\n\n        fixture.doFilterInternal(requestMock, responseMock, filterChainMock);\n\n        verify(filterChainMock).doFilter(requestMock, responseMock);\n        verify(requestDispatcherMock, never()).forward(requestMock, responseMock);\n    }\n\n    @Test\n    void shouldNotForwardRequestMatchingPathToIndexHtml() throws ServletException, IOException {\n        String requestUri = \"/request-path\";\n\n        when(requestMock.getRequestURI()).thenReturn(requestUri);\n        when(requestMock.getContextPath()).thenReturn(\"\");\n\n        doReturn(true).when(simulatorRestRequestMatcherMock).matches(requestMock);\n\n        fixture.doFilterInternal(requestMock, responseMock, filterChainMock);\n\n        verify(filterChainMock).doFilter(requestMock, responseMock);\n        verify(requestDispatcherMock, never()).forward(requestMock, responseMock);\n    }\n\n    @Test\n    void shouldForwardInvalidPathToIndexHtml() throws ServletException, IOException {\n        when(requestMock.getRequestDispatcher(\"/index.html\")).thenReturn(requestDispatcherMock);\n\n        when(requestMock.getRequestURI()).thenReturn(\"/somepath\");\n        when(requestMock.getContextPath()).thenReturn(\"\");\n        when(simulatorRestRequestMatcherMock.matches(requestMock)).thenReturn(false);\n\n        fixture.doFilterInternal(requestMock, responseMock, filterChainMock);\n\n        verify(requestDispatcherMock).forward(requestMock, responseMock);\n        verify(filterChainMock, never()).doFilter(requestMock, responseMock);\n    }\n}"

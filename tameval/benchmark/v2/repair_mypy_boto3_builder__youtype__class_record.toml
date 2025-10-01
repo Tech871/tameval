@@ -1,0 +1,44 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "11d3850cb622dac08b62c07d4272002124855e83"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/structures/class_record.py -m pytest -q --junit-xml=test_output.xml tests/structures/test_class_record.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.structures.class_record --unit-test tests.structures.test_class_record --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/structures/class_record.py --unit-test tests/structures/test_class_record.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 89.0
+original_mutation_kill_rate = 89.0
+covered_lines = [ 6, 8, 9, 10, 11, 12, 13, 14, 17, 22, 31, 32, 33, 34, 37, 38, 40, 41, 45, 47, 48, 55, 56, 58, 60, 64, 65, 66, 67, 68, 69, 71, 75, 76, 77, 79, 81, 82, 86, 88, 89, 93, 95, 99, 100, 101, 103,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/structures/test_class_record.py"
+focal_file_path = "mypy_boto3_builder/structures/class_record.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/tests/structures/test_class_record.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/mypy_boto3_builder/structures/class_record.py"
+first_commit_date = "2020-01-23"
+last_commit_date = "2025-01-06"
+test_file_content = "import pytest\n\nfrom mypy_boto3_builder.exceptions import StructureError\nfrom mypy_boto3_builder.structures.argument import Argument\nfrom mypy_boto3_builder.structures.attribute import Attribute\nfrom mypy_boto3_builder.structures.class_record import ClassRecord\nfrom mypy_boto3_builder.structures.method import Method\nfrom mypy_boto3_builder.type_annotations.type import Type\nfrom mypy_boto3_builder.type_annotations.type_constant import TypeConstant\n\n\nclass TestClassRecord:\n    class_record: ClassRecord\n\n    def setup_method(self) -> None:\n        self.class_record = ClassRecord(\n            name=\"Name\",\n            methods=[\n                Method(\n                    name=\"my_method\",\n                    arguments=[\n                        Argument.self(),\n                        Argument(\"my_str\", Type.str, TypeConstant(\"test\")),\n                        Argument(\"lst\", Type.ListAny),\n                    ],\n                    return_type=Type.none,\n                ),\n            ],\n            attributes=[Attribute(\"attr\", Type.Any, Type.none)],\n            bases=[Type.Any],\n            use_alias=True,\n        )\n\n    def test_init(self) -> None:\n        assert self.class_record.name == \"Name\"\n        assert self.class_record.alias_name == \"_Name\"\n\n        self.class_record.use_alias = False\n        with pytest.raises(StructureError):\n            _ = self.class_record.alias_name\n\n    def test_variable_name(self) -> None:\n        assert self.class_record.variable_name == \"name\"\n\n    def test_method_names(self) -> None:\n        assert self.class_record.method_names == [\"my_method\"]\n\n    def test_get_method(self) -> None:\n        assert self.class_record.get_method(\"my_method\").name == \"my_method\"\n        with pytest.raises(StructureError):\n            self.class_record.get_method(\"non_existing\")\n\n    def test_boto3_doc_link(self) -> None:\n        assert not self.class_record.boto3_doc_link\n\n    def test_get_types(self) -> None:\n        assert set(self.class_record.iterate_types()) == {\n            Type.Any,\n            Type.none,\n            Type.List,\n            Type.str,\n            TypeConstant(\"test\"),\n        }\n\n    def test_get_required_import_records(self) -> None:\n        rendered = [i.render() for i in sorted(self.class_record.get_required_import_records())]\n        assert rendered == [\n            \"from typing import Any\",\n        ]\n\n    def check_variable_name(self) -> None:\n        assert self.class_record.variable_name == \"name\"\n\n    def verify_method_names(self) -> None:\n        assert self.class_record.method_names == [\"my_method\"]"

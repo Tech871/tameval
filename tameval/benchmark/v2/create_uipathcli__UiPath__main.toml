@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "UiPath/uipathcli"
+sha = "f599d0fbb2bbbb5d055d76ba5f1f68f727e97612"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out main.go main_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting main.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 87.0
+original_coverage = 87.0
+mutation_kill_rate = 38.0
+original_mutation_kill_rate = 38.0
+covered_lines = [ 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 43, 44, 45, 47, 48, 49, 51, 52, 53, 54, 55, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87,]
+missed_lines = [ 56, 57, 58, 59, 88, 89, 90,]
+
+[input_info]
+test_file_path = "main_test.go"
+focal_file_path = "main.go"
+test_file_url = "https://github.com/UiPath/uipathcli/blob/f599d0fbb2bbbb5d055d76ba5f1f68f727e97612/main_test.go"
+focal_file_url = "https://github.com/UiPath/uipathcli/blob/f599d0fbb2bbbb5d055d76ba5f1f68f727e97612/main.go"
+first_commit_date = "2022-09-03"
+last_commit_date = "2025-04-15"
+test_file_content = "package main\n\nimport (\n\t\"fmt\"\n\t\"io\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"strings\"\n\t\"testing\"\n)\n\nfunc TestMainReadsDefinitions(t *testing.T) {\n\tconfig := createFile(t, \"config\", \"\")\n\tdefinition := createFile(t, \"service-a.yaml\", \"\")\n\n\tt.Setenv(\"UIPATH_CONFIGURATION_PATH\", config)\n\tt.Setenv(\"UIPATH_DEFINITIONS_PATH\", filepath.Dir(definition))\n\n\tos.Args = []string{\"uipath\", \"--help\"}\n\toutput := captureOutput(t, func() {\n\t\tmain()\n\t})\n\n\texpected := `service-a`\n\tif !strings.Contains(output, expected) {\n\t\tt.Errorf(\"Expected %s in output, but got: %v\", expected, output)\n\t}\n}\n\nfunc TestHelpReadsDefinitions(t *testing.T) {\n\tconfig := createFile(t, \"config\", \"\")\n\tdefinition := createFile(t, \"service-a.yaml\", \"\")\n\n\tt.Setenv(\"UIPATH_CONFIGURATION_PATH\", config)\n\tt.Setenv(\"UIPATH_DEFINITIONS_PATH\", filepath.Dir(definition))\n\n\tos.Args = []string{\"uipath\", \"-h\"}\n\toutput := captureOutput(t, func() {\n\t\tmain()\n\t})\n\n\texpected := `service-a`\n\tif !strings.Contains(output, expected) {\n\t\tt.Errorf(\"Expected %s in output, but got: %v\", expected, output)\n\t}\n}\n\nfunc TestMainParsesDefinition(t *testing.T) {\n\tconfig := createFile(t, \"config\", \"\")\n\tdefinition := createFile(t, \"service-a.yaml\", `\npaths:\n  /ping:\n    get:\n      summary: This is a simple get operation\n      operationId: ping\n`)\n\n\tt.Setenv(\"UIPATH_CONFIGURATION_PATH\", config)\n\tt.Setenv(\"UIPATH_DEFINITIONS_PATH\", filepath.Dir(definition))\n\n\tos.Args = []string{\"uipath\", \"service-a\", \"--help\"}\n\toutput := captureOutput(t, func() {\n\t\tmain()\n\t})\n\n\texpected := `ping`\n\tif !strings.Contains(output, expected) {\n\t\tt.Errorf(\"Expected operation name %s in output, but got: %v\", expected, output)\n\t}\n\texpected = `This is a simple get operation`\n\tif !strings.Contains(output, expected) {\n\t\tt.Errorf(\"Expected description %s in output, but got: %v\", expected, output)\n\t}\n}\n\nfunc TestMainCallsService(t *testing.T) {\n\tsrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\tif r.URL.String() == \"/identity_/connect/token\" {\n\t\t\tw.WriteHeader(http.StatusOK)\n\t\t\t_, _ = w.Write([]byte(`{\"access_token\": \"my-jwt-access-token\", \"expires_in\": 3600, \"token_type\": \"Bearer\", \"scope\": \"OR.Ping\"}`))\n\t\t\treturn\n\t\t}\n\t\tw.WriteHeader(http.StatusOK)\n\t\t_, _ = w.Write([]byte(`{\"id\":1234}`))\n\t}))\n\tdefer srv.Close()\n\n\tconfig := createFile(t, \"config\", `\nprofiles:\n- name: default\n  uri: `+srv.URL+`\n  organization: my-org\n  tenant: defaulttenant\n  auth:\n    clientId: 71b784bc-3f7b-4e5a-a731-db25bb829025\n    clientSecret: NGI&4b(chsHcsX^C\n`)\n\n\tdefinition := createFile(t, \"service-a.yaml\", `\npaths:\n  /ping:\n    get:\n      summary: Simple ping\n      operationId: ping\n`)\n\n\tt.Setenv(\"UIPATH_CONFIGURATION_PATH\", config)\n\tt.Setenv(\"UIPATH_DEFINITIONS_PATH\", filepath.Dir(definition))\n\n\tos.Args = []string{\"uipath\", \"service-a\", \"ping\"}\n\toutput := captureOutput(t, func() {\n\t\tmain()\n\t})\n\n\texpected := `{\n  \"id\": 1234\n}`\n\tif !strings.Contains(output, expected) {\n\t\tt.Errorf(\"Expected %s in output, but got: %v\", expected, output)\n\t}\n}\n\nfunc TestMainAutocompletesCommand(t *testing.T) {\n\tconfig := createFile(t, \"config\", \"\")\n\tdefinition := createFile(t, \"service-a.yaml\", `\npaths:\n  /ping:\n    get:\n      summary: This is a simple get operation\n      operationId: ping\n`)\n\n\tt.Setenv(\"UIPATH_CONFIGURATION_PATH\", config)\n\tt.Setenv(\"UIPATH_DEFINITIONS_PATH\", filepath.Dir(definition))\n\n\tos.Args = []string{\"uipath\", \"autocomplete\", \"complete\", \"--command\", \"upathcli service-a p\"}\n\toutput := captureOutput(t, func() {\n\t\tmain()\n\t})\n\n\texpected := `ping\n`\n\tif output != expected {\n\t\tt.Errorf(\"Expected operation name %s in autocomplete output, but got: %v\", expected, output)\n\t}\n}\n\nfunc TestMainParsesBuiltInDefinitions(t *testing.T) {\n\tt.Run(\"du-framework\", func(t *testing.T) { MainParsesBuiltInDefinitions(t, \"du discovery\", \"projects\") })\n\tt.Run(\"orchestrator\", func(t *testing.T) { MainParsesBuiltInDefinitions(t, \"orchestrator users\", \"get-by-id\") })\n\tt.Run(\"orchestrator\", func(t *testing.T) { MainParsesBuiltInDefinitions(t, \"orchestrator\", \"assets\") })\n}\n\nfunc MainParsesBuiltInDefinitions(t *testing.T, command string, expected string) {\n\tdefinitionDir, _ := os.Getwd()\n\tt.Setenv(\"UIPATH_DEFINITIONS_PATH\", filepath.Join(definitionDir, \"definitions/\"))\n\n\tos.Args = strings.Split(\"uipath \"+command, \" \")\n\toutput := captureOutput(t, func() {\n\t\tmain()\n\t})\n\n\tif !strings.Contains(output, expected) {\n\t\tt.Errorf(\"Expected %s in output, but got: %v\", expected, output)\n\t}\n}\n\nfunc captureOutput(t *testing.T, runnable func()) string {\n\trealStdout := os.Stdout\n\treader, fakeStdout, err := os.Pipe()\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\tdefer func() { os.Stdout = realStdout }()\n\tos.Stdout = fakeStdout\n\n\toutput := make(chan []byte)\n\tgo func(reader *os.File) {\n\t\tdefer func() { _ = reader.Close() }()\n\t\tdata, err := io.ReadAll(reader)\n\t\tif err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t\toutput <- data\n\t}(reader)\n\n\trunnable()\n\n\terr = fakeStdout.Close()\n\tif err != nil {\n\t\tt.Fatal(err)\n\t}\n\treturn string(<-output)\n}\n\nfunc createFile(t *testing.T, name string, content string) string {\n\tpath := filepath.Join(t.TempDir(), name)\n\terr := os.WriteFile(path, []byte(content), 0600)\n\tif err != nil {\n\t\tt.Fatal(fmt.Errorf(\"Error writing file '%s': %w\", path, err))\n\t}\n\treturn path\n}\n"

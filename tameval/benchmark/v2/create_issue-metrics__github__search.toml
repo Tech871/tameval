@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "github/issue-metrics"
+sha = "23689ee936e1c52ad48581667f483140c24224f1"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements-test.txt && pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=search.py -m pytest -q --junit-xml=test_output.xml test_search.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target search --unit-test test_search --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target search.py --unit-test test_search.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 29.0
+original_coverage = 65.0
+mutation_kill_rate = 54.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 2, 3, 4, 6, 7, 10, 109, 121, 122, 123, 124, 125, 128, 129, 130, 132, 134, 135, 137,]
+missed_lines = [ 33, 37, 38, 40, 41, 42, 44, 45, 46, 48, 51, 54, 55, 57, 59, 60, 63, 65, 66, 67, 68, 73, 74, 75, 76, 79, 80, 82, 83, 87, 88, 89, 93, 94, 95, 98, 99, 100, 101, 102, 103, 104, 106, 126, 127, 131, 133,]
+
+[input_info]
+test_file_path = "test_search.py"
+focal_file_path = "search.py"
+test_file_url = "https://github.com/github/issue-metrics/blob/23689ee936e1c52ad48581667f483140c24224f1/test_search.py"
+focal_file_url = "https://github.com/github/issue-metrics/blob/23689ee936e1c52ad48581667f483140c24224f1/search.py"
+first_commit_date = "2024-10-18"
+last_commit_date = "2025-03-03"
+test_file_content = "\"\"\"Unit tests for the search module.\"\"\"\n\nimport unittest\nfrom unittest.mock import MagicMock\n\nfrom search import get_owners_and_repositories, search_issues\n\n\n\n\n\n\n\nclass TestGetOwnerAndRepository(unittest.TestCase):\n    \"\"\"Unit tests for the get_owners_and_repositories function.\n\n    This class contains unit tests for the get_owners_and_repositories function in the\n    issue_metrics module. The tests use the unittest module and the unittest.mock\n    module to mock the GitHub API and test the function in isolation.\n\n    Methods:\n        test_get_owners_with_owner_and_repo_in_query: Test get both owner and repo.\n        test_get_owner_and_repositories_without_repo_in_query: Test get just owner.\n        test_get_owners_and_repositories_without_either_in_query: Test get neither.\n        test_get_owners_and_repositories_with_multiple_entries: Test get multiple entries.\n        test_get_owners_and_repositories_with_org: Test get org as owner.\n        test_get_owners_and_repositories_with_user: Test get user as owner.\n    \"\"\"\n\n\n    def test_get_owner_and_repositories_without_repo_in_query(self):\n        \"\"\"Test get just owner.\"\"\"\n        result = get_owners_and_repositories(\"org:owner1\")\n        self.assertEqual(result[0].get(\"owner\"), \"owner1\")\n        self.assertIsNone(result[0].get(\"repository\"))\n\n    def test_get_owners_and_repositories_without_either_in_query(self):\n        \"\"\"Test get neither.\"\"\"\n        result = get_owners_and_repositories(\"is:blah\")\n        self.assertEqual(result, [])\n\n"

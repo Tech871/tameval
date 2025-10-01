@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "tcheeric/nostr-java"
+sha = "19abaa18c086511e89c968e069c43797f55aac2d"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nostr-java-client -Dtest=SpringWebSocketClientTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nostr-java-client -DtargetClasses=**.SpringWebSocketClient  -DtargetTests=**.SpringWebSocketClientTest  -DoutputFormats=XML"
+coverage_report_path = "nostr-java-client/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nostr-java-client/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 54.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "nostr-java-client/src/test/java/nostr/client/springwebsocket/SpringWebSocketClientTest.java"
+focal_file_path = "nostr-java-client/src/main/java/nostr/client/springwebsocket/SpringWebSocketClient.java"
+test_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-client/src/test/java/nostr/client/springwebsocket/SpringWebSocketClientTest.java"
+focal_file_url = "https://github.com/tcheeric/nostr-java/blob/19abaa18c086511e89c968e069c43797f55aac2d/nostr-java-client/src/main/java/nostr/client/springwebsocket/SpringWebSocketClient.java"
+first_commit_date = "2024-09-06"
+last_commit_date = "2025-08-10"
+test_file_content = "package nostr.client.springwebsocket;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\nimport java.io.IOException;\nimport java.util.List;\n\nimport lombok.Getter;\nimport lombok.Setter;\nimport nostr.event.BaseMessage;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.springframework.beans.factory.annotation.Autowired;\nimport org.springframework.context.annotation.Bean;\nimport org.springframework.context.annotation.Configuration;\nimport org.springframework.test.context.TestPropertySource;\nimport org.springframework.test.context.junit.jupiter.SpringJUnitConfig;\n\n@SpringJUnitConfig(classes = {RetryConfig.class, SpringWebSocketClient.class, SpringWebSocketClientTest.TestConfig.class})\n@TestPropertySource(properties = \"nostr.relay.uri=wss://test\")\nclass SpringWebSocketClientTest {\n\n    @Configuration\n    static class TestConfig {\n        @Bean\n        TestWebSocketClient webSocketClientIF() {\n            return new TestWebSocketClient();\n        }\n    }\n\n    static class TestWebSocketClient implements WebSocketClientIF {\n        @Getter\n        @Setter\n        private int attempts;\n        @Setter\n        private int failuresBeforeSuccess;\n\n        @Override\n        public <T extends BaseMessage> List<String> send(T eventMessage) throws IOException {\n            return send(eventMessage.encode());\n        }\n\n        @Override\n        public List<String> send(String json) throws IOException {\n            attempts++;\n            if (attempts <= failuresBeforeSuccess) {\n                throw new IOException(\"fail\");\n            }\n            return List.of(\"ok\");\n        }\n\n        @Override\n        public void closeSocket() {\n        }\n    }\n\n    @Autowired\n    private SpringWebSocketClient client;\n\n    @Autowired\n    private TestWebSocketClient webSocketClientIF;\n\n    @BeforeEach\n    void setup() {\n        webSocketClientIF.setFailuresBeforeSuccess(0);\n        webSocketClientIF.setAttempts(0);\n    }\n\n    @Test\n    void retriesUntilSuccess() throws IOException {\n        webSocketClientIF.setFailuresBeforeSuccess(2);\n        List<String> result = client.send(\"payload\");\n        assertEquals(List.of(\"ok\"), result);\n        assertEquals(3, webSocketClientIF.getAttempts());\n    }\n\n    @Test\n    void recoverAfterMaxAttempts() {\n        webSocketClientIF.setFailuresBeforeSuccess(5);\n        assertThrows(IOException.class, () -> client.send(\"payload\"));\n        assertEquals(3, webSocketClientIF.getAttempts());\n    }\n}"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "funilrys/PyFunceble"
+sha = "6fc0974a65e0987945afdfaed9e7a21dc6ad9894"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.test.txt && pip install -r requirements.win.txt && pip install -r requirements.dev.txt && pip install -r requirements.txt && pip install -r requirements.docs.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=PyFunceble/converter/cidr2subject.py -m pytest -q --junit-xml=test_output.xml tests/converter/test_cidr2subject.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target PyFunceble.converter.cidr2subject --unit-test tests.converter.test_cidr2subject --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target PyFunceble/converter/cidr2subject.py --unit-test tests/converter/test_cidr2subject.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 68.0
+original_coverage = 100.0
+mutation_kill_rate = 78.0
+original_mutation_kill_rate = 89.0
+covered_lines = [ 53, 54, 56, 57, 60, 65, 80, 81, 89, 90, 93, 95, 100, 102, 110, 111, 113, 115, 130,]
+missed_lines = [ 116, 117, 118, 119, 122, 124, 126, 127, 128,]
+
+[input_info]
+test_file_path = "tests/converter/test_cidr2subject.py"
+focal_file_path = "PyFunceble/converter/cidr2subject.py"
+test_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/tests/converter/test_cidr2subject.py"
+focal_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/PyFunceble/converter/cidr2subject.py"
+first_commit_date = "2021-03-16"
+last_commit_date = "2025-02-23"
+test_file_content = "\"\"\"\nThe tool to check the availability or syntax of domain, IP or URL.\n\n::\n\n\n    ██████╗ ██╗   ██╗███████╗██╗   ██╗███╗   ██╗ ██████╗███████╗██████╗ ██╗     ███████╗\n    ██╔══██╗╚██╗ ██╔╝██╔════╝██║   ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██║     ██╔════╝\n    ██████╔╝ ╚████╔╝ █████╗  ██║   ██║██╔██╗ ██║██║     █████╗  ██████╔╝██║     █████╗\n    ██╔═══╝   ╚██╔╝  ██╔══╝  ██║   ██║██║╚██╗██║██║     ██╔══╝  ██╔══██╗██║     ██╔══╝\n    ██║        ██║   ██║     ╚██████╔╝██║ ╚████║╚██████╗███████╗██████╔╝███████╗███████╗\n    ╚═╝        ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚══════╝╚═════╝ ╚══════╝╚══════╝\n\nTests of our CIDR to subject converter.\n\nAuthor:\n    Nissar Chababy, @funilrys, contactTATAfunilrysTODTODcom\n\nSpecial thanks:\n    https://pyfunceble.github.io/special-thanks.html\n\nContributors:\n    https://pyfunceble.github.io/contributors.html\n\nProject link:\n    https://github.com/funilrys/PyFunceble\n\nProject documentation:\n    https://docs.pyfunceble.com\n\nProject homepage:\n    https://pyfunceble.github.io/\n\nLicense:\n::\n\n\n    Copyright 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025 Nissar Chababy\n\n    Licensed under the Apache License, Version 2.0 (the \"License\");\n    you may not use this file except in compliance with the License.\n    You may obtain a copy of the License at\n\n        https://www.apache.org/licenses/LICENSE-2.0\n\n    Unless required by applicable law or agreed to in writing, software\n    distributed under the License is distributed on an \"AS IS\" BASIS,\n    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n    See the License for the specific language governing permissions and\n    limitations under the License.\n\"\"\"\n\nimport unittest\nfrom collections import Counter\n\nfrom PyFunceble.checker.syntax.ip import IPSyntaxChecker\nfrom PyFunceble.converter.cidr2subject import CIDR2Subject\n\n\nclass TestCIDR2Subject(unittest.TestCase):\n    \"\"\"\n    Tests our CIDR 2 subject converter.\n    \"\"\"\n\n    def setUp(self) -> None:\n        \"\"\"\n        Setups everything needed for the tests.\n        \"\"\"\n\n        self.converter = CIDR2Subject()\n\n    def tearDown(self) -> None:\n        \"\"\"\n        Destroys everything previously created for the tests.\n        \"\"\"\n\n        del self.converter\n\n\n    def test_set_data_to_convert_no_string(self) -> None:\n        \"\"\"\n        Tests the method which let us set the data to work with for the case\n        that a non-string value is given.\n        \"\"\"\n\n        given = [\"Hello\", \"World\"]\n\n        self.assertRaises(TypeError, lambda: self.converter.set_data_to_convert(given))\n\n    def test_get_converted_empty(self) -> None:\n        \"\"\"\n        Tests the method which let us get the converted data for the case that\n        it's an empty string is given.\n        \"\"\"\n\n        given = \"\"\n        expected = []\n\n        self.converter.data_to_convert = given\n        actual = self.converter.get_converted()\n\n        self.assertEqual(expected, actual)\n\n\n\n\n\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

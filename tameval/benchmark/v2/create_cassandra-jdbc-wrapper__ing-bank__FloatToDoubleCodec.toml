@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ing-bank/cassandra-jdbc-wrapper"
+sha = "d45b4b569f67d7ea6bd06cd432eb66f7e005968f"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=FloatToDoubleCodecTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.FloatToDoubleCodec  -DtargetTests=**.FloatToDoubleCodecTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 62.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 36, 37, 42, 53, 54, 61, 65, 66,]
+missed_lines = [ 48, 56, 62, 71, 76,]
+
+[input_info]
+test_file_path = "src/test/java/com/ing/data/cassandra/jdbc/codec/FloatToDoubleCodecTest.java"
+focal_file_path = "src/main/java/com/ing/data/cassandra/jdbc/codec/FloatToDoubleCodec.java"
+test_file_url = "https://github.com/ing-bank/cassandra-jdbc-wrapper/blob/d45b4b569f67d7ea6bd06cd432eb66f7e005968f/src/test/java/com/ing/data/cassandra/jdbc/codec/FloatToDoubleCodecTest.java"
+focal_file_url = "https://github.com/ing-bank/cassandra-jdbc-wrapper/blob/d45b4b569f67d7ea6bd06cd432eb66f7e005968f/src/main/java/com/ing/data/cassandra/jdbc/codec/FloatToDoubleCodec.java"
+first_commit_date = "2020-12-10"
+last_commit_date = "2025-06-22"
+test_file_content = "/*\n *   Licensed under the Apache License, Version 2.0 (the \"License\");\n *   you may not use this file except in compliance with the License.\n *   You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n *   Unless required by applicable law or agreed to in writing, software\n *   distributed under the License is distributed on an \"AS IS\" BASIS,\n *   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n *   See the License for the specific language governing permissions and\n *   limitations under the License.\n */\npackage com.ing.data.cassandra.jdbc.codec;\n\nimport com.datastax.oss.driver.api.core.ProtocolVersion;\nimport com.datastax.oss.driver.api.core.type.DataTypes;\nimport com.datastax.oss.driver.api.core.type.reflect.GenericType;\nimport org.apache.commons.lang3.StringUtils;\nimport org.junit.jupiter.api.Test;\n\nimport java.nio.ByteBuffer;\n\nimport static com.ing.data.cassandra.jdbc.utils.DriverUtil.NULL_KEYWORD;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\npublic class FloatToDoubleCodecTest {\n\n    private final FloatToDoubleCodec sut = new FloatToDoubleCodec();\n\n    @Test\n    void givenCodec_whenGetJavaType_returnDouble() {\n        assertEquals(GenericType.DOUBLE, sut.getJavaType());\n    }\n\n\n    @Test\n    void givenNullValue_whenEncode_returnNull() {\n        assertNull(sut.encode(null, ProtocolVersion.DEFAULT));\n    }\n\n\n\n    @Test\n    void givenValue_whenDecode_returnDouble() {\n        final float floatValue = 12.345f;\n        ByteBuffer bytes = ByteBuffer.allocate(8).putFloat(floatValue);\n        bytes.position(0);\n        assertEquals(Double.valueOf(floatValue), sut.decode(bytes, ProtocolVersion.DEFAULT));\n    }\n\n\n\n\n}\n"

@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dromara/disjob"
+sha = "fe566cf310a9c72a66058d100c30d40d1cada980"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl disjob-common -Dtest=NumbersTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl disjob-common -DtargetClasses=**.Numbers  -DtargetTests=**.NumbersTest  -DoutputFormats=XML"
+coverage_report_path = "disjob-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "disjob-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 20.0
+original_coverage = 42.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 54, 276, 280, 281, 283, 285, 295, 306, 307, 316, 431, 432, 435, 439, 440, 441, 444, 445, 446, 447, 448, 449, 450, 452, 497,]
+missed_lines = [ 52, 59, 63, 64, 68, 69, 71, 72, 74, 80, 84, 85, 89, 95, 99, 100, 104, 110, 114, 115, 119, 125, 129, 130, 134, 140, 144, 145, 149, 155, 159, 160, 164, 170, 174, 175, 179, 192, 194, 195, 198, 209, 213, 224, 228, 232, 236, 240, 244, 248, 252, 264, 265, 277, 308, 309, 310, 311, 313, 328, 329, 330, 331, 335, 336, 337, 338, 340, 345, 349, 353, 374, 375, 376, 377, 378, 379, 380, 400, 401, 402, 403, 406, 407, 408, 409, 410, 412, 415, 436, 463, 464, 466, 476, 477, 478, 480, 486, 487, 490, 491, 492,]
+
+[input_info]
+test_file_path = "disjob-common/src/test/java/cn/ponfee/disjob/common/util/NumbersTest.java"
+focal_file_path = "disjob-common/src/main/java/cn/ponfee/disjob/common/util/Numbers.java"
+test_file_url = "https://github.com/dromara/disjob/blob/fe566cf310a9c72a66058d100c30d40d1cada980/disjob-common/src/test/java/cn/ponfee/disjob/common/util/NumbersTest.java"
+focal_file_url = "https://github.com/dromara/disjob/blob/fe566cf310a9c72a66058d100c30d40d1cada980/disjob-common/src/main/java/cn/ponfee/disjob/common/util/Numbers.java"
+first_commit_date = "2023-05-03"
+last_commit_date = "2025-07-12"
+test_file_content = "/*\n * Copyright 2022-2024 Ponfee (http://www.ponfee.cn/)\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     https://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage cn.ponfee.disjob.common.util;\n\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\n\nimport java.math.BigDecimal;\nimport java.math.BigInteger;\nimport java.math.MathContext;\nimport java.math.RoundingMode;\nimport java.util.Arrays;\nimport java.util.Random;\nimport java.util.concurrent.ThreadLocalRandom;\nimport java.util.stream.LongStream;\n\n/**\n * Numbers test\n *\n * @author Ponfee\n */\npublic class NumbersTest {\n\n\n    @Test\n    public void testProrate() {\n        Assertions.assertEquals(\"[123]\", Arrays.toString(LongStream.rangeClosed(0, 0).map(x -> 123).toArray()));\n        Assertions.assertEquals(\"[29, 1, 31]\", Arrays.toString(Numbers.prorate(new long[]{43, 1, 47}, 61)));\n        Assertions.assertEquals(\"[249, 249, 248, 2]\", Arrays.toString(Numbers.prorate(new long[]{249, 249, 249, 3}, 748)));\n        Assertions.assertEquals(\"[-7, -4, -4, -2, -1, 0]\", Arrays.toString(Numbers.prorate(new long[]{-75, -47, -42, -24, -7, -15}, -18)));\n\n        // 正数\n        for (int i = 0; i < 100; i++) {\n            long[] array = LongStream.rangeClosed(0, ThreadLocalRandom.current().nextInt(47))\n                .map(e -> ThreadLocalRandom.current().nextLong(97))\n                .toArray();\n            long total = ThreadLocalRandom.current().nextLong(sum(array) + 1);\n            Assertions.assertEquals(total, sum(Numbers.prorate(array, total)));\n        }\n\n        // 负数\n        for (int i = 0; i < 100; i++) {\n            long[] array = LongStream.rangeClosed(0, ThreadLocalRandom.current().nextInt(47))\n                .map(e -> -1 * ThreadLocalRandom.current().nextLong(97))\n                .toArray();\n            long total = -1 * ThreadLocalRandom.current().nextLong(-1 * sum(array) + 1);\n            Assertions.assertEquals(total, sum(Numbers.prorate(array, total)));\n        }\n\n        // 异常\n        Assertions.assertThrows(IllegalArgumentException.class, () -> Numbers.prorate(null, 0));\n        Assertions.assertThrows(IllegalArgumentException.class, () -> Numbers.prorate(new long[]{}, 0));\n        Assertions.assertThrows(IllegalArgumentException.class, () -> Numbers.prorate(new long[]{1, 2, 3}, -1));\n        Assertions.assertThrows(IllegalArgumentException.class, () -> Numbers.prorate(new long[]{1, 2, 3}, 7));\n        Assertions.assertThrows(IllegalArgumentException.class, () -> Numbers.prorate(new long[]{-1, -2, -3}, 1));\n        Assertions.assertThrows(IllegalArgumentException.class, () -> Numbers.prorate(new long[]{-1, -2, -3}, -7));\n    }\n\n\n\n\n    @Test\n    public void testFormat() {\n        Assertions.assertEquals(\"3.142\", Numbers.format(Math.PI));\n        Assertions.assertEquals(\"314.16%\", Numbers.percent(Math.PI, 2));\n\n        int i = 100;\n        try {\n            i = 1 / 0;\n        } catch (Exception e) {\n        }\n        Assertions.assertEquals(100, i);\n    }\n\n\n\n    @Test\n    public void testUpDiv() {\n        Assertions.assertEquals(3, Maths.upDiv(7, 3));\n        Assertions.assertEquals(-3, Maths.upDiv(-7, 3));\n        Assertions.assertEquals(-3, Maths.upDiv(7, -3));\n        Assertions.assertEquals(3, Maths.upDiv(-7, -3));\n\n        Assertions.assertEquals(2, Maths.upDiv(10, 5));\n        Assertions.assertEquals(1, Maths.upDiv(1, 1));\n        Assertions.assertEquals(-1, Maths.upDiv(-1, 2));\n        Assertions.assertEquals(-1, Maths.upDiv(1, -2));\n\n        Assertions.assertEquals(0, Maths.upDiv(0, 5));\n        Assertions.assertEquals(0, Maths.upDiv(0, -5));\n        Assertions.assertEquals(-5, Maths.upDiv(5, -1));\n        Assertions.assertEquals(-5, Maths.upDiv(-5, 1));\n\n        Assertions.assertEquals(1, Maths.upDiv(1, 3));\n        Assertions.assertEquals(-1, Maths.upDiv(-1, 3));\n        Assertions.assertEquals(1, Maths.upDiv(2, 3));\n        Assertions.assertEquals(-1, Maths.upDiv(-2, 3));\n    }\n\n\n\n\n    private static long sum(long... array) {\n        return LongStream.of(array).sum();\n    }\n\n    private static long upDiv2(long dividend, long divisor) {\n        if (dividend == 0) {\n            return 0;\n        }\n        if ((dividend % divisor) == 0) {\n            return dividend / divisor;\n        }\n        return new BigDecimal(dividend)\n            .divide(new BigDecimal(divisor), MathContext.DECIMAL128)\n            .setScale(0, RoundingMode.UP)\n            .longValue();\n    }\n\n}\n"

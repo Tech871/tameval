@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "11d3850cb622dac08b62c07d4272002124855e83"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/structures/method.py -m pytest -q --junit-xml=test_output.xml tests/structures/test_method.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.structures.method --unit-test tests.structures.test_method --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/structures/method.py --unit-test tests/structures/test_method.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 97.0
+original_coverage = 97.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 6, 8, 9, 12, 17, 21, 23, 24, 25, 27, 29, 33, 34, 35, 36, 37, 39, 43, 44, 45, 46, 48, 49, 50, 52, 54, 58, 59, 60, 62,]
+missed_lines = [ 22,]
+
+[input_info]
+test_file_path = "tests/structures/test_method.py"
+focal_file_path = "mypy_boto3_builder/structures/method.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/tests/structures/test_method.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/mypy_boto3_builder/structures/method.py"
+first_commit_date = "2020-01-23"
+last_commit_date = "2025-01-29"
+test_file_content = "from mypy_boto3_builder.structures.argument import Argument\nfrom mypy_boto3_builder.structures.method import Method\nfrom mypy_boto3_builder.type_annotations.type import Type\nfrom mypy_boto3_builder.type_annotations.type_constant import TypeConstant\n\n\nclass TestMethod:\n    method: Method\n\n    def setup_method(self) -> None:\n        self.method = Method(\n            name=\"name\",\n            arguments=[\n                Argument.self(),\n                Argument(\"my_str\", Type.str, TypeConstant(\"test\")),\n                Argument(\"lst\", Type.ListAny),\n            ],\n            decorators=[Type.Any],\n            return_type=Type.none,\n            body_lines=[\"line1\", \"line2\"],\n            docstring=\"docstring\\n\\nlong\",\n            boto3_doc_link=\"boto3://doc.link\",\n        )\n\n    def test_set_boto3_doc_link(self) -> None:\n        self.method.set_boto3_doc_link(\"new\")\n        assert self.method.boto3_doc_link == \"new\"\n\n    def test_is_kw_only(self) -> None:\n        assert self.method.is_kw_only() is False\n\n        self.method.arguments = [\n            Argument.self(),\n            Argument.kwflag(),\n            Argument(\"lst\", Type.ListAny),\n        ]\n        assert self.method.is_kw_only() is True\n\n        self.method.arguments = [\n            Argument.self(),\n            Argument(\"lst\", Type.ListAny),\n            Argument.kwflag(),\n            Argument(\"lst2\", Type.ListAny),\n        ]\n        assert self.method.is_kw_only() is False\n\n    def test_iterate_call_arguments(self) -> None:\n        assert len(list(self.method.iterate_call_arguments())) == 2\n\n        self.method.arguments = [\n            Argument(\"lst\", Type.ListAny),\n            Argument.kwflag(),\n            Argument(\"lst2\", Type.ListAny),\n        ]\n        assert len(list(self.method.iterate_call_arguments())) == 3\n\n    def test_iterate_packed_arguments(self) -> None:\n        assert len(list(self.method.iterate_packed_arguments())) == 3\n\n        self.method.arguments = [\n            Argument.self(),\n            Argument.kwflag(),\n            Argument(\"lst2\", Type.ListAny),\n        ]\n        assert len(list(self.method.iterate_packed_arguments())) == 3\n        self.method.create_request_type_annotation(\"RequestType\")\n        assert len(list(self.method.iterate_packed_arguments())) == 2\n\n    def test_has_arguments(self) -> None:\n        assert self.method.has_arguments() is True\n\n        self.method.arguments = [Argument.self()]\n        assert self.method.has_arguments() is False\n\n        self.method.arguments = [Argument(\"other\", Type.str)]\n        assert self.method.has_arguments() is True\n"

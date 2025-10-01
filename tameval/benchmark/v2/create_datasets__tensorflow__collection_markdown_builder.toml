@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tensorflow/datasets"
+sha = "5afdc02a1a6ce1a5ded7e2395c7a3498216936bb"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=tensorflow_datasets/scripts/documentation/collection_markdown_builder.py -m pytest -q --junit-xml=test_output.xml tensorflow_datasets/scripts/documentation/collection_markdown_builder_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target tensorflow_datasets.scripts.documentation.collection_markdown_builder --unit-test tensorflow_datasets.scripts.documentation.collection_markdown_builder_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target tensorflow_datasets/scripts/documentation/collection_markdown_builder.py --unit-test tensorflow_datasets/scripts/documentation/collection_markdown_builder_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 44.0
+original_coverage = 88.0
+mutation_kill_rate = 59.0
+original_mutation_kill_rate = 59.0
+covered_lines = [ 17, 18, 19, 21, 22, 23, 26, 29, 32, 33, 35, 36, 52, 53, 57, 78, 79, 81, 84, 93, 94, 96, 99, 100, 103, 106, 108, 129, 135, 139, 140, 142, 145, 155, 165, 169, 170, 172, 175, 188, 197, 204,]
+missed_lines = [ 50, 55, 59, 60, 61, 62, 63, 64, 65, 66, 67, 69, 70, 82, 85, 86, 87, 89, 90, 97, 111, 112, 117, 119, 121, 122, 123, 125, 126, 127, 130, 133, 136, 143, 147, 149, 151, 152, 153, 160, 161, 162, 163, 166, 173, 176, 177, 178, 191, 201, 209, 217, 223,]
+
+[input_info]
+test_file_path = "tensorflow_datasets/scripts/documentation/collection_markdown_builder_test.py"
+focal_file_path = "tensorflow_datasets/scripts/documentation/collection_markdown_builder.py"
+test_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/scripts/documentation/collection_markdown_builder_test.py"
+focal_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/scripts/documentation/collection_markdown_builder.py"
+first_commit_date = "2022-10-03"
+last_commit_date = "2025-06-02"
+test_file_content = "# coding=utf-8\n# Copyright 2025 The TensorFlow Datasets Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for collection_markdown_builder.\"\"\"\nimport textwrap\n\nimport pytest\n\nimport tensorflow_datasets as tfds\nfrom tensorflow_datasets import testing\nfrom tensorflow_datasets.scripts.documentation import collection_markdown_builder\n\n@pytest.fixture(scope='session')\ndef dummy_dc_loader() -> tfds.core.DatasetCollectionLoader:\n  return tfds.core.DatasetCollectionLoader(\n      collection=testing.DummyDatasetCollection()\n  )\n\ndef test_collection_description_section(\n    dummy_dc_loader: tfds.core.DatasetCollectionLoader,\n):  # pylint: disable=redefined-outer-name\n  description_section = (\n      collection_markdown_builder.CollectionDescriptionSection()\n  )\n  expected_description = dummy_dc_loader.collection.info.description\n  assert (\n      description_section.content(loader=dummy_dc_loader)\n      == expected_description\n  )\n"

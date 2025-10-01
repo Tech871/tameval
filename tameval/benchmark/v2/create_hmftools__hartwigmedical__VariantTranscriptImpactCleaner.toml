@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "29cf8b2f82f8ecc386c4cfb238757fa859b7eb06"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl orange -Dtest=VariantTranscriptImpactCleanerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl orange -DtargetClasses=**.VariantTranscriptImpactCleaner  -DtargetTests=**.VariantTranscriptImpactCleanerTest  -DoutputFormats=XML"
+coverage_report_path = "orange/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "orange/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 92.0
+original_coverage = 92.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 15, 16, 17, 18, 19, 20, 21, 35, 36, 38, 39, 40,]
+missed_lines = [ 7,]
+
+[input_info]
+test_file_path = "orange/src/test/java/com/hartwig/hmftools/orange/algo/util/VariantTranscriptImpactCleanerTest.java"
+focal_file_path = "orange/src/main/java/com/hartwig/hmftools/orange/algo/util/VariantTranscriptImpactCleaner.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/orange/src/test/java/com/hartwig/hmftools/orange/algo/util/VariantTranscriptImpactCleanerTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/orange/src/main/java/com/hartwig/hmftools/orange/algo/util/VariantTranscriptImpactCleaner.java"
+first_commit_date = "2023-07-21"
+last_commit_date = "2025-04-23"
+test_file_content = "package com.hartwig.hmftools.orange.algo.util;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertFalse;\nimport static org.junit.Assert.assertNull;\nimport static org.junit.Assert.assertTrue;\n\nimport com.hartwig.hmftools.common.variant.impact.VariantTranscriptImpact;\n\nimport org.junit.Test;\n\npublic class VariantTranscriptImpactCleanerTest\n{\n    @Test\n    public void testCleanBrackets()\n    {\n        VariantTranscriptImpact impact = new VariantTranscriptImpact(\n                \"[ENSG00000109265\", // this bracket needs to be removed\n                \"CRACD\",\n                \"ENST00000264229\",\n                \"synonymous_variant\",\n                false,\n                \"c.2187C>T\",\n                \"p.Ser729=]\", \"\", 1, 1); // this bracket needs to be removed\n\n        VariantTranscriptImpact cleanedImpact = VariantTranscriptImpactCleaner.cleanFields(impact);\n\n        assertEquals(\"ENSG00000109265\", cleanedImpact.GeneId);\n        assertEquals(\"CRACD\", cleanedImpact.GeneName);\n        assertEquals(\"ENST00000264229\", cleanedImpact.Transcript);\n        assertEquals(\"synonymous_variant\", cleanedImpact.Effects);\n        assertFalse(cleanedImpact.SpliceRegion);\n        assertEquals(\"c.2187C>T\", cleanedImpact.HgvsCoding);\n        assertEquals(\"p.Ser729=\", cleanedImpact.HgvsProtein);\n    }\n\n    @Test\n    public void testTrailingSpacesAndBracket()\n    {\n        VariantTranscriptImpact impact = new VariantTranscriptImpact(\n                \" ENSG00000109265\", // this whitespace needs to be removed\n                \"CRACD\",\n                \"ENST00000264229 \", // this whitespace needs to be removed\n                \"synonymous_variant\",\n                false,\n                \"c.2187C>T\",\n                \"p.Ser729=]\", \"\", 1, 1); // this bracket needs to be removed\n\n        VariantTranscriptImpact cleanedImpact = VariantTranscriptImpactCleaner.cleanFields(impact);\n\n        assertEquals(\"ENSG00000109265\", cleanedImpact.GeneId);\n        assertEquals(\"CRACD\", cleanedImpact.GeneName);\n        assertEquals(\"ENST00000264229\", cleanedImpact.Transcript);\n        assertEquals(\"synonymous_variant\", cleanedImpact.Effects);\n        assertFalse(cleanedImpact.SpliceRegion);\n        assertEquals(\"c.2187C>T\", cleanedImpact.HgvsCoding);\n        assertEquals(\"p.Ser729=\", cleanedImpact.HgvsProtein);\n    }\n\n    @Test\n    public void testImpactWithNullFields()\n    {\n        VariantTranscriptImpact impact = new VariantTranscriptImpact(\n                null,\n                null,\n                null,\n                null,\n                true,\n                null,\n                null, \"\", 1, 1);\n\n        VariantTranscriptImpact cleanedImpact = VariantTranscriptImpactCleaner.cleanFields(impact);\n\n        assertNull(cleanedImpact.GeneId);\n        assertNull(cleanedImpact.GeneName);\n        assertNull(cleanedImpact.Transcript);\n        assertNull(cleanedImpact.Effects);\n        assertTrue(cleanedImpact.SpliceRegion);\n        assertNull(cleanedImpact.HgvsCoding);\n        assertNull(cleanedImpact.HgvsProtein);\n    }\n}\n"

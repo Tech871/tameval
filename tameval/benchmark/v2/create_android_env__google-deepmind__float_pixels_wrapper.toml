@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google-deepmind/android_env"
+sha = "827047088b9e932f29a951d734962bf855587521"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=android_env/wrappers/float_pixels_wrapper.py -m pytest -q --junit-xml=test_output.xml android_env/wrappers/float_pixels_wrapper_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target android_env.wrappers.float_pixels_wrapper --unit-test android_env.wrappers.float_pixels_wrapper_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target android_env/wrappers/float_pixels_wrapper.py --unit-test android_env/wrappers/float_pixels_wrapper_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 100.0
+mutation_kill_rate = 77.0
+original_mutation_kill_rate = 77.0
+covered_lines = [ 17, 18, 19, 20, 21, 22, 25, 28, 29, 30, 31, 34, 37, 38, 41, 42, 44, 45, 46, 52, 53, 55, 58,]
+missed_lines = [ 56, 59, 60, 61, 67, 68,]
+
+[input_info]
+test_file_path = "android_env/wrappers/float_pixels_wrapper_test.py"
+focal_file_path = "android_env/wrappers/float_pixels_wrapper.py"
+test_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/wrappers/float_pixels_wrapper_test.py"
+focal_file_url = "https://github.com/google-deepmind/android_env/blob/827047088b9e932f29a951d734962bf855587521/android_env/wrappers/float_pixels_wrapper.py"
+first_commit_date = "2021-08-23"
+last_commit_date = "2025-07-21"
+test_file_content = "# coding=utf-8\n# Copyright 2025 DeepMind Technologies Limited.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for android_env.wrappers.float_pixels_wrapper.\"\"\"\n\nfrom unittest import mock\n\nfrom absl.testing import absltest\nfrom android_env.wrappers import float_pixels_wrapper\nimport dm_env\nfrom dm_env import specs\nimport numpy as np\n\ndef _make_array_spec(shape, dtype=np.float32, name=None):\n  return specs.Array(\n      shape=shape,\n      dtype=dtype,\n      name=name,\n  )\n\ndef _make_bounded_array_spec(\n    shape, dtype=np.float32, name=None, maximum=1.0, minimum=0.0):\n  return specs.BoundedArray(\n      shape=shape,\n      dtype=dtype,\n      name=name,\n      maximum=maximum,\n      minimum=minimum,\n  )\n\ndef _simple_timestep(obs_shape, obs_type):\n  return dm_env.TimeStep(\n      step_type=dm_env.StepType.MID,\n      reward=3.14,\n      discount=0.9,\n      observation=(np.ones(shape=obs_shape, dtype=obs_type),),\n  )\n\nclass FloatPixelsWrapperTest(absltest.TestCase):\n\n  def setUp(self):\n    super().setUp()\n    self.pixels_shape = (3, 4)\n    base_pixel_spec = _make_array_spec(\n        shape=self.pixels_shape, dtype=np.uint8, name='pixels')\n    self.other_obs_spec = _make_array_spec(\n        shape=(1,), dtype=np.float32, name='other_obs')\n    base_observation_spec = {\n        'pixels': base_pixel_spec,\n        'other_obs': self.other_obs_spec\n    }\n    self.base_env = mock.create_autospec(dm_env.Environment)\n    self.base_env.observation_spec.return_value = base_observation_spec\n\n    self.base_timestep = dm_env.TimeStep(\n        step_type=dm_env.StepType.MID,\n        reward=3.14,\n        discount=0.9,\n        observation={\n            'pixels': np.ones(shape=self.pixels_shape, dtype=np.uint8),\n            'other_obs': [42.2]})\n    self.base_env.step.return_value = self.base_timestep\n    self.base_env.reset.return_value = self.base_timestep\n\n  def test_float_pixels_wrapper_reset(self):\n    wrapped_env = float_pixels_wrapper.FloatPixelsWrapper(self.base_env)\n    ts = wrapped_env.reset()\n\n    self.assertEqual(self.base_timestep.step_type, ts.step_type)\n    self.assertEqual(self.base_timestep.reward, ts.reward)\n    self.assertEqual(self.base_timestep.discount, ts.discount)\n    self.assertEqual(self.base_timestep.observation['other_obs'],\n                     ts.observation['other_obs'])\n    expected_pixel_value = 1. / 255.  # original values are unit8\n    expected_pixels = np.ones(\n        self.pixels_shape, dtype=np.float32) * expected_pixel_value\n    np.testing.assert_equal(expected_pixels, ts.observation['pixels'])\n\nif __name__ == '__main__':\n  absltest.main()\n"

@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "nom-tam-fits/nom-tam-fits"
+sha = "ef5e60895f98eaba44b4220e64407394b05f44ff"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=RandomAccessFileChannelTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.RandomAccessFileChannel  -DtargetTests=**.RandomAccessFileChannelTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 53.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 58, 99, 100, 108, 109, 110, 111, 116, 131, 141, 142, 151, 152, 202, 203, 204, 205, 206,]
+missed_lines = [ 78, 79, 98, 121, 126, 136, 146, 156, 161, 177, 178, 179, 180, 182, 183, 188,]
+
+[input_info]
+test_file_path = "src/test/java/nom/tam/util/RandomAccessFileChannelTest.java"
+focal_file_path = "src/main/java/nom/tam/util/RandomAccessFileChannel.java"
+test_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/test/java/nom/tam/util/RandomAccessFileChannelTest.java"
+focal_file_url = "https://github.com/nom-tam-fits/nom-tam-fits/blob/ef5e60895f98eaba44b4220e64407394b05f44ff/src/main/java/nom/tam/util/RandomAccessFileChannel.java"
+first_commit_date = "2025-02-20"
+last_commit_date = "2025-02-20"
+test_file_content = "package nom.tam.util;\n\n/*-\n * #%L\n * nom-tam-fits\n * %%\n * Copyright (C) 2025 nom-tam-fits\n * %%\n * This is free and unencumbered software released into the public domain.\n *\n * Anyone is free to copy, modify, publish, use, compile, sell, or\n * distribute this software, either in source code form or as a compiled\n * binary, for any purpose, commercial or non-commercial, and by any\n * means.\n *\n * In jurisdictions that recognize copyright laws, the author or authors\n * of this software dedicate any and all copyright interest in the\n * software to the public domain. We make this dedication for the benefit\n * of the public at large and to the detriment of our heirs and\n * successors. We intend this dedication to be an overt act of\n * relinquishment in perpetuity of all present and future rights to this\n * software under copyright law.\n *\n * THE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND,\n * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF\n * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.\n * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR\n * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,\n * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR\n * OTHER DEALINGS IN THE SOFTWARE.\n * #L%\n */\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\n\nimport java.io.File;\nimport java.io.FileWriter;\nimport java.nio.charset.StandardCharsets;\nimport java.nio.file.Files;\nimport java.nio.file.Path;\n\n\npublic class RandomAccessFileChannelTest {\n\n\n\n    @Test\n    public void testWriteCall() throws Exception {\n        final File tempFile = File.createTempFile(\"test\", \"tmp\");\n        tempFile.deleteOnExit();\n\n        final Path testPath = tempFile.toPath();\n        final byte[] buffer = \"testdataforwrite\".getBytes(StandardCharsets.UTF_8);\n\n        try (final RandomAccessFileChannel testSubject = new RandomAccessFileChannel(testPath, false)) {\n            testSubject.write(buffer);\n        }\n\n        final byte[] readBuffer = Files.readAllBytes(testPath);\n        Assert.assertArrayEquals(\"Wrong bytes written\", buffer, readBuffer);\n    }\n\n\n\n\n\n    @Test\n    public void testReadUTF() throws Exception {\n        final File tempFile = File.createTempFile(\"test\", \"tmp\");\n        tempFile.deleteOnExit();\n\n        final Path testPath = tempFile.toPath();\n\n        try (final RandomAccessFileChannel testSubject = new RandomAccessFileChannel(testPath, false)) {\n            testSubject.readUTF();\n            Assert.fail(\"Expected UnsupportedOperationException\");\n        } catch (UnsupportedOperationException e) {\n            Assert.assertEquals(\"readUTF is not implemented for FileChannels.\", e.getMessage());\n        }\n    }\n\n\n    @Test\n    public void testSetLength() throws Exception {\n        final File tempFile = File.createTempFile(\"test\", \"tmp\");\n        tempFile.deleteOnExit();\n\n        final Path testPath = tempFile.toPath();\n\n        try (final RandomAccessFileChannel testSubject = new RandomAccessFileChannel(testPath, false)) {\n            testSubject.setLength(3);\n            Assert.fail(\"Expected UnsupportedOperationException\");\n        } catch (UnsupportedOperationException e) {\n            Assert.assertEquals(\"Setting file length is not implemented for FileChannels.\", e.getMessage());\n        }\n    }\n\n\n}\n"

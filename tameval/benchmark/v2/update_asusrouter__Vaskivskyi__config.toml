@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Vaskivskyi/asusrouter"
+sha = "1f98018ace04703492b654cd02f4f3a4890cedcb"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=asusrouter/config.py -m pytest -q --junit-xml=test_output.xml tests/test_config.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target asusrouter.config --unit-test tests.test_config --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target asusrouter/config.py --unit-test tests/test_config.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 60.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = [ 2, 4, 5, 6, 7, 9, 12, 16, 18, 19, 21, 24, 25, 28, 39, 50, 61, 64, 67, 69, 70, 73, 78, 81, 82, 88, 90, 98, 104, 112, 123, 128, 129, 136,]
+missed_lines = [ 31, 33, 34, 36, 83, 86, 93, 94, 95, 96, 101, 102, 107, 108, 109, 110, 117, 118, 120, 121, 126, 132, 133,]
+
+[input_info]
+test_file_path = "tests/test_config.py"
+focal_file_path = "asusrouter/config.py"
+test_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/tests/test_config.py"
+focal_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/asusrouter/config.py"
+first_commit_date = "2025-08-02"
+last_commit_date = "2025-08-13"
+test_file_content = "\"\"\"Tests for the configuration module.\"\"\"\n\nfrom __future__ import annotations\n\nimport pytest\nfrom asusrouter.config import CONFIG_DEFAULT_BOOL, ARConfig, safe_bool_config\n\nKEYS_BOOL = [\n    \"optimistic_data\",\n]\n\n\n@pytest.fixture(autouse=True)\ndef reset_config() -> None:\n    \"\"\"Reset the configuration before each test.\"\"\"\n\n    ARConfig.set(\"optimistic_data\", CONFIG_DEFAULT_BOOL)\n    ARConfig.set(\"optimistic_temperature\", CONFIG_DEFAULT_BOOL)\n\n\nclass TestConvert:\n    \"\"\"Tests for the configuration conversion functions.\"\"\"\n\n    @pytest.mark.parametrize(\"value\", [True, False])\n    def test_safe_bool_config(self, value: bool) -> None:\n        \"\"\"Test that safe_bool_config converts values correctly.\"\"\"\n\n        assert safe_bool_config(value) is value\n\n    def test_safe_bool_config_default(self) -> None:\n        \"\"\"Test that safe_bool_config returns default when value is None.\"\"\"\n\n        assert safe_bool_config(None) is CONFIG_DEFAULT_BOOL\n\n\nclass TestBoolConfig:\n    \"\"\"Tests for boolean configuration options.\"\"\"\n\n    def test_keys(self) -> None:\n        \"\"\"Test that we can get the full list of configuration keys.\"\"\"\n\n        keys = ARConfig.keys()\n        assert isinstance(keys, list)\n        assert len(keys) > 0\n        assert all(isinstance(key, str) for key in keys)\n\n    @pytest.mark.parametrize(\"key\", KEYS_BOOL)\n    def test_default_bool(self, key: str) -> None:\n        \"\"\"Test the default value of a boolean configuration key.\"\"\"\n\n        assert ARConfig.get(key) is CONFIG_DEFAULT_BOOL\n\n    @pytest.mark.parametrize(\"key\", KEYS_BOOL)\n    @pytest.mark.parametrize(\"value\", [True, False])\n    def test_set_bool(self, key: str, value: bool) -> None:\n        \"\"\"Test setting a boolean configuration key.\"\"\"\n\n        ARConfig.set(key, value)\n        assert ARConfig.get(key) is value\n\n    def test_get_optimistic_data(self) -> None:\n        \"\"\"Test that we can get the value of optimistic_data.\"\"\"\n\n        assert ARConfig.optimistic_data is CONFIG_DEFAULT_BOOL\n\n    def test_get_optimistic_temperature(self) -> None:\n        \"\"\"Test that we can get the value of optimistic_temperature.\"\"\"\n\n        assert ARConfig.optimistic_temperature is CONFIG_DEFAULT_BOOL\n\n    def test_unknown_key(self) -> None:\n        \"\"\"Test that setting/getting an unknown key raises KeyError.\"\"\"\n\n        with pytest.raises(KeyError):\n            ARConfig.set(\"unknown_option\", True)\n\n        with pytest.raises(KeyError):\n            ARConfig.get(\"unknown_option\")"

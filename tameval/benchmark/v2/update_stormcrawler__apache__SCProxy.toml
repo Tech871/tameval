@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/stormcrawler"
+sha = "9d4b0302a7859f9f24caa1fe3cdabb498f968112"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl core -Dtest=SCProxyTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl core -DtargetClasses=**.SCProxy  -DtargetTests=**.SCProxyTest  -DoutputFormats=XML"
+coverage_report_path = "core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 63.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "core/src/test/java/org/apache/stormcrawler/proxy/SCProxyTest.java"
+focal_file_path = "core/src/main/java/org/apache/stormcrawler/proxy/SCProxy.java"
+test_file_url = "https://github.com/apache/stormcrawler/blob/9d4b0302a7859f9f24caa1fe3cdabb498f968112/core/src/test/java/org/apache/stormcrawler/proxy/SCProxyTest.java"
+focal_file_url = "https://github.com/apache/stormcrawler/blob/9d4b0302a7859f9f24caa1fe3cdabb498f968112/core/src/main/java/org/apache/stormcrawler/proxy/SCProxy.java"
+first_commit_date = "2024-03-28"
+last_commit_date = "2024-03-28"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to you under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage org.apache.stormcrawler.proxy;\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class SCProxyTest {\n    @Test\n    public void testProxyConstructor() {\n        String[] valid_inputs = {\n            \"http://example.com:8080\",\n            \"https://example.com:8080\",\n            \"http://user1:pass1@example.com:8080\",\n            \"sock5://user1:pass1@example.com:8080\",\n            \"http://example.com:80\",\n            \"sock5://example.com:64000\",\n        };\n\n        String[][] valid_outputs = {\n            {\"http\", null, null, \"example.com\", \"8080\"},\n            {\"https\", null, null, \"example.com\", \"8080\"},\n            {\"http\", \"user1\", \"pass1\", \"example.com\", \"8080\"},\n            {\"sock5\", \"user1\", \"pass1\", \"example.com\", \"8080\"},\n            {\"http\", null, null, \"example.com\", \"80\"},\n            {\"sock5\", null, null, \"example.com\", \"64000\"},\n        };\n\n        String[] invalid_inputs = {\n            \"http://example.com\",\n            \"sock5://:example.com:8080\",\n            \"example.com:8080\",\n            \"https://user1@example.com:8080\",\n        };\n\n        for (int i = 0; i < valid_inputs.length; i++) {\n            SCProxy proxy = new SCProxy(valid_inputs[i]);\n\n            Assert.assertEquals(proxy.getUsage(), 0);\n\n            Assert.assertEquals(proxy.getProtocol(), valid_outputs[i][0]);\n            Assert.assertEquals(proxy.getUsername(), valid_outputs[i][1]);\n            Assert.assertEquals(proxy.getPassword(), valid_outputs[i][2]);\n            Assert.assertEquals(proxy.getAddress(), valid_outputs[i][3]);\n            Assert.assertEquals(proxy.getPort(), valid_outputs[i][4]);\n        }\n\n        for (String invalid_input : invalid_inputs) {\n            boolean failed = false;\n\n            try {\n                new SCProxy(invalid_input);\n            } catch (IllegalArgumentException ignored) {\n                failed = true;\n            }\n\n            Assert.assertTrue(failed);\n        }\n    }\n\n    @Test\n    public void testToString() {\n        String[] proxyStrings = {\n            \"http://example.com:8080\",\n            \"https://example.com:8080\",\n            \"http://user1:pass1@example.com:8080\",\n            \"sock5://user1:pass1@example.com:8080\",\n            \"http://example.com:80\",\n            \"sock5://example.com:64000\",\n        };\n\n        for (String proxyString : proxyStrings) {\n            SCProxy proxy = new SCProxy(proxyString);\n            Assert.assertEquals(proxyString, proxy.toString());\n        }\n    }\n\n    @Test\n    public void testIncrementUsage() {\n        SCProxy proxy = new SCProxy(\"http://user1:pass1@example.com:8080\");\n        Assert.assertEquals(proxy.getUsage(), 0);\n        proxy.incrementUsage();\n        Assert.assertEquals(proxy.getUsage(), 1);\n    }\n}"

@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_syntax_error"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "maksimkurb/keen-pbr"
+sha = "69142354e0af8309b6913bc3bcbfcfbf06259d93"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/lists/hash_comparator.go lib/lists/hash_comparator_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/lists/hash_comparator.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 77.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "lib/lists/hash_comparator_test.go"
+focal_file_path = "lib/lists/hash_comparator.go"
+test_file_url = "https://github.com/maksimkurb/keen-pbr/blob/69142354e0af8309b6913bc3bcbfcfbf06259d93/lib/lists/hash_comparator_test.go"
+focal_file_url = "https://github.com/maksimkurb/keen-pbr/blob/69142354e0af8309b6913bc3bcbfcfbf06259d93/lib/lists/hash_comparator.go"
+first_commit_date = "2025-01-14"
+last_commit_date = "2025-02-16"
+test_file_content = "package lists\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n)\ntype mockChecksumProvider struct {\n\tchecksum    string\n\tshouldError bool\n}\n\nfunc (m *mockChecksumProvider) GetChecksum() (string, error) {\n\tif m.shouldError {\n\t\treturn \"\", fmt.Errorf(\"mock checksum error\")\n\t}\n\treturn m.checksum, nil\n}\n\nfunc TestIsFileChanged_FileNotExists(t *testing.T) {\n\tmock := &mockChecksumProvider{checksum: \"abc123\"}\n\t\n\tchanged, err := IsFileChanged(mock, \"/nonexistent/file.txt\")\n\tif err != nil {\n\t\tt.Errorf(\"Expected no error for non-existent file, got: %v\", err)\n\t}\n\t\n\tif !changed {\n\t\tt.Error(\"Expected file to be considered changed when it doesn't exist\")\n\t}\n}\n\nfunc TestIsFileChanged_ChecksumError(t *testing.T) {\n\ttmpDir := t.TempDir()\n\ttestFile := filepath.Join(tmpDir, \"test.txt\")\n\terr := os.WriteFile(testFile, []byte(\"content\"), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create test file: %v\", err)\n\t}\n\t\n\tmock := &mockChecksumProvider{shouldError: true}\n\t\n\t_, err = IsFileChanged(mock, testFile)\n\tif err == nil {\n\t\tt.Error(\"Expected error when checksum provider fails\")\n\t}\n}\n\nfunc TestIsFileChanged_NoChecksumFile(t *testing.T) {\n\ttmpDir := t.TempDir()\n\ttestFile := filepath.Join(tmpDir, \"test.txt\")\n\terr := os.WriteFile(testFile, []byte(\"content\"), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create test file: %v\", err)\n\t}\n\t\n\tmock := &mockChecksumProvider{checksum: \"abc123\"}\n\t\n\tchanged, err : IsFileChanged(mock, testFile)\n\tif err != nil {\n\t\tt.Errorf(\"Expected no error when checksum file doesn't exist, got: %v\", err)\n\t}\n\t\n\tif !changed {\n\t\tt.Error(\"Expected file to be considered changed when checksum file doesn't exist\")\n\t}\n}\n\nfunc TestIsFileChanged_ChecksumMatches(t *testing.T) {\n\ttmpDir := t.TempDir()\n\ttestFile := filepath.Join(tmpDir, \"test.txt\")\n\tchecksumFile := testFile + \".md5\"\n\terr := os.WriteFile(testFile, []byte(\"content\"), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create test file: %v\", err)\n\t}\n\t\n\tchecksum := \"abc123\"\n\terr = os.WriteFile(checksumFile, []byte(checksum), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create checksum file: %v\", err)\n\t}\n\t\n\tmock := &mockChecksumProvider{checksum: checksum}\n\t\n\tchanged, err := IsFileChanged(mock, testFile)\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif changed {\n\t\tt.Error(\"Expected file to be considered unchanged when checksums match\")\n\t}\n}\n\nfunc TestIsFileChanged_ChecksumDiffers(t *testing.T) {\n\ttmpDir := t.TempDir()\n\ttestFile := filepath.Join(tmpDir, \"test.txt\")\n\tchecksumFile := testFile + \".md5\"\n\terr := os.WriteFile(testFile, []byte(\"content\"), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create test file: %v\", err)\n\t}\n\t\n\terr = os.WriteFile(checksumFile, []byte(\"old_checksum\"), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create checksum file: %v\", err)\n\t}\n\t\n\tmock := &mockChecksumProvider{checksum: \"new_checksum\"}\n\t\n\tchanged, err := IsFileChanged(mock, testFile)\n\tif err != nil {\n\t\tt.Errorf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif !changed {\n\t\tt.Error(\"Expected file to be considered changed when checksums differ\")\n\t}\n}\n\nfunc TestReadChecksum_Success(t *testing.T) {\n\ttmpDir := t.TempDir()\n\tchecksumFile := filepath.Join(tmpDir, \"test.md5\")\n\t\n\texpectedChecksum := \"abc123def456\"\n\terr := os.WriteFile(checksumFile, []byte(expectedChecksum), 0644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create checksum file: %v\", err)\n\t}\n\t\n\tchecksum, err := readChecksum(checksumFile)\n\tif err != nil {\n\t\tt.Fatalf(\"Unexpected error: %v\", err)\n\t}\n\t\n\tif string(checksum) != expectedChecksum {\n\t\tt.Errorf(\"Expected checksum '%s', got '%s'\", expectedChecksum, string(checksum))\n\t}\n}\n\nfunc TestReadChecksum_FileNotExists(t *testing.T) {\n\t_, err := readChecksum(\"/nonexistent/file.md5\")\n\tif err == nil {\n\t\tt.Error(\"Expected error for non-existent file\")\n\t}\n}\n\nfunc TestWriteChecksum_Success(t *testing.T) {\n\ttmpDir := t.TempDir()\n\ttestFile := filepath.Join(tmpDir, \"test.txt\")\n\tchecksumFile := testFile + \".md5\"\n\t\n\tchecksum := \"abc123def456\"\n\tmock := &mockChecksumProvider{checksum: checksum}\n\t\n\terr := WriteChecksum(mock, testFile)\n\tif err != nil {\n\t\tt.Fatalf(\"Unexpected error: %v\", err)\n\t}\n\tcontent, err := os.ReadFile(checksumFile)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read checksum file: %v\", err)\n\t}\n\t\n\tif string(content) != checksum {\n\t\tt.Errorf(\"Expected checksum content '%s', got '%s'\", checksum, string(content))\n\t}\n}\n\nfunc TestWriteChecksum_ProviderError(t *testing.T) {\n\ttmpDir := t.TempDir()\n\ttestFile := filepath.Join(tmpDir, \"test.txt\")\n\t\n\tmock := &mockChecksumProvider{shouldError: true}\n\t\n\terr := WriteChecksum(mock, testFile)\n\tif err == nil {\n\t\tt.Error(\"Expected error when checksum provider fails\")\n\t}\n}\n\nfunc TestWriteChecksum_WriteError(t *testing.T) {\n\tmock := &mockChecksumProvider{checksum: \"abc123\"}\n\t\n\terr := WriteChecksum(mock, \"/invalid/path/file.txt\")\n\tif err == nil {\n\t\tt.Error(\"Expected error when writing to invalid path\")\n\t}\n}"

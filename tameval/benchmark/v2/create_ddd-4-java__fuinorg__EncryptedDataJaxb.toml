@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "fuinorg/ddd-4-java"
+sha = "86927604a71932ab96e7ba8af1f9aafdcd67d73e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl jaxb -Dtest=EncryptedDataJaxbTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl jaxb -DtargetClasses=**.EncryptedDataJaxb  -DtargetTests=**.EncryptedDataJaxbTest  -DoutputFormats=XML"
+coverage_report_path = "jaxb/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "jaxb/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 98.0
+original_coverage = 98.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 64, 65, 78, 79, 80, 81, 82, 83, 84, 93, 103, 113, 123, 133, 138, 139, 140, 141, 142, 143, 144, 145, 150, 151, 153, 154, 156, 157, 159, 160, 161, 162, 164, 165, 167, 168, 169, 171, 172, 174, 175, 177, 178, 179, 181, 182, 184, 185, 186, 188, 189, 191,]
+missed_lines = [ 196,]
+
+[input_info]
+test_file_path = "jaxb/src/test/java/org/fuin/ddd4j/jaxb/EncryptedDataJaxbTest.java"
+focal_file_path = "jaxb/src/main/java/org/fuin/ddd4j/jaxb/EncryptedDataJaxb.java"
+test_file_url = "https://github.com/fuinorg/ddd-4-java/blob/86927604a71932ab96e7ba8af1f9aafdcd67d73e/jaxb/src/test/java/org/fuin/ddd4j/jaxb/EncryptedDataJaxbTest.java"
+focal_file_url = "https://github.com/fuinorg/ddd-4-java/blob/86927604a71932ab96e7ba8af1f9aafdcd67d73e/jaxb/src/main/java/org/fuin/ddd4j/jaxb/EncryptedDataJaxb.java"
+first_commit_date = "2025-04-18"
+last_commit_date = "2025-04-18"
+test_file_content = "package org.fuin.ddd4j.jaxb;\n\nimport jakarta.xml.bind.Marshaller;\nimport nl.jqno.equalsverifier.EqualsVerifier;\nimport org.fuin.utils4j.jaxb.MarshallerBuilder;\nimport org.junit.jupiter.api.Test;\n\nimport java.nio.charset.StandardCharsets;\nimport java.util.Base64;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.fuin.utils4j.Utils4J.deserialize;\nimport static org.fuin.utils4j.Utils4J.serialize;\nimport static org.fuin.utils4j.jaxb.JaxbUtils.marshal;\nimport static org.fuin.utils4j.jaxb.JaxbUtils.unmarshal;\n\npublic class EncryptedDataJaxbTest {\n\n    @Test\n    void testEqualsHashCode() {\n        EqualsVerifier.forClass(EncryptedDataJaxb.class).verify();\n    }\n\n    @Test\n    void testSerializeDeserialize() {\n\n        // PREPARE\n        final String keyId = \"the/key\";\n        final String keyVersion = \"1\";\n        final String dataType = \"TheSecretData\";\n        final String contentType = \"application/json\";\n        final byte[] encryptedData = \"\"\"\n                {\n                    \"lastName\" : \"Parker\",\n                    \"firstName\" : \"Peter\",\n                }\n                \"\"\".getBytes(StandardCharsets.UTF_8);\n        final EncryptedDataJaxb original = new EncryptedDataJaxb(keyId, keyVersion, dataType, contentType, encryptedData);\n\n        // TEST\n        final EncryptedDataJaxb copy = deserialize(serialize(original));\n\n        // VERIFY\n        assertThat(copy.getKeyId()).isEqualTo(keyId);\n        assertThat(copy.getKeyVersion()).isEqualTo(keyVersion);\n        assertThat(copy.getDataType()).isEqualTo(dataType);\n        assertThat(copy.getContentType()).isEqualTo(contentType);\n        assertThat(copy.getEncryptedData()).isEqualTo(encryptedData);\n\n    }\n\n    @Test\n    void testMarshalUnmarshal() {\n\n        // PREPARE\n        final String keyId = \"the/key\";\n        final String keyVersion = \"1\";\n        final String dataType = \"TheSecretData\";\n        final String contentType = \"application/json\";\n        final byte[] encryptedData = \"\"\"\n                {\n                    \"lastName\" : \"Parker\",\n                    \"firstName\" : \"Peter\",\n                }\n                \"\"\".getBytes(StandardCharsets.UTF_8);\n        final EncryptedDataJaxb original = new EncryptedDataJaxb(keyId, keyVersion, dataType, contentType, encryptedData);\n\n        // TEST\n        final Marshaller marshaller = new MarshallerBuilder().addClassesToBeBound(EncryptedDataJaxb.class).build();\n        final String xml = marshal(marshaller, original);\n        final EncryptedDataJaxb copy = unmarshal(xml, EncryptedDataJaxb.class);\n\n        // VERIFY\n        assertThat(copy.getKeyId()).isEqualTo(keyId);\n        assertThat(copy.getKeyVersion()).isEqualTo(keyVersion);\n        assertThat(copy.getDataType()).isEqualTo(dataType);\n        assertThat(copy.getContentType()).isEqualTo(contentType);\n        assertThat(copy.getEncryptedData()).isEqualTo(encryptedData);\n\n    }\n\n    @Test\n    public final void testUnmarshal() {\n\n        // PREPARE\n        final String xml = \"\"\"\n                <?xml version=\"1.0\" encoding=\"UTF-8\" standalone=\"yes\"?>\n                <eyncrypted-data>\n                  <key-id>the/key</key-id>\n                  <key-version>1</key-version>\n                  <data-type>TheSecretData</data-type>\n                  <content-type>application/json</content-type>\n                  <encrypted-data>ewogICAgImxhc3ROYW1lIiA6ICJQYXJrZXIiLAogICAgImZpcnN0TmFtZSIgOiAiUGV0ZXIiLAp9Cg==</encrypted-data>\n                </eyncrypted-data>\n                \"\"\";\n\n        // TEST\n        final EncryptedDataJaxb copy = unmarshal(xml, EncryptedDataJaxb.class);\n\n        // VERIFY\n        // VERIFY\n        assertThat(copy.getKeyId()).isEqualTo(\"the/key\");\n        assertThat(copy.getKeyVersion()).isEqualTo(\"1\");\n        assertThat(copy.getDataType()).isEqualTo(\"TheSecretData\");\n        assertThat(copy.getContentType()).isEqualTo(\"application/json\");\n        assertThat(copy.getEncryptedData()).isEqualTo(\n                Base64.getDecoder().decode(\"ewogICAgImxhc3ROYW1lIiA6ICJQYXJrZXIiLAogICAgImZpcnN0TmFtZSIgOiAiUGV0ZXIiLAp9Cg==\"));\n\n    }\n\n}\n"

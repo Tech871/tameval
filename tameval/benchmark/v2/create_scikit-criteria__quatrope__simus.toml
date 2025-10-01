@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "quatrope/scikit-criteria"
+sha = "35f17eeeafd80d666aac740be7c4eba9b14359b8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements_dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=skcriteria/agg/simus.py -m pytest -q --junit-xml=test_output.xml tests/agg/test_simus.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target skcriteria.agg.simus --unit-test tests.agg.test_simus --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target skcriteria/agg/simus.py --unit-test tests/agg/test_simus.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 28.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 18, 20, 21, 23, 25, 26, 27, 28, 38, 80, 108, 127, 136, 161, 211, 254, 256, 257, 261, 267, 268, 272, 273, 277, 278, 313, 314, 319,]
+missed_lines = [ 40, 45, 50, 51, 56, 59, 60, 61, 62, 65, 66, 69, 74, 76, 77, 82, 83, 84, 91, 94, 96, 97, 100, 102, 110, 113, 116, 119, 121, 128, 129, 130, 131, 132, 133, 138, 139, 140, 141, 144, 147, 150, 153, 155, 163, 166, 167, 168, 169, 171, 172, 175, 183, 186, 195, 196, 198, 262, 263, 264, 265, 270, 275, 279, 280, 281, 282, 283, 300, 315, 350, 351,]
+
+[input_info]
+test_file_path = "tests/agg/test_simus.py"
+focal_file_path = "skcriteria/agg/simus.py"
+test_file_url = "https://github.com/quatrope/scikit-criteria/blob/35f17eeeafd80d666aac740be7c4eba9b14359b8/tests/agg/test_simus.py"
+focal_file_url = "https://github.com/quatrope/scikit-criteria/blob/35f17eeeafd80d666aac740be7c4eba9b14359b8/skcriteria/agg/simus.py"
+first_commit_date = "2023-07-04"
+last_commit_date = "2025-06-26"
+test_file_content = "#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n# License: BSD-3 (https://tldrlegal.com/license/bsd-3-clause-license-(revised))\n# Copyright (c) 2016-2021, Cabral, Juan; Luczywo, Nadia\n# Copyright (c) 2022-2025 QuatroPe\n# All rights reserved.\n\n# =============================================================================\n# DOCS\n# =============================================================================\n\n\"\"\"test for skcriteria.agg.simus.\"\"\"\n\n# =============================================================================\n# IMPORTS\n# =============================================================================\n\nimport numpy as np\n\nimport pytest\n\nimport skcriteria\nfrom skcriteria.agg import RankResult\nfrom skcriteria.agg.simus import SIMUS\n\n# =============================================================================\n# TEST CLASSES\n# =============================================================================\n\ndef test_SIMUS_solver_not_available():\n    with pytest.raises(ValueError):\n        SIMUS(solver=\"fooo\")\n"

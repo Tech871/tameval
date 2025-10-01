@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.18"
+
+[repo_info]
+repository = "bytedance/gg"
+sha = "420f8369dd6e235b8124691860e822d015969fb6"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out gptr/gptr.go gptr/gptr_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting gptr/gptr.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = 93.0
+original_mutation_kill_rate = 93.0
+covered_lines = [ 60, 61, 62, 72, 73, 74, 75, 76, 86, 87, 88, 89, 90, 107, 108, 109, 110, 111, 112, 113, 124, 125, 126, 127, 128, 132, 133, 134, 149, 150, 151, 152, 153, 154, 162, 163, 164, 184, 185, 186, 187, 188, 189, 190, 191, 204, 205, 206, 217, 218, 219, 220, 221,]
+missed_lines = [ 137, 138, 139,]
+
+[input_info]
+test_file_path = "gptr/gptr_test.go"
+focal_file_path = "gptr/gptr.go"
+test_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/gptr/gptr_test.go"
+focal_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/gptr/gptr.go"
+first_commit_date = "2025-05-19"
+last_commit_date = "2025-05-20"
+test_file_content = "// Copyright 2025 Bytedance Ltd.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage gptr\n\nimport (\n\t\"fmt\"\n\t\"strconv\"\n\t\"testing\"\n\n\t\"github.com/bytedance/gg/gvalue\"\n\t\"github.com/bytedance/gg/internal/assert\"\n)\n\nfunc TestOf(t *testing.T) {\n\tassert.Equal(t, 543, *Of(543))\n\tassert.Equal(t, \"Alice\", *Of(\"Alice\"))\n\tassert.Equal(t, \"Alice\", **Of(Of(\"Alice\")))\n\tassert.Equal(t, \"Alice\", ***Of(Of(Of(\"Alice\"))))\n\tassert.False(t, IsNil(Of[*int](nil)))\n\tassert.True(t, IsNil(*Of[*int](nil)))\n\t// assert.Nil(t, *Of[*interface{}](nil))\n\n\t// Test modifying pointer.\n\t{\n\t\tv := 1\n\t\tp := Of(v)\n\t\tassert.False(t, p == &v)\n\t\t*p = 2\n\t\tassert.Equal(t, 1, v)\n\t\tassert.Equal(t, 2, *p)\n\t}\n}\n\nfunc TestOfNotZero(t *testing.T) {\n\tassert.Equal(t, 543, *OfNotZero(543))\n\tassert.Equal(t, \"Alice\", *OfNotZero(\"Alice\"))\n\n\t// Test zero.\n\tassert.True(t, IsNil(OfNotZero(0)))\n\tassert.True(t, IsNil(OfNotZero(\"\")))\n\tassert.True(t, IsNil(OfNotZero[*int](nil)))\n}\n\nfunc TestOfPositive(t *testing.T) {\n\tassert.Equal(t, 543, *OfPositive(543))\n\tassert.Equal(t, 1.23, *OfPositive(1.23))\n\n\t// Test non-positive number.\n\tassert.True(t, IsNil(OfPositive(0)))\n\tassert.True(t, IsNil(OfPositive(-1)))\n\tassert.True(t, IsNil(OfPositive(-1.23)))\n}\n\nfunc TestIndirect(t *testing.T) {\n\tassert.Equal(t, 543, Indirect(Of(543)))\n\tassert.Equal(t, \"Alice\", Indirect(Of(\"Alice\")))\n\tassert.Zero(t, Indirect[int](nil))\n\tassert.Nil(t, Indirect[interface{}](nil))\n\tassert.Nil(t, Indirect(Of[fmt.Stringer](nil)))\n}\n\nfunc TestIndirectOr(t *testing.T) {\n\tassert.Equal(t, \"Alice\", IndirectOr(Of(\"Alice\"), \"Bob\"))\n\tassert.Equal(t, \"Bob\", IndirectOr(nil, \"Bob\"))\n}\n\nfunc TestIsNil(t *testing.T) {\n\tassert.False(t, IsNil(Of(1)))\n\tassert.True(t, IsNil[int](nil))\n}\n\nfunc TestEqual(t *testing.T) {\n\tptr := Of(1)\n\tassert.True(t, Equal(ptr, ptr))\n\tassert.True(t, Equal(Of(1), Of(1)))\n\tassert.False(t, Equal(Of(1), Of(2)))\n\tassert.False(t, Equal(Of(1), nil))\n\tassert.False(t, Equal(nil, Of(1)))\n\tassert.True(t, Equal[string](nil, nil))\n}\n\nfunc TestEqualTo(t *testing.T) {\n\tassert.True(t, EqualTo(Of(1), 1))\n\tassert.False(t, EqualTo(Of(2), 1))\n\tassert.False(t, EqualTo(nil, 0))\n}\n\nfunc TestClone(t *testing.T) {\n\tassert.True(t, IsNil(Clone(((*int)(nil)))))\n\n\tv := 1\n\tassert.True(t, Clone(&v) != &v)\n\tassert.True(t, Equal(Clone(&v), &v))\n\n\tsrc := Of(1)\n\tdst := Clone(&src)\n\tassert.Equal(t, &src, dst)\n\tassert.True(t, src == *dst)\n}\n\nfunc TestCloneBy(t *testing.T) {\n\tassert.True(t, IsNil(CloneBy(((**int)(nil)), Clone[int])))\n\n\tsrc := Of(1)\n\tdst := CloneBy(&src, Clone[int])\n\tassert.Equal(t, &src, dst)\n\tassert.False(t, src == *dst)\n}\n\nfunc TestMap(t *testing.T) {\n\ti := 1\n\tassert.Equal(t, Of(\"1\"), Map(&i, strconv.Itoa))\n\tassert.True(t, Map(nil, strconv.Itoa) == nil)\n\n\tassert.NotPanic(t, func() {\n\t\t_ = Map(nil, func(int) string {\n\t\t\tpanic(\"Q_Q\")\n\t\t})\n\t})\n\n\tassert.Panic(t, func() {\n\t\t_ = Map(&i, func(int) string {\n\t\t\tpanic(\"Q_Q\")\n\t\t})\n\t})\n}\n\nfunc Indirect_gvalueZero[T any](p *T) (v T) {\n\tif p == nil {\n\t\treturn gvalue.Zero[T]()\n\t}\n\treturn *p\n}\n\nfunc BenchmarkIndirect(b *testing.B) {\n\ttype Big struct {\n\t\tFoo [200]string\n\t\tBar int\n\t}\n\n\tvar big *Big\n\tb.Run(\"Named\", func(b *testing.B) {\n\t\tvar v Big\n\t\tfor i := 0; i <= b.N; i++ {\n\t\t\tv = Indirect(big)\n\t\t}\n\t\t_ = v\n\t})\n\tb.Run(\"gvalue.Zero\", func(b *testing.B) {\n\t\tvar v Big\n\t\tfor i := 0; i <= b.N; i++ {\n\t\t\tv = Indirect_gvalueZero(big)\n\t\t}\n\t\t_ = v\n\t})\n}\n"

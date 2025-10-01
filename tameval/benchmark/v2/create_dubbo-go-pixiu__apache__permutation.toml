@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "apache/dubbo-go-pixiu"
+sha = "1f7c7364d47baa7567b762843e6ee39020be179e"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/cluster/loadbalancer/maglev/permutation.go pkg/cluster/loadbalancer/maglev/permutation_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/cluster/loadbalancer/maglev/permutation.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 45.0
+original_coverage = 80.0
+mutation_kill_rate = 17.0
+original_mutation_kill_rate = 46.0
+covered_lines = [ 59, 60, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 90, 91, 92, 93, 94, 95, 96, 98, 99, 100, 101, 102, 103, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 145, 146, 147, 148, 149, 150, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 188, 189, 190, 191, 192, 193, 196, 197, 198, 199, 200, 201, 202, 208, 209, 280, 281, 282, 283, 285, 286, 287, 288,]
+missed_lines = [ 61, 62, 63, 64, 65, 66, 71, 72, 73, 74, 104, 105, 123, 124, 125, 128, 129, 130, 131, 132, 133, 134, 135, 137, 138, 139, 140, 141, 166, 167, 168, 169, 170, 173, 174, 175, 176, 177, 178, 181, 182, 183, 184, 204, 205, 206, 213, 214, 215, 216, 217, 218, 219, 221, 222, 223, 225, 229, 230, 231, 232, 233, 234, 236, 237, 238, 239, 240, 241, 242, 243, 244, 246, 247, 248, 249, 250, 254, 255, 256, 257, 258, 259, 261, 262, 263, 264, 266, 267, 268, 269, 270, 271, 272, 273, 274, 277,]
+
+[input_info]
+test_file_path = "pkg/cluster/loadbalancer/maglev/permutation_test.go"
+focal_file_path = "pkg/cluster/loadbalancer/maglev/permutation.go"
+test_file_url = "https://github.com/apache/dubbo-go-pixiu/blob/1f7c7364d47baa7567b762843e6ee39020be179e/pkg/cluster/loadbalancer/maglev/permutation_test.go"
+focal_file_url = "https://github.com/apache/dubbo-go-pixiu/blob/1f7c7364d47baa7567b762843e6ee39020be179e/pkg/cluster/loadbalancer/maglev/permutation.go"
+first_commit_date = "2024-04-21"
+last_commit_date = "2025-08-03"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage maglev\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n)\n\nimport (\n\t\"github.com/stretchr/testify/assert\"\n)\n\nconst ConsistencyToleration = 3\n\nfunc WithLookUpTable(tableSize, nodeCount int, function func(*LookUpTable)) {\n\ttable := createTableWithNodes(tableSize, nodeCount)\n\ttable.Populate()\n\tif function != nil {\n\t\tfunction(table)\n\t}\n}\n\nfunc createTableWithNodes(tableSize, nodeCount int) *LookUpTable {\n\tnodes := make([]string, 0, nodeCount)\n\tfor i := 1; i <= nodeCount; i++ {\n\t\tnodes = append(nodes, createEndpoint(i))\n\t}\n\ttable, _ := NewLookUpTable(tableSize, nodes)\n\treturn table\n}\n\nfunc createEndpoint(id int) string {\n\treturn fmt.Sprintf(\"192.168.1.%d:%d\", id, 1000+id)\n}\n\n\n\nfunc TestLookUpTable_Get(t *testing.T) {\n\ttableSize, nodeCount := 1033, 10\n\tkey := \"/this/is/a/test\"\n\n\ttable := createTableWithNodes(tableSize, nodeCount)\n\n\t_, err := table.Get(key)\n\tassert.NotNil(t, err, \"Got endpoint before populating\")\n\n\ttable.Populate()\n\n\tep, err := table.Get(key)\n\tassert.Nil(t, err, \"Fail to get endpoint\")\n\tassert.NotEqual(t, \"\", ep, \"Wrong endpoint\")\n}\n\n\n\nfunc checkUnPopulateSlot(t *testing.T, table *LookUpTable) {\n\tif table.endpointNum == 0 {\n\t\treturn\n\t}\n\n\tfor i, s := range table.slots {\n\t\tassert.NotEqual(t, \"\", s,\n\t\t\t\"Unpopulating slot in table(node=%d, factor=%d) at slot: %d\", table.endpointNum, table.size, i)\n\t}\n}\n\nfunc checkMissingEndpoint(t *testing.T, table *LookUpTable) {\n\tfor _, p := range table.permutations {\n\t\tassert.Equal(t, true, p.hit > 0,\n\t\t\t\"Missing endpoint: %s in table(node=%d, factor=%d)\", table.slots[p.index], table.endpointNum, table.size)\n\t}\n}\n\nfunc checkEndpointNotIn(t *testing.T, table *LookUpTable, endpoint string) {\n\tfor i, slot := range table.slots {\n\t\tassert.NotEqual(t, endpoint, slot,\n\t\t\t\"Unexpect endpoint %s in slot %d\", endpoint, i)\n\t}\n}\n\nfunc checkConsistency(t *testing.T, table *LookUpTable) {\n\tif table.endpointNum == 0 {\n\t\treturn\n\t}\n\n\tavg := table.size / table.endpointNum\n\tdist := make(map[string]int)\n\tfor _, slot := range table.slots {\n\t\tdist[slot]++\n\t}\n\tfor k, v := range dist {\n\t\tassert.NotEqual(t, true, v > avg+ConsistencyToleration || v < avg-ConsistencyToleration,\n\t\t\t\"%s with distributions %d not in %d +/- %d\", k, v, avg, ConsistencyToleration)\n\t}\n}\n"

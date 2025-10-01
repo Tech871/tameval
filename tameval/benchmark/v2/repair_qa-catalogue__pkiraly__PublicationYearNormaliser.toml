@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "pkiraly/qa-catalogue"
+sha = "66193841a3a3402c99e7e2392de68536ee11568b"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=PublicationYearNormaliserTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.PublicationYearNormaliser  -DtargetTests=**.PublicationYearNormaliserTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 42.0
+original_coverage = 42.0
+mutation_kill_rate = 9.0
+original_mutation_kill_rate = 9.0
+covered_lines = [ 18, 23, 73, 74, 77, 80, 82, 84, 85, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 120, 122, 123, 125,]
+missed_lines = [ 28, 29, 30, 31, 32, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 46, 47, 49, 50, 52, 54, 56, 57, 59, 60, 64, 65, 66, 68, 70, 129, 130, 131, 132, 133, 134, 137, 138, 139, 140, 141, 144, 145, 146, 147, 148, 149, 152, 153, 154, 155, 156, 159, 160, 162, 163, 164, 165, 168, 169,]
+
+[input_info]
+test_file_path = "src/test/java/de/gwdg/metadataqa/marc/cli/utils/translation/PublicationYearNormaliserTest.java"
+focal_file_path = "src/main/java/de/gwdg/metadataqa/marc/cli/utils/translation/PublicationYearNormaliser.java"
+test_file_url = "https://github.com/pkiraly/qa-catalogue/blob/66193841a3a3402c99e7e2392de68536ee11568b/src/test/java/de/gwdg/metadataqa/marc/cli/utils/translation/PublicationYearNormaliserTest.java"
+focal_file_url = "https://github.com/pkiraly/qa-catalogue/blob/66193841a3a3402c99e7e2392de68536ee11568b/src/main/java/de/gwdg/metadataqa/marc/cli/utils/translation/PublicationYearNormaliser.java"
+first_commit_date = "2025-03-31"
+last_commit_date = "2025-04-14"
+test_file_content = "package de.gwdg.metadataqa.marc.cli.utils.translation;\n\nimport org.junit.Test;\n\nimport static org.junit.Assert.*;\n\npublic class PublicationYearNormaliserTest {\n\n  @Test\n  public void uncertainYears() {\n    expect_equal(\"[179-?]\", \"1790\");\n    expect_equal(\"18--]\", \"1800\");\n    expect_equal(\"183-]\", \"1830\");\n    expect_equal(\"[18??]\", \"1800\");\n    expect_equal(\"[19??]\", \"1900\");\n  }\n\n  @Test\n  public void checkUncertainYears() {\n    assertEquals(\"1790\", PublicationYearNormaliser.normalizeYear(\"[179-?]\"));\n    assertEquals(\"1800\", PublicationYearNormaliser.normalizeYear(\"18--]\"));\n    assertEquals(\"1830\", PublicationYearNormaliser.normalizeYear(\"183-]\"));\n    assertEquals(\"1800\", PublicationYearNormaliser.normalizeYear(\"[18??]\"));\n    assertEquals(\"1900\", PublicationYearNormaliser.normalizeYear(\"[19??]\"));\n  }\n\n  @Test\n  public void anotherUncertainYearsTest() {\n    assertTrue(PublicationYearNormaliser.normalizeYear(\"[179-?]\").equals(\"1790\"));\n    assertTrue(PublicationYearNormaliser.normalizeYear(\"18--]\").equals(\"1800\"));\n    assertTrue(PublicationYearNormaliser.normalizeYear(\"183-]\").equals(\"1830\"));\n    assertTrue(PublicationYearNormaliser.normalizeYear(\"[18??]\").equals(\"1800\"));\n    assertTrue(PublicationYearNormaliser.normalizeYear(\"[19??]\").equals(\"1900\"));\n  }\n\n  @Test\n  public void copyright() {\n    expect_equal(\"copyright  2019.\", \"2019\");\n    expect_equal(\"[©2019].\", \"2019\");\n    expect_equal(\"℗ 2019.\", \"2019\");\n  }\n\n  @Test\n  public void month() {\n    expect_equal(\"druk janvier 2016.\", \"2016\");\n    expect_equal(\"enero de 2020.\", \"2020\");\n    expect_equal(\"februari 2020.\", \"2020\");\n    expect_equal(\"druk février 2020.\", \"2020\");\n    expect_equal(\"marzo de 2019.\", \"2019\");\n    expect_equal(\"druk mars 2016.\", \"2016\");\n    expect_equal(\"avril 2016.\", \"2016\");\n    expect_equal(\"abril de 2017.\", \"2017\");\n    expect_equal(\"mai 2019.\", \"2019\");\n    expect_equal(\"mayo de 2011.\", \"2011\");\n    expect_equal(\"juny 2019.\", \"2019\");\n    expect_equal(\"junio de 2019.\", \"2019\");\n    expect_equal(\"julio de 2019.\", \"2019\");\n    expect_equal(\"agosto de 2017.\", \"2017\");\n    expect_equal(\"août 2019.\", \"2019\");\n    expect_equal(\"septembre 2017.\", \"2017\");\n    expect_equal(\"druk settembre 2019.\", \"2019\");\n    expect_equal(\"druk novembre 2019.\", \"2019\");\n    expect_equal(\"diciembre de 2017.\", \"2017\");\n    expect_equal(\"druk december 2018.\", \"2018\");\n  }\n\n  @Test\n  public void roman() {\n    expect_equal(\"MDCCLXXX. [1780]\", \"1780\");\n    expect_equal(\"M.DC.XXI. [1621]\", \"1621\");\n    expect_equal(\"MCMXXXVII [1937]\", \"1937\");\n    expect_equal(\"anno M.DC.XX. [1620]\", \"1620\");\n    expect_equal(\"an. Dom. MDCCII. [1702]\", \"1702\");\n    expect_equal(\"annô MDCCXLIV. [1744]\", \"1744\");\n\n    expect_equal(\"MDCCXCV.\", \"1795\");\n    expect_equal(\"M.DCCXCV.\", \"1795\");\n    expect_equal(\"M.D.CCXCV.\", \"1795\");\n    expect_equal(\"M D CCXCV.\", \"1795\");\n    expect_equal(\"M,D,CCXCV\", \"1795\");\n  }\n\n  @Test\n  public void name() {\n    expect_equal(\"[ok. 2019].\", \"2019\");\n    expect_equal(\"Shō 15 [1940].\", \"1940\");\n    expect_equal(\"min kuo 76 [1987]\", \"1987\");\n    expect_equal(\"Min kuo 4 [1915]\", \"1915\");\n    expect_equal(\"Min-kuo 21 [1932]\", \"1932\");\n    expect_equal(\"Meiji 40 [1907]\", \"1907\");\n    expect_equal(\"1524]\", \"1524\");\n    expect_equal(\"1524?]\", \"1524\");\n    expect_equal(\"[1524?]\", \"1524\");\n    expect_equal(\"[1993] \", \"1993\");\n    expect_equal(\"an. 1719\", \"1719\");\n    expect_equal(\"2015[!2017]\", \"2017\");\n    expect_equal(\"ccop. 2006\", \"2006\");\n    expect_equal(\"cp. 2006\", \"2006\");\n    expect_equal(\"anno 1799\", \"1799\");\n\n    expect_equal(\"[ca. 1618]\", \"1618\");\n    expect_equal(\"MDCCLXVIII. [1768]\", \"1768\");\n    expect_equal(\"MDCCLXVIII. 1768\", \"1768\");\n\n    expect_equal(\"August 5, 1799.\", \"1799\");\n    expect_equal(\"1726[1727]\", \"1727\");\n\n    expect_equal(\"May 27, 1643.\", \"1643\");\n    expect_equal(\"Iune 8, 1642.\", \"1642\");\n\n    expect_equal(\"168[5].\", \"1685\");\n    expect_equal(\"166[1].\", \"1661\");\n    expect_equal(\"164[2]\", \"1642\");\n    expect_equal(\"16[99]\", \"1699\");\n    expect_equal(\"16[65?]\", \"1665\");\n    expect_equal(\"[1930!]\", \"1930\");\n    expect_equal(\"1348\", \"1348\");\n    expect_equal(\"[18]91\", \"1891\");\n\n  }\n\n  @Test\n  public void hungarian() {\n    expect_equal(\"[1936 után]\", \"1936\");\n    expect_equal(\"[1914 előtt]\", \"1914\");\n    expect_equal(\"1782 eszt.\", \"1782\");\n    expect_equal(\"1785. esztend.\", \"1785\");\n  }\n\n  private void expect_equal(String actual, String expected) {\n    assertEquals(expected, PublicationYearNormaliser.normalizeYear(actual));\n  }\n}"

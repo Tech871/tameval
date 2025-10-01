@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "lenstronomy/lenstronomy"
+sha = "370d932c8ded11da8b1e3c772266a87ead143136"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r test_requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=lenstronomy/LensModel/Profiles/hernquist_ellipse_cse.py -m pytest -q --junit-xml=test_output.xml test/test_LensModel/test_Profiles/test_hernquist_ellipse_cse.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target lenstronomy.LensModel.Profiles.hernquist_ellipse_cse --unit-test test.test_LensModel.test_Profiles.test_hernquist_ellipse_cse --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target lenstronomy/LensModel/Profiles/hernquist_ellipse_cse.py --unit-test test/test_LensModel/test_Profiles/test_hernquist_ellipse_cse.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 58.0
+original_coverage = 100.0
+mutation_kill_rate = 20.0
+original_mutation_kill_rate = 69.0
+covered_lines = [ 0, 3, 4, 5, 6, 8, 11, 18, 19, 27, 36, 37, 39, 82, 125, 127, 143, 145, 147, 148, 150, 151, 156, 157, 158, 160, 186, 187, 195, 196, 197,]
+missed_lines = [ 129, 131, 132, 134, 137, 140, 141, 163, 165, 166, 168, 169, 174, 175, 176, 177, 178, 179, 180, 181, 182, 184,]
+
+[input_info]
+test_file_path = "test/test_LensModel/test_Profiles/test_hernquist_ellipse_cse.py"
+focal_file_path = "lenstronomy/LensModel/Profiles/hernquist_ellipse_cse.py"
+test_file_url = "https://github.com/lenstronomy/lenstronomy/blob/370d932c8ded11da8b1e3c772266a87ead143136/test/test_LensModel/test_Profiles/test_hernquist_ellipse_cse.py"
+focal_file_url = "https://github.com/lenstronomy/lenstronomy/blob/370d932c8ded11da8b1e3c772266a87ead143136/lenstronomy/LensModel/Profiles/hernquist_ellipse_cse.py"
+first_commit_date = "2022-02-07"
+last_commit_date = "2025-05-01"
+test_file_content = "__author__ = \"sibirrer\"\n\nfrom lenstronomy.LensModel.Profiles.hernquist_ellipse_cse import HernquistEllipseCSE\nfrom lenstronomy.LensModel.Profiles.hernquist import Hernquist\n\nimport numpy as np\nimport numpy.testing as npt\nimport pytest\n\nclass TestHernquistEllipseCSE(object):\n    \"\"\"Tests the Gaussian methods.\"\"\"\n\n    def setup_method(self):\n        self.hernquist = Hernquist()\n        self.hernquist_cse = HernquistEllipseCSE()\n\n    def test_derivatives(self):\n        x = np.linspace(0.01, 2, 10)\n        y = np.zeros_like(x)\n        kwargs = {\"sigma0\": 0.5, \"Rs\": 2, \"center_x\": 0, \"center_y\": 0}\n\n        f_x_nfw, f_y_nfw = self.hernquist.derivatives(x, y, **kwargs)\n        f_x_cse, f_y_cse = self.hernquist_cse.derivatives(x, y, e1=0, e2=0, **kwargs)\n        npt.assert_almost_equal(f_x_cse, f_x_nfw, decimal=5)\n        npt.assert_almost_equal(f_y_cse, f_y_nfw, decimal=5)\n\nif __name__ == \"__main__\":\n    pytest.main()\n"

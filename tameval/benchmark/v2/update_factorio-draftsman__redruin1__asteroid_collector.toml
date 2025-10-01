@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "redruin1/factorio-draftsman"
+sha = "4a795c6530c6d5ea2571c8a234164da22928a4a1"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=draftsman/prototypes/asteroid_collector.py -m pytest -q --junit-xml=test_output.xml test/prototypes/test_asteroid_collector.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target draftsman.prototypes.asteroid_collector --unit-test test.prototypes.test_asteroid_collector --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target draftsman/prototypes/asteroid_collector.py --unit-test test/prototypes/test_asteroid_collector.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 65.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = [ 2, 3, 12, 13, 14, 15, 17, 19, 20, 23, 24, 25, 41, 42, 47, 52, 63, 75, 80, 91, 92, 103, 104, 115, 125, 128,]
+missed_lines = [ 43, 64, 65, 66, 67, 68, 70, 71, 73, 116, 118, 119, 120, 121,]
+
+[input_info]
+test_file_path = "test/prototypes/test_asteroid_collector.py"
+focal_file_path = "draftsman/prototypes/asteroid_collector.py"
+test_file_url = "https://github.com/redruin1/factorio-draftsman/blob/4a795c6530c6d5ea2571c8a234164da22928a4a1/test/prototypes/test_asteroid_collector.py"
+focal_file_url = "https://github.com/redruin1/factorio-draftsman/blob/4a795c6530c6d5ea2571c8a234164da22928a4a1/draftsman/prototypes/asteroid_collector.py"
+first_commit_date = "2024-12-04"
+last_commit_date = "2025-08-07"
+test_file_content = "# test_asteroid_collector.py\n\nfrom draftsman.prototypes.asteroid_collector import AsteroidCollector\nfrom draftsman.prototypes.container import Container\nfrom draftsman.constants import Direction, ValidationMode\nfrom draftsman.error import DataFormatError\nfrom draftsman.signatures import AsteroidChunkID, Condition, FilteredInventory\nimport draftsman.validators\n\nfrom draftsman.data.entities import asteroid_collectors\n\nfrom collections.abc import Hashable\nimport pytest\n\n\n@pytest.fixture\ndef valid_asteroid_collector():\n    if len(asteroid_collectors) == 0:\n        return None\n    return AsteroidCollector(\n        \"asteroid-collector\",\n        id=\"test\",\n        quality=\"uncommon\",\n        tile_position=(1, 1),\n        direction=Direction.EAST,\n        circuit_enabled=True,\n        circuit_condition=Condition(\n            first_signal=\"signal-A\", comparator=\"<\", second_signal=\"signal-B\"\n        ),\n        result_inventory=FilteredInventory(\n            bar=10,\n        ),\n        chunk_filter=[\"oxide-asteroid-chunk\"],\n        circuit_set_filters=True,\n        read_contents=True,\n        read_hands=False,\n        tags={\"blah\": \"blah\"},\n    )\n\n\nclass TestAsteroidCollector:\n    def test_constructor_init(self):\n        collector = AsteroidCollector(\n            \"asteroid-collector\",\n            direction=Direction.SOUTH,\n            chunk_filter=[\"carbonic-asteroid-chunk\", \"metallic-asteroid-chunk\"],\n        )\n        assert collector.to_dict() == {\n            \"name\": \"asteroid-collector\",\n            \"position\": {\"x\": 1.5, \"y\": 1.5},\n            \"direction\": Direction.SOUTH,\n            \"chunk-filter\": [\n                {\"index\": 1, \"name\": \"carbonic-asteroid-chunk\"},\n                {\"index\": 2, \"name\": \"metallic-asteroid-chunk\"},\n            ],\n        }\n\n        # Assert no issues\n        collector.validate(mode=ValidationMode.PEDANTIC).reissue_all()\n\n        with pytest.raises(DataFormatError):\n            AsteroidCollector(chunk_filter=\"wrong\").validate().reissue_all()\n\n    def test_power_and_circuit_flags(self):\n        for collector_name in asteroid_collectors:\n            collector = AsteroidCollector(collector_name)\n            assert collector.circuit_connectable == True\n            assert collector.dual_circuit_connectable == False\n            assert collector.power_connectable == False\n            assert collector.dual_power_connectable == False\n\n    def test_chunk_filter(self):\n        ac = AsteroidCollector(\"asteroid-collector\")\n\n        # Test hybrid\n        ac.chunk_filter = [\n            \"oxide-asteroid-chunk\",\n            AsteroidChunkID(index=2, name=\"metallic-asteroid-chunk\"),\n        ]\n        assert ac.to_dict()[\"chunk-filter\"] == [\n            {\"index\": 1, \"name\": \"oxide-asteroid-chunk\"},\n            {\"index\": 2, \"name\": \"metallic-asteroid-chunk\"},\n        ]\n\n        with draftsman.validators.set_mode(ValidationMode.DISABLED):\n            ac.chunk_filter = \"wrong\"\n        assert ac.chunk_filter == \"wrong\"\n\n    def test_read_contents(self):\n        ac = AsteroidCollector(\"asteroid-collector\")\n        assert ac.read_contents == False\n\n        ac.read_contents = True\n        assert ac.read_contents == True\n\n        with pytest.raises(DataFormatError):\n            ac.read_contents = \"wrong\"\n        assert ac.read_contents == True\n\n        with draftsman.validators.set_mode(ValidationMode.DISABLED):\n            ac.read_contents = \"wrong\"\n            assert ac.read_contents == \"wrong\"\n\n    def test_include_hands(self):\n        ac = AsteroidCollector(\"asteroid-collector\")\n        assert ac.read_hands == True\n\n        ac.read_hands = False\n        assert ac.read_hands == False\n\n        with pytest.raises(DataFormatError):\n            ac.read_hands = \"wrong\"\n        assert ac.read_hands == False\n\n    def test_mergable_with(self):\n        collector1 = AsteroidCollector(\"asteroid-collector\")\n        collector2 = AsteroidCollector(\"asteroid-collector\", tags={\"some\": \"stuff\"})\n\n        assert collector1.mergable_with(collector2)\n        assert collector2.mergable_with(collector1)\n\n        collector2.tile_position = (1, 1)\n        assert not collector1.mergable_with(collector2)\n\n    def test_merge(self):\n        collector1 = AsteroidCollector(\"asteroid-collector\")\n        collector2 = AsteroidCollector(\n            \"asteroid-collector\",\n            tags={\"some\": \"stuff\"},\n            chunk_filter=[\"oxide-asteroid-chunk\"],\n            read_contents=True,\n            read_hands=False,\n        )\n\n        collector1.merge(collector2)\n        del collector2\n\n        assert collector1.tags == {\"some\": \"stuff\"}\n        assert collector1.chunk_filter == [\n            AsteroidChunkID(index=1, name=\"oxide-asteroid-chunk\")\n        ]\n        assert collector1.read_contents == True\n        assert collector1.read_hands == False\n\n    def test_eq(self):\n        collector1 = AsteroidCollector(\"asteroid-collector\")\n        collector2 = AsteroidCollector(\"asteroid-collector\")\n\n        assert collector1 == collector2\n\n        # beacon1.set_item_request(\"speed-module-3\", 2)\n        collector1.tags = {\"something\": \"else\"}\n\n        assert collector1 != collector2\n\n        container = Container()\n\n        assert collector1 != container\n        assert collector2 != container\n\n        # hashable\n        assert isinstance(collector1, Hashable)"

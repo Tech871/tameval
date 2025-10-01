@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "29cf8b2f82f8ecc386c4cfb238757fa859b7eb06"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl pave-reverse -Dtest=CodonWindowTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl pave-reverse -DtargetClasses=**.CodonWindow  -DtargetTests=**.CodonWindowTest  -DoutputFormats=XML"
+coverage_report_path = "pave-reverse/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "pave-reverse/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 75.0
+original_coverage = 75.0
+mutation_kill_rate = 74.0
+original_mutation_kill_rate = 74.0
+covered_lines = [ 17, 20, 21, 22, 23, 27, 28, 29, 30, 32, 38, 39, 43, 47, 48, 53, 56, 57, 58, 59, 64, 67, 68, 72, 74, 79, 80, 81, 82, 87,]
+missed_lines = [ 18, 19, 45, 70, 93, 102, 104, 106, 107, 113,]
+
+[input_info]
+test_file_path = "pave-reverse/src/test/java/com/hartwig/hmftools/pavereverse/protein/CodonWindowTest.java"
+focal_file_path = "pave-reverse/src/main/java/com/hartwig/hmftools/pavereverse/protein/CodonWindow.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/pave-reverse/src/test/java/com/hartwig/hmftools/pavereverse/protein/CodonWindowTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/pave-reverse/src/main/java/com/hartwig/hmftools/pavereverse/protein/CodonWindow.java"
+first_commit_date = "2025-03-16"
+last_commit_date = "2025-03-17"
+test_file_content = "package com.hartwig.hmftools.pavereverse.protein;\n\nimport java.util.List;\n\nimport com.hartwig.hmftools.pavereverse.base.ChangeContextBuilder;\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class CodonWindowTest\n{\n    List<Integer> exonLengths = List.of(100, 100, 100, 120, 80, 31, 78);\n\n    @Test\n    public void windowInExon()\n    {\n        // |--- ....--|-\n        CodonWindow bw = new CodonWindow(4,4);\n        ChangeContextBuilder builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(0, builder.Data.ExonIndex);\n        Assert.assertEquals(9, builder.Data.ChangeStart);\n        Assert.assertEquals(20, builder.Data.ChangeEnd);\n        Assert.assertEquals(0, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(2, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(1, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n\n        //-|--...--|-\n        bw = new CodonWindow(51,4);\n        builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(1, builder.Data.ExonIndex);\n        Assert.assertEquals(50, builder.Data.ChangeStart);\n        Assert.assertEquals(61, builder.Data.ChangeEnd);\n        Assert.assertEquals(1, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(1, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(35, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n\n        //--|--...---|\n        bw = new CodonWindow(95,5);\n        builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(2, builder.Data.ExonIndex);\n        Assert.assertEquals(82, builder.Data.ChangeStart);\n        Assert.assertEquals(96, builder.Data.ChangeEnd);\n        Assert.assertEquals(2, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(0, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(68, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n\n        bw = new CodonWindow(175,2);\n        builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(5, builder.Data.ExonIndex);\n        Assert.assertEquals(22, builder.Data.ChangeStart);\n        Assert.assertEquals(27, builder.Data.ChangeEnd);\n        Assert.assertEquals(2, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(0, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(168, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n    }\n\n    @Test\n    public void windowStartsNearStartOfExon()\n    {\n        CodonWindow bw = new CodonWindow(35,10);\n        ChangeContextBuilder builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(1, builder.Data.ExonIndex);\n        Assert.assertEquals(2, builder.Data.ChangeStart);\n        Assert.assertEquals(31, builder.Data.ChangeEnd);\n        Assert.assertEquals(1, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(1, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(35, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n\n        bw = new CodonWindow(101,8);\n        builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(3, builder.Data.ExonIndex);\n        Assert.assertEquals(0, builder.Data.ChangeStart);\n        Assert.assertEquals(23, builder.Data.ChangeEnd);\n        Assert.assertEquals(0, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(0, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(101, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n    }\n\n    @Test\n    public void windowStartsAtEndOfExon()\n    {\n        // |--- --- ... --- +|++ --- ... --- --|- --- ...   The window in this example is the + chars\n        CodonWindow bw = new CodonWindow(34,1);\n        ChangeContextBuilder builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(1, builder.Data.ExonIndex);\n        Assert.assertEquals(0, builder.Data.ChangeStart);\n        Assert.assertEquals(1, builder.Data.ChangeEnd);\n        Assert.assertEquals(1, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(1, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(35, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n        Assert.assertNotNull(builder.CompanionData);\n        Assert.assertEquals(0, builder.CompanionData.ExonIndex);\n        Assert.assertEquals(99, builder.CompanionData.ChangeStart);\n        Assert.assertEquals(99, builder.CompanionData.ChangeEnd);\n        Assert.assertEquals(0, builder.CompanionData.PaddingInPreviousExon);\n        Assert.assertEquals(2, builder.CompanionData.PaddingInNextExon);\n        Assert.assertEquals(1, builder.CompanionData.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n\n        bw = new CodonWindow(67,2);\n        builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(2, builder.Data.ExonIndex);\n        Assert.assertEquals(0, builder.Data.ChangeStart);\n        Assert.assertEquals(3, builder.Data.ChangeEnd);\n        Assert.assertEquals(2, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(0, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(68, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n    }\n\n    @Test\n    public void windowEndsAtStartOfExon()\n    {\n        CodonWindow bw = new CodonWindow(33,2);\n        ChangeContextBuilder builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(0, builder.Data.ExonIndex);\n        Assert.assertEquals(96, builder.Data.ChangeStart);\n        Assert.assertEquals(99, builder.Data.ChangeEnd);\n        Assert.assertEquals(0, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(2, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(1, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n\n        bw = new CodonWindow(61,7);\n        builder = bw.seekExonLocation(exonLengths);\n        Assert.assertEquals(1, builder.Data.ExonIndex);\n        Assert.assertEquals(80, builder.Data.ChangeStart);\n        Assert.assertEquals(99, builder.Data.ChangeEnd);\n        Assert.assertEquals(1, builder.Data.PaddingInPreviousExon);\n        Assert.assertEquals(1, builder.Data.PaddingInNextExon);\n        Assert.assertEquals(35, builder.Data.AminoAcidNumberOfFirstAminoAcidStartingInExon);\n    }\n}\n"

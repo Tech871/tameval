@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "openGemini/openGemini"
+sha = "b8992247864dd0395b2e433c6472bb6bdfe7b905"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out lib/consistenthash/consistenthash.go lib/consistenthash/consistenthash_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting lib/consistenthash/consistenthash.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 82.0
+original_coverage = 91.0
+mutation_kill_rate = 65.0
+original_mutation_kill_rate = 71.0
+covered_lines = [ 31, 35, 36, 37, 38, 39, 40, 43, 44, 45, 47, 48, 49, 50, 51, 52, 53, 55, 58, 62, 63, 64, 65, 67, 68, 69, 70,]
+missed_lines = [ 32, 33, 34, 59, 60, 61,]
+
+[input_info]
+test_file_path = "lib/consistenthash/consistenthash_test.go"
+focal_file_path = "lib/consistenthash/consistenthash.go"
+test_file_url = "https://github.com/openGemini/openGemini/blob/b8992247864dd0395b2e433c6472bb6bdfe7b905/lib/consistenthash/consistenthash_test.go"
+focal_file_url = "https://github.com/openGemini/openGemini/blob/b8992247864dd0395b2e433c6472bb6bdfe7b905/lib/consistenthash/consistenthash.go"
+first_commit_date = "2025-04-12"
+last_commit_date = "2025-04-12"
+test_file_content = "// Copyright 2025 Huawei Cloud Computing Technologies Co., Ltd.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage consistenthash\n\nimport (\n\t\"strconv\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestHashing(t *testing.T) {\n\thash := New(3, func(key []byte) uint32 {\n\t\ti, _ := strconv.Atoi(string(key))\n\t\treturn uint32(i)\n\t})\n\thash.Add(\"6\", \"4\", \"2\")\n\ttestCases := map[string]string{\n\t\t\"2\":  \"2\",\n\t\t\"11\": \"2\",\n\t\t\"23\": \"4\",\n\t\t\"27\": \"2\",\n\t}\n\tfor k, v := range testCases {\n\t\trequire.Equal(t, v, hash.Get(k))\n\t}\n\thash.Add(\"8\")\n\ttestCases[\"27\"] = \"8\"\n\tfor k, v := range testCases {\n\t\trequire.Equal(t, v, hash.Get(k))\n\t}\n}\n"

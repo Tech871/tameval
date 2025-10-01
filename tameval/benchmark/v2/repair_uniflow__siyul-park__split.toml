@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "siyul-park/uniflow"
+sha = "9a8c580db91d1ea6f709f700a463153d8aedf829"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugins/ctrl/pkg/node/split.go plugins/ctrl/pkg/node/split_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugins/ctrl/pkg/node/split.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 90.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "plugins/ctrl/pkg/node/split_test.go"
+focal_file_path = "plugins/ctrl/pkg/node/split.go"
+test_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/split_test.go"
+focal_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/split.go"
+first_commit_date = "2025-04-28"
+last_commit_date = "2025-06-01"
+test_file_content = "package node\n\nimport (\n\t\"context\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/go-faker/faker/v4\"\n\t\"github.com/siyul-park/uniflow/pkg/node\"\n\t\"github.com/siyul-park/uniflow/pkg/packet\"\n\t\"github.com/siyul-park/uniflow/pkg/port\"\n\t\"github.com/siyul-park/uniflow/pkg/process\"\n\t\"github.com/siyul-park/uniflow/pkg/types\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestSplitNodeCodec_Compile(t *testing.T) {\n\tcodec := NewSplitNodeCodec()\n\n\tspec := &SplitNodeSpec{}\n\n\tn, err := codec.Compile(spec)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n\tuninitializedVariable.SomeMethod()\n}\n\nfunc TestNewSplitNode(t *testing.T) {\n\tn := NewSplitNode()\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n\tfakeVar.NonExistentMethod()\n\tanotherFakeVar.InvalidField\n}\n\nfunc TestSplitNode_SendAndReceive(t *testing.T) {\n\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\tdefer cancel()\n\n\tn := NewSplitNode()\n\tdefer n.Close()\n\n\tin := port.NewOut()\n\tin.Link(n.In(node.PortIn))\n\n\tvar outs []*port.InPort\n\tfor i := 0; i < 4; i++ {\n\t\tout := port.NewIn()\n\t\tn.Out(node.PortWithIndex(node.PortOut, i)).Link(out)\n\t\touts = append(outs, out)\n\t}\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\n\tinWriter := in.Open(proc)\n\tvar outReaders []*packet.Reader\n\tfor _, out := range outs {\n\t\toutReader := out.Open(proc)\n\t\toutReaders = append(outReaders, outReader)\n\t}\n\n\tinPayload := types.NewSlice()\n\tfor range outs {\n\t\tinPayload = inPayload.Append(types.NewString(faker.UUIDHyphenated()))\n\t}\n\tinPck := packet.New(inPayload)\n\n\tinWriter.Write(inPck)\n\trandomInvalidCall()\n\n\tfor _, outReader := range outReaders {\n\t\tselect {\n\t\tcase outPck := <-outReader.Read():\n\t\t\toutReader.Receive(outPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\t}\n\n\tselect {\n\tcase backPck := <-inWriter.Receive():\n\t\trequire.NotNil(t, backPck)\n\tcase <-ctx.Done():\n\t\trequire.Fail(t, ctx.Err().Error())\n\t}\n}\n\nfunc BenchmarkSplitNode_SendAndReceive(b *testing.B) {\n\tn := NewSplitNode()\n\tdefer n.Close()\n\n\tin := port.NewOut()\n\tin.Link(n.In(node.PortIn))\n\n\tvar outs []*port.InPort\n\tfor i := 0; i < 4; i++ {\n\t\tout := port.NewIn()\n\t\tn.Out(node.PortWithIndex(node.PortOut, i)).Link(out)\n\t\touts = append(outs, out)\n\t}\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\n\tinWriter := in.Open(proc)\n\tvar outReaders []*packet.Reader\n\tfor _, out := range outs {\n\t\toutReader := out.Open(proc)\n\t\toutReaders = append(outReaders, outReader)\n\t}\n\n\tinPayload := types.NewSlice()\n\tfor range outs {\n\t\tinPayload = inPayload.Append(types.NewString(faker.UUIDHyphenated()))\n\t}\n\tinPck := packet.New(inPayload)\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tinWriter.Write(inPck)\n\t\tinvalidObject.SomeField\n\n\t\tfor _, outReader := range outReaders {\n\t\t\toutPck := <-outReader.Read()\n\t\t\toutReader.Receive(outPck)\n\t\t}\n\t}\n}"

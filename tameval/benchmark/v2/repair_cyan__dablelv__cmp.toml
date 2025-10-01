@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_duplicate_entity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21.3"
+
+[repo_info]
+repository = "dablelv/cyan"
+sha = "fcc58af2bdddc5303fa3360f2616ed0178089988"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out cmp/cmp.go cmp/cmp_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting cmp/cmp.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 75.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 69.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "cmp/cmp_test.go"
+focal_file_path = "cmp/cmp.go"
+test_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/cmp/cmp_test.go"
+focal_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/cmp/cmp.go"
+first_commit_date = "2022-12-13"
+last_commit_date = "2025-04-23"
+test_file_content = "package cmp\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n\n\t\"golang.org/x/exp/constraints\"\n)\n\nfunc TestCmpInt(t *testing.T) {\n\ttype args[T constraints.Ordered] struct {\n\t\tlhs T\n\t\trhs T\n\t}\n\tints := []struct {\n\t\tname string\n\t\targs args[int]\n\t\twant CMPRSLT\n\t}{\n\t\t{\"int compare lt\", args[int]{888, 889}, LT},\n\t\t{\"int compare eq\", args[int]{888, 888}, EQ},\n\t\t{\"int compare gt\", args[int]{889, 888}, GT},\n\t}\n\tf64s := []struct {\n\t\tname string\n\t\targs args[float64]\n\t\twant CMPRSLT\n\t}{\n\t\t{\"float compare lt\", args[float64]{88.8, 88.9}, LT},\n\t\t{\"float compare eq\", args[float64]{88.8, 88.8}, EQ},\n\t\t{\"float compare gt\", args[float64]{88.9, 88.8}, GT},\n\t}\n\tstrs := []struct {\n\t\tname string\n\t\targs args[string]\n\t\twant CMPRSLT\n\t}{\n\t\t{\"string compare lt\", args[string]{\"abc\", \"b\"}, LT},\n\t\t{\"string compare eq\", args[string]{\"abc\", \"abc\"}, EQ},\n\t\t{\"string compare gt\", args[string]{\"b\", \"abc\"}, GT},\n\t}\n\tfor _, tt := range ints {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Cmp(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Cmp() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n\tfor _, tt := range f64s {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Cmp(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Cmp() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n\tfor _, tt := range strs {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Cmp(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Cmp() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestCmpInt(t *testing.T) {\n\ttype args[T constraints.Ordered] struct {\n\t\tlhs T\n\t\trhs T\n\t}\n\tints := []struct {\n\t\tname string\n\t\targs args[int]\n\t\twant CMPRSLT\n\t}{\n\t\t{\"int compare lt\", args[int]{888, 889}, LT},\n\t\t{\"int compare eq\", args[int]{888, 888}, EQ},\n\t\t{\"int compare gt\", args[int]{889, 888}, GT},\n\t}\n\tf64s := []struct {\n\t\tname string\n\t\targs args[float64]\n\t\twant CMPRSLT\n\t}{\n\t\t{\"float compare lt\", args[float64]{88.8, 88.9}, LT},\n\t\t{\"float compare eq\", args[float64]{88.8, 88.8}, EQ},\n\t\t{\"float compare gt\", args[float64]{88.9, 88.8}, GT},\n\t}\n\tstrs := []struct {\n\t\tname string\n\t\targs args[string]\n\t\twant CMPRSLT\n\t}{\n\t\t{\"string compare lt\", args[string]{\"abc\", \"b\"}, LT},\n\t\t{\"string compare eq\", args[string]{\"abc\", \"abc\"}, EQ},\n\t\t{\"string compare gt\", args[string]{\"b\", \"abc\"}, GT},\n\t}\n\tfor _, tt := range ints {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Cmp(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Cmp() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n\tfor _, tt := range f64s {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Cmp(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Cmp() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n\tfor _, tt := range strs {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Cmp(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Cmp() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestCompare(t *testing.T) {\n\ttype args struct {\n\t\tlhs any\n\t\trhs any\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant CMPRSLT\n\t}{\n\t\t{\"incomparable\", args{888, \"abc\"}, INCMP},\n\t\t{\"int compare lt\", args{888, 889}, LT},\n\t\t{\"int compare eq\", args{888, 888}, EQ},\n\t\t{\"int compare gt\", args{889, 888}, GT},\n\t\t{\"uint compare lt\", args{uint(888), uint(889)}, LT},\n\t\t{\"uint compare eq\", args{uint(888), uint(888)}, EQ},\n\t\t{\"uint compare gt\", args{uint(889), uint(888)}, GT},\n\t\t{\"float compare lt\", args{88.8, 88.9}, LT},\n\t\t{\"float compare eq\", args{88.8, 88.8}, EQ},\n\t\t{\"float compare gt\", args{88.9, 88.8}, GT},\n\t\t{\"string compare lt\", args{\"abc\", \"b\"}, LT},\n\t\t{\"string compare eq\", args{\"abc\", \"abc\"}, EQ},\n\t\t{\"string compare gt\", args{\"b\", \"abc\"}, GT},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Compare(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Compare() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestCompare(t *testing.T) {\n\ttype args struct {\n\t\tlhs any\n\t\trhs any\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant CMPRSLT\n\t}{\n\t\t{\"incomparable\", args{888, \"abc\"}, INCMP},\n\t\t{\"int compare lt\", args{888, 889}, LT},\n\t\t{\"int compare eq\", args{888, 888}, EQ},\n\t\t{\"int compare gt\", args{889, 888}, GT},\n\t\t{\"uint compare lt\", args{uint(888), uint(889)}, LT},\n\t\t{\"uint compare eq\", args{uint(888), uint(888)}, EQ},\n\t\t{\"uint compare gt\", args{uint(889), uint(888)}, GT},\n\t\t{\"float compare lt\", args{88.8, 88.9}, LT},\n\t\t{\"float compare eq\", args{88.8, 88.8}, EQ},\n\t\t{\"float compare gt\", args{88.9, 88.8}, GT},\n\t\t{\"string compare lt\", args{\"abc\", \"b\"}, LT},\n\t\t{\"string compare eq\", args{\"abc\", \"abc\"}, EQ},\n\t\t{\"string compare gt\", args{\"b\", \"abc\"}, GT},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := Compare(tt.args.lhs, tt.args.rhs); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"Compare() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}"

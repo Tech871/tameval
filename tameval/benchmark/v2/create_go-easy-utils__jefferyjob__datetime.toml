@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "jefferyjob/go-easy-utils"
+sha = "e438f475b4adef971034c8fd744912fdeb865a74"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out validx/datetime.go validx/datetime_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting validx/datetime.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 81.0
+original_coverage = 100.0
+mutation_kill_rate = 44.0
+original_mutation_kill_rate = 79.0
+covered_lines = [ 9, 10, 11, 12, 15, 16, 21, 22, 23, 24, 25, 26, 27, 29, 33, 34, 35, 38, 39, 40, 41, 42, 43, 44, 48, 55, 56, 57, 58, 59, 60, 61, 62, 63,]
+missed_lines = [ 17, 18, 19, 45, 46, 47, 49, 50,]
+
+[input_info]
+test_file_path = "validx/datetime_test.go"
+focal_file_path = "validx/datetime.go"
+test_file_url = "https://github.com/jefferyjob/go-easy-utils/blob/e438f475b4adef971034c8fd744912fdeb865a74/validx/datetime_test.go"
+focal_file_url = "https://github.com/jefferyjob/go-easy-utils/blob/e438f475b4adef971034c8fd744912fdeb865a74/validx/datetime.go"
+first_commit_date = "2025-07-08"
+last_commit_date = "2025-07-08"
+test_file_content = "package validx\n\nimport (\n\t\"github.com/stretchr/testify/assert\"\n\t\"testing\"\n)\n\n\nfunc TestIsDateTime(t *testing.T) {\n\ttestCases := []struct {\n\t\tname     string\n\t\tinput    string\n\t\texpected bool\n\t}{\n\t\t{\"合法日期时间\", \"2023-03-11 12:34:56\", true},\n\t\t{\"无效闰日\", \"2023-02-29 12:34:56\", false},\n\t\t{\"无效日期\", \"2023-04-31 12:34:56\", false},\n\t\t{\"无效月份\", \"2023-13-01 12:34:56\", false},\n\t\t{\"仅日期\", \"2023-03-11\", false},\n\t\t{\"仅时间\", \"12:34:56\", false},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tres := IsDateTime(tc.input)\n\t\t\tassert.Equal(t, tc.expected, res)\n\t\t})\n\t}\n}\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "dejvokep/boosted-yaml"
+sha = "fd45ba039337485d5081ba47c1a1116e52a3160c"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=PrimitiveConversionsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.PrimitiveConversions  -DtargetTests=**.PrimitiveConversionsTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 74.0
+original_coverage = 74.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 31, 32, 33, 34, 35, 36, 37, 38, 43, 44, 45, 46, 47, 52, 53, 54, 55, 56, 57, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 84, 101, 103, 105, 106, 109, 110, 111, 113, 115, 117, 118, 120, 134, 137, 138, 142, 159, 162, 163, 167, 184, 187, 188, 192, 209, 212, 213, 217, 234, 237, 238, 242, 259, 262, 263, 267, 284, 287, 288, 290, 295,]
+missed_lines = [ 26, 112, 114, 116, 135, 143, 144, 160, 168, 169, 185, 193, 194, 210, 218, 219, 235, 243, 244, 260, 268, 269, 285, 291, 296, 297,]
+
+[input_info]
+test_file_path = "src/test/java/dev/dejvokep/boostedyaml/utils/conversion/PrimitiveConversionsTest.java"
+focal_file_path = "src/main/java/dev/dejvokep/boostedyaml/utils/conversion/PrimitiveConversions.java"
+test_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/test/java/dev/dejvokep/boostedyaml/utils/conversion/PrimitiveConversionsTest.java"
+focal_file_url = "https://github.com/dejvokep/boosted-yaml/blob/fd45ba039337485d5081ba47c1a1116e52a3160c/src/main/java/dev/dejvokep/boostedyaml/utils/conversion/PrimitiveConversions.java"
+first_commit_date = "2022-01-26"
+last_commit_date = "2024-01-19"
+test_file_content = "/*\n * Copyright 2024 https://dejvokep.dev/\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage dev.dejvokep.boostedyaml.utils.conversion;\n\nimport org.junit.jupiter.api.Test;\n\nimport java.math.BigInteger;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass PrimitiveConversionsTest {\n\n    @Test\n    void toInt() {\n        assertEquals(Integer.MAX_VALUE, PrimitiveConversions.toInt(Integer.MAX_VALUE).orElse(Integer.MIN_VALUE));\n        assertEquals(Integer.MAX_VALUE, PrimitiveConversions.toInt(String.valueOf(Integer.MAX_VALUE)).orElse(Integer.MIN_VALUE));\n    }\n\n    @Test\n    void toBigInt() {\n        assertEquals(BigInteger.ONE, PrimitiveConversions.toBigInt(BigInteger.ONE).orElse(BigInteger.TEN));\n        assertEquals(BigInteger.ONE, PrimitiveConversions.toBigInt(String.valueOf(BigInteger.ONE)).orElse(BigInteger.TEN));\n    }\n\n    @Test\n    void toByte() {\n        assertEquals(Byte.MAX_VALUE, PrimitiveConversions.toByte(Byte.MAX_VALUE).orElse(Byte.MIN_VALUE));\n        assertEquals(Byte.MAX_VALUE, PrimitiveConversions.toByte(String.valueOf(Byte.MAX_VALUE)).orElse(Byte.MIN_VALUE));\n    }\n\n    @Test\n    void toLong() {\n        assertEquals(Long.MAX_VALUE, PrimitiveConversions.toLong(Long.MAX_VALUE).orElse(Long.MIN_VALUE));\n        assertEquals(Long.MAX_VALUE, PrimitiveConversions.toLong(String.valueOf(Long.MAX_VALUE)).orElse(Long.MIN_VALUE));\n    }\n\n    @Test\n    void toDouble() {\n        assertEquals(Double.MAX_VALUE, PrimitiveConversions.toDouble(Double.MAX_VALUE).orElse(Double.MIN_VALUE));\n        assertEquals(Double.MAX_VALUE, PrimitiveConversions.toDouble(String.valueOf(Double.MAX_VALUE)).orElse(Double.MIN_VALUE));\n    }\n\n    @Test\n    void toFloat() {\n        assertEquals(Float.MAX_VALUE, PrimitiveConversions.toFloat(Float.MAX_VALUE).orElse(Float.MIN_VALUE));\n        assertEquals(Float.MAX_VALUE, PrimitiveConversions.toFloat(String.valueOf(Float.MAX_VALUE)).orElse(Float.MIN_VALUE));\n    }\n\n    @Test\n    void toShort() {\n        assertEquals(Short.MAX_VALUE, PrimitiveConversions.toShort(Short.MAX_VALUE).orElse(Short.MIN_VALUE));\n        assertEquals(Short.MAX_VALUE, PrimitiveConversions.toShort(String.valueOf(Short.MAX_VALUE)).orElse(Short.MIN_VALUE));\n    }\n\n    @Test\n    void isNumber() {\n        assertTrue(PrimitiveConversions.isNumber(int.class));\n        assertTrue(PrimitiveConversions.isNumber(byte.class));\n        assertTrue(PrimitiveConversions.isNumber(short.class));\n        assertTrue(PrimitiveConversions.isNumber(long.class));\n        assertTrue(PrimitiveConversions.isNumber(float.class));\n        assertTrue(PrimitiveConversions.isNumber(double.class));\n        assertTrue(PrimitiveConversions.isNumber(Integer.class));\n        assertTrue(PrimitiveConversions.isNumber(Byte.class));\n        assertTrue(PrimitiveConversions.isNumber(Short.class));\n        assertTrue(PrimitiveConversions.isNumber(Long.class));\n        assertTrue(PrimitiveConversions.isNumber(Float.class));\n        assertTrue(PrimitiveConversions.isNumber(Double.class));\n        assertFalse(PrimitiveConversions.isNumber(boolean.class));\n        assertFalse(PrimitiveConversions.isNumber(Character.class));\n    }\n\n    @Test\n    void convertNumber() {\n        assertEquals(PrimitiveConversions.convertNumber(1, int.class), 1);\n        assertEquals(PrimitiveConversions.convertNumber(1, Integer.class), 1);\n        assertEquals(PrimitiveConversions.convertNumber(1, double.class), 1D);\n        assertEquals(PrimitiveConversions.convertNumber(1, Double.class), 1D);\n        assertEquals(PrimitiveConversions.convertNumber(1, float.class), 1F);\n        assertEquals(PrimitiveConversions.convertNumber(1, Float.class), 1F);\n    }\n}"

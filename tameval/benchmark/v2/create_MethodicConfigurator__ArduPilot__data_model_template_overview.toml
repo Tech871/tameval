@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "ArduPilot/MethodicConfigurator"
+sha = "8f14cac0abb19c133ba74e6693d4efb6385cb8f0"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=ardupilot_methodic_configurator/data_model_template_overview.py -m pytest -q --junit-xml=test_output.xml tests/test_data_model_template_overview.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target ardupilot_methodic_configurator.data_model_template_overview --unit-test tests.test_data_model_template_overview --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target ardupilot_methodic_configurator/data_model_template_overview.py --unit-test tests/test_data_model_template_overview.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 88.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 10, 13, 23, 25, 26, 27, 28, 29, 30, 31, 32, 33, 35, 36, 51,]
+missed_lines = [ 38, 52,]
+
+[input_info]
+test_file_path = "tests/test_data_model_template_overview.py"
+focal_file_path = "ardupilot_methodic_configurator/data_model_template_overview.py"
+test_file_url = "https://github.com/ArduPilot/MethodicConfigurator/blob/8f14cac0abb19c133ba74e6693d4efb6385cb8f0/tests/test_data_model_template_overview.py"
+focal_file_url = "https://github.com/ArduPilot/MethodicConfigurator/blob/8f14cac0abb19c133ba74e6693d4efb6385cb8f0/ardupilot_methodic_configurator/data_model_template_overview.py"
+first_commit_date = "2025-08-16"
+last_commit_date = "2025-08-16"
+test_file_content = "#!/usr/bin/env python3\n\n\"\"\"\nTests for the data_model_template_overview.py file.\n\nThis file is part of Ardupilot methodic configurator. https://github.com/ArduPilot/MethodicConfigurator\n\nSPDX-FileCopyrightText: 2024-2025 Amilcar do Carmo Lucas <amilcar.lucas@iav.de>\n\nSPDX-License-Identifier: GPL-3.0-or-later\n\"\"\"\n\nimport unittest\n\nfrom ardupilot_methodic_configurator.data_model_template_overview import TemplateOverview\n\nclass TestTemplateOverview(unittest.TestCase):  # pylint: disable=missing-class-docstring\n    def setUp(self) -> None:\n        # Define sample data to be used in tests\n        self.sample_data = {\n            \"Flight Controller\": {\"Product\": {\"Manufacturer\": \"ArduPilot\", \"Model\": \"Pixhawk4\"}},\n            \"Frame\": {\"Specifications\": {\"TOW max Kg\": \"5\"}},\n            # ... add other components as per your structure\n        }\n\n    def test_template_overview_initialization(self) -> None:\n        # Initialize the TemplateOverview with sample data\n        template_overview = TemplateOverview(self.sample_data)\n\n        # Check if attributes are set correctly\n        assert template_overview.fc_manufacturer == \"ArduPilot\"\n        assert template_overview.fc_model == \"Pixhawk4\"\n        assert template_overview.tow_max_kg == \"5\"\n        # .. similarly test other attributes\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

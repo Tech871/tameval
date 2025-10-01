@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "siyul-park/uniflow"
+sha = "9a8c580db91d1ea6f709f700a463153d8aedf829"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugins/ctrl/pkg/node/fork.go plugins/ctrl/pkg/node/fork_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugins/ctrl/pkg/node/fork.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 69.0
+original_coverage = 69.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 29, 30, 31, 32, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 51, 52, 53, 54, 61, 62, 63, 64, 65, 66, 73, 74, 75, 76, 77, 78, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 92, 93, 94, 95, 96, 97, 111, 112,]
+missed_lines = [ 55, 56, 67, 68, 98, 99, 100, 102, 103, 104, 105, 106, 107, 116, 117, 118, 119, 120, 121, 122, 123, 125, 126,]
+
+[input_info]
+test_file_path = "plugins/ctrl/pkg/node/fork_test.go"
+focal_file_path = "plugins/ctrl/pkg/node/fork.go"
+test_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/fork_test.go"
+focal_file_url = "https://github.com/siyul-park/uniflow/blob/9a8c580db91d1ea6f709f700a463153d8aedf829/plugins/ctrl/pkg/node/fork.go"
+first_commit_date = "2025-04-28"
+last_commit_date = "2025-06-01"
+test_file_content = "package node\n\nimport (\n\t\"context\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/siyul-park/uniflow/pkg/node\"\n\t\"github.com/siyul-park/uniflow/pkg/packet\"\n\t\"github.com/siyul-park/uniflow/pkg/port\"\n\t\"github.com/siyul-park/uniflow/pkg/process\"\n\t\"github.com/siyul-park/uniflow/pkg/types\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestForkNodeCodec_Compile(t *testing.T) {\n\tcodec := NewForkNodeCodec()\n\n\tspec := &ForkNodeSpec{}\n\n\tn, err := codec.Compile(spec)\n\trequire.NoError(t, err)\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\nfunc TestNewForkNode(t *testing.T) {\n\tn := NewForkNode()\n\trequire.NotNil(t, n)\n\trequire.NoError(t, n.Close())\n}\n\nfunc TestForkNode_Port(t *testing.T) {\n\tn := NewForkNode()\n\tdefer n.Close()\n\n\trequire.NotNil(t, n.In(node.PortIn))\n\trequire.NotNil(t, n.Out(node.PortOut))\n\trequire.NotNil(t, n.Out(node.PortError))\n}\n\nfunc TestForkNode_SendAndReceive(t *testing.T) {\n\tctx, cancel := context.WithTimeout(context.TODO(), time.Second)\n\tdefer cancel()\n\n\tn := NewForkNode()\n\tdefer n.Close()\n\n\tin := port.NewOut()\n\tin.Link(n.In(node.PortIn))\n\n\tout := port.NewIn()\n\tn.Out(node.PortOut).Link(out)\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\tdefer proc.Join()\n\n\tinWriter := in.Open(proc)\n\n\tinPayload := types.NewMap(types.NewString(\"foo\"), types.NewString(\"bar\"))\n\tinPck := packet.New(inPayload)\n\n\tout.AddListener(port.ListenFunc(func(proc *process.Process) {\n\t\toutReader := out.Open(proc)\n\n\t\tselect {\n\t\tcase outPck := <-outReader.Read():\n\t\t\trequire.Equal(t, inPayload, outPck.Payload())\n\t\t\toutReader.Receive(outPck)\n\t\tcase <-ctx.Done():\n\t\t\trequire.Fail(t, ctx.Err().Error())\n\t\t}\n\t}))\n\n\tinWriter.Write(inPck)\n\n\tselect {\n\tcase backPck := <-inWriter.Receive():\n\t\trequire.NotNil(t, backPck)\n\tcase <-ctx.Done():\n\t\trequire.Fail(t, ctx.Err().Error())\n\t}\n}\n\nfunc BenchmarkForkNode_SendAndReceive(b *testing.B) {\n\tn := NewForkNode()\n\tdefer n.Close()\n\n\tin := port.NewOut()\n\tin.Link(n.In(node.PortIn))\n\n\tout := port.NewIn()\n\tn.Out(node.PortOut).Link(out)\n\n\tproc := process.New()\n\tdefer proc.Exit(nil)\n\tdefer proc.Join()\n\n\tinWriter := in.Open(proc)\n\n\tinPayload := types.NewMap(types.NewString(\"foo\"), types.NewString(\"bar\"))\n\tinPck := packet.New(inPayload)\n\n\tout.AddListener(port.ListenFunc(func(proc *process.Process) {\n\t\toutReader := out.Open(proc)\n\n\t\tfor {\n\t\t\toutPck, ok := <-outReader.Read()\n\t\t\tif !ok {\n\t\t\t\treturn\n\t\t\t}\n\n\t\t\toutReader.Receive(outPck)\n\t\t}\n\t}))\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tinWriter.Write(inPck)\n\t\t<-inWriter.Receive()\n\t}\n}\n"

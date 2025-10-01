@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "byronka/minum"
+sha = "42416409b5fd3535c882b2a994cd9eb0be82260a"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=TestFrameworkTests && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.TestFramework  -DtargetTests=**.TestFrameworkTests  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 85.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 82.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/renomad/minum/testing/TestFrameworkTests.java"
+focal_file_path = "src/main/java/com/renomad/minum/testing/TestFramework.java"
+test_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/test/java/com/renomad/minum/testing/TestFrameworkTests.java"
+focal_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/main/java/com/renomad/minum/testing/TestFramework.java"
+first_commit_date = "2023-08-29"
+last_commit_date = "2025-07-31"
+test_file_content = "package com.renomad.minum.testing;\n\nimport org.junit.Test;\n\nimport java.io.IOException;\nimport java.util.List;\n\nimport static com.renomad.minum.testing.TestFramework.*;\n\npublic class TestFrameworkTests {\n\n    /*\n    If the inner method doesn't throw an exception, assertThrows should throw one.\n     */\n    @Test\n    public void test_AssertThrows_NoException() {\n        assertThrows(TestFailureException.class, () -> assertThrows(IOException.class, () -> {}));\n    }\n\n    @Test\n    public void test_AssertThrows_AssertOnMessage() {\n        assertThrows(TestFailureException.class, \"Did not get expected message (I am foo). Instead, got: Failed to throw exception\", () -> assertThrows(RuntimeException.class, \"I am foo\", () -> {}));\n    }\n\n    @Test\n    public void test_assertEquals_Basic() {\n        assertEquals(true, true);\n        assertThrows(TestFailureException.class, () -> assertEquals(true, false));\n    }\n\n    @Test\n    public void test_assertEquals_Lists() {\n        assertEquals(List.of(\"a\",\"b\"), List.of(\"a\",\"b\"));\n        assertThrows(TestFailureException.class, () -> assertEquals(List.of(\"a\",\"b\", \"c\"), List.of(\"a\",\"b\")));\n        assertThrows(TestFailureException.class, () -> assertEquals(List.of(\"a\",\"b\", \"c\"), List.of(\"a\",\"b\", \"d\")));\n    }\n\n    @Test\n    public void test_assertEquals_ListsDifferentOrders() {\n        assertEqualsDisregardOrder(List.of(\"a\", \"b\"), List.of(\"b\", \"a\"));\n        assertEqualsDisregardOrder(List.of(\"a\", \"b\"), List.of(\"b\", \"a\"), \"This is my custom error\");\n        assertThrows(TestFailureException.class, () -> assertEqualsDisregardOrder(List.of(\"a\", \"b\", \"c\"), List.of(\"b\", \"a\")));\n        assertThrows(TestFailureException.class, () -> assertEqualsDisregardOrder(List.of(\"a\", \"b\", \"c\"), List.of(\"b\", \"a\", \"d\")));\n        var ex = assertThrows(TestFailureException.class, () -> assertEqualsDisregardOrder(List.of(\"a\", \"b\", \"c\"), List.of(\"b\", \"a\", \"d\"), \"Should be in order\"));\n        assertTrue(ex.getMessage().contains(\"Should be in order\"));\n    }\n\n    @Test\n    public void test_assertTrue_Basic() {\n        assertTrue(true);\n        assertThrows(TestFailureException.class, () -> assertTrue(false));\n        assertThrows(TestFailureException.class, \"Here is a message shown during failure\", () -> assertTrue(false, \"Here is a message shown during failure\"));\n    }\n\n    @Test\n    public void test_assertFalse_Basic() {\n        assertFalse(false);\n        assertThrows(TestFailureException.class, () -> assertFalse(true));\n    }\n\n    @Test\n    public void test_assertFalse_WithMessage() {\n        assertThrows(TestFailureException.class, \"should be false\", () -> assertFalse(true, \"should be false\"));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray() {\n        assertEqualByteArray(new byte[]{1,2,3}, new byte[]{1,2,3});\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_DifferentValuesInArrays() {\n        assertThrows(TestFailureException.class,\n                \"Not equal! at index 0 left was: 1 right was: 4\",\n                () -> assertEqualByteArray(new byte[]{1,2,3}, new byte[]{4,5,6}));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_LeftIsNull() {\n        assertThrows(TestFailureException.class,\n                \"at least one of the inputs was null: left: null right: [4, 5, 6]\",\n                () -> assertEqualByteArray(null, new byte[]{4,5,6}));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_RightIsNull() {\n        assertThrows(TestFailureException.class,\n                \"at least one of the inputs was null: left: [1, 2, 3] right: null\",\n                () -> assertEqualByteArray(new byte[]{1,2,3}, null));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_BothNull() {\n        assertThrows(TestFailureException.class,\n                \"at least one of the inputs was null: left: null right: null\",\n                () -> assertEqualByteArray(null, null));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_DifferentLengths() {\n        assertThrows(TestFailureException.class,\n                \"Not equal! left length: 3 right length: 4\",\n                () -> assertEqualByteArray(new byte[]{1,2,3}, new byte[]{1, 2, 3, 4}));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_CustomError() {\n        assertThrows(TestFailureException.class,\n                \"Not equal! left length: 3 right length: 4. This is my custom error\",\n                () -> assertEqualByteArray(new byte[]{1,2,3}, new byte[]{1, 2, 3, 4}, \"This is my custom error\"));\n    }\n\n    @Test\n    public void test_assertEqualsByteArray_CustomError_ButValidComparison() {\n        assertEqualByteArray(new byte[]{1,2,3}, new byte[]{1, 2, 3}, \"This is my custom error\");\n    }\n\n    /**\n     * When writing logs, if there is whitespace it is helpful to convert it\n     * to a more apparent form, otherwise it could be overlooked. For example,\n     * an entirely blank string is: (BLANK)\n     */\n    @Test\n    public void testShowWhiteSpace() {\n        assertEquals(TestFramework.showWhiteSpace(\" \"), \"(BLANK)\");\n        assertEquals(TestFramework.showWhiteSpace(\"\"), \"(EMPTY)\");\n        assertEquals(TestFramework.showWhiteSpace(null), \"(NULL)\");\n        assertEquals(TestFramework.showWhiteSpace(\"\\t\\r\\n\"), \"\\\\t\\\\r\\\\n\");\n    }\n\n}"

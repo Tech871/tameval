@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pytroll/satpy"
+sha = "0beea130092f3270ae1af8a87644d47971acbbc4"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=satpy/composites/lightning.py -m pytest -q --junit-xml=test_output.xml satpy/tests/compositor_tests/test_lightning.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target satpy.composites.lightning --unit-test satpy.tests.compositor_tests.test_lightning --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target satpy/composites/lightning.py --unit-test satpy/tests/compositor_tests/test_lightning.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 91.0
+original_coverage = 100.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 19, 21, 22, 24, 26, 29, 37, 39, 41, 42, 43, 46, 62, 64, 66, 67, 70, 74, 76, 79, 80, 81, 85, 94, 95, 96, 99, 101, 102, 103, 104, 105,]
+missed_lines = [ 71, 82, 83,]
+
+[input_info]
+test_file_path = "satpy/tests/compositor_tests/test_lightning.py"
+focal_file_path = "satpy/composites/lightning.py"
+test_file_url = "https://github.com/pytroll/satpy/blob/0beea130092f3270ae1af8a87644d47971acbbc4/satpy/tests/compositor_tests/test_lightning.py"
+focal_file_url = "https://github.com/pytroll/satpy/blob/0beea130092f3270ae1af8a87644d47971acbbc4/satpy/composites/lightning.py"
+first_commit_date = "2024-09-04"
+last_commit_date = "2025-06-24"
+test_file_content = "\"\"\"Test the flash age compositor.\"\"\"\n#!/usr/bin/env python\n# -*- coding: utf-8 -*-\n# Copyright (c) 2019 Satpy developers\n#\n# This file is part of satpy.\n#\n# satpy is free software: you can redistribute it and/or modify it under the\n# terms of the GNU General Public License as published by the Free Software\n# Foundation, either version 3 of the License, or (at your option) any later\n# version.\n#\n# satpy is distributed in the hope that it will be useful, but WITHOUT ANY\n# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR\n# A PARTICULAR PURPOSE.  See the GNU General Public License for more details.\n#\n# You should have received a copy of the GNU General Public License along with\n# satpy.  If not, see <http://www.gnu.org/licenses/>.\n\nimport datetime\nimport logging\n\nimport dask.array as da\nimport numpy as np\nimport xarray as xr\n\nfrom satpy.composites.lightning import LightningTimeCompositor\n\ndef test_flash_age_compositor():\n    \"\"\"Test the flash_age compsitor by comparing two xarrays object.\"\"\"\n    comp = LightningTimeCompositor(\"flash_age\",prerequisites=[\"flash_time\"],\n                                   standard_name=\"lightning_time\",\n                                   time_range=60,\n                                   reference_time=\"end_time\")\n    attrs_flash_age = {\"variable_name\": \"flash_time\",\"name\": \"flash_time\",\n                       \"start_time\": datetime.datetime(2024, 8, 1, 10, 50, 0),\n                       \"end_time\": datetime.datetime(2024, 8, 1, 11, 0, 0),\"reader\": \"li_l2_nc\"}\n    flash_age_value = da.array([\"2024-08-01T09:00:00\",\n            \"2024-08-01T10:00:00\", \"2024-08-01T10:30:00\",\"2024-08-01T11:00:00\"], dtype=\"datetime64[ns]\")\n    flash_age = xr.DataArray(\n        flash_age_value,\n        dims=[\"y\"],\n        coords={\n            \"crs\": \"8B +proj=longlat +ellps=WGS84 +type=crs\"},\n        attrs = attrs_flash_age,\n        name=\"flash_time\")\n    res = comp([flash_age])\n    expected_attrs = {\"variable_name\": \"flash_time\",\"name\": \"lightning_time\",\n                       \"start_time\": datetime.datetime(2024, 8, 1, 10, 50, 0),\n                       \"end_time\": datetime.datetime(2024, 8, 1, 11, 0, 0),\"reader\": \"li_l2_nc\",\n                       \"standard_name\": \"lightning_time\"\n                       }\n    expected_array = xr.DataArray(da.array([np.nan, 0.0,0.5,1.0]),\n                                  dims=[\"y\"],\n                                  coords={\n                                      \"crs\": \"8B +proj=longlat +ellps=WGS84 +type=crs\"},\n                                  attrs = expected_attrs,\n                                  name=\"flash_time\")\n    xr.testing.assert_equal(res,expected_array)\n"

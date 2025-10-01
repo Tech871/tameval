@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "stevespringett/Alpine"
+sha = "bb816e4e9040a0d0fe7a7b2d39c9142933fd88af"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl alpine-model -Dtest=OidcUserTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl alpine-model -DtargetClasses=**.OidcUser  -DtargetTests=**.OidcUserTest  -DoutputFormats=XML"
+coverage_report_path = "alpine-model/target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "alpine-model/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 48, 89, 94, 95, 99, 104, 105, 108, 112, 113, 117, 122, 123, 127, 132, 133, 137, 142, 143,]
+missed_lines = [ 155,]
+
+[input_info]
+test_file_path = "alpine-model/src/test/java/alpine/model/OidcUserTest.java"
+focal_file_path = "alpine-model/src/main/java/alpine/model/OidcUser.java"
+test_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-model/src/test/java/alpine/model/OidcUserTest.java"
+focal_file_url = "https://github.com/stevespringett/Alpine/blob/bb816e4e9040a0d0fe7a7b2d39c9142933fd88af/alpine-model/src/main/java/alpine/model/OidcUser.java"
+first_commit_date = "2022-02-24"
+last_commit_date = "2024-05-17"
+test_file_content = "/*\n * This file is part of Alpine.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *   http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n * SPDX-License-Identifier: Apache-2.0\n * Copyright (c) Steve Springett. All Rights Reserved.\n */\n\npackage alpine.model;\n\nimport com.fasterxml.jackson.core.JsonProcessingException;\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport org.assertj.core.api.Assertions;\nimport org.junit.jupiter.api.Test;\n\nimport java.util.Collections;\n\npublic class OidcUserTest {\n\n    @Test\n    public void testJsonSerialization() throws JsonProcessingException {\n        final Team team = new Team();\n        team.setName(\"teamName\");\n\n        final Permission permission = new Permission();\n        permission.setName(\"permissionName\");\n\n        final OidcUser oidcUser = new OidcUser();\n        oidcUser.setId(666);\n        oidcUser.setUsername(\"username\");\n        oidcUser.setSubjectIdentifier(\"subjectIdentifier\");\n        oidcUser.setEmail(\"username@mail.local\");\n        oidcUser.setTeams(Collections.singletonList(team));\n        oidcUser.setPermissions(Collections.singletonList(permission));\n\n        Assertions.assertThat(new ObjectMapper().writeValueAsString(oidcUser)).isEqualTo(\"\" +\n                \"{\" +\n                \"\\\"username\\\":\\\"username\\\",\" +\n                \"\\\"subjectIdentifier\\\":\\\"subjectIdentifier\\\",\" +\n                \"\\\"email\\\":\\\"username@mail.local\\\",\" +\n                \"\\\"teams\\\":[{\\\"name\\\":\\\"teamName\\\"}],\" +\n                \"\\\"permissions\\\":[{\\\"name\\\":\\\"permissionName\\\"}]\" +\n                \"}\");\n    }\n\n    @Test\n    public void testJsonDeserialization() throws JsonProcessingException {\n        final OidcUser oidcUser = new ObjectMapper().readValue(\"\" +\n                \"{\" +\n                \"\\\"id\\\":666,\" +\n                \"\\\"username\\\":\\\"username\\\",\" +\n                \"\\\"subjectIdentifier\\\":\\\"subjectIdentifier\\\",\" +\n                \"\\\"email\\\":\\\"username@mail.local\\\",\" +\n                \"\\\"teams\\\":[{\\\"name\\\":\\\"teamName\\\"}],\" +\n                \"\\\"permissions\\\":[{\\\"name\\\":\\\"permissionName\\\"}]\" +\n                \"}\", OidcUser.class);\n\n        Assertions.assertThat(oidcUser.getId()).isZero();\n        Assertions.assertThat(oidcUser.getUsername()).isEqualTo(\"username\");\n        Assertions.assertThat(oidcUser.getSubjectIdentifier()).isEqualTo(\"subjectIdentifier\");\n        Assertions.assertThat(oidcUser.getEmail()).isEqualTo(\"username@mail.local\");\n        Assertions.assertThat(oidcUser.getTeams()).hasSize(1);\n        Assertions.assertThat(oidcUser.getPermissions()).hasSize(1);\n    }\n\n}"

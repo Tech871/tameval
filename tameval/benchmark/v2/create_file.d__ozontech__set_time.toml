@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "ozontech/file.d"
+sha = "0b8e06edc7baa07bda8b1d7637edf1ae5108ea4b"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out plugin/action/set_time/set_time.go plugin/action/set_time/set_time_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting plugin/action/set_time/set_time.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 95.0
+original_coverage = 95.0
+mutation_kill_rate = 92.0
+original_mutation_kill_rate = 92.0
+covered_lines = [ 39, 40, 41, 42, 43, 44, 46, 47, 48, 50, 51, 52, 53, 54, 55, 56, 57, 59, 62, 63, 65, 66, 67, 69, 70, 71, 72, 73, 74, 75, 76, 78, 79, 80, 81, 82, 85, 86, 87, 88, 91,]
+missed_lines = [ 83, 84,]
+
+[input_info]
+test_file_path = "plugin/action/set_time/set_time_test.go"
+focal_file_path = "plugin/action/set_time/set_time.go"
+test_file_url = "https://github.com/ozontech/file.d/blob/0b8e06edc7baa07bda8b1d7637edf1ae5108ea4b/plugin/action/set_time/set_time_test.go"
+focal_file_url = "https://github.com/ozontech/file.d/blob/0b8e06edc7baa07bda8b1d7637edf1ae5108ea4b/plugin/action/set_time/set_time.go"
+first_commit_date = "2022-06-20"
+last_commit_date = "2025-03-21"
+test_file_content = "package set_time\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/ozontech/file.d/cfg\"\n\t\"github.com/ozontech/file.d/pipeline\"\n\t\"github.com/ozontech/file.d/test\"\n\t\"github.com/ozontech/file.d/xtime\"\n\tinsaneJSON \"github.com/ozontech/insane-json\"\n\t\"github.com/stretchr/testify/require\"\n\t\"go.uber.org/atomic\"\n)\n\nfunc TestPlugin_Do(t *testing.T) {\n\tnow, err := time.Parse(time.RFC3339, \"2006-01-02T15:04:05+07:00\")\n\trequire.NoError(t, err)\n\n\ttype TestCase struct {\n\t\tName   string\n\t\tConfig *Config\n\t\tRoot   string\n\n\t\tExpResult pipeline.ActionResult\n\t\tExpRoot   string\n\t}\n\n\ttcs := []TestCase{\n\t\t{\n\t\t\tName: \"unix\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat: xtime.UnixTime,\n\t\t\t\tField:  \"time\",\n\t\t\t},\n\t\t\tRoot: `{}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   fmt.Sprintf(`{\"time\":%d}`, now.Unix()),\n\t\t},\n\t\t{\n\t\t\tName: \"unix nano\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat: \"timestampnano\",\n\t\t\t\tField:  \"time\",\n\t\t\t},\n\t\t\tRoot: `{}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   fmt.Sprintf(`{\"time\":%d}`, now.UnixNano()),\n\t\t},\n\t\t{\n\t\t\tName: \"custom format\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat: \"2006-01-02\",\n\t\t\t\tField:  \"my-time\",\n\t\t\t},\n\t\t\tRoot: `{}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   fmt.Sprintf(`{\"my-time\":\"%s\"}`, now.Format(\"2006-01-02\")),\n\t\t},\n\t\t{\n\t\t\tName: \"rfc3339\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat: \"rfc3339\",\n\t\t\t\tField:  \"myTime\",\n\t\t\t},\n\t\t\tRoot: `{}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   fmt.Sprintf(`{\"myTime\":\"%s\"}`, now.Format(time.RFC3339)),\n\t\t},\n\t\t{\n\t\t\tName: \"override false\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat:   \"test\",\n\t\t\t\tField:    \"time\",\n\t\t\t\tOverride: false,\n\t\t\t},\n\t\t\tRoot: `{\"time\":123}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   `{\"time\":123}`,\n\t\t},\n\t\t{\n\t\t\tName: \"override true\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat:   time.RFC3339,\n\t\t\t\tField:    \"time\",\n\t\t\t\tOverride: true,\n\t\t\t},\n\t\t\tRoot: `{\"time\":123}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   fmt.Sprintf(`{\"time\":\"%s\"}`, now.Format(time.RFC3339)),\n\t\t},\n\t\t{\n\t\t\tName: \"dots field\",\n\t\t\tConfig: &Config{\n\t\t\t\tFormat:   \"timestampmilli\",\n\t\t\t\tField:    \"a.b.c\",\n\t\t\t\tOverride: true,\n\t\t\t},\n\t\t\tRoot: `{\"a\":{\"b\":{\"c\":123}}}`,\n\n\t\t\tExpResult: pipeline.ActionPass,\n\t\t\tExpRoot:   fmt.Sprintf(`{\"a\":{\"b\":{\"c\":123}},\"a.b.c\":%d}`, now.UnixMilli()),\n\t\t},\n\t}\n\n\troot := insaneJSON.Spawn()\n\tdefer insaneJSON.Release(root)\n\n\tfor _, tc := range tcs {\n\t\tt.Run(tc.Name, func(t *testing.T) {\n\t\t\trequire.NoError(t, root.DecodeString(tc.Root))\n\t\t\tcfg.Parse(tc.Config, nil)\n\n\t\t\tplugin := &Plugin{}\n\t\t\tevent := &pipeline.Event{\n\t\t\t\tRoot: root,\n\t\t\t}\n\n\t\t\tplugin.Start(tc.Config, nil)\n\t\t\tresult := plugin.do(event, now)\n\n\t\t\trequire.Equal(t, tc.ExpResult, result)\n\t\t\trequire.Equal(t, tc.ExpRoot, event.Root.EncodeToString())\n\t\t})\n\t}\n}\n\nfunc TestE2E_Plugin(t *testing.T) {\n\tconfig := test.NewConfig(&Config{Format: xtime.UnixTime, Field: \"timestamp\"}, nil)\n\tp, input, output := test.NewPipelineMock(test.NewActionPluginStaticInfo(factory, config, pipeline.MatchModeAnd, nil, false))\n\n\tcounter := atomic.Int32{}\n\toutput.SetOutFn(func(e *pipeline.Event) {\n\t\trequire.NotEqual(t, \"\", e.Root.Dig(\"timestamp\").AsString(), \"wrong out event\")\n\t\tcounter.Dec()\n\t})\n\n\tcounter.Add(1)\n\tinput.In(0, \"test.log\", test.NewOffset(0), []byte(`{\"message\":123}`))\n\n\tfor counter.Load() != 0 {\n\t\ttime.Sleep(time.Millisecond * 10)\n\t}\n\tp.Stop()\n}\n"

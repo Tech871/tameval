@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "hartwigmedical/hmftools"
+sha = "29cf8b2f82f8ecc386c4cfb238757fa859b7eb06"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl hmf-common -Dtest=AltTranscriptReportableInfoTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl hmf-common -DtargetClasses=**.AltTranscriptReportableInfo  -DtargetTests=**.AltTranscriptReportableInfoTest  -DoutputFormats=XML"
+coverage_report_path = "hmf-common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "hmf-common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 92.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "hmf-common/src/test/java/com/hartwig/hmftools/common/variant/AltTranscriptReportableInfoTest.java"
+focal_file_path = "hmf-common/src/main/java/com/hartwig/hmftools/common/variant/impact/AltTranscriptReportableInfo.java"
+test_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/hmf-common/src/test/java/com/hartwig/hmftools/common/variant/AltTranscriptReportableInfoTest.java"
+focal_file_url = "https://github.com/hartwigmedical/hmftools/blob/29cf8b2f82f8ecc386c4cfb238757fa859b7eb06/hmf-common/src/main/java/com/hartwig/hmftools/common/variant/impact/AltTranscriptReportableInfo.java"
+first_commit_date = "2022-09-19"
+last_commit_date = "2024-06-05"
+test_file_content = "package com.hartwig.hmftools.common.variant;\n\nimport static com.hartwig.hmftools.common.variant.impact.AltTranscriptReportableInfo.VAR_IMPACT_OTHER_REPORT_DELIM;\nimport static com.hartwig.hmftools.common.variant.impact.AltTranscriptReportableInfo.parseAltTranscriptInfo;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertTrue;\n\nimport java.util.List;\n\nimport com.hartwig.hmftools.common.variant.impact.AltTranscriptReportableInfo;\n\nimport org.apache.logging.log4j.util.Strings;\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class AltTranscriptReportableInfoTest\n{\n    @Test\n    public void canExtractFromOtherEffects()\n    {\n        String example = \"ENST00000579755|c.246_247delCG|p.Gly83fs|frameshift_variant|NONSENSE_OR_FRAMESHIFT\";\n\n        Assert.assertEquals(\"ENST00000579755\", AltTranscriptReportableInfo.firstOtherTranscript(example));\n        assertEquals(\"c.246_247delCG\", AltTranscriptReportableInfo.firstOtherHgvsCodingImpact(example));\n        assertEquals(\"p.Gly83fs\", AltTranscriptReportableInfo.firstOtherHgvsProteinImpact(example));\n        assertEquals(\"frameshift_variant\", AltTranscriptReportableInfo.firstOtherEffects(example));\n        assertEquals(CodingEffect.NONSENSE_OR_FRAMESHIFT, AltTranscriptReportableInfo.firstOtherCodingEffect(example));\n    }\n\n    @Test\n    public void canExtractFromMultipleOtherEffects()\n    {\n        AltTranscriptReportableInfo altInfo1 = new AltTranscriptReportableInfo(\n                \"ENST00000579755\", \"c.194-3_194-2delCA\", \"p.?\",\n                \"splice_acceptor_variant&intron_variant\", CodingEffect.SPLICE);\n\n        AltTranscriptReportableInfo altInfo2 = new AltTranscriptReportableInfo(\n                \"ENST00000123456\", \"c.194-3_194-2delCA\", \"p.?\",\n                \"splice_acceptor_variant&intron_variant\", CodingEffect.NONSENSE_OR_FRAMESHIFT);\n\n        String example = altInfo1.serialise() + VAR_IMPACT_OTHER_REPORT_DELIM + altInfo2.serialise();\n\n        List<AltTranscriptReportableInfo> altTransInfos = parseAltTranscriptInfo(example);\n        assertEquals(2, altTransInfos.size());\n        assertTrue(altTransInfos.get(0).TransName.equals(altInfo1.TransName));\n        assertEquals(altTransInfos.get(0).Effect, altInfo1.Effect);\n\n        assertTrue(altTransInfos.get(1).TransName.equals(altInfo2.TransName));\n        assertEquals(altTransInfos.get(1).Effect, altInfo2.Effect);\n    }\n\n    @Test\n    public void worksOnEmptyString()\n    {\n        assertEquals(Strings.EMPTY, AltTranscriptReportableInfo.firstOtherTranscript(Strings.EMPTY));\n        assertEquals(Strings.EMPTY, AltTranscriptReportableInfo.firstOtherHgvsCodingImpact(Strings.EMPTY));\n        assertEquals(Strings.EMPTY, AltTranscriptReportableInfo.firstOtherHgvsProteinImpact(Strings.EMPTY));\n        assertEquals(Strings.EMPTY, AltTranscriptReportableInfo.firstOtherEffects(Strings.EMPTY));\n        assertEquals(CodingEffect.UNDEFINED, AltTranscriptReportableInfo.firstOtherCodingEffect(Strings.EMPTY));\n    }\n}"

@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "apache/dubbo-go"
+sha = "8d504e5574e431faca7aa03548e650ab7a9fc6a7"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out proxy/proxy.go proxy/proxy_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting proxy/proxy.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 58.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "proxy/proxy_test.go"
+focal_file_path = "proxy/proxy.go"
+test_file_url = "https://github.com/apache/dubbo-go/blob/8d504e5574e431faca7aa03548e650ab7a9fc6a7/proxy/proxy_test.go"
+focal_file_url = "https://github.com/apache/dubbo-go/blob/8d504e5574e431faca7aa03548e650ab7a9fc6a7/proxy/proxy.go"
+first_commit_date = "2022-07-07"
+last_commit_date = "2025-06-04"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http:\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage proxy\n\nimport (\n\t\"context\"\n\t\"fmt\"\n\t\"reflect\"\n\t\"testing\"\n)\n\nimport (\n\tperrors \"github.com/pkg/errors\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nimport (\n\t\"dubbo.apache.org/dubbo-go/v3/common\"\n\t\"dubbo.apache.org/dubbo-go/v3/common/constant\"\n\t\"dubbo.apache.org/dubbo-go/v3/protocol/base\"\n\t\"dubbo.apache.org/dubbo-go/v3/protocol/dubbo/hessian2\"\n\t\"dubbo.apache.org/dubbo-go/v3/protocol/invocation\"\n\t\"dubbo.apache.org/dubbo-go/v3/protocol/result\"\n)\n\ntype TestService struct {\n\tMethodOne   func(context.Context, int, bool, *any) error\n\tMethodTwo   func([]any) error\n\tMethodThree func(int, bool) (any, error)\n\tMethodFour  func(int, bool) (*any, error) `dubbo:\"methodFour\"`\n\tMethodFive  func() error\n\tMethodSix   func(context.Context, string) (any, error)\n\tEcho        func(any, *any) error\n}\n\nfunc (s *TestService) Reference() string {\n\treturn \"com.test.Path\"\n}\n\ntype TestServiceInt int\n\nfunc (s *TestServiceInt) Reference() string {\n\treturn \"com.test.TestServiceInt\"\n}\n\nfunc TestProxyImplement(t *testing.T) {\n\tinvoker := base.NewBaseInvoker(&common.URL{})\n\tp := NewProxy(invoker, nil, map[string]string{constant.AsyncKey: \"false\"})\n\ts := &TestService{}\n\tp.Implement(s)\n\n\terr := p.Get().(*TestService).MethodOne(nil, 0, false, nil)\n\tassert.NoError(t, err)\n\n\terr = p.Get().(*TestService).MethodTwo(nil)\n\tassert.NoError(t, err)\n\tret, err := p.Get().(*TestService).MethodThree(0, false)\n\tassert.NoError(t, err)\n\tassert.Nil(t, ret)\n\n\tret2, err := p.Get().(*TestService).MethodFour(0, false)\n\tassert.NoError(t, err)\n\tassert.Equal(t, \"*interface {}\", reflect.TypeOf(ret2).String())\n\terr = p.Get().(*TestService).Echo(nil, nil)\n\tassert.NoError(t, err)\n\n\terr = p.Get().(*TestService).MethodFive()\n\tassert.NoError(t, err)\n\tp.rpc = nil\n\ttype S1 struct {\n\t\tTestService\n\t\tmethodOne func(context.Context, any, *struct{}) error\n\t}\n\ts1 := &S1{TestService: *s, methodOne: func(_ context.Context, _ any, _ *struct{}) error {\n\t\treturn perrors.New(\"errors\")\n\t}}\n\tp.Implement(s1)\n\terr = s1.MethodOne(nil, 0, false, nil)\n\tassert.NoError(t, err)\n\terr = s1.methodOne(nil, nil, nil)\n\tassert.EqualError(t, err, \"errors\")\n\tp.rpc = nil\n\tit := TestServiceInt(1)\n\tp.Implement(&it)\n\tassert.Nil(t, p.rpc)\n\tp.rpc = nil\n\ttype S2 struct {\n\t\tTestService\n\t\tMethodOne func([]any) (*struct{}, int, error)\n\t}\n\ts2 := &S2{TestService: *s}\n\tp.Implement(s2)\n\tassert.Nil(t, s2.MethodOne)\n\tp.rpc = nil\n\ttype S3 struct {\n\t\tTestService\n\t\tMethodOne func(context.Context, []any, *struct{}) any\n\t}\n\ts3 := &S3{TestService: *s}\n\tp.Implement(s3)\n\tassert.Nil(t, s3.MethodOne)\n\tp.rpc = nil\n\ts4 := TestService{}\n\tp.Implement(s4)\n\terr = p.Get().(*TestService).NonExistentMethod()\n\terr = p.Get().(*TestService).MethodOne(nil, 0, false, nil, 0)\n\tval := constant.NonExistentConstant\n\tp.rpc = nil\n\ts5 := TestServiceInt(1)\n\tp.Implement(s5)\n}"

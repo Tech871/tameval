@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apolloconfig/apollo"
+sha = "4fa881a973996edf978c9b8e78719b437b64169c"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl apollo-adminservice -Dtest=AdminServiceAuthenticationFilterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl apollo-adminservice -DtargetClasses=**.AdminServiceAuthenticationFilter  -DtargetTests=**.AdminServiceAuthenticationFilterTest  -DoutputFormats=XML"
+coverage_report_path = "apollo-adminservice/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "apollo-adminservice/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 87.0
+original_coverage = 93.0
+mutation_kill_rate = 64.0
+original_mutation_kill_rate = 91.0
+covered_lines = [ 37, 38, 39, 40, 46, 47, 48, 58, 59, 60, 62, 64, 65, 66, 67, 71, 72, 75, 78, 83, 88, 89, 90, 91, 92, 95,]
+missed_lines = [ 53, 79, 84, 101,]
+
+[input_info]
+test_file_path = "apollo-adminservice/src/test/java/com/ctrip/framework/apollo/adminservice/filter/AdminServiceAuthenticationFilterTest.java"
+focal_file_path = "apollo-adminservice/src/main/java/com/ctrip/framework/apollo/adminservice/filter/AdminServiceAuthenticationFilter.java"
+test_file_url = "https://github.com/apolloconfig/apollo/blob/4fa881a973996edf978c9b8e78719b437b64169c/apollo-adminservice/src/test/java/com/ctrip/framework/apollo/adminservice/filter/AdminServiceAuthenticationFilterTest.java"
+focal_file_url = "https://github.com/apolloconfig/apollo/blob/4fa881a973996edf978c9b8e78719b437b64169c/apollo-adminservice/src/main/java/com/ctrip/framework/apollo/adminservice/filter/AdminServiceAuthenticationFilter.java"
+first_commit_date = "2020-08-16"
+last_commit_date = "2024-01-02"
+test_file_content = "/*\n * Copyright 2024 Apollo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n * http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n *\n */\npackage com.ctrip.framework.apollo.adminservice.filter;\n\nimport static org.mockito.ArgumentMatchers.anyInt;\nimport static org.mockito.ArgumentMatchers.anyString;\nimport static org.mockito.Mockito.mock;\nimport static org.mockito.Mockito.never;\nimport static org.mockito.Mockito.times;\nimport static org.mockito.Mockito.verify;\nimport static org.mockito.Mockito.when;\n\nimport com.ctrip.framework.apollo.biz.config.BizConfig;\nimport javax.servlet.FilterChain;\nimport javax.servlet.http.HttpServletRequest;\nimport javax.servlet.http.HttpServletResponse;\nimport org.junit.Before;\nimport org.junit.Test;\nimport org.junit.runner.RunWith;\nimport org.mockito.Mock;\nimport org.mockito.junit.MockitoJUnitRunner;\nimport org.springframework.http.HttpHeaders;\n\n@RunWith(MockitoJUnitRunner.class)\npublic class AdminServiceAuthenticationFilterTest {\n\n  @Mock\n  private BizConfig bizConfig;\n  private HttpServletRequest servletRequest;\n  private HttpServletResponse servletResponse;\n  private FilterChain filterChain;\n\n  private AdminServiceAuthenticationFilter authenticationFilter;\n\n  @Before\n  public void setUp() throws Exception {\n    authenticationFilter = new AdminServiceAuthenticationFilter(bizConfig);\n    initVariables();\n  }\n\n  private void initVariables() {\n    servletRequest = mock(HttpServletRequest.class);\n    servletResponse = mock(HttpServletResponse.class);\n    filterChain = mock(FilterChain.class);\n  }\n\n\n  @Test\n  public void testWithAccessControlEnabledWithTokenSpecifiedWithValidTokenPassed()\n      throws Exception {\n    String someValidToken = \"someToken\";\n\n    when(bizConfig.isAdminServiceAccessControlEnabled()).thenReturn(true);\n    when(bizConfig.getAdminServiceAccessTokens()).thenReturn(someValidToken);\n    when(servletRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn(someValidToken);\n\n    authenticationFilter.doFilter(servletRequest, servletResponse, filterChain);\n\n    verify(bizConfig, times(1)).isAdminServiceAccessControlEnabled();\n    verify(bizConfig, times(1)).getAdminServiceAccessTokens();\n    verify(filterChain, times(1)).doFilter(servletRequest, servletResponse);\n    verify(servletResponse, never()).sendError(anyInt(), anyString());\n  }\n\n  @Test\n  public void testWithAccessControlEnabledWithTokenSpecifiedWithInvalidTokenPassed()\n      throws Exception {\n    String someValidToken = \"someValidToken\";\n    String someInvalidToken = \"someInvalidToken\";\n\n    when(bizConfig.isAdminServiceAccessControlEnabled()).thenReturn(true);\n    when(bizConfig.getAdminServiceAccessTokens()).thenReturn(someValidToken);\n    when(servletRequest.getHeader(HttpHeaders.AUTHORIZATION)).thenReturn(someInvalidToken);\n\n    authenticationFilter.doFilter(servletRequest, servletResponse, filterChain);\n\n    verify(bizConfig, times(1)).isAdminServiceAccessControlEnabled();\n    verify(bizConfig, times(1)).getAdminServiceAccessTokens();\n    verify(servletResponse, times(1))\n        .sendError(HttpServletResponse.SC_UNAUTHORIZED, \"Unauthorized\");\n    verify(filterChain, never()).doFilter(servletRequest, servletResponse);\n  }\n\n\n\n\n\n\n}\n"

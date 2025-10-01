@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "quatrope/scikit-criteria"
+sha = "35f17eeeafd80d666aac740be7c4eba9b14359b8"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements_dev.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=skcriteria/agg/copras.py -m pytest -q --junit-xml=test_output.xml tests/agg/test_copras.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target skcriteria.agg.copras --unit-test tests.agg.test_copras --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target skcriteria/agg/copras.py --unit-test tests/agg/test_copras.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 17, 19, 20, 22, 23, 24, 31, 39, 42, 46, 47, 49, 52, 59, 61, 62, 63, 65, 67, 70, 81, 82, 83, 84, 85, 86, 94, 115, 117, 118, 119, 120, 122, 123, 127, 130, 131, 136, 140, 147, 148, 149,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/agg/test_copras.py"
+focal_file_path = "skcriteria/agg/copras.py"
+test_file_url = "https://github.com/quatrope/scikit-criteria/blob/35f17eeeafd80d666aac740be7c4eba9b14359b8/tests/agg/test_copras.py"
+focal_file_url = "https://github.com/quatrope/scikit-criteria/blob/35f17eeeafd80d666aac740be7c4eba9b14359b8/skcriteria/agg/copras.py"
+first_commit_date = "2025-06-07"
+last_commit_date = "2025-07-18"
+test_file_content = "\n\n\nimport numpy as np\n\nimport pytest\n\nimport skcriteria\nfrom skcriteria.agg import RankResult\nfrom skcriteria.agg.copras import COPRAS\nfrom skcriteria.preprocessing.scalers import scale_by_sum\n\n\ndef test_COPRAS_Uysal2022assistants():\n\n    equal_weight = 1 / 7\n\n    dm = skcriteria.mkdm(\n        matrix=scale_by_sum(\n            [\n                [3.57, 4.00, 4.00, 83.75, 3, 9, 1],\n                [3.07, 3.95, 4.00, 83.00, 3, 1, 3],\n                [3.23, 3.54, 3.46, 66.00, 4, 0, 2],\n                [3.42, 3.96, 4.00, 70.00, 5, 5, 7],\n                [2.56, 3.37, 3.79, 82.00, 4, 4, 5],\n            ],\n            axis=0,\n        ),\n        objectives=[max, max, max, max, min, max, max],\n        weights=[equal_weight] * 7,\n        alternatives=[\"x1\", \"x2\", \"x3\", \"x4\", \"x5\"],\n        criteria=[\n            \"Undergraduate GPA\",\n            \"Master GPA\",\n            \"PhD GPA\",\n            \"Foreign Language\",\n            \"Lesson Completion Duration\",\n            \"Number of Congress\",\n            \"Number of Essays\",\n        ],\n    )\n\n    ranker = COPRAS()\n    result = ranker.evaluate(dm)\n\n    expected = RankResult(\n        \"COPRAS\",\n        [\"x1\", \"x2\", \"x3\", \"x4\", \"x5\"],\n        [1, 4, 5, 2, 3],\n        extra={\"score\": [100.0000, 78.8501, 63.3837, 98.6506, 86.8878]},\n    )\n\n\n\ndef test_COPRAS_NoMinimizingCriteriaExcption():\n    dm = skcriteria.mkdm(\n        matrix=[\n            [250, 120, 20, 800],\n            [130, 200, 40, 1000],\n            [350, 340, 15, 600],\n        ],\n        objectives=[max, max, max, max],\n        weights=[1, 2, 3, 4],\n    )\n\n    ranker = COPRAS()\n    with pytest.raises(ValueError):\n        ranker.evaluate(dm)\n\n\ndef test_COPRAS_NegativeValuesException():\n    dm = skcriteria.mkdm(\n        matrix=[\n            [250, 120, 20, 800],\n            [130, 200, -40, 1000],\n            [350, 340, 15, 600],\n        ],\n        objectives=[max, min, max, max],\n        weights=[1, 2, 3, 4],\n    )\n\n    ranker = COPRAS()\n    with pytest.raises(ValueError):\n        ranker.evaluate(dm)\n\n\ndef test_COPRAS_All0sInMinimizingCriteriaException():\n    dm = skcriteria.mkdm(\n        matrix=[\n            [250, 120, 20, 800],\n            [130, 0, 40, 0],\n            [350, 340, 15, 600],\n        ],\n        objectives=[max, min, max, min],\n        weights=[1, 2, 3, 4],\n    )\n\n    ranker = COPRAS()\n    with pytest.raises(ValueError):\n        ranker.evaluate(dm)\n\n\ndef test_COPRAS_Więckowski2022CriteriaMethodsComparison():\n\n    dm = skcriteria.mkdm(\n        matrix=scale_by_sum(\n            [\n                [3.5, 6.0, 1256.0, 4.0, 16.0, 3.0, 17.3, 8.0, 2.82, 4100.0],\n                [3.1, 4.0, 1000.0, 2.0, 8.0, 1.0, 15.6, 5.0, 3.08, 3800.0],\n                [3.6, 6.0, 2000.0, 4.0, 16.0, 3.0, 17.3, 5.0, 2.90, 4000.0],\n                [3.0, 4.0, 1000.0, 2.0, 8.0, 2.0, 17.3, 5.0, 2.60, 3500.0],\n                [3.3, 6.0, 1008.0, 4.0, 12.0, 3.0, 15.6, 8.0, 2.30, 3800.0],\n                [3.6, 6.0, 1000.0, 2.0, 16.0, 3.0, 15.6, 5.0, 2.80, 4000.0],\n                [3.5, 6.0, 1256.0, 2.0, 16.0, 1.0, 15.6, 6.0, 2.90, 4000.0],\n            ],\n            axis=0,\n        ),\n        objectives=[max, max, max, max, max, max, max, max, min, min],\n        weights=[\n            0.297,\n            0.025,\n            0.035,\n            0.076,\n            0.154,\n            0.053,\n            0.104,\n            0.017,\n            0.025,\n            0.214,\n        ],\n    )\n\n    ranker = COPRAS()\n    result = ranker.evaluate(dm)\n\n    expected = RankResult(\n        \"COPRAS\",\n        [\"A0\", \"A1\", \"A2\", \"A3\", \"A4\", \"A5\", \"A6\"],\n        [2, 7, 1, 6, 3, 4, 5],\n        extra={},\n    )"

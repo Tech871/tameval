@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "networknt/light-4j"
+sha = "e6d76041442a1265369701cef8141b88c027f15c"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl metrics-config -Dtest=JmxAttributeGaugeTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl metrics-config -DtargetClasses=**.JmxAttributeGauge  -DtargetTests=**.JmxAttributeGaugeTest  -DoutputFormats=XML"
+coverage_report_path = "metrics-config/target/site/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "metrics-config/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 29.0
+original_coverage = 76.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = nan
+covered_lines = [ 52, 53, 54, 55, 56,]
+missed_lines = [ 42, 43, 61, 62, 63, 64, 65, 70, 71, 72, 73, 76,]
+
+[input_info]
+test_file_path = "metrics-config/src/test/java/io/dropwizard/metrics/JmxAttributeGaugeTest.java"
+focal_file_path = "metrics-config/src/main/java/io/dropwizard/metrics/JmxAttributeGauge.java"
+test_file_url = "https://github.com/networknt/light-4j/blob/e6d76041442a1265369701cef8141b88c027f15c/metrics-config/src/test/java/io/dropwizard/metrics/JmxAttributeGaugeTest.java"
+focal_file_url = "https://github.com/networknt/light-4j/blob/e6d76041442a1265369701cef8141b88c027f15c/metrics-config/src/main/java/io/dropwizard/metrics/JmxAttributeGauge.java"
+first_commit_date = "2024-04-04"
+last_commit_date = "2024-04-04"
+test_file_content = "\n\npackage io.dropwizard.metrics;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\nimport java.lang.management.ManagementFactory;\nimport java.util.ArrayList;\nimport java.util.List;\n\nimport javax.management.JMException;\nimport javax.management.MBeanServer;\nimport javax.management.ObjectInstance;\nimport javax.management.ObjectName;\n\nimport org.junit.AfterClass;\nimport org.junit.BeforeClass;\nimport org.junit.Test;\n\npublic class JmxAttributeGaugeTest {\n\n    private static final MBeanServer mBeanServer = ManagementFactory.getPlatformMBeanServer();\n\n    private static final List<ObjectName> registeredMBeans = new ArrayList<>();\n\n    public interface JmxTestMBean {\n        Long getValue();\n    }\n\n    private static class JmxTest implements JmxTestMBean {\n        @Override\n        public Long getValue() {\n            return Long.MAX_VALUE;\n        }\n    }\n\n    @BeforeClass\n    public static void setUp() throws Exception {\n        registerMBean(new ObjectName(\"JmxAttributeGaugeTest:type=test,name=test1\"));\n        registerMBean(new ObjectName(\"JmxAttributeGaugeTest:type=test,name=test2\"));\n    }\n\n    @AfterClass\n    public static void tearDown() {\n        for (ObjectName objectName : registeredMBeans) {\n            try {\n                mBeanServer.unregisterMBean(objectName);\n            } catch (Exception e) {\n            }\n        }\n    }\n\n    @Test\n    public void returnsJmxAttribute() throws Exception {\n        ObjectName objectName = new ObjectName(\"java.lang:type=ClassLoading\");\n        JmxAttributeGauge gauge = new JmxAttributeGauge(mBeanServer, objectName, \"LoadedClassCount\");\n\n    }\n\n    @Test\n    public void returnsNullIfAttributeDoesNotExist() throws Exception {\n        ObjectName objectName = new ObjectName(\"java.lang:type=ClassLoading\");\n        JmxAttributeGauge gauge = new JmxAttributeGauge(mBeanServer, objectName, \"DoesNotExist\");\n\n    }\n\n    @Test\n    public void returnsNullIfMBeanNotFound() throws Exception {\n        ObjectName objectName = new ObjectName(\"foo.bar:type=NoSuchMBean\");\n        JmxAttributeGauge gauge = new JmxAttributeGauge(mBeanServer, objectName, \"LoadedClassCount\");\n\n    }\n\n    @Test\n    public void returnsAttributeForObjectNamePattern() throws Exception {\n        ObjectName objectName = new ObjectName(\"JmxAttributeGaugeTest:name=test1,*\");\n        JmxAttributeGauge gauge = new JmxAttributeGauge(mBeanServer, objectName, \"Value\");\n\n    }\n\n    @Test\n    public void returnsNullIfObjectNamePatternAmbiguous() throws Exception {\n        ObjectName objectName = new ObjectName(\"JmxAttributeGaugeTest:type=test,*\");\n        JmxAttributeGauge gauge = new JmxAttributeGauge(mBeanServer, objectName, \"Value\");\n\n    }\n\n    private static void registerMBean(ObjectName objectName) throws JMException {\n        ObjectInstance objectInstance = mBeanServer.registerMBean(new JmxTest(), objectName);\n        registeredMBeans.add(objectInstance.getObjectName());\n    }\n\n}"

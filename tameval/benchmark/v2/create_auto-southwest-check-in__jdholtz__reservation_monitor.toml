@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "jdholtz/auto-southwest-check-in"
+sha = "08010e2aaea522c42913addf8ffdc5485b06ddb7"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=lib/reservation_monitor.py -m pytest -q --junit-xml=test_output.xml tests/unit/test_reservation_monitor.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target lib.reservation_monitor --unit-test tests.unit.test_reservation_monitor --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target lib/reservation_monitor.py --unit-test tests/unit/test_reservation_monitor.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 54.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 0, 2, 3, 4, 5, 7, 8, 9, 10, 11, 19, 26, 27, 29, 31, 34, 40, 45, 46, 48, 49, 50, 51, 53, 55, 56, 58, 59, 60, 61, 63, 65, 66, 68, 90, 95, 98, 99, 100, 101, 102, 103, 115, 116, 117, 118, 120, 152, 163, 175, 176, 180, 183, 186, 187, 188, 189, 191, 206, 215, 217, 218, 220, 221, 229, 241, 242, 243, 244, 248, 249, 251, 255, 261, 263,]
+missed_lines = [ 70, 71, 74, 75, 76, 78, 79, 80, 81, 83, 84, 85, 87, 88, 106, 108, 109, 110, 112, 113, 121, 122, 124, 125, 127, 128, 131, 132, 133, 136, 137, 138, 141, 142, 143, 146, 147, 148, 157, 158, 159, 160, 161, 168, 169, 173, 196, 198, 199, 200, 204, 222, 227, 230, 231, 232, 233, 235, 239, 257, 258, 259, 264, 265,]
+
+[input_info]
+test_file_path = "tests/unit/test_reservation_monitor.py"
+focal_file_path = "lib/reservation_monitor.py"
+test_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/tests/unit/test_reservation_monitor.py"
+focal_file_url = "https://github.com/jdholtz/auto-southwest-check-in/blob/08010e2aaea522c42913addf8ffdc5485b06ddb7/lib/reservation_monitor.py"
+first_commit_date = "2023-06-17"
+last_commit_date = "2025-03-07"
+test_file_content = "import multiprocessing\nfrom datetime import datetime\nfrom unittest import mock\n\nimport pytest\nfrom pytest_mock import MockerFixture\n\nfrom lib.checkin_handler import CheckInHandler\nfrom lib.checkin_scheduler import CheckInScheduler\nfrom lib.config import AccountConfig, ReservationConfig\nfrom lib.fare_checker import FareChecker\nfrom lib.notification_handler import NotificationHandler\nfrom lib.reservation_monitor import TOO_MANY_REQUESTS_CODE, AccountMonitor, ReservationMonitor\nfrom lib.utils import (\n    CheckFaresOption,\n    DriverTimeoutError,\n    FlightChangeError,\n    LoginError,\n    RequestError,\n)\nfrom lib.webdriver import WebDriver\n\n\n@pytest.fixture\ndef mock_lock(mocker: MockerFixture) -> None:\n    return mocker.patch(\"multiprocessing.Lock\")\n\n\n@pytest.mark.filterwarnings(\n    # Mocking multiprocessing.Lock causes this warning\n    \"ignore:Mocks returned by pytest-mock do not need to be used as context managers:\"\n)\nclass TestReservationMonitor:\n    @pytest.fixture(autouse=True)\n    def _set_up_monitor(self, mock_lock: mock.Mock, mocker: MockerFixture) -> None:\n        self.monitor = ReservationMonitor(ReservationConfig(), mock_lock)\n        mocker.patch(\n            \"lib.reservation_monitor.get_current_time\", return_value=datetime(1999, 12, 31)\n        )\n\n    def test_start_starts_a_process(self, mocker: MockerFixture) -> None:\n        mock_process_start = mocker.patch.object(multiprocessing.Process, \"start\")\n\n        self.monitor.start()\n        mock_process_start.assert_called_once()\n\n    def test_monitor_monitors(self, mocker: MockerFixture) -> None:\n        mock_monitor = mocker.patch.object(ReservationMonitor, \"_monitor\")\n\n        self.monitor.monitor()\n        mock_monitor.assert_called_once()\n\n    def test_monitor_handles_keyboard_interrupt(self, mocker: MockerFixture) -> None:\n        mocker.patch.object(ReservationMonitor, \"_monitor\", side_effect=KeyboardInterrupt)\n        mock_stop_monitoring = mocker.patch.object(ReservationMonitor, \"_stop_monitoring\")\n\n        self.monitor.monitor()\n        mock_stop_monitoring.assert_called_once()\n\n\n\n\n\n    def test_check_skips_scheduling_on_driver_timeout(self, mocker: MockerFixture) -> None:\n        mock_refresh_headers = mocker.patch.object(\n            CheckInScheduler, \"refresh_headers\", side_effect=DriverTimeoutError\n        )\n        mock_schedule_reservations = mocker.patch.object(\n            ReservationMonitor, \"_schedule_reservations\"\n        )\n        mock_check_flight_fares = mocker.patch.object(ReservationMonitor, \"_check_flight_fares\")\n        mock_timeout_notif = mocker.patch.object(NotificationHandler, \"timeout_during_retrieval\")\n\n        self.monitor.config.confirmation_number = \"test_num\"\n        self.monitor.checkin_scheduler.flights = [\"test_flight\"]\n\n        should_exit = self.monitor._check()\n\n        assert not should_exit\n        mock_refresh_headers.assert_called_once()\n        mock_schedule_reservations.assert_not_called()\n        mock_check_flight_fares.assert_not_called()\n        mock_timeout_notif.assert_called_once()\n\n\n    def test_schedule_reservations_schedules_reservations_correctly(\n        self, mocker: MockerFixture\n    ) -> None:\n        mock_process_reservations = mocker.patch.object(CheckInScheduler, \"process_reservations\")\n        reservations = [{\"confirmationNumber\": \"Test1\"}, {\"confirmationNumber\": \"Test2\"}]\n\n        self.monitor._schedule_reservations(reservations)\n\n        mock_process_reservations.assert_called_once_with([\"Test1\", \"Test2\"])\n\n\n\n\n\n\n    def test_stop_monitoring_stops_checkins(self, mocker: MockerFixture) -> None:\n        mock_stop_checkins = mocker.patch.object(ReservationMonitor, \"_stop_checkins\")\n        self.monitor._stop_monitoring()\n        mock_stop_checkins.assert_called_once()\n\n\n@pytest.mark.filterwarnings(\n    # Mocking multiprocessing.Lock causes this warning\n    \"ignore:Mocks returned by pytest-mock do not need to be used as context managers:\"\n)\nclass TestAccountMonitor:\n    @pytest.fixture(autouse=True)\n    def _set_up_monitor(self, mock_lock: mock.Mock, mocker: MockerFixture) -> None:\n        self.monitor = AccountMonitor(AccountConfig(), mock_lock)\n        mocker.patch(\n            \"lib.reservation_monitor.get_current_time\", return_value=datetime(1999, 12, 31)\n        )\n\n\n\n\n    def test_get_reservations_skips_retrieval_on_too_many_requests_error(\n        self, mocker: MockerFixture\n    ) -> None:\n        mocker.patch(\"time.sleep\")\n        mocker.patch.object(\n            WebDriver, \"get_reservations\", side_effect=LoginError(\"\", TOO_MANY_REQUESTS_CODE)\n        )\n        mock_too_many_requests_notif = mocker.patch.object(\n            NotificationHandler, \"too_many_requests_during_login\"\n        )\n\n        reservations, skip_scheduling = self.monitor._get_reservations()\n\n        assert len(reservations) == 0\n        assert skip_scheduling\n        mock_too_many_requests_notif.assert_called_once()\n\n"

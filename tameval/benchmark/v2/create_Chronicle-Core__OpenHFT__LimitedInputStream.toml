@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "OpenHFT/Chronicle-Core"
+sha = "655bef412e78a19621250cb8661bd3851643f68d"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=LimitedInputStreamTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.LimitedInputStream  -DtargetTests=**.LimitedInputStreamTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 34, 35, 36, 37, 38, 42, 43, 46, 47, 48, 49, 55, 56, 58, 59, 61, 62, 66, 67, 68, 69, 70, 74,]
+missed_lines = [ 44, 57, 63,]
+
+[input_info]
+test_file_path = "src/test/java/net/openhft/chronicle/core/io/LimitedInputStreamTest.java"
+focal_file_path = "src/main/java/net/openhft/chronicle/core/io/LimitedInputStream.java"
+test_file_url = "https://github.com/OpenHFT/Chronicle-Core/blob/655bef412e78a19621250cb8661bd3851643f68d/src/test/java/net/openhft/chronicle/core/io/LimitedInputStreamTest.java"
+focal_file_url = "https://github.com/OpenHFT/Chronicle-Core/blob/655bef412e78a19621250cb8661bd3851643f68d/src/main/java/net/openhft/chronicle/core/io/LimitedInputStream.java"
+first_commit_date = "2025-07-04"
+last_commit_date = "2025-07-04"
+test_file_content = "package net.openhft.chronicle.core.io;\n\nimport org.junit.jupiter.api.Test;\n\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\n/**\n * Unit tests for {@link LimitedInputStream}.\n *\n * <p>Conventions:\n * <ul>\n *   <li>Each test name states the <em>given-when-then</em> scenario.</li>\n *   <li>No third-party helpers; plain JUnit 5 and core classes keep it \"vanilla\".</li>\n * </ul>\n */\nfinal class LimitedInputStreamTest {\n    /**\n     * Returns a new stream filled with {@code length} consecutive ascending bytes.\n     */\n    private static ByteArrayInputStream bytes(int length) {\n        byte[] data = new byte[length];\n        for (int i = 0; i < length; i++)\n            data[i] = (byte) i;\n        return new ByteArrayInputStream(data);\n    }\n\n    @Test\n    void constructor_rejectsNegativeLimit() {\n        assertThrows(IllegalArgumentException.class,\n                () -> new LimitedInputStream(bytes(1), -1));\n    }\n\n    @Test\n    void read_singleBytes_consumesBudgetExactly() throws IOException {\n        LimitedInputStream in = new LimitedInputStream(bytes(3), 3);\n\n        assertEquals(0, in.read());\n        assertEquals(1, in.read());\n        assertEquals(2, in.read());\n        assertEquals(-1, in.read());        // true EOF once budget is zero\n    }\n\n    @Test\n    void read_singleByte_throwsWhenBudgetExhaustedAndDataRemains() throws IOException {\n        LimitedInputStream in = new LimitedInputStream(bytes(2), 1);\n\n        assertEquals(0, in.read());         // budget used up\n\n        IOException ex = assertThrows(IOException.class, in::read);\n        assertEquals(\"Size limit exceeded\", ex.getMessage());\n    }\n\n    @Test\n    void read_bulkWithinLimit_returnsRequestedBytes() throws IOException {\n        LimitedInputStream in = new LimitedInputStream(bytes(10), 10);\n\n        byte[] buf = new byte[10];\n        int n = in.read(buf, 0, buf.length);\n\n        assertEquals(10, n);\n        for (int i = 0; i < 10; i++)\n            assertEquals(i, buf[i]);\n        assertEquals(-1, in.read());        // budget exhausted, underlying EOF\n    }\n\n    @Test\n    void read_bulkCrossesLimit_allowedPartReadThenThrows() throws IOException {\n        LimitedInputStream in = new LimitedInputStream(bytes(5), 3);\n        byte[] buf = new byte[5];\n\n        int n = in.read(buf, 0, 5);         // only 3 permitted\n        assertEquals(3, n);\n\n        IOException ex = assertThrows(IOException.class,\n                () -> in.read(buf, 0, 1));\n        assertEquals(\"Size limit exceeded\", ex.getMessage());\n    }\n\n    @Test\n    void read_zeroLengthBuffer_doesNothingAndReturnsZero() throws IOException {\n        LimitedInputStream in = new LimitedInputStream(bytes(1), 1);\n        byte[] zero = new byte[0];\n\n        assertEquals(0, in.read(zero, 0, 0));\n        assertEquals(0, in.read());         // budget unchanged\n    }\n\n    @Test\n    void read_budgetZeroAndUnderlyingEOF_returnsMinusOne() throws IOException {\n        LimitedInputStream in = new LimitedInputStream(bytes(0), 0);\n\n        assertEquals(-1, in.read());\n    }\n}\n"

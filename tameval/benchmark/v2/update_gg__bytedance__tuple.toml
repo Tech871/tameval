@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.18"
+
+[repo_info]
+repository = "bytedance/gg"
+sha = "420f8369dd6e235b8124691860e822d015969fb6"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out collection/tuple/tuple.go collection/tuple/tuple_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting collection/tuple/tuple.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 9.0
+original_coverage = 100.0
+mutation_kill_rate = 11.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 51, 52, 53, 56, 57, 58, 228, 229, 230, 231, 232, 233, 234, 237, 238, 239, 240, 241, 242, 243,]
+missed_lines = [ 68, 69, 70, 73, 74, 75, 86, 87, 88, 91, 92, 93, 105, 106, 107, 110, 111, 112, 125, 126, 127, 130, 131, 132, 146, 147, 148, 151, 152, 153, 168, 169, 170, 173, 174, 175, 191, 192, 193, 196, 197, 198, 215, 216, 217, 220, 221, 222, 250, 251, 252, 253, 254, 255, 256, 257, 260, 261, 262, 263, 264, 265, 266, 273, 274, 275, 276, 277, 278, 279, 280, 281, 284, 285, 286, 287, 288, 289, 290, 297, 298, 299, 300, 301, 302, 303, 304, 305, 306, 309, 310, 311, 312, 313, 314, 315, 322, 323, 324, 325, 326, 327, 328, 329, 330, 331, 332, 335, 336, 337, 338, 339, 340, 341, 348, 349, 350, 351, 352, 353, 354, 355, 356, 357, 358, 359, 362, 363, 364, 365, 366, 367, 368, 375, 376, 377, 378, 379, 380, 381, 382, 383, 384, 385, 386, 387, 390, 391, 392, 393, 394, 395, 396, 403, 404, 405, 406, 407, 408, 409, 410, 411, 412, 413, 414, 415, 416, 419, 420, 421, 422, 423, 424, 425, 432, 433, 434, 435, 436, 437, 438, 439, 440, 441, 442, 443, 444, 445, 446, 449, 450, 451, 452, 453, 454, 455,]
+
+[input_info]
+test_file_path = "collection/tuple/tuple_test.go"
+focal_file_path = "collection/tuple/tuple.go"
+test_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/collection/tuple/tuple_test.go"
+focal_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/collection/tuple/tuple.go"
+first_commit_date = "2025-05-19"
+last_commit_date = "2025-05-20"
+test_file_content = "// Copyright 2025 Bytedance Ltd.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage tuple\n\nimport (\n\t\"testing\"\n\n\t\"github.com/bytedance/gg/internal/assert\"\n)\n\nfunc TestT2(t *testing.T) {\n\tp := Make2(\"red\", 14)\n\n\tif p.First != \"red\" {\n\t\tt.Error()\n\t}\n\tif p.Second != 14 {\n\t\tt.Error()\n\t}\n}\n\nfunc TestS2(t *testing.T) {\n\t{\n\t\ts := Zip2([]string{\"red\", \"green\", \"blue\"}, []int{14, 15, 16})\n\t\ts1, s2 := s.Unzip()\n\t\tassert.Equal(t, []string{\"red\", \"green\", \"blue\"}, s1)\n\t\tassert.Equal(t, []int{14, 15, 16}, s2)\n\t}\n\t{ // Test empty.\n\t\ts := Zip2([]string{}, []int{})\n\t\ts1, s2 := s.Unzip()\n\t\tassert.Equal(t, []string{}, s1)\n\t\tassert.Equal(t, []int{}, s2)\n\t}\n\t{ // Test nil.\n\t\ts := Zip2([]string(nil), []int(nil))\n\t\ts1, s2 := s.Unzip()\n\t\tassert.Equal(t, []string{}, s1)\n\t\tassert.Equal(t, []int{}, s2)\n\t}\n}"

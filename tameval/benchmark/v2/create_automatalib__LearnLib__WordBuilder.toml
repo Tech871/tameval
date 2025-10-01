@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "LearnLib/automatalib"
+sha = "125bd7267571158b87da3e5dbe92f505ce1729a5"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl api -Dtest=WordBuilderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl api -DtargetClasses=**.WordBuilder  -DtargetTests=**.WordBuilderTest  -DoutputFormats=XML"
+coverage_report_path = "api/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "api/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 52, 53, 54, 62, 63, 64, 75, 76, 77, 78, 80, 81, 94, 95, 96, 97, 99, 100, 108, 109, 110, 111, 112, 113, 123, 124, 125, 126, 127, 128, 139, 140, 141, 145, 146, 147, 148, 149, 150, 162, 163, 164, 165, 166, 179, 183, 184, 185, 188, 190, 191, 192, 193, 196, 209, 212, 213, 214, 215, 225, 226, 235, 236, 237, 238, 240, 253, 257, 258, 260, 262, 263, 264, 267, 281, 285, 286, 289, 290, 293, 305, 306, 309, 310, 312, 314, 321, 322, 323, 325, 340, 341, 343, 345, 346, 357, 358, 410, 411, 412, 413, 417, 426, 427, 429, 430, 431, 432, 433, 435,]
+missed_lines = [ 180, 210, 254, 282, 287, 363, 364, 369, 382, 387, 388, 389, 403, 404, 405,]
+
+[input_info]
+test_file_path = "api/src/test/java/net/automatalib/word/WordBuilderTest.java"
+focal_file_path = "api/src/main/java/net/automatalib/word/WordBuilder.java"
+test_file_url = "https://github.com/LearnLib/automatalib/blob/125bd7267571158b87da3e5dbe92f505ce1729a5/api/src/test/java/net/automatalib/word/WordBuilderTest.java"
+focal_file_url = "https://github.com/LearnLib/automatalib/blob/125bd7267571158b87da3e5dbe92f505ce1729a5/api/src/main/java/net/automatalib/word/WordBuilder.java"
+first_commit_date = "2023-10-10"
+last_commit_date = "2025-01-14"
+test_file_content = "/* Copyright (C) 2013-2025 TU Dortmund University\n * This file is part of AutomataLib <https://automatalib.net>.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage net.automatalib.word;\n\nimport java.util.Arrays;\n\nimport org.testng.Assert;\nimport org.testng.annotations.Test;\n\npublic class WordBuilderTest {\n\n    @Test\n    public void constructorTest() {\n        WordBuilder<?> wb;\n\n        wb = new WordBuilder<>();\n        Assert.assertEquals(wb.size(), 0);\n        Assert.assertEquals(wb.toWord(), Word.epsilon());\n\n        wb = new WordBuilder<>(-1);\n        Assert.assertEquals(wb.size(), 0);\n        Assert.assertEquals(wb.toWord(), Word.epsilon());\n\n        final Word<Character> aaaaa = Word.fromString(\"aaaaa\");\n\n        wb = new WordBuilder<>('a', 5);\n        Assert.assertEquals(wb.size(), 5);\n        Assert.assertEquals(wb.toWord(), aaaaa);\n\n        wb = new WordBuilder<>(null, 5);\n        Assert.assertEquals(wb.size(), 5);\n        Assert.assertEquals(wb.toWord(), Word.fromSymbols(null, null, null, null, null));\n\n        wb = new WordBuilder<>(10, 'a', 5);\n        Assert.assertEquals(wb.size(), 5);\n        Assert.assertEquals(wb.toWord(), aaaaa);\n\n        wb = new WordBuilder<>(-1, 'a', 5);\n        Assert.assertEquals(wb.size(), 5);\n        Assert.assertEquals(wb.toWord(), aaaaa);\n\n        final Word<?> abc = Word.fromString(\"abc\");\n\n        wb = new WordBuilder<>(abc);\n        Assert.assertEquals(wb.size(), 3);\n        Assert.assertEquals(wb.toWord(), abc);\n\n        wb = new WordBuilder<>(-1, abc);\n        Assert.assertEquals(wb.size(), 3);\n        Assert.assertEquals(wb.toWord(), abc);\n    }\n\n    @Test\n    public void appendTest() {\n        WordBuilder<Character> wb = new WordBuilder<>();\n        final Word<Character> aaa = Word.fromString(\"aaa\");\n        final Word<Character> abc = Word.fromString(\"abc\");\n        final Word<Character> abcabcabc = abc.concat(abc, abc);\n\n        wb.append('a');\n        Assert.assertEquals(wb.size(), 1);\n        Assert.assertEquals(wb.toWord(), Word.fromSymbols('a'));\n\n        wb.clear();\n        wb.append('a', 'b', 'c');\n        Assert.assertEquals(wb.size(), 3);\n        Assert.assertEquals(wb.toWord(), abc);\n\n        wb.clear();\n        wb.append(abc);\n        Assert.assertEquals(wb.size(), 3);\n        Assert.assertEquals(wb.toWord(), abc);\n\n        wb.clear();\n        wb.append(Arrays.asList('a', 'b', 'c'));\n        Assert.assertEquals(wb.size(), 3);\n        Assert.assertEquals(wb.toWord(), abc);\n\n        wb.clear();\n        wb.append(abc, abc, abc);\n        Assert.assertEquals(wb.size(), 9);\n        Assert.assertEquals(wb.toWord(), abcabcabc);\n\n        wb.clear();\n        wb.repeatAppend(3, 'a');\n        Assert.assertEquals(wb.size(), 3);\n        Assert.assertEquals(wb.toWord(), aaa);\n\n        wb.clear();\n        wb.repeatAppend(3, abc);\n        Assert.assertEquals(wb.size(), 9);\n        Assert.assertEquals(wb.toWord(), abcabcabc);\n\n\n        final int bigChunkSize = 27;\n        wb.clear();\n        wb.repeatAppend(bigChunkSize, abc);\n        Assert.assertEquals(wb.size(), bigChunkSize * 3);\n\n        Word<Character> buffer = Word.epsilon();\n        for (int i = 0; i < bigChunkSize; i++) {\n            buffer = buffer.concat(abc);\n        }\n        Assert.assertEquals(wb.toWord(), buffer);\n    }\n\n    @Test\n    public void reverseTest() {\n        WordBuilder<Character> wb = new WordBuilder<>();\n        final Word<Character> abc = Word.fromString(\"abc\");\n        final Word<Character> cba = Word.fromString(\"cba\");\n\n        wb.append(abc).reverse();\n        Assert.assertEquals(wb.toWord(), cba);\n    }\n\n    @Test\n    public void toWordTest() {\n        WordBuilder<Character> wb = new WordBuilder<>();\n        final Word<Character> abc = Word.fromString(\"abc\");\n\n        wb.repeatAppend(3, abc);\n        Assert.assertEquals(wb.toWord(3, 6), abc);\n\n        Assert.assertThrows(IndexOutOfBoundsException.class, () -> wb.toWord(-1, wb.size()));\n        Assert.assertThrows(IndexOutOfBoundsException.class, () -> wb.toWord(0, wb.size() + 1));\n    }\n\n    @Test\n    public void truncateTest() {\n        WordBuilder<Character> wb = new WordBuilder<>();\n        final Word<Character> abc = Word.fromString(\"abc\");\n        final Word<Character> abcabc = abc.concat(abc);\n        final Word<Character> abcabcabc = abcabc.concat(abc);\n\n        wb.repeatAppend(3, abc).truncate(12);\n        Assert.assertEquals(wb.toWord(), abcabcabc);\n\n        wb.clear();\n        wb.repeatAppend(3, abc).truncate(6);\n        Assert.assertEquals(wb.toWord(), abcabc);\n    }\n\n}\n"

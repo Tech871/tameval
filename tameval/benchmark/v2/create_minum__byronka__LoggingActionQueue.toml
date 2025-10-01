@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "byronka/minum"
+sha = "42416409b5fd3535c882b2a994cd9eb0be82260a"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=LoggingActionQueueTests && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.LoggingActionQueue  -DtargetTests=**.LoggingActionQueueTests  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 93.0
+original_coverage = 93.0
+mutation_kill_rate = 54.0
+original_mutation_kill_rate = 54.0
+covered_lines = [ 25, 26, 29, 30, 31, 32, 33, 34, 41, 42, 43, 46, 48, 55, 56, 58, 59, 60, 68, 70, 71, 72, 73, 74, 83, 84, 86, 95, 96, 97, 98, 99, 100, 115, 116, 119, 124, 129, 134,]
+missed_lines = [ 102, 103, 104,]
+
+[input_info]
+test_file_path = "src/test/java/com/renomad/minum/logging/LoggingActionQueueTests.java"
+focal_file_path = "src/main/java/com/renomad/minum/logging/LoggingActionQueue.java"
+test_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/test/java/com/renomad/minum/logging/LoggingActionQueueTests.java"
+focal_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/main/java/com/renomad/minum/logging/LoggingActionQueue.java"
+first_commit_date = "2023-08-29"
+last_commit_date = "2025-07-31"
+test_file_content = "package com.renomad.minum.logging;\n\nimport com.renomad.minum.state.Context;\nimport com.renomad.minum.utils.MyThread;\nimport com.renomad.minum.utils.RunnableWithDescription;\nimport com.renomad.minum.utils.UtilsException;\nimport org.junit.After;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.util.Queue;\nimport java.util.concurrent.LinkedBlockingQueue;\n\nimport static com.renomad.minum.testing.TestFramework.*;\n\n/**\n * These are tests for the background processor for the logging\n * system.  It's particularly difficult to test because the normal\n * facilities for testing are unavailable.\n */\npublic class LoggingActionQueueTests {\n\n    private Context context;\n\n    @Before\n    public void init() {\n        context = buildTestingContext(\"TestLogger tests\");\n    }\n\n    @After\n    public void cleanup() {\n        shutdownTestingContext(context);\n    }\n\n    @Test\n    public void testGetQueueThread() {\n        var testQueue = new LoggingActionQueue(\"my test queue\", context.getExecutorService(), context.getConstants());\n        testQueue.initialize();\n        MyThread.sleep(10);\n        assertEquals(testQueue.getQueueThread().getName(), \"my test queue\");\n    }\n\n    @Test\n    public void testGetQueue() {\n        var testQueue = new LoggingActionQueue(\"my test queue\", context.getExecutorService(), context.getConstants());\n        testQueue.initialize();\n        testQueue.enqueue(\"Printing a test comment\", () -> {MyThread.sleep(20);System.out.println(\"This is a test\");});\n        testQueue.enqueue(\"Printing a test comment\", () -> {MyThread.sleep(20);System.out.println(\"This is a test\");});\n\n        assertEquals(testQueue.getQueue().peek().toString(), \"Printing a test comment\");\n    }\n\n    @Test\n    public void testErrorWhileRunningAction() throws InterruptedException {\n        LinkedBlockingQueue<RunnableWithDescription> foo = new LinkedBlockingQueue<>();\n        foo.add(new RunnableWithDescription(() -> {\n            throw new RuntimeException(\"This is a test exception\");\n        }, \"Testing runAction\"));\n        assertFalse(LoggingActionQueue.runAction(foo));\n    }\n    \n    @Test\n    public void testHappyPathWhileRunningAction() throws InterruptedException {\n        LinkedBlockingQueue<RunnableWithDescription> foo = new LinkedBlockingQueue<>();\n        foo.add(new RunnableWithDescription(() -> System.out.println(\"hello world\"), \"Testing runAction\"));\n        assertTrue(LoggingActionQueue.runAction(foo));\n    }\n\n}\n"

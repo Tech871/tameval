@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "from_scratch"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "nitrite/nitrite-java"
+sha = "32693e9538c4108c8c94b7a5b736ef96d9d7714c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nitrite -Dtest=TextIndexTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nitrite -DtargetClasses=**.TextIndex  -DtargetTests=**.TextIndexTest  -DoutputFormats=XML"
+coverage_report_path = "nitrite/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nitrite/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 52.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 13.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "nitrite/src/test/java/org/dizitart/no2/index/TextIndexTest.java"
+focal_file_path = "nitrite/src/main/java/org/dizitart/no2/index/TextIndex.java"
+test_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/test/java/org/dizitart/no2/index/TextIndexTest.java"
+focal_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/main/java/org/dizitart/no2/index/TextIndex.java"
+first_commit_date = "2021-06-29"
+last_commit_date = "2024-03-01"
+test_file_content = ""

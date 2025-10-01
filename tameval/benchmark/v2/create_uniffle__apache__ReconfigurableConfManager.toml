@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl common -Dtest=ReconfigurableConfManagerTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl common -DtargetClasses=**.ReconfigurableConfManager  -DtargetTests=**.ReconfigurableConfManagerTest  -DoutputFormats=XML"
+coverage_report_path = "common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 13.0
+original_coverage = 66.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 44, 173, 174, 176, 177, 178, 191, 192, 193, 194, 198, 211,]
+missed_lines = [ 54, 55, 56, 57, 59, 60, 61, 65, 66, 67, 68, 69, 70, 71, 74, 75, 76, 77, 78, 79, 81, 84, 87, 88, 89, 90, 91, 93, 94, 95, 97, 98, 99, 100, 101, 102, 104, 109, 110, 112, 113, 114, 115, 116, 117, 118, 120, 121, 123, 124, 126, 127, 128, 130, 131, 132, 134, 137, 141, 142, 151, 152, 153, 154, 164, 165, 166, 181, 182, 184, 203, 213, 214, 215, 216, 219, 223,]
+
+[input_info]
+test_file_path = "common/src/test/java/org/apache/uniffle/common/ReconfigurableConfManagerTest.java"
+focal_file_path = "common/src/main/java/org/apache/uniffle/common/ReconfigurableConfManager.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/test/java/org/apache/uniffle/common/ReconfigurableConfManagerTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/main/java/org/apache/uniffle/common/ReconfigurableConfManager.java"
+first_commit_date = "2024-05-22"
+last_commit_date = "2024-10-12"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *    http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.apache.uniffle.common;\n\nimport java.util.Arrays;\nimport java.util.List;\nimport java.util.concurrent.TimeUnit;\nimport java.util.concurrent.atomic.AtomicInteger;\nimport java.util.function.Supplier;\n\nimport org.awaitility.Awaitility;\nimport org.junit.jupiter.api.Test;\n\nimport org.apache.uniffle.common.config.RssConf;\n\nimport static org.apache.uniffle.common.config.RssBaseConf.JETTY_HTTP_PORT;\nimport static org.apache.uniffle.common.config.RssBaseConf.RPC_SERVER_PORT;\nimport static org.apache.uniffle.common.config.RssBaseConf.RSS_RECONFIGURE_INTERVAL_SEC;\nimport static org.apache.uniffle.common.config.RssBaseConf.RSS_STORAGE_BASE_PATH;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\npublic class ReconfigurableConfManagerTest {\n\n\n  @Test\n  public void testWithoutInitialization() {\n    RssConf base = new RssConf();\n    base.set(JETTY_HTTP_PORT, 100);\n    ReconfigurableConfManager.Reconfigurable<Integer> portReconfigurable =\n        base.getReconfigurableConf(JETTY_HTTP_PORT);\n    assertEquals(100, portReconfigurable.get());\n  }\n}\n"

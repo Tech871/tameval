@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "mdabrowski1990/uds"
+sha = "81ca93afdc4ac9e386bbdebaf44ab0ac9cc22941"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=uds/transport_interface/abstract_transport_interface.py -m pytest -q --junit-xml=test_output.xml tests/software_tests/transport_interface/test_abstract_transport_interface.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target uds.transport_interface.abstract_transport_interface --unit-test tests.software_tests.transport_interface.test_abstract_transport_interface --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target uds/transport_interface/abstract_transport_interface.py --unit-test tests/software_tests/transport_interface/test_abstract_transport_interface.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 62.0
+covered_lines = [ 2, 4, 5, 6, 8, 9, 10, 11, 12, 15, 22, 31, 32, 33, 41, 42, 46, 47, 55, 56, 64, 65, 83, 84, 85, 94, 95, 104, 105, 117, 118, 129, 130, 145, 146, 155, 156, 168, 169, 180, 181,]
+missed_lines = [ 29, 44, 53, 62, 74, 75, 76, 77, 78, 79, 81,]
+
+[input_info]
+test_file_path = "tests/software_tests/transport_interface/test_abstract_transport_interface.py"
+focal_file_path = "uds/transport_interface/abstract_transport_interface.py"
+test_file_url = "https://github.com/mdabrowski1990/uds/blob/81ca93afdc4ac9e386bbdebaf44ab0ac9cc22941/tests/software_tests/transport_interface/test_abstract_transport_interface.py"
+focal_file_url = "https://github.com/mdabrowski1990/uds/blob/81ca93afdc4ac9e386bbdebaf44ab0ac9cc22941/uds/transport_interface/abstract_transport_interface.py"
+first_commit_date = "2021-12-30"
+last_commit_date = "2025-07-29"
+test_file_content = "import pytest\nfrom mock import Mock\n\nfrom uds.transport_interface.abstract_transport_interface import AbstractTransportInterface\n\nSCRIPT_LOCATION = \"uds.transport_interface.abstract_transport_interface\"\n\n\nclass TestAbstractTransportInterface:\n    \"\"\"Unit tests for `AbstractTransportInterface` class.\"\"\"\n\n    def setup_method(self):\n        self.mock_transport_interface = Mock(spec=AbstractTransportInterface)\n\n    # __init__\n\n    def test_init__value_error(self):\n        self.mock_transport_interface.is_supported_bus_manager.return_value = False\n        with pytest.raises(ValueError):\n            AbstractTransportInterface.__init__(self=self.mock_transport_interface,\n                                                bus_manager=Mock())\n        self.mock_transport_interface.is_supported_bus_manager.assert_called_once()\n\n    @pytest.mark.parametrize(\"bus_manager, message_records_number, packet_records_number\", [\n        (\"bus_manager\", \"message_records_number\", \"packet_records_number\"),\n        (Mock(), Mock(), Mock()),\n    ])\n    def test_init__valid(self, bus_manager, message_records_number, packet_records_number):\n        self.mock_transport_interface.is_supported_bus_manager.return_value = True\n        AbstractTransportInterface.__init__(self=self.mock_transport_interface,\n                                            bus_manager=bus_manager)\n        self.mock_transport_interface.is_supported_bus_manager.assert_called_once_with(bus_manager)\n        assert self.mock_transport_interface._AbstractTransportInterface__bus_manager == bus_manager\n\n    # bus_manager\n\n    @pytest.mark.parametrize(\"value\", [\"something\", Mock()])\n    def test_bus_manager(self, value):\n        self.mock_transport_interface._AbstractTransportInterface__bus_manager = value\n        assert AbstractTransportInterface.bus_manager.fget(self.mock_transport_interface) == value"

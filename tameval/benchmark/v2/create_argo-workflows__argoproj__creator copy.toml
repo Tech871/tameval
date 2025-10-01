@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.1"
+
+[repo_info]
+repository = "argoproj/argo-workflows"
+sha = "1f738e60f00c7983a47197e49e0c1bc6792e924e"
+
+[run_info]
+docker_image = "golang:1.23.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out workflow/creator/creator.go workflow/creator/creator_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting workflow/creator/creator.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 20.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92,]
+missed_lines = [ 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 58, 59, 60, 62, 63, 64, 67, 68, 69, 70, 71, 72, 73, 74, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113,]
+
+[input_info]
+test_file_path = "workflow/creator/creator_test.go"
+focal_file_path = "workflow/creator/creator.go"
+test_file_url = "https://github.com/argoproj/argo-workflows/blob/1f738e60f00c7983a47197e49e0c1bc6792e924e/workflow/creator/creator_test.go"
+focal_file_url = "https://github.com/argoproj/argo-workflows/blob/1f738e60f00c7983a47197e49e0c1bc6792e924e/workflow/creator/creator.go"
+first_commit_date = "2020-07-15"
+last_commit_date = "2025-03-11"
+test_file_content = "package creator\n\nimport (\n\t\"context\"\n\t\"strings\"\n\t\"testing\"\n\n\t\"github.com/go-jose/go-jose/v3/jwt\"\n\t\"github.com/stretchr/testify/assert\"\n\n\t\"github.com/argoproj/argo-workflows/v3/server/auth\"\n\t\"github.com/argoproj/argo-workflows/v3/server/auth/types\"\n)\n\n\nfunc TestUserInfoMap(t *testing.T) {\n\tt.Run(\"NotEmpty\", func(t *testing.T) {\n\t\tctx := context.WithValue(context.TODO(), auth.ClaimsKey,\n\t\t\t&types.Claims{Claims: jwt.Claims{Subject: strings.Repeat(\"x\", 63) + \"y\"}, Email: \"my@email\", PreferredUsername: \"username\"})\n\t\tuim := UserInfoMap(ctx)\n\t\tassert.Equal(t, map[string]string{\n\t\t\t\"User\":              strings.Repeat(\"x\", 63) + \"y\",\n\t\t\t\"Email\":             \"my@email\",\n\t\t\t\"PreferredUsername\": \"username\",\n\t\t}, uim)\n\t})\n\tt.Run(\"Empty\", func(t *testing.T) {\n\t\tuim := UserInfoMap(context.TODO())\n\t\tassert.Nil(t, uim)\n\t})\n}\n"

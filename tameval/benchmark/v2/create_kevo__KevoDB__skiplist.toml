@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "KevoDB/kevo"
+sha = "a0bcddabc1700e19208bd8adb99211654de65bc8"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/memtable/skiplist.go pkg/memtable/skiplist_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/memtable/skiplist.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 52.0
+original_coverage = 82.0
+mutation_kill_rate = 30.0
+original_mutation_kill_rate = 56.0
+covered_lines = [ 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52, 53, 54, 55, 56, 57, 61, 62, 63, 67, 68, 69, 73, 74, 75, 76, 77, 78, 84, 97, 98, 99, 100, 101, 102, 105, 106, 107, 110, 111, 112, 124, 125, 126, 127, 128, 129, 130, 131, 132, 136, 137, 138, 139, 140, 141, 142, 143, 144, 148, 149, 150, 153, 154, 155, 156, 157, 158, 159, 160, 161, 162, 163, 164, 168, 169, 170, 171, 172, 173, 174, 175, 177, 181, 182, 183, 184, 185, 186, 189, 194, 195, 196, 197, 198, 199, 200, 201, 202, 203, 204, 205, 211, 212, 213, 214, 215, 219, 220, 221, 225, 228,]
+missed_lines = [ 79, 80, 81, 82, 222, 223, 224, 232, 233, 234, 244, 245, 246, 247, 248, 249, 250, 253, 254, 255, 256, 257, 258, 259, 262, 263, 264, 267, 268, 269, 270, 271, 273, 277, 278, 279, 280, 283, 284, 285, 286, 287, 288, 292, 293, 294, 295, 296, 297, 298, 302, 303, 304, 305, 306, 307, 308, 309, 310, 311, 312, 313, 314, 319, 320, 321, 322, 323, 324, 328, 329, 330, 331, 333, 334, 335, 339, 340, 341, 342, 346, 347, 348, 351, 352, 353, 357, 358, 359, 360, 361, 365, 366, 367, 370, 371, 372, 373, 374, 378, 379, 380, 381, 382,]
+
+[input_info]
+test_file_path = "pkg/memtable/skiplist_test.go"
+focal_file_path = "pkg/memtable/skiplist.go"
+test_file_url = "https://github.com/KevoDB/kevo/blob/a0bcddabc1700e19208bd8adb99211654de65bc8/pkg/memtable/skiplist_test.go"
+focal_file_url = "https://github.com/KevoDB/kevo/blob/a0bcddabc1700e19208bd8adb99211654de65bc8/pkg/memtable/skiplist.go"
+first_commit_date = "2025-04-20"
+last_commit_date = "2025-07-10"
+test_file_content = "package memtable\n\nimport (\n\t\"testing\"\n)\n\nfunc TestSkipListBasicOperations(t *testing.T) {\n\tsl := NewSkipList()\n\n\t// Test insertion\n\te1 := newEntry([]byte(\"key1\"), []byte(\"value1\"), TypeValue, 1)\n\te2 := newEntry([]byte(\"key2\"), []byte(\"value2\"), TypeValue, 2)\n\te3 := newEntry([]byte(\"key3\"), []byte(\"value3\"), TypeValue, 3)\n\n\tsl.Insert(e1)\n\tsl.Insert(e2)\n\tsl.Insert(e3)\n\n\t// Test lookup\n\tfound := sl.Find([]byte(\"key2\"))\n\tif found == nil {\n\t\tt.Fatalf(\"expected to find key2, but got nil\")\n\t}\n\tif string(found.value) != \"value2\" {\n\t\tt.Errorf(\"expected value to be 'value2', got '%s'\", string(found.value))\n\t}\n\n\t// Test lookup of non-existent key\n\tnotFound := sl.Find([]byte(\"key4\"))\n\tif notFound != nil {\n\t\tt.Errorf(\"expected nil for non-existent key, got %v\", notFound)\n\t}\n}\n\nfunc TestSkipListSequenceNumbers(t *testing.T) {\n\tsl := NewSkipList()\n\n\t// Insert same key with different sequence numbers\n\te1 := newEntry([]byte(\"key\"), []byte(\"value1\"), TypeValue, 1)\n\te2 := newEntry([]byte(\"key\"), []byte(\"value2\"), TypeValue, 2)\n\te3 := newEntry([]byte(\"key\"), []byte(\"value3\"), TypeValue, 3)\n\n\t// Insert in reverse order to test ordering\n\tsl.Insert(e3)\n\tsl.Insert(e2)\n\tsl.Insert(e1)\n\n\t// Find should return the entry with the highest sequence number\n\tfound := sl.Find([]byte(\"key\"))\n\tif found == nil {\n\t\tt.Fatalf(\"expected to find key, but got nil\")\n\t}\n\tif string(found.value) != \"value3\" {\n\t\tt.Errorf(\"expected value to be 'value3' (highest seq num), got '%s'\", string(found.value))\n\t}\n\tif found.seqNum != 3 {\n\t\tt.Errorf(\"expected sequence number to be 3, got %d\", found.seqNum)\n\t}\n}\n\n\n\n"

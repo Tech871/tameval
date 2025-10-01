@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "XMU-Kuangnan-Fang-Team/GENetLib"
+sha = "4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=GENetLib/basis_fd.py -m pytest -q --junit-xml=test_output.xml pytest/test_basis_fd.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target GENetLib.basis_fd --unit-test pytest.test_basis_fd --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target GENetLib/basis_fd.py --unit-test pytest/test_basis_fd.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 54.0
+original_coverage = 88.0
+mutation_kill_rate = 41.0
+original_mutation_kill_rate = 58.0
+covered_lines = [ 0, 3, 5, 6, 19, 21, 23, 25, 26, 27, 29, 30, 31, 33, 36, 37, 38, 39, 40, 41, 44, 45, 46, 48, 49, 50, 51, 55, 56, 63, 64, 65, 66, 67, 68, 69, 76, 77, 78, 79, 80, 81, 82, 83, 91, 92, 98, 99, 109, 111, 121,]
+missed_lines = [ 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 20, 22, 24, 28, 32, 34, 42, 43, 47, 52, 53, 57, 58, 59, 60, 61, 70, 71, 72, 73, 74, 75, 84, 85, 86, 87, 88, 89, 90, 93, 94, 95, 97,]
+
+[input_info]
+test_file_path = "pytest/test_basis_fd.py"
+focal_file_path = "GENetLib/basis_fd.py"
+test_file_url = "https://github.com/XMU-Kuangnan-Fang-Team/GENetLib/blob/4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7/pytest/test_basis_fd.py"
+focal_file_url = "https://github.com/XMU-Kuangnan-Fang-Team/GENetLib/blob/4caa08b3f0c3db1cf7640d638dc5def9fbcbdce7/GENetLib/basis_fd.py"
+first_commit_date = "2024-09-26"
+last_commit_date = "2025-01-22"
+test_file_content = "import pytest\nimport numpy as np\nfrom GENetLib.basis_fd import basis_fd\n\n# Test default parameters\n\n# Test custom parameters\n\n# Test constant basis function\n\n# Test Fourier basis function with valid period\n\n# Test Fourier basis function with invalid period\ndef test_basis_fd_fourier_invalid_period():\n    with pytest.raises(ValueError):\n        basis_fd(btype=\"fourier\", rangeval=[0, 1], params=[-1])\n\n# Test Fourier basis function with even nbasis\ndef test_basis_fd_fourier_even_nbasis():\n    result = basis_fd(btype=\"fourier\", rangeval=[0, 1], nbasis=4, params=[2 * np.pi])\n    assert result['nbasis'] == 5  # Should automatically adjust to odd\n\n# Test B-spline basis function\n\n# Test B-spline basis function with breaks out of range\n\n# Test monomial basis function\n\n# Test polynomial basis function\ndef test_basis_fd_polyg():\n    result = basis_fd(btype=\"polygonal\", rangeval=[0, 1], nbasis=4, params=[0, 1, 2, 3])\n    assert result['btype'] == 'polygonal'\n\n# Test power basis function\n\n# Test unknown basis type\n\n# Test quadvals parameter with too few points\n\n# Test quadvals parameter with wrong number of columns\ndef test_basis_fd_quadvals_wrong_columns():\n    with pytest.raises(ValueError):\n        basis_fd(quadvals=np.array([[0, 1, 2]]), rangeval=[0, 1], nbasis=1)\n\n# Test values parameter with mismatched rows\ndef test_basis_fd_values_mismatch_rows():\n    with pytest.raises(ValueError):\n        basis_fd(values=np.array([[1]]), quadvals=np.array([[0, 1], [1, 0]]), rangeval=[0, 1], nbasis=1)\n\n# Test values parameter with mismatched columns\n\n# Test basisvalues parameter not 2D\n\n# Test dropind parameter out of range\n\n# Test dropind parameter duplicates\n\n# Test dropind parameter too many\ndef test_basis_fd_dropind_too_many():\n    with pytest.raises(ValueError):\n        basis_fd(dropind=[1, 2], rangeval=[0, 1], nbasis=2)\n"

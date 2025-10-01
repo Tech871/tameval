@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "notaryproject/ratify"
+sha = "67aa7a4993f915deac10ae371cdafb67a4bf697c"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/policyprovider/regopolicy/regopolicy.go pkg/policyprovider/regopolicy/regopolicy_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/policyprovider/regopolicy/regopolicy.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 25.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/policyprovider/regopolicy/regopolicy_test.go"
+focal_file_path = "pkg/policyprovider/regopolicy/regopolicy.go"
+test_file_url = "https://github.com/notaryproject/ratify/blob/67aa7a4993f915deac10ae371cdafb67a4bf697c/pkg/policyprovider/regopolicy/regopolicy_test.go"
+focal_file_url = "https://github.com/notaryproject/ratify/blob/67aa7a4993f915deac10ae371cdafb67a4bf697c/pkg/policyprovider/regopolicy/regopolicy.go"
+first_commit_date = "2023-07-12"
+last_commit_date = "2025-05-23"
+test_file_content = "/*\nCopyright The Ratify Authors.\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\nhttp://www.apache.org/licenses/LICENSE-2.0\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage regopolicy\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"reflect\"\n\t\"testing\"\n\n\t\"github.com/deislabs/ratify/pkg/common\"\n\t\"github.com/deislabs/ratify/pkg/executor/types\"\n\t\"github.com/deislabs/ratify/pkg/ocispecs\"\n\t\"github.com/deislabs/ratify/pkg/policyprovider/config\"\n)\n\nconst (\n\tpolicy1 = `\npackage ratify.policy\n\ndefault valid := false\n\nvalid {\n    input.method == \"GET\"\n}\n`\n\tpolicy2 = \"package\"\n)\n\ntype policyEngine struct {\n\tReturnErr bool\n}\n\nfunc (e policyEngine) Evaluate(_ context.Context, _ map[string]interface{}) (bool, error) {\n\tif e.ReturnErr {\n\t\treturn false, errors.New(\"error\")\n\t}\n\treturn true, nil\n}\n\nfunc TestCreate(t *testing.T) {\n\tfactory := &Factory{}\n\ttestCases := []struct {\n\t\tname      string\n\t\tconfig    config.PolicyPluginConfig\n\t\texpectErr bool\n\t}{\n\t\t{\n\t\t\tname: \"invalid config\",\n\t\t\tconfig: map[string]interface{}{\n\t\t\t\t\"name\": make(chan int),\n\t\t\t},\n\t\t\texpectErr: true,\n\t\t},\n\t\t{\n\t\t\tname:      \"empty config\",\n\t\t\tconfig:    map[string]interface{}{},\n\t\t\texpectErr: true,\n\t\t},\n\t\t{\n\t\t\tname: \"config with invalid field\",\n\t\t\tconfig: map[string]interface{}{\n\t\t\t\t\"name\":               \"test\",\n\t\t\t\t\"passthroughEnabled\": \"test\",\n\t\t\t},\n\t\t\texpectErr: true,\n\t\t},\n\t\t{\n\t\t\tname: \"config with invalid policy\",\n\t\t\tconfig: map[string]interface{}{\n\t\t\t\t\"name\":   \"test\",\n\t\t\t\t\"policy\": policy2,\n\t\t\t},\n\t\t\texpectErr: true,\n\t\t},\n\t\t{\n\t\t\tname: \"config with valid policy\",\n\t\t\tconfig: map[string]interface{}{\n\t\t\t\t\"name\":   \"test\",\n\t\t\t\t\"policy\": policy1,\n\t\t\t},\n\t\t\texpectErr: false,\n\t\t},\n\t}\n\n\tfor _, tc := range testCases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\t_, err := factory.Create(tc.config)\n\t\t\tif tc.expectErr != (err != nil) {\n\t\t\t\tt.Fatalf(\"error = %v, expectErr = %v\", err, tc.expectErr)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestVerifyNeeded(t *testing.T) {\n\tpolicyEnforcer := &policyEnforcer{\n\t\tPolicy:    \"\",\n\t\tOpaEngine: policyEngine{},\n\t}\n\tresult := policyEnforcer.VerifyNeeded(context.Background(), common.Reference{}, ocispecs.ReferenceDescriptor{})\n\tif result != true {\n\t\tt.Fatalf(\"result = %v, expectResult = %v\", result, true)\n\t}\n}\n\nfunc TestContinueVerifyOnFailure(t *testing.T) {\n\tpolicyEnforcer := &policyEnforcer{\n\t\tPolicy:    \"\",\n\t\tOpaEngine: policyEngine{},\n\t}\n\tresult := policyEnforcer.ContinueVerifyOnFailure(context.Background(), common.Reference{}, ocispecs.ReferenceDescriptor{}, types.VerifyResult{})\n\n\tif !result {\n\t\tt.Fatalf(\"result = %v, expectResult = %v\", result, true)\n\t}\n}\n\nfunc TestErrorToVerifyResult(t *testing.T) {\n\tpolicyEnforcer := &policyEnforcer{\n\t\tPolicy:    \"\",\n\t\tOpaEngine: policyEngine{},\n\t}\n\tresult := policyEnforcer.ErrorToVerifyResult(context.Background(), \"\", nil)\n\n\tif !reflect.DeepEqual(result, types.VerifyResult{}) {\n\t\tt.Fatalf(\"result = %v, expectResult = %v\", result, types.VerifyResult{})\n\t}\n}\n\nfunc TestOverallVerifyResult(t *testing.T) {\n\ttestcases := []struct {\n\t\tname               string\n\t\treports            []interface{}\n\t\tpassthroughEnabled bool\n\t\treturnErr          bool\n\t\texpectResult       bool\n\t}{\n\t\t{\n\t\t\tname:               \"passthrough enabled\",\n\t\t\treports:            []interface{}{types.VerifyResult{}},\n\t\t\tpassthroughEnabled: true,\n\t\t\texpectResult:       false,\n\t\t\treturnErr:          false,\n\t\t},\n\t\t{\n\t\t\tname:         \"opa engine returns error\",\n\t\t\treports:      []interface{}{types.VerifyResult{}},\n\t\t\texpectResult: false,\n\t\t\treturnErr:    true,\n\t\t},\n\t\t{\n\t\t\tname:         \"opa engine returns result\",\n\t\t\treports:      []interface{}{types.VerifyResult{}},\n\t\t\texpectResult: true,\n\t\t\treturnErr:    false,\n\t\t},\n\t}\n\n\tfor _, tc := range testcases {\n\t\tt.Run(tc.name, func(t *testing.T) {\n\t\t\tpolicyEnforcer := &policyEnforcer{\n\t\t\t\tPolicy: \"\",\n\t\t\t\tOpaEngine: policyEngine{\n\t\t\t\t\tReturnErr: tc.returnErr,\n\t\t\t\t},\n\t\t\t\tpassthroughEnabled: tc.passthroughEnabled,\n\t\t\t}\n\t\t\tresult := policyEnforcer.OverallVerifyResult(context.Background(), tc.reports)\n\t\t\tif result != tc.expectResult {\n\t\t\t\tt.Fatalf(\"result = %v, expectResult = %v\", result, tc.expectResult)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestGetPolicyType(t *testing.T) {\n\tenforcer := policyEnforcer{}\n\tif policyType := enforcer.GetPolicyType(context.Background()); policyType != \"regopolicy\" {\n\t\tt.Fatalf(\"expected policy type: regopolicy, got %v\", policyType)\n\t}\n}"

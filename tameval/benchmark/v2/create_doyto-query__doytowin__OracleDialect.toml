@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "doytowin/doyto-query"
+sha = "27754a721c6c437edcb2a8936d4c4a6212125d03"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl doyto-query-dialect -Dtest=OracleDialectTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl doyto-query-dialect -DtargetClasses=**.OracleDialect  -DtargetTests=**.OracleDialectTest  -DoutputFormats=XML"
+coverage_report_path = "doyto-query-dialect/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "doyto-query-dialect/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 50.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 26, 29, 37, 38, 39, 40,]
+missed_lines = [ 30, 50, 51, 52, 57, 58,]
+
+[input_info]
+test_file_path = "doyto-query-dialect/src/test/java/win/doyto/query/dialect/OracleDialectTest.java"
+focal_file_path = "doyto-query-dialect/src/main/java/win/doyto/query/dialect/OracleDialect.java"
+test_file_url = "https://github.com/doytowin/doyto-query/blob/27754a721c6c437edcb2a8936d4c4a6212125d03/doyto-query-dialect/src/test/java/win/doyto/query/dialect/OracleDialectTest.java"
+focal_file_url = "https://github.com/doytowin/doyto-query/blob/27754a721c6c437edcb2a8936d4c4a6212125d03/doyto-query-dialect/src/main/java/win/doyto/query/dialect/OracleDialect.java"
+first_commit_date = "2023-06-27"
+last_commit_date = "2025-03-07"
+test_file_content = "/*\n * Copyright © 2019-2025 DoytoWin, Inc.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage win.doyto.query.dialect;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\n/**\n * OracleDialectTest\n *\n * @author f0rb on 2023/6/26\n * @since 1.0.2\n */\nclass OracleDialectTest {\n    OracleDialect dialect = new OracleDialect();\n\n    @Test\n    void buildPageSql() {\n        String pageSql = dialect.buildPageSql(\"SELECT username, password FROM user WHERE valid = true\", 10, 100);\n        String expected = \"SELECT username, password FROM \" +\n                \"(SELECT ROWNUM rn, ora1.* FROM (\" +\n                \"SELECT * FROM user WHERE valid = true\" +\n                \") ora1 WHERE ROWNUM <= 110 ) ora2 WHERE ora2.rn > 100\";\n        assertThat(pageSql).isEqualTo(expected);\n    }\n\n\n\n\n}\n"

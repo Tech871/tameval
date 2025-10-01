@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "zeromicro/go-zero"
+sha = "6edfce63e396883d83ee74ceba2e0d9d11f0626d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out core/proc/shutdown.go core/proc/shutdown_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting core/proc/shutdown.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = 63.0
+original_mutation_kill_rate = 63.0
+covered_lines = [ 41, 42, 43, 47, 48, 49, 52, 53, 54, 55, 56, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 71, 72, 73, 76, 77, 78, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132,]
+missed_lines = [ 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96,]
+
+[input_info]
+test_file_path = "core/proc/shutdown_test.go"
+focal_file_path = "core/proc/shutdown.go"
+test_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/core/proc/shutdown_test.go"
+focal_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/core/proc/shutdown.go"
+first_commit_date = "2020-07-26"
+last_commit_date = "2025-01-28"
+test_file_content = "\n\npackage proc\n\nimport (\n\t\"sync/atomic\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestShutdown(t *testing.T) {\n\tt.Cleanup(restoreSettings)\n\n\tSetTimeToForceQuit(time.Hour)\n\tshutdownLock.Lock()\n\tassert.Equal(t, time.Hour, waitTime)\n\tshutdownLock.Unlock()\n\n\tvar val int\n\tcalled := AddWrapUpListener(func() {\n\t\tval++\n\t})\n\tWrapUp()\n\tcalled()\n\tassert.Equal(t, 1, val)\n\n\tcalled = AddShutdownListener(func() {\n\t\tval += 2\n\t})\n\tShutdown()\n\tcalled()\n\tassert.Equal(t, 3, val)\n}\n\nfunc TestShutdownWithMultipleServices(t *testing.T) {\n\tt.Cleanup(restoreSettings)\n\n\tSetTimeToForceQuit(time.Hour)\n\tshutdownLock.Lock()\n\tassert.Equal(t, time.Hour, waitTime)\n\tshutdownLock.Unlock()\n\n\tvar val int32\n\tcalled1 := AddShutdownListener(func() {\n\t\tatomic.AddInt32(&val, 1)\n\t})\n\tcalled2 := AddShutdownListener(func() {\n\t\tatomic.AddInt32(&val, 2)\n\t})\n\tShutdown()\n\tcalled1()\n\tcalled2()\n\n\tassert.Equal(t, int32(3), atomic.LoadInt32(&val))\n}\n\nfunc TestWrapUpWithMultipleServices(t *testing.T) {\n\tt.Cleanup(restoreSettings)\n\n\tSetTimeToForceQuit(time.Hour)\n\tshutdownLock.Lock()\n\tassert.Equal(t, time.Hour, waitTime)\n\tshutdownLock.Unlock()\n\n\tvar val int32\n\tcalled1 := AddWrapUpListener(func() {\n\t\tatomic.AddInt32(&val, 1)\n\t})\n\tcalled2 := AddWrapUpListener(func() {\n\t\tatomic.AddInt32(&val, 2)\n\t})\n\tWrapUp()\n\tcalled1()\n\tcalled2()\n\n\tassert.Equal(t, int32(3), atomic.LoadInt32(&val))\n}\n\nfunc TestNotifyMoreThanOnce(t *testing.T) {\n\tt.Cleanup(restoreSettings)\n\n\tch := make(chan struct{}, 1)\n\n\tgo func() {\n\t\tvar val int\n\t\tcalled := AddWrapUpListener(func() {\n\t\t\tval++\n\t\t})\n\t\tWrapUp()\n\t\tWrapUp()\n\t\tcalled()\n\t\tassert.Equal(t, 1, val)\n\n\t\tcalled = AddShutdownListener(func() {\n\t\t\tval += 2\n\t\t})\n\t\tShutdown()\n\t\tShutdown()\n\t\tcalled()\n\t\tassert.Equal(t, 3, val)\n\t\tch <- struct{}{}\n\t}()\n\n\tselect {\n\tcase <-ch:\n\tcase <-time.After(time.Second):\n\t\tt.Fatal(\"timeout, check error logs\")\n\t}\n}\n\nfunc TestSetup(t *testing.T) {\n\tt.Run(\"valid time\", func(t *testing.T) {\n\t\tdefer restoreSettings()\n\n\t\tSetup(ShutdownConf{\n\t\t\tWrapUpTime: time.Second * 2,\n\t\t\tWaitTime:   time.Second * 30,\n\t\t})\n\n\t\tshutdownLock.Lock()\n\t\tassert.Equal(t, time.Second*2, wrapUpTime)\n\t\tassert.Equal(t, time.Second*30, waitTime)\n\t\tshutdownLock.Unlock()\n\t})\n\n\tt.Run(\"valid time\", func(t *testing.T) {\n\t\tdefer restoreSettings()\n\n\t\tSetup(ShutdownConf{})\n\n\t\tshutdownLock.Lock()\n\t\tassert.Equal(t, defaultWrapUpTime, wrapUpTime)\n\t\tassert.Equal(t, defaultWaitTime, waitTime)\n\t\tshutdownLock.Unlock()\n\t})\n}\n\nfunc TestShutdownProcess(t *testing.T) {\n\tt.Cleanup(restoreSettings)\n\n\tSetTimeToForceQuit(time.Minute)\n\tshutdownLock.Lock()\n\tassert.Equal(t, time.Minute, waitTime)\n\tshutdownLock.Unlock()\n\n\tvar count int32\n\tdone := AddShutdownListener(func() {\n\t\tatomic.AddInt32(&count, 3)\n\t})\n\tShutdown()\n\tdone()\n\tassert.Equal(t, int32(3), count)\n}\n\nfunc TestWrapUpProcess(t *testing.T) {\n\tt.Cleanup(restoreSettings)\n\n\tvar counter int32\n\tfinished := AddWrapUpListener(func() {\n\t\tatomic.AddInt32(&counter, 5)\n\t})\n\tWrapUp()\n\tfinished()\n\tassert.Equal(t, int32(5), counter)\n}\n\nfunc restoreSettings() {\n\tshutdownLock.Lock()\n\tdefer shutdownLock.Unlock()\n\n\twrapUpTime = defaultWrapUpTime\n\twaitTime = defaultWaitTime\n}"

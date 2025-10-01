@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl coordinator -Dtest=ServerNodeTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl coordinator -DtargetClasses=**.ServerNode  -DtargetTests=**.ServerNodeTest  -DoutputFormats=XML"
+coverage_report_path = "coordinator/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "coordinator/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 50.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "coordinator/src/test/java/org/apache/uniffle/coordinator/ServerNodeTest.java"
+focal_file_path = "coordinator/src/main/java/org/apache/uniffle/coordinator/ServerNode.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/coordinator/src/test/java/org/apache/uniffle/coordinator/ServerNodeTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/coordinator/src/main/java/org/apache/uniffle/coordinator/ServerNode.java"
+first_commit_date = "2022-07-04"
+last_commit_date = "2025-04-28"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *    http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.apache.uniffle.coordinator;\n\nimport java.util.Collections;\nimport java.util.List;\nimport java.util.Map;\nimport java.util.Set;\n\nimport com.google.common.collect.Lists;\nimport com.google.common.collect.Maps;\nimport com.google.common.collect.Sets;\nimport org.junit.jupiter.api.Test;\n\nimport org.apache.uniffle.common.ServerStatus;\nimport org.apache.uniffle.common.storage.StorageInfo;\nimport org.apache.uniffle.common.storage.StorageMedia;\nimport org.apache.uniffle.common.storage.StorageStatus;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\npublic class ServerNodeTest {\n\n  @Test\n  public void compareTest() {\n    Set<String> tags = Sets.newHashSet(\"test\");\n    ServerNode sn1 = new ServerNode(\"sn1\", \"ip\", 0, 100L, 50L, 20,\n        10, tags, true);\n    ServerNode sn2 = new ServerNode(\"sn2\", \"ip\", 0, 100L, 50L, 21,\n        10, tags, true);\n    ServerNode sn3 = new ServerNode(\"sn3\", \"ip\", 0, 100L, 50L, 20,\n        11, tags, true);\n    List<ServerNode> nodes = Lists.newArrayList(sn1, sn2, sn3);\n    Collections.sort(nodes);\n    assertEquals(\"sn2\", nodes.get(0).getId());\n    assertEquals(\"sn1\", nodes.get(1).getId());\n    assertEquals(\"sn3\", nodes.get(2).getId());\n  }\n\n  @Test\n  public void testStorageInfoOfServerNode() {\n    Set<String> tags = Sets.newHashSet(\"tag\");\n    ServerNode sn1 = new ServerNode(\"sn1\", \"ip\", 0, 100L, 50L, 20, 10, tags, true);\n    // default constructor creates ServerNode with zero size of LocalStorage\n    assertEquals(0, sn1.getStorageInfo().size());\n    Map<String, StorageInfo> localStorageInfo = Maps.newHashMap();\n    StorageInfo info = new StorageInfo(\n        \"/mnt\",\n        StorageMedia.SSD,\n        100L,\n        60L,\n        StorageStatus.NORMAL);\n    localStorageInfo.put(\"/mnt\", info);\n    ServerNode sn2 = new ServerNode(\"sn2\", \"ip\", 0, 100L, 50L, 20, 10, tags,\n        true, ServerStatus.ACTIVE, localStorageInfo);\n    assertEquals(1, sn2.getStorageInfo().size());\n  }\n\n  @Test\n  public void testNettyPort() {\n    Set<String> tags = Sets.newHashSet(\"tag\");\n    Map<String, StorageInfo> localStorageInfo = Maps.newHashMap();\n    ServerNode sn1 = new ServerNode(\"sn1\", \"ip\", 1, 100L, 50L, 20, 10, tags,\n        true, ServerStatus.ACTIVE, localStorageInfo);\n    assertEquals(sn1.getNettyPort(), -1);\n    ServerNode sn2 = new ServerNode(\"sn2\", \"ip\", 1, 100L, 50L, 20, 10, tags,\n        true, ServerStatus.ACTIVE, localStorageInfo, 2);\n    assertEquals(sn2.getNettyPort(), 2);\n  }\n}"

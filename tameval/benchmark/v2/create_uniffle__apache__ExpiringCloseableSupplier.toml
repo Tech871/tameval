@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl common -Dtest=ExpiringCloseableSupplierTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl common -DtargetClasses=**.ExpiringCloseableSupplier  -DtargetTests=**.ExpiringCloseableSupplierTest  -DoutputFormats=XML"
+coverage_report_path = "common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 94.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 37, 39, 40, 47, 48, 52, 53, 54, 55, 58, 60, 61, 63, 68, 71, 72, 74, 75, 76, 78, 81, 82, 84, 87, 88, 89, 91, 94, 95, 96, 98, 102, 107,]
+missed_lines = [ 59, 69,]
+
+[input_info]
+test_file_path = "common/src/test/java/org/apache/uniffle/common/util/ExpiringCloseableSupplierTest.java"
+focal_file_path = "common/src/main/java/org/apache/uniffle/common/util/ExpiringCloseableSupplier.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/test/java/org/apache/uniffle/common/util/ExpiringCloseableSupplierTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/main/java/org/apache/uniffle/common/util/ExpiringCloseableSupplier.java"
+first_commit_date = "2024-07-26"
+last_commit_date = "2024-07-26"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *    http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.apache.uniffle.common.util;\n\nimport java.io.IOException;\nimport java.io.Serializable;\nimport java.util.List;\nimport java.util.Random;\nimport java.util.concurrent.TimeUnit;\nimport java.util.concurrent.atomic.AtomicBoolean;\nimport java.util.function.Supplier;\n\nimport com.google.common.collect.Lists;\nimport com.google.common.util.concurrent.Uninterruptibles;\nimport org.apache.commons.lang3.SerializationUtils;\nimport org.awaitility.Awaitility;\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertNotNull;\nimport static org.junit.jupiter.api.Assertions.assertNotSame;\nimport static org.junit.jupiter.api.Assertions.assertSame;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\nclass ExpiringCloseableSupplierTest {\n\n\n  @Test\n  void testAutoCloseable() {\n    Supplier<MockClient> cf = () -> new MockClient(true);\n    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf, 10);\n    MockClient mockClient1 = mockClientSupplier.get();\n    assertNotNull(mockClient1);\n    Uninterruptibles.sleepUninterruptibly(30, TimeUnit.MILLISECONDS);\n    assertTrue(mockClient1.isClosed());\n    MockClient mockClient2 = mockClientSupplier.get();\n    assertNotSame(mockClient1, mockClient2);\n    mockClientSupplier.close();\n  }\n\n\n  @Test\n  void testReClose() {\n    Supplier<MockClient> cf = () -> new MockClient(true);\n    ExpiringCloseableSupplier<MockClient> mockClientSupplier = ExpiringCloseableSupplier.of(cf);\n    mockClientSupplier.get();\n    mockClientSupplier.close();\n    mockClientSupplier.close();\n  }\n\n\n\n\n\n  private static class MockClient implements StatefulCloseable, Serializable {\n    boolean withException;\n    AtomicBoolean closed = new AtomicBoolean(false);\n\n    MockClient(boolean withException) {\n      this.withException = withException;\n    }\n\n    @Override\n    public void close() throws IOException {\n      closed.set(true);\n      if (withException) {\n        throw new IOException(\"test exception!\");\n      }\n    }\n\n    @Override\n    public boolean isClosed() {\n      return closed.get();\n    }\n  }\n}\n"

@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "hdl-registers/hdl-registers"
+sha = "4761587ceabb90436e8d71f191aec976d35e9b14"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=hdl_registers/field/enumeration.py -m pytest -q --junit-xml=test_output.xml hdl_registers/field/test/test_enumeration.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target hdl_registers.field.enumeration --unit-test hdl_registers.field.test.test_enumeration --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target hdl_registers/field/enumeration.py --unit-test hdl_registers/field/test/test_enumeration.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 9, 12, 26, 27, 28, 29, 31, 32, 41, 43, 44, 52, 60, 65, 81, 82, 83, 87, 89, 90, 91, 96, 97, 100, 102, 103, 105, 107, 108, 109, 111, 112, 116, 118, 128, 129, 130, 132, 135, 137, 156, 157, 163, 170, 172, 173, 176, 185, 192,]
+missed_lines = [ 50, 53, 147, 148, 149, 151, 154, 161, 174, 182, 183, 190, 193,]
+
+[input_info]
+test_file_path = "hdl_registers/field/test/test_enumeration.py"
+focal_file_path = "hdl_registers/field/enumeration.py"
+test_file_url = "https://github.com/hdl-registers/hdl-registers/blob/4761587ceabb90436e8d71f191aec976d35e9b14/hdl_registers/field/test/test_enumeration.py"
+focal_file_url = "https://github.com/hdl-registers/hdl-registers/blob/4761587ceabb90436e8d71f191aec976d35e9b14/hdl_registers/field/enumeration.py"
+first_commit_date = "2023-09-29"
+last_commit_date = "2025-02-11"
+test_file_content = "# --------------------------------------------------------------------------------------------------\n# Copyright (c) Lukas Vik. All rights reserved.\n#\n# This file is part of the hdl-registers project, an HDL register generator fast enough to run\n# in real time.\n# https://hdl-registers.com\n# https://github.com/hdl-registers/hdl-registers\n# --------------------------------------------------------------------------------------------------\n\nimport pytest\n\nfrom hdl_registers.field.enumeration import Enumeration, EnumerationElement\n\n\n\n\n\n\ndef test_no_elements_should_raise_exception():\n    with pytest.raises(ValueError) as exception_info:\n        Enumeration(\n            name=\"apa\",\n            base_index=3,\n            description=\"\",\n            elements={},\n            default_value=\"element0\",\n        )\n    assert str(exception_info.value) == 'Enumeration \"apa\", must have at least one element.'\n\n\ndef test_get_element_by_name():\n    enumeration = Enumeration(\n        name=\"apa\",\n        base_index=3,\n        description=\"\",\n        elements={\"element0\": \"\", \"element1\": \"\"},\n        default_value=\"element0\",\n    )\n\n    assert enumeration.get_element_by_name(\"element0\") is enumeration.elements[0]\n    assert enumeration.get_element_by_name(\"element1\") is enumeration.elements[1]\n\n\ndef test_get_element_by_name_with_invalid_name_should_raise_exception():\n    enumeration = Enumeration(\n        name=\"apa\",\n        base_index=3,\n        description=\"\",\n        elements={\"element0\": \"\"},\n        default_value=\"element0\",\n    )\n\n    with pytest.raises(ValueError) as exception_info:\n        enumeration.get_element_by_name(\"element1\")\n    assert (\n        str(exception_info.value)\n        == 'Enumeration \"apa\", requested element name does not exist. Got: \"element1\".'\n    )\n\n\n\n\n\n\n\n\n\n\n\n\n"

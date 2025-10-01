@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "funilrys/PyFunceble"
+sha = "6fc0974a65e0987945afdfaed9e7a21dc6ad9894"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.test.txt && pip install -r requirements.win.txt && pip install -r requirements.dev.txt && pip install -r requirements.txt && pip install -r requirements.docs.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=PyFunceble/converter/subject2complements.py -m pytest -q --junit-xml=test_output.xml tests/converter/test_subject2complements.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target PyFunceble.converter.subject2complements --unit-test tests.converter.test_subject2complements --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target PyFunceble/converter/subject2complements.py --unit-test tests/converter/test_subject2complements.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 56.0
+original_coverage = 100.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = 91.0
+covered_lines = [ 54, 56, 57, 60, 65, 78, 79, 94, 95, 100, 102, 103, 112, 113, 115, 117, 123, 127, 134,]
+missed_lines = [ 88, 89, 92, 125, 132, 142, 143, 145, 147, 148, 150, 151, 152, 153, 155,]
+
+[input_info]
+test_file_path = "tests/converter/test_subject2complements.py"
+focal_file_path = "PyFunceble/converter/subject2complements.py"
+test_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/tests/converter/test_subject2complements.py"
+focal_file_url = "https://github.com/funilrys/PyFunceble/blob/6fc0974a65e0987945afdfaed9e7a21dc6ad9894/PyFunceble/converter/subject2complements.py"
+first_commit_date = "2020-12-19"
+last_commit_date = "2025-02-23"
+test_file_content = "\"\"\"\nThe tool to check the availability or syntax of domain, IP or URL.\n\n::\n\n\n    ██████╗ ██╗   ██╗███████╗██╗   ██╗███╗   ██╗ ██████╗███████╗██████╗ ██╗     ███████╗\n    ██╔══██╗╚██╗ ██╔╝██╔════╝██║   ██║████╗  ██║██╔════╝██╔════╝██╔══██╗██║     ██╔════╝\n    ██████╔╝ ╚████╔╝ █████╗  ██║   ██║██╔██╗ ██║██║     █████╗  ██████╔╝██║     █████╗\n    ██╔═══╝   ╚██╔╝  ██╔══╝  ██║   ██║██║╚██╗██║██║     ██╔══╝  ██╔══██╗██║     ██╔══╝\n    ██║        ██║   ██║     ╚██████╔╝██║ ╚████║╚██████╗███████╗██████╔╝███████╗███████╗\n    ╚═╝        ╚═╝   ╚═╝      ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚══════╝╚═════╝ ╚══════╝╚══════╝\n\nTests of subject to complements converter.\n\nAuthor:\n    Nissar Chababy, @funilrys, contactTATAfunilrysTODTODcom\n\nSpecial thanks:\n    https://pyfunceble.github.io/special-thanks.html\n\nContributors:\n    https://pyfunceble.github.io/contributors.html\n\nProject link:\n    https://github.com/funilrys/PyFunceble\n\nProject documentation:\n    https://docs.pyfunceble.com\n\nProject homepage:\n    https://pyfunceble.github.io/\n\nLicense:\n::\n\n\n    Copyright 2017, 2018, 2019, 2020, 2022, 2023, 2024, 2025 Nissar Chababy\n\n    Licensed under the Apache License, Version 2.0 (the \"License\");\n    you may not use this file except in compliance with the License.\n    You may obtain a copy of the License at\n\n        https://www.apache.org/licenses/LICENSE-2.0\n\n    Unless required by applicable law or agreed to in writing, software\n    distributed under the License is distributed on an \"AS IS\" BASIS,\n    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n    See the License for the specific language governing permissions and\n    limitations under the License.\n\"\"\"\n\nimport unittest\n\nfrom PyFunceble.converter.subject2complements import Subject2Complements\n\n\nclass TestRPZInputLine2Subject(unittest.TestCase):\n    \"\"\"\n    Tests of our RPZ line 2 subject(s).\n    \"\"\"\n\n    def setUp(self) -> None:\n        \"\"\"\n        Setups everything needed for the tests.\n        \"\"\"\n\n        self.converter = Subject2Complements()\n\n    def tearDown(self) -> None:\n        \"\"\"\n        Destroys everything previously created for the tests.\n        \"\"\"\n\n        del self.converter\n\n\n\n\n    def test_set_include_given_attribute(self) -> None:\n        \"\"\"\n        Tests overwritting of the :code:`include_given` attribute.\n        \"\"\"\n\n        given = True\n        expected = True\n\n        self.converter.include_given = given\n        actual = self.converter.include_given\n\n        self.assertEqual(expected, actual)\n\n\n    def test_set_include_given_not_bool(self) -> None:\n        \"\"\"\n        Tests the response from the method which let us activate the inclusion\n        of the given subject into the result for the case that the given\n        value is not a boolean.\n        \"\"\"\n\n        given = [\"Hello\", \"World\"]\n\n        self.assertRaises(TypeError, lambda: self.converter.set_include_given(given))\n\n\n\n\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

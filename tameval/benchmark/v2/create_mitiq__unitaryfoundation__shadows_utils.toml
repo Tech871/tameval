@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "unitaryfoundation/mitiq"
+sha = "3d4516eb01e0c82220a829bbf570ac537143b5a5"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mitiq/shadows/shadows_utils.py -m pytest -q --junit-xml=test_output.xml mitiq/shadows/tests/test_shadows_utils.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mitiq.shadows.shadows_utils --unit-test mitiq.shadows.tests.test_shadows_utils --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mitiq/shadows/shadows_utils.py --unit-test mitiq/shadows/tests/test_shadows_utils.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 82.0
+original_coverage = 82.0
+mutation_kill_rate = 53.0
+original_mutation_kill_rate = 53.0
+covered_lines = [ 11, 13, 14, 15, 17, 20, 38, 43, 59, 65, 70, 73, 86, 88, 89, 96, 99, 111, 112, 113, 114, 117, 130, 133, 143, 144, 151, 154, 176, 177, 179, 180,]
+missed_lines = [ 60, 87, 90, 91, 92, 93, 95,]
+
+[input_info]
+test_file_path = "mitiq/shadows/tests/test_shadows_utils.py"
+focal_file_path = "mitiq/shadows/shadows_utils.py"
+test_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/shadows/tests/test_shadows_utils.py"
+focal_file_url = "https://github.com/unitaryfoundation/mitiq/blob/3d4516eb01e0c82220a829bbf570ac537143b5a5/mitiq/shadows/shadows_utils.py"
+first_commit_date = "2023-07-31"
+last_commit_date = "2025-06-07"
+test_file_content = "# Copyright (C) Unitary Foundation\n#\n# This source code is licensed under the GPL license (v3) found in the\n# LICENSE file in the root directory of this source tree.\n\nimport math\n\nimport numpy as np\n\nimport mitiq\nfrom mitiq.shadows.shadows_utils import (\n    batch_calibration_data,\n    create_string,\n    fidelity,\n    n_measurements_opts_expectation_bound,\n    n_measurements_tomography_bound,\n    valid_bitstrings,\n)\n\n\ndef test_create_string():\n    str_len = 5\n    loc_list = [1, 3]\n    assert create_string(str_len, loc_list) == \"01010\"\n\n\ndef test_valid_bitstrings():\n    num_qubits = 5\n    bitstrings_on_5_qubits = valid_bitstrings(num_qubits)\n    assert len(bitstrings_on_5_qubits) == 2**num_qubits\n    assert all(b == \"0\" or b == \"1\" for b in bitstrings_on_5_qubits.pop())\n\n    num_qubits = 4\n    max_hamming_weight = 2\n    bitstrings_on_3_qubits_hamming_2 = valid_bitstrings(\n        num_qubits, max_hamming_weight\n    )\n    assert len(bitstrings_on_3_qubits_hamming_2) == sum(\n        math.comb(num_qubits, i) for i in range(max_hamming_weight + 1)\n    )  # sum_{i == 0}^{max_hamming_weight} (num_qubits choose i)\n\n\ndef test_batch_calibration_data():\n    data = ([\"010\", \"110\", \"000\", \"001\"], [\"XXY\", \"ZYY\", \"ZZZ\", \"XYZ\"])\n    num_batches = 2\n    for bits, paulis in batch_calibration_data(data, num_batches):\n        assert len(bits) == len(paulis) == num_batches\n\n\ndef test_n_measurements_tomography_bound():\n    assert n_measurements_tomography_bound(0.5, 2) == 2176\n    assert n_measurements_tomography_bound(1.0, 1) == 136\n    assert n_measurements_tomography_bound(0.1, 3) == 217599\n\n\ndef test_n_measurements_opts_expectation_bound():\n    observables = [\n        mitiq.PauliString(\"X\"),\n        mitiq.PauliString(\"Y\"),\n        mitiq.PauliString(\"Z\"),\n    ]\n    N, K = n_measurements_opts_expectation_bound(0.5, observables, 0.1)\n    assert isinstance(N, int)\n    assert isinstance(K, int)\n\n\ndef test_fidelity():\n    state_vector = np.array([0.5, 0.5, 0.5, 0.5])\n    rho = np.eye(4) / 4\n    assert np.isclose(\n        fidelity(state_vector, rho), 0.25\n    ), f\"Expected 0.25, got {fidelity(state_vector, rho)}\"\n"

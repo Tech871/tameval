@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "adorsys/xs2a"
+sha = "0433f7f22022c8f2b17b835a11a13e5cd33f29a6"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl xs2a-impl -Dtest=PaymentParametersValidationInterceptorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl xs2a-impl -DtargetClasses=**.PaymentParametersValidationInterceptor  -DtargetTests=**.PaymentParametersValidationInterceptorTest  -DoutputFormats=XML"
+coverage_report_path = "xs2a-impl/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "xs2a-impl/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 16.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 53, 66, 71, 84,]
+missed_lines = [ 72, 73, 76, 77, 79, 80, 88, 90, 91, 92, 94, 95, 96, 97, 100, 102, 103, 105, 106, 107, 111,]
+
+[input_info]
+test_file_path = "xs2a-impl/src/test/java/de/adorsys/psd2/xs2a/web/interceptor/validator/PaymentParametersValidationInterceptorTest.java"
+focal_file_path = "xs2a-impl/src/main/java/de/adorsys/psd2/xs2a/web/interceptor/validator/PaymentParametersValidationInterceptor.java"
+test_file_url = "https://github.com/adorsys/xs2a/blob/0433f7f22022c8f2b17b835a11a13e5cd33f29a6/xs2a-impl/src/test/java/de/adorsys/psd2/xs2a/web/interceptor/validator/PaymentParametersValidationInterceptorTest.java"
+focal_file_url = "https://github.com/adorsys/xs2a/blob/0433f7f22022c8f2b17b835a11a13e5cd33f29a6/xs2a-impl/src/main/java/de/adorsys/psd2/xs2a/web/interceptor/validator/PaymentParametersValidationInterceptor.java"
+first_commit_date = "2020-02-06"
+last_commit_date = "2024-02-01"
+test_file_content = "/*\n * Copyright 2018-2024 adorsys GmbH & Co KG\n *\n * This program is free software: you can redistribute it and/or modify it\n * under the terms of the GNU Affero General Public License as published\n * by the Free Software Foundation, either version 3 of the License, or (at\n * your option) any later version. This program is distributed in the hope that\n * it will be useful, but WITHOUT ANY WARRANTY; without even the implied\n * warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\n * See the GNU Affero General Public License for more details.\n *\n * You should have received a copy of the GNU Affero General Public License\n * along with this program. If not, see https://www.gnu.org/licenses/.\n *\n * This project is also available under a separate commercial license. You can\n * contact us at sales@adorsys.com.\n */\n\npackage de.adorsys.psd2.xs2a.web.interceptor.validator;\n\nimport de.adorsys.psd2.xs2a.core.domain.TppMessageInformation;\nimport de.adorsys.psd2.xs2a.core.error.ErrorType;\nimport de.adorsys.psd2.xs2a.core.error.MessageError;\nimport de.adorsys.psd2.xs2a.core.profile.PaymentType;\nimport de.adorsys.psd2.xs2a.core.service.validator.ValidationResult;\nimport de.adorsys.psd2.xs2a.web.PathParameterExtractor;\nimport de.adorsys.psd2.xs2a.web.validator.ErrorBuildingService;\nimport de.adorsys.psd2.xs2a.web.validator.path.PaymentTypeAndProductValidator;\nimport org.junit.jupiter.api.Test;\nimport org.junit.jupiter.api.extension.ExtendWith;\nimport org.mockito.ArgumentCaptor;\nimport org.mockito.InjectMocks;\nimport org.mockito.Mock;\nimport org.mockito.junit.jupiter.MockitoExtension;\nimport org.springframework.web.method.HandlerMethod;\n\nimport jakarta.servlet.http.HttpServletRequest;\nimport jakarta.servlet.http.HttpServletResponse;\nimport java.io.IOException;\nimport java.lang.reflect.Method;\nimport java.util.HashMap;\nimport java.util.Map;\n\nimport static de.adorsys.psd2.xs2a.core.error.MessageErrorCode.PARAMETER_NOT_SUPPORTED_WRONG_PAYMENT_TYPE;\nimport static de.adorsys.psd2.xs2a.core.error.MessageErrorCode.PRODUCT_UNKNOWN_WRONG_PAYMENT_PRODUCT;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\nimport static org.mockito.ArgumentMatchers.any;\nimport static org.mockito.ArgumentMatchers.eq;\nimport static org.mockito.Mockito.*;\n\n@ExtendWith(MockitoExtension.class)\nclass PaymentParametersValidationInterceptorTest {\n\n    private static final String CORRECT_PAYMENT_PRODUCT = \"sepa-credit-transfers\";\n    private static final String WRONG_PAYMENT_PRODUCT = \"sepa-credit-transfers111\";\n\n    private Map<String, String> pathParameters = getPisRequestsPathParameters();\n\n    @InjectMocks\n    private PaymentParametersValidationInterceptor paymentParametersValidationInterceptor;\n\n    @Mock\n    private PaymentTypeAndProductValidator paymentTypeAndProductValidator;\n    @Mock\n    private HttpServletRequest request;\n    @Mock\n    private HttpServletResponse response;\n    @Mock\n    private HandlerMethod handler;\n    @Mock\n    private PathParameterExtractor pathParameterExtractor;\n    @Mock\n    private ErrorBuildingService errorBuildingService;\n\n    String _initiatePayment() {\n        return \"OK\";\n    }\n\n\n    @Test\n    void validatePaymentInitiationParams_ok_not_handler() throws IOException {\n        // Given\n        // When\n        boolean actual = paymentParametersValidationInterceptor.preHandle(request, response, new Object());\n\n        // Then\n        assertTrue(actual);\n        verify(errorBuildingService, never()).buildFormatErrorResponse(eq(response), any(MessageError.class));\n    }\n\n\n\n\n\n    private Map<String, String> getPisRequestsPathParameters() {\n        Map<String, String> parameters = new HashMap<>();\n        parameters.put(\"payment-service\", \"payments\");\n        parameters.put(\"payment-product\", CORRECT_PAYMENT_PRODUCT);\n\n        return parameters;\n    }\n}\n"

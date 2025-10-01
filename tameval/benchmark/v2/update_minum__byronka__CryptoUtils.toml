@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "byronka/minum"
+sha = "42416409b5fd3535c882b2a994cd9eb0be82260a"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=CryptoUtilsTests && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.CryptoUtils  -DtargetTests=**.CryptoUtilsTests  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/renomad/minum/utils/CryptoUtilsTests.java"
+focal_file_path = "src/main/java/com/renomad/minum/utils/CryptoUtils.java"
+test_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/test/java/com/renomad/minum/utils/CryptoUtilsTests.java"
+focal_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/main/java/com/renomad/minum/utils/CryptoUtils.java"
+first_commit_date = "2023-08-29"
+last_commit_date = "2024-03-27"
+test_file_content = "package com.renomad.minum.utils;\n\nimport org.junit.Test;\n\nimport static com.renomad.minum.testing.TestFramework.assertEquals;\nimport static com.renomad.minum.testing.TestFramework.assertThrows;\n\npublic class CryptoUtilsTests {\n\n    @Test\n    public void testBytesToHex() {\n        assertEquals(CryptoUtils.bytesToHex(new byte[]{1, 2, 3}), \"010203\");\n        assertEquals(CryptoUtils.bytesToHex(new byte[0]), \"\");\n        assertEquals(CryptoUtils.bytesToHex(new byte[]{0, (byte) 255,(byte) 255,(byte) 255}), \"00ffffff\");\n    }\n\n    @Test\n    public void testCreatePasswordHash_BadAlgorithm() {\n        var ex = assertThrows(RuntimeException.class, () -> CryptoUtils.createPasswordHash(\"foo_password\", \"mysalt\", \"badalgorithm\"));\n        assertEquals(ex.getMessage(), \"java.security.NoSuchAlgorithmException: badalgorithm SecretKeyFactory not available\");\n    }\n\n    @Test\n    public void testCreatePasswordHash() {\n        String passwordHash = CryptoUtils.createPasswordHash(\"abc123\", \"saltysalt\");\n        assertEquals(passwordHash, \"87f83512f4c18af25e82728cfdf96194\");\n    }\n}"

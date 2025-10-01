@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "tensorflow/datasets"
+sha = "5afdc02a1a6ce1a5ded7e2395c7a3498216936bb"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder.py -m pytest -q --junit-xml=test_output.xml tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target tensorflow_datasets.core.dataset_builders.conll.conll_dataset_builder --unit-test tensorflow_datasets.core.dataset_builders.conll.conll_dataset_builder_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder.py --unit-test tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 57.0
+original_coverage = 100.0
+mutation_kill_rate = 28.0
+original_mutation_kill_rate = 28.0
+covered_lines = [ 35, 36, 37, 39, 40, 41, 42, 43, 44, 48, 58, 76, 77, 78, 80, 81, 82, 85, 94, 96, 97, 99, 101, 124, 132,]
+missed_lines = [ 145, 147, 149, 150, 151, 152, 153, 154, 155, 156, 157, 159, 160, 161, 166, 169, 172, 175, 176,]
+
+[input_info]
+test_file_path = "tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder_test.py"
+focal_file_path = "tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder.py"
+test_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder_test.py"
+focal_file_url = "https://github.com/tensorflow/datasets/blob/5afdc02a1a6ce1a5ded7e2395c7a3498216936bb/tensorflow_datasets/core/dataset_builders/conll/conll_dataset_builder.py"
+first_commit_date = "2022-09-12"
+last_commit_date = "2025-06-02"
+test_file_content = "# coding=utf-8\n# Copyright 2024 The TensorFlow Datasets Authors.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n\"\"\"Tests for conll_dataset_builder.\"\"\"\nimport textwrap\nfrom unittest import mock\n\nfrom etils import epath\nimport pytest\nfrom tensorflow_datasets.core.dataset_builders.conll import conll_dataset_builder\nfrom tensorflow_datasets.core.dataset_builders.conll import conll_dataset_builder_utils as conll_lib\nimport tensorflow_datasets.public_api as tfds\n\n_FOLDER_PATH = \"mock/path\"\n\n_VALID_INPUT = textwrap.dedent(\n    \"\"\"\n-DOCSTART- -X- -X- O\nWinter NN B-NP O\nis VBZ B-VP O\n\nAir NN I-NP O\n. . O O\n\"\"\"\n)\n\n_INVALID_INPUT = textwrap.dedent(\n    \"\"\"\nWinter NN B-NP\nis VBZ B-VP O\n\nAir NN I-NP O\n. . O O\n\"\"\"\n)\n\n_INPUT_PATH = epath.Path(_FOLDER_PATH, \"input_path.txt\")\n\n\nclass DummyConllDataset(conll_dataset_builder.ConllDatasetBuilder):\n  VERSION = tfds.core.Version(\"1.0.0\")\n  RELEASE_NOTES = {\"1.0.0\": \"Dummy notes.\"}\n  BUILDER_CONFIGS = [conll_lib.CONLL_2003_CONFIG]\n\n  def _info(self) -> tfds.core.DatasetInfo:\n    \"\"\"Returns the dataset metadata.\"\"\"\n    return self.create_dataset_info(\n        description=\"Dummy CoNLL dataset.\",\n    )\n\n  def _split_generators(self, dl_manager: tfds.download.DownloadManager):\n    \"\"\"Returns SplitGenerators.\"\"\"\n    del dl_manager\n    return {\"train\": self._generate_examples(_INPUT_PATH)}\n\n\ndef test_generate_example():\n  tf_mock = mock.Mock()\n  tf_mock.gfile.GFile.return_value = _VALID_INPUT\n  expected_examples = []\n\n  dataset = DummyConllDataset()\n\n  with tfds.testing.MockFs() as fs:\n    fs.add_file(path=_INPUT_PATH, content=_VALID_INPUT)\n    examples = list(dataset._generate_examples(_INPUT_PATH))\n\n    expected_examples = [\n        (\n            0,\n            {\n                \"tokens\": [\"Winter\", \"is\"],\n                \"pos\": [\"NN\", \"VBZ\"],\n                \"chunks\": [\"B-NP\", \"B-VP\"],\n                \"ner\": [\"O\", \"O\"],\n            },\n        ),\n        (\n            1,\n            {\n                \"tokens\": [\"Air\", \".\"],\n                \"pos\": [\"NN\", \".\"],\n                \"chunks\": [\"I-NP\", \"O\"],\n                \"ner\": [\"O\", \"O\"],\n            },\n        ),\n    ]\n\n    assert examples == expected_examples\n\n    for _, example in examples:\n      assert len(example) == len(conll_lib.CONLL_2003_ORDERED_FEATURES)\n\n  assert len(examples) == 2\n\n\ndef test_generate_corrupted_example():\n  tf_mock = mock.Mock()\n  tf_mock.gfile.GFile.return_value = _VALID_INPUT\n  dataset = DummyConllDataset()\n\n  error_line = \"Winter NN B-NP\"\n  error_msg = (\n      f\"Mismatch in the number of features found in line: {error_line}\\n\\n\"\n      \"Should be 4, but found 3\"\n  )\n  with pytest.raises(ValueError, match=error_msg):\n    with tfds.testing.MockFs() as fs:\n      fs.add_file(path=_INPUT_PATH, content=_INVALID_INPUT)\n      list(dataset._generate_examples(_INPUT_PATH))"

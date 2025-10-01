@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl common -Dtest=ShufflePartitionedBlockTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl common -DtargetClasses=**.ShufflePartitionedBlock  -DtargetTests=**.ShufflePartitionedBlockTest  -DoutputFormats=XML"
+coverage_report_path = "common/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "common/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 65.0
+original_coverage = 65.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 46, 47, 55, 56, 57, 58, 59, 60, 61, 62, 71, 76, 77, 79, 80, 82, 88, 92, 100, 108, 116, 124, 128, 137,]
+missed_lines = [ 40, 65, 83, 96, 97, 104, 105, 112, 113, 120, 121, 132, 133,]
+
+[input_info]
+test_file_path = "common/src/test/java/org/apache/uniffle/common/ShufflePartitionedBlockTest.java"
+focal_file_path = "common/src/main/java/org/apache/uniffle/common/ShufflePartitionedBlock.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/test/java/org/apache/uniffle/common/ShufflePartitionedBlockTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/common/src/main/java/org/apache/uniffle/common/ShufflePartitionedBlock.java"
+first_commit_date = "2022-07-04"
+last_commit_date = "2025-06-12"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *    http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.apache.uniffle.common;\n\nimport java.util.Random;\n\nimport org.junit.jupiter.api.Test;\n\nimport org.apache.uniffle.common.util.ByteBufUtils;\n\nimport static org.junit.jupiter.api.Assertions.assertArrayEquals;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNotEquals;\n\npublic class ShufflePartitionedBlockTest {\n\n  @Test\n  public void shufflePartitionedBlockTest() {\n    byte[] buf = new byte[3];\n    new Random().nextBytes(buf);\n\n    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 1, 2, 3, 1, buf);\n    assertEquals(1, b1.getDataLength());\n    assertEquals(2, b1.getCrc());\n    assertEquals(3, b1.getBlockId());\n\n    ShufflePartitionedBlock b3 = new ShufflePartitionedBlock(1, 1, 2, 3, 3, buf);\n    assertArrayEquals(buf, ByteBufUtils.readBytes(b3.getData()));\n  }\n\n  @Test\n  public void testEquals() {\n    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);\n    ShufflePartitionedBlock b2 = new ShufflePartitionedBlock(1, 6, 3, 4, 7, new byte[6]);\n    assertEquals(b1, b1);\n    assertEquals(b1.hashCode(), b1.hashCode());\n    assertEquals(b1, b2);\n    assertEquals(b1.hashCode(), b2.hashCode());\n    assertNotEquals(b1, null);\n    assertNotEquals(b1, new Object());\n  }\n\n  @Test\n  public void testToString() {\n    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);\n    assertEquals(\n        \"ShufflePartitionedBlock{blockId[\"\n            + b1.getBlockId()\n            + \"], length[\"\n            + b1.getDataLength()\n            + \"], uncompressLength[\"\n            + b1.getUncompressLength()\n            + \"], crc[\"\n            + b1.getCrc()\n            + \"], taskAttemptId[\"\n            + b1.getTaskAttemptId()\n            + \"]}\",\n        b1.toString());\n  }\n\n  @Test\n  public void testSize() {\n    ShufflePartitionedBlock b1 = new ShufflePartitionedBlock(1, 2, 3, 4, 5, new byte[6]);\n    assertEquals(b1.getEncodedLength(), b1.getDataLength() + 3 * Long.BYTES + 2 * Integer.BYTES);\n  }\n}\n"

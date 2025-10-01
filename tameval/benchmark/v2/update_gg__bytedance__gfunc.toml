@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.18"
+
+[repo_info]
+repository = "bytedance/gg"
+sha = "420f8369dd6e235b8124691860e822d015969fb6"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out gfunc/gfunc.go gfunc/gfunc_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting gfunc/gfunc.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 78.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 33, 34, 35, 36, 41, 42, 43, 44, 52, 53, 54, 58, 59, 60, 61, 66, 67, 68, 69, 83, 84, 85, 86, 91, 92, 93, 94, 108, 109, 110, 111, 116, 117, 118, 119, 133, 134, 135, 136, 141, 142, 143, 144, 158, 159, 160, 161, 166, 167, 168, 169, 183, 184, 185, 186, 191, 192, 193, 194, 208, 209, 210, 211, 216, 217, 218, 219, 233, 234, 235, 236, 241, 242, 243, 244, 252, 253, 254, 258, 259, 260, 261, 266, 267, 268, 269,]
+missed_lines = [ 27, 28, 29, 77, 78, 79, 102, 103, 104, 127, 128, 129, 152, 153, 154, 177, 178, 179, 202, 203, 204, 227, 228, 229,]
+
+[input_info]
+test_file_path = "gfunc/gfunc_test.go"
+focal_file_path = "gfunc/gfunc.go"
+test_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/gfunc/gfunc_test.go"
+focal_file_url = "https://github.com/bytedance/gg/blob/420f8369dd6e235b8124691860e822d015969fb6/gfunc/gfunc.go"
+first_commit_date = "2025-05-19"
+last_commit_date = "2025-05-20"
+test_file_content = "// Copyright 2025 Bytedance Ltd.\n//\n// Licensed under the Apache License, Version 2.0 (the \"License\");\n// you may not use this file except in compliance with the License.\n// You may obtain a copy of the License at\n//\n//     http://www.apache.org/licenses/LICENSE-2.0\n//\n// Unless required by applicable law or agreed to in writing, software\n// distributed under the License is distributed on an \"AS IS\" BASIS,\n// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n// See the License for the specific language governing permissions and\n// limitations under the License.\n\npackage gfunc\n\nimport (\n\t\"testing\"\n\n\t\"github.com/bytedance/gg/internal/assert\"\n)\n\nfunc TestPartialFunc2(t *testing.T) {\n\tadd := Partial2(func(a, b int) int {\n\t\treturn a + b\n\t})\n\tassert.Equal(t, 3, add.Partial(1).Partial(2)())\n\tassert.Equal(t, 3, add.PartialR(1).PartialR(2)())\n}\n\nfunc TestPartialFunc10(t *testing.T) {\n\ttype myInt1 int\n\ttype myInt2 int\n\ttype myInt3 int\n\ttype myInt4 int\n\ttype myInt5 int\n\ttype myInt6 int\n\ttype myInt7 int\n\ttype myInt8 int\n\ttype myInt9 int\n\ttype myInt10 int\n\n\tadd := Partial10(func(a myInt1, b myInt2, c myInt3, d myInt4, e myInt5, f myInt6, g myInt7, h myInt8, i myInt9, j myInt10) int {\n\t\treturn int(a) + int(b) + int(c) + int(d) + int(e) + int(f) + int(g) + int(h) + int(i) + int(j)\n\t})\n\tassert.Equal(t,\n\t\t55,\n\t\tadd.\n\t\t\tPartial(1).\n\t\t\tPartial(2).\n\t\t\tPartial(3).\n\t\t\tPartial(4).\n\t\t\tPartial(5).\n\t\t\tPartial(6).\n\t\t\tPartial(7).\n\t\t\tPartial(8).\n\t\t\tPartial(9).\n\t\t\tPartial(10)())\n\tassert.Equal(t,\n\t\t55,\n\t\tadd.\n\t\t\tPartialR(1).\n\t\t\tPartialR(2).\n\t\t\tPartialR(3).\n\t\t\tPartialR(4).\n\t\t\tPartialR(5).\n\t\t\tPartialR(6).\n\t\t\tPartialR(7).\n\t\t\tPartialR(8).\n\t\t\tPartialR(9).\n\t\t\tPartialR(10)())\n}"

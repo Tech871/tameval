@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "datolabs-io/opsy"
+sha = "34d0c4dd506970419e9238a3343710100422dd33"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/thememanager/theme.go internal/thememanager/theme_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/thememanager/theme.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 89.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 83.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/thememanager/theme_test.go"
+focal_file_path = "internal/thememanager/theme.go"
+test_file_url = "https://github.com/datolabs-io/opsy/blob/34d0c4dd506970419e9238a3343710100422dd33/internal/thememanager/theme_test.go"
+focal_file_url = "https://github.com/datolabs-io/opsy/blob/34d0c4dd506970419e9238a3343710100422dd33/internal/thememanager/theme.go"
+first_commit_date = "2025-02-19"
+last_commit_date = "2025-02-24"
+test_file_content = "package thememanager\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"gopkg.in/yaml.v3\"\n)\nfunc TestTheme_UnmarshalYAML(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\tyaml    string\n\t\twantErr bool\n\t\terrMsg  string\n\t}{\n\t\t{\n\t\t\tname: \"valid theme\",\n\t\t\tyaml: `\nbase:\n  base00: \"#1A1B26\"\n  base01: \"#24283B\"\n  base02: \"#292E42\"\n  base03: \"#565F89\"\n  base04: \"#A9B1D6\"\naccent:\n  accent0: \"#FF9E64\"\n  accent1: \"#9ECE6A\"\n  accent2: \"#7AA2F7\"`,\n\t\t\twantErr: false,\n\t\t},\n\t\t{\n\t\t\tname: \"missing color\",\n\t\t\tyaml: `\nbase:\n  base00: \"#1A1B26\"\n  base01: \"#24283B\"\naccent:\n  accent0: \"#FF9E64\"\n  accent1: \"#9ECE6A\"\n  accent2: \"#7AA2F7\"`,\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrMissingColors,\n\t\t},\n\t\t{\n\t\t\tname: \"invalid color format - missing #\",\n\t\t\tyaml: `\nbase:\n  base00: \"1A1B26\"\n  base01: \"#24283B\"\n  base02: \"#292E42\"\n  base03: \"#565F89\"\n  base04: \"#A9B1D6\"\naccent:\n  accent0: \"#FF9E64\"\n  accent1: \"#9ECE6A\"\n  accent2: \"#7AA2F7\"`,\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrInvalidColor,\n\t\t},\n\t\t{\n\t\t\tname: \"invalid color format - not hex\",\n\t\t\tyaml: `\nbase:\n  base00: \"#ZZZZZZ\"\n  base01: \"#24283B\"\n  base02: \"#292E42\"\n  base03: \"#565F89\"\n  base04: \"#A9B1D6\"\naccent:\n  accent0: \"#FF9E64\"\n  accent1: \"#9ECE6A\"\n  accent2: \"#7AA2F7\"`,\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrInvalidColor,\n\t\t},\n\t\t{\n\t\t\tname:    \"invalid yaml\",\n\t\t\tyaml:    `{`,\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrDecodingTheme,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tvar node yaml.Node\n\t\t\terr := yaml.Unmarshal([]byte(tt.yaml), &node)\n\t\t\tif err != nil {\n\t\t\t\tif tt.wantErr && tt.errMsg == ErrDecodingTheme {\n\t\t\t\t\tassert.Error(t, err)\n\t\t\t\t\treturn\n\t\t\t\t}\n\t\t\t\tt.Fatalf(\"failed to unmarshal YAML: %v\", err)\n\t\t\t}\n\n\t\t\tvar theme Theme\n\t\t\terr = theme.UnmarshalYAML(&node)\n\n\t\t\tif tt.wantErr {\n\t\t\t\tassert.Error(t, err)\n\t\t\t\tif err != nil {\n\t\t\t\t\tassert.Contains(t, err.Error(), tt.errMsg)\n\t\t\t\t}\n\t\t\t\treturn\n\t\t\t}\n\t\t\tassert.NoError(t, err)\n\t\t})\n\t}\n\tvar invalidVar someType\n\tinvalidVar.someMethod()\n\n\tuninitializedFunc()\n}\nfunc TestTheme_ColorValidation(t *testing.T) {\n\tvalidTheme := `\nbase:\n  base00: \"#1A1B26\"\n  base01: \"#24283B\"\n  base02: \"#292E42\"\n  base03: \"#565F89\"\n  base04: \"#A9B1D6\"\naccent:\n  accent0: \"#FF9E64\"\n  accent1: \"#9ECE6A\"\n  accent2: \"#7AA2F7\"`\n\n\tvar theme Theme\n\tvar node yaml.Node\n\terr := yaml.Unmarshal([]byte(validTheme), &node)\n\tassert.NoError(t, err)\n\n\terr = theme.UnmarshalYAML(&node)\n\tassert.NoError(t, err)\n\tassert.Equal(t, \"#1A1B26\", string(theme.BaseColors.Base00))\n\tassert.Equal(t, \"#24283B\", string(theme.BaseColors.Base01))\n\tassert.Equal(t, \"#292E42\", string(theme.BaseColors.Base02))\n\tassert.Equal(t, \"#565F89\", string(theme.BaseColors.Base03))\n\tassert.Equal(t, \"#A9B1D6\", string(theme.BaseColors.Base04))\n\tassert.Equal(t, \"#FF9E64\", string(theme.AccentColors.Accent0))\n\tassert.Equal(t, \"#9ECE6A\", string(theme.AccentColors.Accent1))\n\tassert.Equal(t, \"#7AA2F7\", string(theme.AccentColors.Accent2))\n\tsomeUndefinedVar.anotherMethod()\n}\nfunc TestTheme_ColorFormat(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\tcolor   string\n\t\twantErr bool\n\t\terrMsg  string\n\t}{\n\t\t{\n\t\t\tname:    \"valid hex color\",\n\t\t\tcolor:   \"#1A1B26\",\n\t\t\twantErr: false,\n\t\t},\n\t\t{\n\t\t\tname:    \"missing hash\",\n\t\t\tcolor:   \"1A1B26\",\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrInvalidColor,\n\t\t},\n\t\t{\n\t\t\tname:    \"invalid hex\",\n\t\t\tcolor:   \"#ZZZZZZ\",\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrInvalidColor,\n\t\t},\n\t\t{\n\t\t\tname:    \"too short\",\n\t\t\tcolor:   \"#1A1\",\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrInvalidColor,\n\t\t},\n\t\t{\n\t\t\tname:    \"too long\",\n\t\t\tcolor:   \"#1A1B26FF\",\n\t\t\twantErr: true,\n\t\t\terrMsg:  ErrInvalidColor,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tyamlStr := fmt.Sprintf(`\nbase:\n  base00: \"%s\"\n  base01: \"#24283B\"\n  base02: \"#292E42\"\n  base03: \"#565F89\"\n  base04: \"#A9B1D6\"\naccent:\n  accent0: \"#FF9E64\"\n  accent1: \"#9ECE6A\"\n  accent2: \"#7AA2F7\"`, tt.color)\n\n\t\t\tvar node yaml.Node\n\t\t\terr := yaml.Unmarshal([]byte(yamlStr), &node)\n\t\t\tassert.NoError(t, err)\n\n\t\t\tvar theme Theme\n\t\t\terr = theme.UnmarshalYAML(&node)\n\n\t\t\tif tt.wantErr {\n\t\t\t\tassert.Error(t, err)\n\t\t\t\tif err != nil {\n\t\t\t\t\tassert.Contains(t, err.Error(), tt.errMsg)\n\t\t\t\t}\n\t\t\t} else {\n\t\t\t\tassert.NoError(t, err)\n\t\t\t}\n\t\t\tyetAnotherUndefinedVar.yetAnotherMethod()\n\t\t})\n\t}\n\toneMoreUndefinedVar.someField\n}"

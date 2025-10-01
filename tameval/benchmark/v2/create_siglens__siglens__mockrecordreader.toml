@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21.0"
+
+[repo_info]
+repository = "siglens/siglens"
+sha = "536f72508926e48d734d15d40b1c66da22d7f8df"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/segment/reader/record/mockrecordreader.go pkg/segment/reader/record/mockrecordreader_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/segment/reader/record/mockrecordreader.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 31.0
+original_coverage = 71.0
+mutation_kill_rate = 47.0
+original_mutation_kill_rate = 73.0
+covered_lines = [ 70, 71, 72, 73, 74, 76, 77, 78, 79, 80, 81, 82, 89,]
+missed_lines = [ 31, 32, 33, 36, 37, 38, 39, 40, 41, 42, 44, 45, 46, 48, 49, 50, 51, 52, 53, 54, 56, 59, 62, 63, 64, 65, 66, 67, 86,]
+
+[input_info]
+test_file_path = "pkg/segment/reader/record/mockrecordreader_test.go"
+focal_file_path = "pkg/segment/reader/record/mockrecordreader.go"
+test_file_url = "https://github.com/siglens/siglens/blob/536f72508926e48d734d15d40b1c66da22d7f8df/pkg/segment/reader/record/mockrecordreader_test.go"
+focal_file_url = "https://github.com/siglens/siglens/blob/536f72508926e48d734d15d40b1c66da22d7f8df/pkg/segment/reader/record/mockrecordreader.go"
+first_commit_date = "2024-11-05"
+last_commit_date = "2025-05-13"
+test_file_content = "// Copyright (c) 2021-2024 SigScalr, Inc.\n//\n// This file is part of SigLens Observability Solution\n//\n// This program is free software: you can redistribute it and/or modify\n// it under the terms of the GNU Affero General Public License as published by\n// the Free Software Foundation, either version 3 of the License, or\n// (at your option) any later version.\n//\n// This program is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU Affero General Public License for more details.\n//\n// You should have received a copy of the GNU Affero General Public License\n// along with this program.  If not, see <http://www.gnu.org/licenses/>.\n\npackage record\n\nimport (\n\t\"testing\"\n\n\tsutils \"github.com/siglens/siglens/pkg/segment/utils\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\nvar mockRRCs = []*sutils.RecordResultContainer{\n\t{BlockNum: 1, RecordNum: 1},\n\t{BlockNum: 1, RecordNum: 2},\n\t{BlockNum: 1, RecordNum: 3},\n\t{BlockNum: 2, RecordNum: 1},\n\t{BlockNum: 2, RecordNum: 2},\n\t{BlockNum: 2, RecordNum: 3},\n}\n\n\nfunc Test_ReadOneColumn(t *testing.T) {\n\trrcs := mockRRCs[:4]\n\tmocker := &MockRRCsReader{\n\t\tRRCs: rrcs,\n\t\tFieldToValues: map[string][]sutils.CValueEnclosure{\n\t\t\t\"col1\": {\n\t\t\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val1\"},\n\t\t\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val2\"},\n\t\t\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val3\"},\n\t\t\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val4\"},\n\t\t\t},\n\t\t},\n\t}\n\n\texpected := []sutils.CValueEnclosure{\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val1\"},\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val2\"},\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val3\"},\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val4\"},\n\t}\n\n\tvalues, err := mocker.ReadColForRRCs(\"segKey\", rrcs, \"col1\", 0, false)\n\tassert.NoError(t, err)\n\tassert.Equal(t, expected, values)\n\n\t// Test reading a non-existent column.\n\tvalues, err = mocker.ReadColForRRCs(\"segKey\", rrcs, \"col2\", 0, false)\n\tassert.NoError(t, err)\n\tassert.Nil(t, values)\n\n\t// Test reading RRCs in a different order.\n\trrcs = []*sutils.RecordResultContainer{\n\t\tmockRRCs[3],\n\t\tmockRRCs[1],\n\t\tmockRRCs[0],\n\t\tmockRRCs[2],\n\t}\n\n\texpected = []sutils.CValueEnclosure{\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val4\"},\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val2\"},\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val1\"},\n\t\t{Dtype: sutils.SS_DT_STRING, CVal: \"val3\"},\n\t}\n\n\tvalues, err = mocker.ReadColForRRCs(\"segKey\", rrcs, \"col1\", 0, false)\n\tassert.NoError(t, err)\n\tassert.Equal(t, expected, values)\n}\n"

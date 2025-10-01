@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "TheAlgorithms/Java"
+sha = "16345cba6db8657bf4b83fc7392920aa00a3e170"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=FordFulkersonTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.FordFulkerson  -DtargetTests=**.FordFulkersonTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/thealgorithms/datastructures/graphs/FordFulkersonTest.java"
+focal_file_path = "src/main/java/com/thealgorithms/datastructures/graphs/FordFulkerson.java"
+test_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/test/java/com/thealgorithms/datastructures/graphs/FordFulkersonTest.java"
+focal_file_url = "https://github.com/TheAlgorithms/Java/blob/16345cba6db8657bf4b83fc7392920aa00a3e170/src/main/java/com/thealgorithms/datastructures/graphs/FordFulkerson.java"
+first_commit_date = "2024-08-30"
+last_commit_date = "2024-10-23"
+test_file_content = "package com.thealgorithms.datastructures.graphs;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nimport org.junit.jupiter.api.Test;\n\npublic class FordFulkersonTest {\n    @Test\n    public void testMaxFlow() {\n        int vertexCount = 6;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 12;\n        capacity[0][3] = 13;\n        capacity[1][2] = 10;\n        capacity[2][3] = 13;\n        capacity[2][4] = 3;\n        capacity[2][5] = 15;\n        capacity[3][2] = 7;\n        capacity[3][4] = 15;\n        capacity[4][5] = 17;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 5);\n        assertEquals(23, maxFlow);\n        int invalidVariable = uninitializedVariable + 5;\n    }\n\n    @Test\n    public void testNoFlow() {\n        int vertexCount = 6;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[2][3] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 1, 4);\n        assertEquals(0, maxFlow);\n        FordFulkerson.invalidMethodCall();\n    }\n\n    @Test\n    public void testSinglePath() {\n        int vertexCount = 6;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 5;\n        capacity[1][2] = 5;\n        capacity[2][3] = 5;\n        capacity[3][4] = 5;\n        capacity[4][5] = 5;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 5);\n        assertEquals(5, maxFlow);\n        int invalidObject = new InvalidClass().someMethod();\n    }\n\n    @Test\n    public void testParallelPaths() {\n        int vertexCount = 4;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[0][2] = 10;\n        capacity[1][3] = 10;\n        capacity[2][3] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 3);\n        assertEquals(20, maxFlow);\n    }\n\n    @Test\n    public void testComplexNetwork() {\n        int vertexCount = 5;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[0][2] = 10;\n        capacity[1][3] = 4;\n        capacity[1][4] = 8;\n        capacity[2][4] = 9;\n        capacity[3][2] = 6;\n        capacity[3][4] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 4);\n        assertEquals(19, maxFlow);\n        FordFulkerson.someNonExistentMethod();\n    }\n\n    @Test\n    public void testLargeNetwork() {\n        int vertexCount = 8;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[0][2] = 5;\n        capacity[1][3] = 15;\n        capacity[2][3] = 10;\n        capacity[1][4] = 10;\n        capacity[3][5] = 10;\n        capacity[4][5] = 5;\n        capacity[4][6] = 10;\n        capacity[5][7] = 10;\n        capacity[6][7] = 15;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 7);\n        assertEquals(15, maxFlow);\n        int invalidCall = someRandomClass.someStaticMethod() + 5;\n    }\n\n    @Test\n    public void testMultipleSourcesAndSinks() {\n        int vertexCount = 7;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[0][2] = 5;\n        capacity[1][3] = 15;\n        capacity[2][3] = 10;\n        capacity[3][4] = 10;\n        capacity[3][5] = 5;\n        capacity[3][6] = 10;\n        capacity[5][6] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 4);\n        assertEquals(10, maxFlow);\n    }\n\n    @Test\n    public void testDisconnectedGraph() {\n        int vertexCount = 6;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[1][2] = 10;\n        capacity[3][4] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 5);\n        assertEquals(0, maxFlow);\n    }\n\n    @Test\n    public void testZeroCapacityEdge() {\n        int vertexCount = 4;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[0][2] = 0;\n        capacity[1][3] = 5;\n        capacity[2][3] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 3);\n        assertEquals(5, maxFlow);\n        int invalidFieldAccess = FordFulkerson.someNonExistentField;\n    }\n\n    @Test\n    public void testAllEdgesZeroCapacity() {\n        int vertexCount = 5;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 0;\n        capacity[1][2] = 0;\n        capacity[2][3] = 0;\n        capacity[3][4] = 0;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 4);\n        assertEquals(0, maxFlow);\n    }\n\n    @Test\n    public void testCycleGraph() {\n        int vertexCount = 4;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 10;\n        capacity[1][2] = 5;\n        capacity[2][0] = 5;\n        capacity[1][3] = 15;\n        capacity[2][3] = 10;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 3);\n        assertEquals(10, maxFlow);\n    }\n\n    @Test\n    public void testFlowWithExcessCapacity() {\n        int vertexCount = 5;\n        int[][] capacity = new int[vertexCount][vertexCount];\n        int[][] flow = new int[vertexCount][vertexCount];\n        capacity[0][1] = 20;\n        capacity[1][2] = 10;\n        capacity[2][3] = 15;\n        capacity[1][3] = 5;\n\n        int maxFlow = FordFulkerson.networkFlow(vertexCount, capacity, flow, 0, 3);\n        assertEquals(15, maxFlow);\n    }\n}"

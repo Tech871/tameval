@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "factcast/factcast"
+sha = "2764ff31bf1e6bec8b3c6a5a71ba2c0384d72392"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl factcast-core -Dtest=FactHeaderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl factcast-core -DtargetClasses=**.FactHeader  -DtargetTests=**.FactHeaderTest  -DoutputFormats=XML"
+coverage_report_path = "factcast-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "factcast-store/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 85.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 27, 37, 39, 45, 46, 47, 48, 55, 56, 57, 58,]
+missed_lines = [ 68, 69,]
+
+[input_info]
+test_file_path = "factcast-core/src/test/java/org/factcast/core/FactHeaderTest.java"
+focal_file_path = "factcast-core/src/main/java/org/factcast/core/FactHeader.java"
+test_file_url = "https://github.com/factcast/factcast/blob/2764ff31bf1e6bec8b3c6a5a71ba2c0384d72392/factcast-core/src/test/java/org/factcast/core/FactHeaderTest.java"
+focal_file_url = "https://github.com/factcast/factcast/blob/2764ff31bf1e6bec8b3c6a5a71ba2c0384d72392/factcast-core/src/main/java/org/factcast/core/FactHeader.java"
+first_commit_date = "2020-07-30"
+last_commit_date = "2025-02-12"
+test_file_content = "/*\n * Copyright © 2017-2020 factcast.org\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage org.factcast.core;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nimport com.fasterxml.jackson.databind.ObjectMapper;\nimport java.util.UUID;\nimport org.junit.jupiter.api.Test;\n\nclass FactHeaderTest {\n\n  @Test\n  void testDeserializability() throws Exception {\n    FactHeader h =\n        new ObjectMapper()\n            .readValue(\n                \"{\\\"id\\\":\\\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\\\",\\\"ns\\\":\\\"ns\\\",\\\"type\\\":\\\"t\\\",\\\"meta\\\":{\\\"foo\\\":\\\"bar\\\"}}\",\n                FactHeader.class);\n    assertEquals(UUID.fromString(\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\"), h.id());\n    assertEquals(\"ns\", h.ns());\n    assertEquals(\"t\", h.type());\n    assertEquals(\"bar\", h.meta().getFirst(\"foo\"));\n  }\n\n  @Test\n  void testIgnoreExtra() throws Exception {\n    FactHeader h =\n        new ObjectMapper()\n            .readValue(\n                \"{\\\"id\\\":\\\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\\\",\\\"ns\\\":\\\"ns\\\",\\\"type\\\":\\\"t\\\",\\\"bing\\\":\\\"bang\\\"}\",\n                FactHeader.class);\n    assertEquals(UUID.fromString(\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\"), h.id());\n    assertEquals(\"ns\", h.ns());\n    assertEquals(\"t\", h.type());\n  }\n\n  @Test\n  void testSerialAccess() throws Exception {\n    FactHeader h =\n        new ObjectMapper()\n            .readValue(\n                \"{\\\"id\\\":\\\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\\\",\\\"ns\\\":\\\"ns\\\",\\\"meta\\\":{\\\"_ser\\\":5}}\",\n                FactHeader.class);\n    assertEquals(UUID.fromString(\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\"), h.id());\n    assertEquals(5, h.serial());\n  }\n\n  @Test\n  void testSerialMissingAccess() throws Exception {\n    FactHeader h =\n        new ObjectMapper()\n            .readValue(\n                \"{\\\"id\\\":\\\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\\\",\\\"ns\\\":\\\"ns\\\"}\",\n                FactHeader.class);\n    assertEquals(UUID.fromString(\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\"), h.id());\n    assertNull(h.serial());\n  }\n\n  @Test\n  void testTimestampAccess() throws Exception {\n    FactHeader h =\n        new ObjectMapper()\n            .readValue(\n                \"{\\\"id\\\":\\\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\\\",\\\"ns\\\":\\\"ns\\\",\\\"type\\\":\\\"t\\\",\\\"meta\\\":{\\\"_ts\\\":5}}\",\n                FactHeader.class);\n    assertEquals(UUID.fromString(\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\"), h.id());\n    assertEquals(5, h.timestamp());\n  }\n\n  @Test\n  void testTimestampMissingAccess() throws Exception {\n    FactHeader h =\n        new ObjectMapper()\n            .readValue(\n                \"{\\\"id\\\":\\\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\\\",\\\"ns\\\":\\\"ns\\\",\\\"type\\\":\\\"t\\\",\\\"meta\\\":{\\\"_xy\\\":5}}\",\n                FactHeader.class);\n    assertEquals(UUID.fromString(\"5d0e3ae9-6684-42bc-87a7-854f76506f7e\"), h.id());\n    assertNull(h.timestamp());\n  }\n}"

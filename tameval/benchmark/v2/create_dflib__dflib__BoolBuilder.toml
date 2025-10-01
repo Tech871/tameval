@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dflib/dflib"
+sha = "9486d42d77375b4de8bf8df9770f2952225db1a4"
+bench_version = 2
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl dflib -Dtest=BoolBuilderTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl dflib -DtargetClasses=**.BoolBuilder  -DtargetTests=**.BoolBuilderTest  -DoutputFormats=XML"
+coverage_report_path = "dflib/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "dflib/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 96.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 33, 37, 38, 39, 40, 44, 45, 47, 50, 51, 54, 55, 58, 59, 60, 61, 62, 66, 67, 68, 69, 72, 73, 75,]
+missed_lines = [ 34,]
+
+[input_info]
+test_file_path = "dflib/src/test/java/org/dflib/builder/BoolBuilderTest.java"
+focal_file_path = "dflib/src/main/java/org/dflib/builder/BoolBuilder.java"
+test_file_url = "https://github.com/dflib/dflib/blob/9486d42d77375b4de8bf8df9770f2952225db1a4/dflib/src/test/java/org/dflib/builder/BoolBuilderTest.java"
+focal_file_url = "https://github.com/dflib/dflib/blob/9486d42d77375b4de8bf8df9770f2952225db1a4/dflib/src/main/java/org/dflib/builder/BoolBuilder.java"
+first_commit_date = "2025-01-31"
+last_commit_date = "2025-02-13"
+test_file_content = "package org.dflib.builder;\n\nimport org.dflib.BooleanSeries;\nimport org.junit.jupiter.params.ParameterizedTest;\nimport org.junit.jupiter.params.provider.CsvSource;\nimport org.junit.jupiter.params.provider.ValueSource;\n\nimport static org.junit.jupiter.api.Assertions.*;\n\nclass BoolBuilderTest {\n\n    @ParameterizedTest\n    @ValueSource(ints = {1, 2, 4, 20, 64, 65, 128, 129, 200, 1000})\n    void fillTrue(int len) {\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> true, len);\n\n        assertEquals(len, booleans.size());\n        for(int i = 0; i < len; i++) {\n            assertTrue(booleans.get(0), i + \" element of \" + len);\n        }\n    }\n\n    @ParameterizedTest\n    @ValueSource(ints = {1, 2, 4, 20, 64, 65, 128, 129, 200, 1000})\n    void fillFalse(int len) {\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> false, len);\n\n        assertEquals(len, booleans.size());\n        for(int i = 0; i < len; i++) {\n            assertFalse(booleans.get(0), i + \" element of \" + len);\n        }\n    }\n\n    @ParameterizedTest\n    @ValueSource(ints = {1, 4, 20, 64, 65, 128, 129, 200, 1000})\n    void fillMixed(int len) {\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> i % 2 == 0, len);\n        assertEquals(len, booleans.size());\n\n        for (int i = 0; i < len; i++) {\n            assertEquals(i % 2 == 0, booleans.get(i), i + \" element of \" + len);\n        }\n    }\n\n    @ParameterizedTest\n    @ValueSource(ints = {1, 4, 20, 64, 65, 128, 129, 200, 1000})\n    void fillMixedInverted(int len) {\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> i % 2 != 0, len);\n        assertEquals(len, booleans.size());\n\n        for (int i = 0; i < len; i++) {\n            assertEquals(i % 2 != 0, booleans.get(i), i + \" element of \" + len);\n        }\n    }\n\n    @ParameterizedTest\n    @ValueSource(ints = {1, 2, 4, 20, 64, 65, 128, 129, 200, 1000})\n    void fillMixedLimitedSource(int len) {\n        boolean[] source = new boolean[len];\n        for(int i=0; i<len; i++) {\n            source[i] = i % 2 == 0;\n        }\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> source[i], source.length);\n\n        assertEquals(source.length, booleans.size());\n        for(int i=0; i<source.length; i++) {\n            assertEquals(source[i], booleans.get(i));\n        }\n    }\n\n    @ParameterizedTest\n    @CsvSource({\n            \"1, 1\",\n            \"1, 10\",\n            \"1, 64\",\n            \"1, 65\",\n            \"1, 128\",\n            \"1, 129\",\n            \"1, 200\",\n\n            \"10, 10\",\n            \"10, 64\",\n            \"10, 65\",\n            \"10, 128\",\n            \"10, 129\",\n            \"10, 200\",\n\n            \"64, 64\",\n            \"64, 65\",\n            \"64, 128\",\n            \"64, 129\",\n            \"64, 200\",\n\n            \"65, 65\",\n            \"65, 128\",\n            \"65, 129\",\n            \"65, 200\",\n\n            \"128, 128\",\n            \"128, 129\",\n            \"128, 200\",\n\n            \"129, 129\",\n            \"129, 200\",\n\n            \"200, 200\",\n            \"200, 1000\",\n    })\n    void fillNTrueFirst(int countTrue, int len) {\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> i < countTrue, len);\n\n        assertEquals(len, booleans.size());\n        for(int i = 0; i < countTrue; i++) {\n            assertTrue(booleans.get(i), i + \" element of \" + len);\n        }\n        for(int i = countTrue; i < len; i++) {\n            assertFalse(booleans.get(i), i + \" element of \" + len);\n        }\n    }\n\n    @ParameterizedTest\n    @CsvSource({\n            \"1, 1\",\n            \"1, 10\",\n            \"1, 64\",\n            \"1, 65\",\n            \"1, 128\",\n            \"1, 129\",\n            \"1, 200\",\n\n            \"10, 10\",\n            \"10, 64\",\n            \"10, 65\",\n            \"10, 128\",\n            \"10, 129\",\n            \"10, 200\",\n\n            \"64, 64\",\n            \"64, 65\",\n            \"64, 128\",\n            \"64, 129\",\n            \"64, 200\",\n\n            \"65, 65\",\n            \"65, 128\",\n            \"65, 129\",\n            \"65, 200\",\n\n            \"128, 128\",\n            \"128, 129\",\n            \"128, 200\",\n\n            \"129, 129\",\n            \"129, 200\",\n\n            \"200, 200\",\n            \"200, 1000\",\n    })\n    void fillNFalseFirst(int countFalse, int len) {\n        BooleanSeries booleans = BoolBuilder.buildSeries(i -> i >= countFalse, len);\n\n        assertEquals(len, booleans.size());\n        for(int i = 0; i < countFalse; i++) {\n            assertFalse(booleans.get(i), i + \" element of \" + len);\n        }\n        for(int i = countFalse; i < len; i++) {\n            assertTrue(booleans.get(i), i + \" element of \" + len);\n        }\n    }\n}"

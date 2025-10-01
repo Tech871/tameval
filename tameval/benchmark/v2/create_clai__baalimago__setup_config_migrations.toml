@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "baalimago/clai"
+sha = "b45e13a52986e12878bc2314022787173f3c7c4b"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/setup_config_migrations.go internal/setup_config_migrations_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/setup_config_migrations.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 54.0
+original_coverage = 54.0
+mutation_kill_rate = 22.0
+original_mutation_kill_rate = 22.0
+covered_lines = [ 38, 39, 44, 45, 49, 50, 51, 52, 53, 54, 55, 59, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 78, 84, 85, 90, 91, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 112, 113, 117, 122,]
+missed_lines = [ 40, 41, 42, 43, 46, 47, 48, 56, 57, 58, 60, 61, 62, 75, 76, 77, 86, 87, 88, 89, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 114, 115, 116, 118, 119, 120,]
+
+[input_info]
+test_file_path = "internal/setup_config_migrations_test.go"
+focal_file_path = "internal/setup_config_migrations.go"
+test_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/setup_config_migrations_test.go"
+focal_file_url = "https://github.com/baalimago/clai/blob/b45e13a52986e12878bc2314022787173f3c7c4b/internal/setup_config_migrations.go"
+first_commit_date = "2024-03-31"
+last_commit_date = "2025-07-07"
+test_file_content = "package internal\n\nimport (\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/baalimago/clai/internal/photo\"\n\t\"github.com/baalimago/clai/internal/utils\"\n)\n\nfunc TestMigrateOldChatConfig(t *testing.T) {\n\t// Create a temporary directory for testing\n\ttempDir, err := os.MkdirTemp(\"\", \"test\")\n\tif err != nil {\n\t\tt.Fatalf(\"failed to create temp dirr: %v\", err)\n\t}\n\tdefer os.RemoveAll(tempDir)\n\n\t// Create an old chat config file\n\toldChatConfig := oldChatConfig{\n\t\tModel:            \"gpt-3.5-turbo\",\n\t\tSystemPrompt:     \"You are a helpful assistant.\",\n\t\tFrequencyPenalty: 0.5,\n\t\tMaxTokens:        nil,\n\t\tPresencePenalty:  0.5,\n\t\tTemperature:      0.8,\n\t\tTopP:             1.0,\n\t\tURL:              \"https://api.openai.com\",\n\t}\n\toldChatConfigPath := filepath.Join(tempDir, \"chatConfig.json\")\n\terr = utils.CreateFile(oldChatConfigPath, &oldChatConfig)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to create file: %v\", err)\n\t}\n\n\t// Run the migration function\n\terr = migrateOldChatConfig(tempDir)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to migrate old chat config: %v\", err)\n\t}\n\n\t// Check if the new text config file is created\n\tnewTextConfigPath := filepath.Join(tempDir, \"textConfig.json\")\n\t_, err = os.Stat(newTextConfigPath)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to find new config file: %v\", err)\n\t}\n\n\t// Check if the old chat config file is removed\n\t_, err = os.Stat(oldChatConfigPath)\n\tif !os.IsNotExist(err) {\n\t\tt.Fatalf(\"failed to remove old chat config file: %v\", err)\n\t}\n\n\t// Check if the new vendor-specific config file is created\n\tnewVendorConfigPath := filepath.Join(tempDir, \"openai_gpt_gpt-3.5-turbo.json\")\n\t_, err = os.Stat(newVendorConfigPath)\n\tif err != nil {\n\t\tt.Fatalf(\"failed to create new config: %v\", err)\n\t}\n}\n\nfunc TestMigrateOldPhotoConfig(t *testing.T) {\n\t// Create a temporary directory for testing\n\ttempDir := t.TempDir()\n\n\t// Create an old photoConfig.json file with test data\n\toldPhotoConfigData := `{                                                                                                                                                                                                             \n                \"model\": \"test-model\",                                                                                                                                                                                                       \n                \"photo-dir\": \"test-photo-dir\",                                                                                                                                                                                               \n                \"photo-prefix\": \"test-photo-prefix\",                                                                                                                                                                                         \n                \"prompt-format\": \"test-prompt-format\"                                                                                                                                                                                        \n        }`\n\toldPhotoConfigPath := filepath.Join(tempDir, \"photoConfig.json\")\n\terr := os.WriteFile(oldPhotoConfigPath, []byte(oldPhotoConfigData), 0o644)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to create old photoConfig.json: %v\", err)\n\t}\n\n\t// Call migrateOldPhotoConfig\n\terr = migrateOldPhotoConfig(tempDir)\n\tif err != nil {\n\t\tt.Fatalf(\"migrateOldPhotoConfig failed: %v\", err)\n\t}\n\n\t// Check if the new photoConfig.json file was created\n\tnewPhotoConfigPath := filepath.Join(tempDir, \"photoConfig.json\")\n\tif _, err := os.Stat(newPhotoConfigPath); os.IsNotExist(err) {\n\t\tt.Error(\"New photoConfig.json file was not created\")\n\t}\n\n\t// Read the new photoConfig.json file and check its contents\n\tvar newPhotoConfig photo.Configurations\n\terr = utils.ReadAndUnmarshal(newPhotoConfigPath, &newPhotoConfig)\n\tif err != nil {\n\t\tt.Fatalf(\"Failed to read new photoConfig.json: %v\", err)\n\t}\n\n\texpectedPhotoConfig := photo.Configurations{\n\t\tModel:        \"test-model\",\n\t\tPromptFormat: \"test-prompt-format\",\n\t\tOutput: photo.Output{\n\t\t\tType:   photo.LOCAL,\n\t\t\tDir:    \"test-photo-dir\",\n\t\t\tPrefix: \"test-photo-prefix\",\n\t\t},\n\t}\n\n\tif newPhotoConfig != expectedPhotoConfig {\n\t\tt.Errorf(\"Unexpected photo config.\\nExpected: %+v\\nGot: %+v\", expectedPhotoConfig, newPhotoConfig)\n\t}\n}\n"

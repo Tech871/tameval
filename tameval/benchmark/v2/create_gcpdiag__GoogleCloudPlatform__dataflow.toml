@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "Pipfile"
+
+[repo_info]
+repository = "GoogleCloudPlatform/gcpdiag"
+sha = "679c55e8715d535c797fc18cd20cda0ad3fc90ea"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install pipenv && pipenv lock && pipenv install --deploy --system --dev && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=gcpdiag/queries/dataflow.py -m pytest -q --junit-xml=test_output.xml gcpdiag/queries/dataflow_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target gcpdiag.queries.dataflow --unit-test gcpdiag.queries.dataflow_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target gcpdiag/queries/dataflow.py --unit-test gcpdiag/queries/dataflow_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 79.0
+mutation_kill_rate = 14.0
+original_mutation_kill_rate = 14.0
+covered_lines = [ 2, 3, 4, 6, 8, 9, 10, 12, 21, 35, 36, 38, 39, 40, 42, 43, 46, 47, 48, 50, 51, 52, 54, 55, 58, 59, 62, 63, 66, 67, 71, 72, 73, 75, 76, 79, 81, 86, 87, 88, 89, 90, 93, 98, 101, 102, 105, 106, 107, 109, 112, 113, 114, 116, 118, 121, 124, 127, 128, 130, 132, 135, 138, 139, 140, 145, 146, 151, 153, 156, 158, 160, 162, 163, 164, 165, 166, 168, 171, 172,]
+missed_lines = [ 44, 56, 60, 64, 68, 100, 110, 122, 133, 141, 142, 154, 175, 176, 178, 179, 180, 182, 183, 184, 185,]
+
+[input_info]
+test_file_path = "gcpdiag/queries/dataflow_test.py"
+focal_file_path = "gcpdiag/queries/dataflow.py"
+test_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/dataflow_test.py"
+focal_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/dataflow.py"
+first_commit_date = "2023-04-19"
+last_commit_date = "2025-07-23"
+test_file_content = "\"\"\"Test code in dataflow.py.\"\"\"\n\nimport unittest\nfrom unittest import mock\n\nfrom gcpdiag import models\nfrom gcpdiag.queries import apis_stub, dataflow\n\nDUMMY_PROJECT_NAME = 'gcpdiag-dataflow1-aaaa'\n\n\n@mock.patch('gcpdiag.queries.apis.get_api', new=apis_stub.get_api_stub)\nclass TestDataFlow(unittest.TestCase):\n  \"\"\"Test Dataflow.\"\"\"\n\n  def test_get_jobs(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    jobs = dataflow.get_all_dataflow_jobs(context)\n    assert {j.state for j in jobs} != {'JOB_STATE_FAILED'}\n    assert None not in [j.minutes_in_current_state for j in jobs]\n\n  def test_get_jobs_with_id(self):\n    context = models.Context(\n        project_id=DUMMY_PROJECT_NAME  #,\n        # labels={'id': '2022-09-19_09_20_57-11848816011797209899'})\n    )\n    jobs = dataflow.get_all_dataflow_jobs(context=context)\n    assert len(jobs) != 0\n    sample_job = dataflow.get_job(project_id=context.project_id,\n                                  job=jobs[0].id,\n                                  region='us-central1')\n    assert sample_job is not None\n\n  def test_get_jobs_for_project(self):\n    jobs = dataflow.get_all_dataflow_jobs_for_project(DUMMY_PROJECT_NAME)\n    assert {j.state for j in jobs} != {'JOB_STATE_FAILED'}\n    assert None not in [j.minutes_in_current_state for j in jobs]\n"

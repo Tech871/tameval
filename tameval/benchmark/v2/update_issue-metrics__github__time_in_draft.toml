@@ -1,0 +1,44 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "github/issue-metrics"
+sha = "2212538da2e822687d70832f002e416903c85e1c"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-test.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=time_in_draft.py -m pytest -q --junit-xml=test_output.xml test_time_in_draft.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target time_in_draft --unit-test test_time_in_draft --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target time_in_draft.py --unit-test test_time_in_draft.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 83.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = [ 4, 5, 7, 8, 9, 10, 13, 24, 25, 26, 28, 37, 40, 43, 50, 55, 56, 57, 58, 59, 62, 63, 64, 65, 66, 70, 72, 79, 80,]
+missed_lines = [ 29, 30, 31, 33, 34, 38,]
+
+[input_info]
+test_file_path = "test_time_in_draft.py"
+focal_file_path = "time_in_draft.py"
+test_file_url = "https://github.com/github/issue-metrics/blob/2212538da2e822687d70832f002e416903c85e1c/test_time_in_draft.py"
+focal_file_url = "https://github.com/github/issue-metrics/blob/2212538da2e822687d70832f002e416903c85e1c/time_in_draft.py"
+first_commit_date = "2024-10-23"
+last_commit_date = "2025-08-15"
+test_file_content = "\"\"\"A test suite for the measure_time_in_draft function.\"\"\"\n\nimport unittest\nfrom datetime import datetime, timedelta\nfrom unittest.mock import MagicMock\n\nimport pytz\nfrom time_in_draft import get_stats_time_in_draft, measure_time_in_draft\n\n\nclass TestMeasureTimeInDraft(unittest.TestCase):\n    \"\"\"\n    Unit tests for the measure_time_in_draft function.\n    \"\"\"\n\n    def setUp(self):\n        \"\"\"\n        Setup common test data and mocks.\n        \"\"\"\n        self.issue = MagicMock()\n        self.issue.issue.state = \"open\"\n\n    def test_time_in_draft_with_ready_for_review(self):\n        \"\"\"\n        Test measure_time_in_draft with one draft and review interval.\n        \"\"\"\n        self.issue.events.return_value = [\n            MagicMock(\n                event=\"converted_to_draft\",\n                created_at=datetime(2021, 1, 1, tzinfo=pytz.utc),\n            ),\n            MagicMock(\n                event=\"ready_for_review\",\n                created_at=datetime(2021, 1, 3, tzinfo=pytz.utc),\n            ),\n        ]\n        result = measure_time_in_draft(self.issue)\n        expected = timedelta(days=2)\n        self.assertEqual(result, expected, \"The time in draft should be 2 days.\")\n\n    def test_time_in_draft_without_ready_for_review(self):\n        \"\"\"\n        Test measure_time_in_draft when ready_for_review_at is not provided and issue is still open.\n        \"\"\"\n        self.issue.events.return_value = [\n            MagicMock(\n                event=\"converted_to_draft\",\n                created_at=datetime(2021, 1, 1, tzinfo=pytz.utc),\n            ),\n        ]\n        now = datetime(2021, 1, 4, tzinfo=pytz.utc)\n        with unittest.mock.patch(\"time_in_draft.datetime\") as mock_datetime:\n            mock_datetime.now.return_value = now\n            result = measure_time_in_draft(self.issue)\n            expected = timedelta(days=3)\n            self.assertEqual(result, expected, \"The time in draft should be 3 days.\")\n\n    def test_time_in_draft_multiple_intervals(self):\n        \"\"\"\n        Test measure_time_in_draft with multiple draft intervals.\n        \"\"\"\n        self.issue.events.return_value = [\n            MagicMock(\n                event=\"converted_to_draft\",\n                created_at=datetime(2021, 1, 1, tzinfo=pytz.utc),\n            ),\n            MagicMock(\n                event=\"ready_for_review\",\n                created_at=datetime(2021, 1, 3, tzinfo=pytz.utc),\n            ),\n            MagicMock(\n                event=\"converted_to_draft\",\n                created_at=datetime(2021, 1, 5, tzinfo=pytz.utc),\n            ),\n            MagicMock(\n                event=\"ready_for_review\",\n                created_at=datetime(2021, 1, 7, tzinfo=pytz.utc),\n            ),\n        ]\n        result = measure_time_in_draft(self.issue)\n        expected = timedelta(days=4)\n        self.assertEqual(result, expected, \"The total time in draft should be 4 days.\")\n\n    def test_time_in_draft_ongoing_draft(self):\n        \"\"\"\n        Test measure_time_in_draft with an ongoing draft interval.\n        \"\"\"\n        self.issue.events.return_value = [\n            MagicMock(\n                event=\"converted_to_draft\",\n                created_at=datetime(2021, 1, 1, tzinfo=pytz.utc),\n            ),\n        ]\n        with unittest.mock.patch(\"time_in_draft.datetime\") as mock_datetime:\n            mock_datetime.now.return_value = datetime(2021, 1, 4, tzinfo=pytz.utc)\n            result = measure_time_in_draft(self.issue)\n            expected = timedelta(days=3)\n            self.assertEqual(\n                result, expected, \"The ongoing draft time should be 3 days.\"\n            )\n\n    def test_time_in_draft_no_draft_events(self):\n        \"\"\"\n        Test measure_time_in_draft with no draft-related events.\n        \"\"\"\n        self.issue.events.return_value = []\n        result = measure_time_in_draft(self.issue)\n        self.assertIsNone(\n            result, \"The result should be None when there are no draft events.\"\n        )\n\n    def test_time_in_draft_without_ready_for_review_and_closed(self):\n        \"\"\"\n        Test measure_time_in_draft for a closed issue with an ongoing draft and ready_for_review_at is not provided.\n        \"\"\"\n        self.issue.events.return_value = [\n            MagicMock(\n                event=\"converted_to_draft\",\n                created_at=datetime(2021, 1, 1, tzinfo=pytz.utc),\n            ),\n        ]\n        self.issue.issue.state = \"closed\"\n        result = measure_time_in_draft(self.issue)\n        self.assertIsNone(\n            result,\n            \"The result should be None for a closed issue with an ongoing draft.\",\n        )\n\n\nclass TestGetStatsTimeInDraft(unittest.TestCase):\n    \"\"\"\n    Unit tests for the get_stats_time_in_draft function.\n    \"\"\"\n\n    def test_get_stats_time_in_draft_with_data(self):\n        \"\"\"\n        Test get_stats_time_in_draft with valid draft times.\n        \"\"\"\n        issues = [\n            MagicMock(time_in_draft=timedelta(days=1)),\n            MagicMock(time_in_draft=timedelta(days=2)),\n            MagicMock(time_in_draft=timedelta(days=3)),\n        ]\n\n        result = get_stats_time_in_draft(issues)\n        expected = {\n            \"avg\": timedelta(days=2),\n            \"med\": timedelta(days=2),\n            \"90p\": timedelta(days=2, seconds=69120),\n        }\n\n        self.assertEqual(\n            result, expected, \"The statistics for time in draft are incorrect.\"\n        )\n\n    def test_get_stats_time_in_draft_no_data(self):\n        \"\"\"\n        Test get_stats_time_in_draft with no draft times.\n        \"\"\"\n        issues = [\n            MagicMock(time_in_draft=None),\n            MagicMock(time_in_draft=None),\n        ]\n\n        result = get_stats_time_in_draft(issues)\n        self.assertIsNone(\n            result, \"The result should be None when there are no draft times.\"\n        )\n\n    def test_get_stats_time_in_draft_empty_list(self):\n        \"\"\"\n        Test get_stats_time_in_draft with an empty list of issues.\n        \"\"\"\n        issues = []\n\n        result = get_stats_time_in_draft(issues)\n        self.assertIsNone(\n            result, \"The result should be None when the list of issues is empty.\"\n        )\n\n\nif __name__ == \"__main__\":\n    unittest.main()"

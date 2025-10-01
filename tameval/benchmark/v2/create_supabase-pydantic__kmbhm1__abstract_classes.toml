@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "kmbhm1/supabase-pydantic"
+sha = "0a62448b7c42eef16ec885ccedaebe42a51f9fbf"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=supabase_pydantic/util/writers/abstract_classes.py -m pytest -q --junit-xml=test_output.xml tests/unit/writers/test_abstract_classes.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target supabase_pydantic.util.writers.abstract_classes --unit-test tests.unit.writers.test_abstract_classes --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target supabase_pydantic/util/writers/abstract_classes.py --unit-test tests/unit/writers/test_abstract_classes.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 49.0
+original_coverage = 99.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 39.0
+covered_lines = [ 0, 1, 2, 3, 5, 6, 7, 8, 11, 12, 20, 21, 24, 31, 32, 36, 37, 41, 42, 46, 47, 51, 64, 65, 69, 70, 74, 75, 79, 80, 84, 94, 95, 108, 121, 138, 142, 143, 147, 148, 152, 153, 157, 158,]
+missed_lines = [ 15, 16, 17, 18, 22, 29, 34, 39, 44, 49, 53, 54, 55, 62, 67, 72, 77, 82, 86, 87, 88, 90, 91, 102, 103, 104, 105, 106, 111, 119, 123, 124, 125, 126, 127, 129, 130, 131, 132, 134, 136, 140, 145, 150, 155, 160,]
+
+[input_info]
+test_file_path = "tests/unit/writers/test_abstract_classes.py"
+focal_file_path = "supabase_pydantic/util/writers/abstract_classes.py"
+test_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/tests/unit/writers/test_abstract_classes.py"
+focal_file_url = "https://github.com/kmbhm1/supabase-pydantic/blob/0a62448b7c42eef16ec885ccedaebe42a51f9fbf/supabase_pydantic/util/writers/abstract_classes.py"
+first_commit_date = "2024-07-26"
+last_commit_date = "2025-04-17"
+test_file_content = "from unittest.mock import MagicMock, patch\n\nimport pytest\n\n# Import the abstract classes\nfrom supabase_pydantic.util.writers.abstract_classes import AbstractClassWriter, AbstractFileWriter, TableInfo\n\nclass ConcreteClassWriter(AbstractClassWriter):\n    def write_operational_class(self):\n        return 'OperationalClassDefinition'\n\n    def write_name(self):\n        return 'ConcreteClassName'\n\n    def write_metaclass(self, metaclasses=None):\n        return 'MetaClass' if metaclasses else None\n\n    def write_docs(self):\n        return '\\nClass documentation'\n\n    def write_primary_keys(self):\n        return '\\nPrimaryKeyDefinition'\n\n    def write_primary_columns(self):\n        return '\\nPrimaryColumnsDefinition'\n\n    def write_foreign_columns(self, use_base=False):\n        return '\\nForeignColumnsDefinition' if use_base else None\n\nclass NotImplementClassWriter(AbstractClassWriter):\n    def write_name(self):\n        return super().write_name()\n\n    def write_operational_class(self):\n        return super().write_operational_class()\n\n    def write_metaclass(self, metaclasses=None):\n        return super().write_metaclass(metaclasses)\n\n    def write_docs(self):\n        return super().write_docs()\n\n    def write_primary_keys(self):\n        return super().write_primary_keys()\n\n    def write_primary_columns(self):\n        return super().write_primary_columns()\n\n    def write_foreign_columns(self, use_base=False):\n        return super().write_foreign_columns(use_base)\n\ndef test_abstract_class_writer_type_error_on_implementation():\n    \"\"\"Test that a TypeError is raised when the abstract methods are not implemented.\"\"\"\n    table_info = TableInfo(name='test_table', columns=[])\n\n    with pytest.raises(TypeError):\n        _ = DummyClassWriter(table=table_info)\n\nclass ConcreteFileWriter(AbstractFileWriter):\n    def __init__(self, tables, file_path, writer):\n        super().__init__(tables, file_path, writer)\n\n    def write_imports(self) -> str:\n        return 'Imports'\n\n    def write_custom_classes(self) -> str | None:\n        return 'CustomClasses'\n\n    def write_base_classes(self) -> str | None:\n        return 'BaseClasses'\n\n    def write_operational_classes(self) -> str | None:\n        return 'OperationalClasses'\n\nclass NotImplementFileWriter(AbstractFileWriter):\n    def write_imports(self) -> str:\n        return super().write_imports()\n\n    def write_custom_classes(self) -> str | None:\n        return super().write_custom_classes()\n\n    def write_base_classes(self) -> str | None:\n        return super().write_base_classes()\n\n    def write_operational_classes(self) -> str | None:\n        return super().write_operational_classes()\n\ndef test_abstract_file_writer_type_error_on_implementation():\n    \"\"\"Test that a TypeError is raised when the abstract methods are not implemented.\"\"\"\n    tables = [TableInfo(name='test_table', columns=[])]\n    with pytest.raises(TypeError):\n        _ = DummyFileWriter(tables=tables, file_path='test.py', writer=ConcreteClassWriter)\n"

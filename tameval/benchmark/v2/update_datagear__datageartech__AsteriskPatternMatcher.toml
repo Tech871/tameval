@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "datageartech/datagear"
+sha = "0cde3799fad38f74d53c73e087b0e3296237e466"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl datagear-util -Dtest=AsteriskPatternMatcherTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl datagear-util -DtargetClasses=**.AsteriskPatternMatcher  -DtargetTests=**.AsteriskPatternMatcherTest  -DoutputFormats=XML"
+coverage_report_path = "datagear-util/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "datagear-util/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 79.0
+original_coverage = 89.0
+mutation_kill_rate = 74.0
+original_mutation_kill_rate = 89.0
+covered_lines = [ 66, 78, 79, 89, 94, 95, 109, 110, 112, 113, 114, 116, 119, 120, 125, 126, 128, 130, 131, 134, 139, 150, 153, 165, 167, 169, 170, 171, 173, 175, 177, 179, 180, 183, 186, 189, 190, 192, 194, 196, 197, 199,]
+missed_lines = [ 69, 74, 83, 84, 85, 117, 141, 143, 144, 146, 151,]
+
+[input_info]
+test_file_path = "datagear-util/src/test/java/org/datagear/util/AsteriskPatternMatcherTest.java"
+focal_file_path = "datagear-util/src/main/java/org/datagear/util/AsteriskPatternMatcher.java"
+test_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-util/src/test/java/org/datagear/util/AsteriskPatternMatcherTest.java"
+focal_file_url = "https://github.com/datageartech/datagear/blob/0cde3799fad38f74d53c73e087b0e3296237e466/datagear-util/src/main/java/org/datagear/util/AsteriskPatternMatcher.java"
+first_commit_date = "2021-08-31"
+last_commit_date = "2024-05-15"
+test_file_content = "/*\r\n * Copyright 2018-present datagear.tech\r\n *\r\n * This file is part of DataGear.\r\n *\r\n * DataGear is free software: you can redistribute it and/or modify it under the terms of\r\n * the GNU Lesser General Public License as published by the Free Software Foundation,\r\n * either version 3 of the License, or (at your option) any later version.\r\n *\r\n * DataGear is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY;\r\n * without even the implied warranty of MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.\r\n * See the GNU Lesser General Public License for more details.\r\n *\r\n * You should have received a copy of the GNU Lesser General Public License along with DataGear.\r\n * If not, see <https://www.gnu.org/licenses/>.\r\n */\r\n\r\npackage org.datagear.util;\r\n\r\nimport static org.junit.Assert.assertFalse;\r\nimport static org.junit.Assert.assertTrue;\r\n\r\nimport org.junit.Test;\r\n\r\n/**\r\n * {@linkplain AsteriskPatternMatcher}单元测试类。\r\n * \r\n * @author datagear@163.com\r\n *\r\n */\r\npublic class AsteriskPatternMatcherTest\r\n{\r\n\t@Test\r\n\tpublic void test()\r\n\t{\r\n\t\tAsteriskPatternMatcher matcher = new AsteriskPatternMatcher();\r\n\r\n\t\t{\r\n\t\t\tString pattern = null;\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, null));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abc\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, null));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abc\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = null;\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, null));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abc\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tassertTrue(matcher.matches(null, null));\r\n\t\t\tassertFalse(matcher.matches(\"\", null));\r\n\t\t\tassertFalse(matcher.matches(\"abc\", null));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"*\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abc\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"abc*\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abcdef\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"defabcghi\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"def\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"*abc\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"defabc\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abcdef\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"def\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"*abc*\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abcdef\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"defabc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"defabcghi\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"def\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"abc\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abc\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abcdef\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"defabc\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"abc*ghi\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abcghi\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abcdefghi\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"def\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abcdefghijkl\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"jklabcdefghi\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"jklabcdefghijkl\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"192.168.1.1*\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"192.168.1.1:3306/dg_test\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"jdbc:mysql://192.168.1.1:3306/dg_test\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"*192.168.1.1\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"jdbc:mysql://192.168.1.1\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"jdbc:mysql://192.168.1.1:3306/dg_test\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"*192.168.1.1*\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"jdbc:mysql://192.168.1.1:3306/dg_test\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"jdbc:mysql://192.168.1.2:3306/dg_test\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"abc*\";\r\n\r\n\t\t\tassertFalse(matcher.matches(pattern, \"Abc\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"ABCd\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"a\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abc\"));\r\n\t\t}\r\n\t}\r\n\r\n\t@Test\r\n\tpublic void test_ignoreCase_true()\r\n\t{\r\n\t\tAsteriskPatternMatcher matcher = new AsteriskPatternMatcher();\r\n\t\tmatcher.setIgnoreCase(true);\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"abc*\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"Abc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"ABCd\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"*abc\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"aBc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"defAbc\"));\r\n\t\t}\r\n\r\n\t\t{\r\n\t\t\tString pattern = \"abc\";\r\n\r\n\t\t\tassertTrue(matcher.matches(pattern, \"abc\"));\r\n\t\t\tassertTrue(matcher.matches(pattern, \"aBc\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"abcdef\"));\r\n\t\t\tassertFalse(matcher.matches(pattern, \"defabc\"));\r\n\t\t}\r\n\t}\r\n}\r"

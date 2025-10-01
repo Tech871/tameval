@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/stormcrawler"
+sha = "9d4b0302a7859f9f24caa1fe3cdabb498f968112"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl core -Dtest=BasicURLFilterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl core -DtargetClasses=**.BasicURLFilter  -DtargetTests=**.BasicURLFilterTest  -DoutputFormats=XML"
+coverage_report_path = "core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 97.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 0.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "core/src/test/java/org/apache/stormcrawler/filtering/BasicURLFilterTest.java"
+focal_file_path = "core/src/main/java/org/apache/stormcrawler/filtering/basic/BasicURLFilter.java"
+test_file_url = "https://github.com/apache/stormcrawler/blob/9d4b0302a7859f9f24caa1fe3cdabb498f968112/core/src/test/java/org/apache/stormcrawler/filtering/BasicURLFilterTest.java"
+focal_file_url = "https://github.com/apache/stormcrawler/blob/9d4b0302a7859f9f24caa1fe3cdabb498f968112/core/src/main/java/org/apache/stormcrawler/filtering/basic/BasicURLFilter.java"
+first_commit_date = "2024-03-28"
+last_commit_date = "2024-05-21"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to you under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage org.apache.stormcrawler.filtering;\n\nimport com.fasterxml.jackson.databind.node.JsonNodeFactory;\nimport com.fasterxml.jackson.databind.node.ObjectNode;\nimport java.net.MalformedURLException;\nimport java.net.URL;\nimport java.util.HashMap;\nimport java.util.Map;\nimport org.apache.stormcrawler.Metadata;\nimport org.apache.stormcrawler.filtering.basic.BasicURLFilter;\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class BasicURLFilterTest {\n\n    private URLFilter createFilter(int length, int repeat) {\n        BasicURLFilter filter = new BasicURLFilter();\n        ObjectNode filterParams = new ObjectNode(JsonNodeFactory.instance);\n        filterParams.put(\"maxPathRepetition\", repeat);\n        filterParams.put(\"maxLength\", length);\n        Map<String, Object> conf = new HashMap<>();\n        filter.configure(conf, filterParams);\n        return filter;\n    }\n\n    @Test\n    public void testRepetition() throws MalformedURLException {\n        URLFilter filter = createFilter(-1, 3);\n        Metadata metadata = new Metadata();\n\n        URL targetURL = new URL(\"http://www.sourcedomain.com/a/a/a/index.html\");\n        String filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());\n        Assert.assertEquals(null, filterResult);\n\n        targetURL = new URL(\"http://www.sourcedomain.com/a/b/a/index.html\");\n        filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());\n        Assert.assertEquals(targetURL.toExternalForm(), filterResult);\n    }\n\n    @Test\n    public void testLength() throws MalformedURLException {\n        URLFilter filter = createFilter(32, -1);\n        Metadata metadata = new Metadata();\n\n        URL targetURL = new URL(\"http://www.sourcedomain.com/a/a/a/index.html\");\n        String filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());\n        Assert.assertEquals(null, filterResult);\n\n        targetURL = new URL(\"http://www.sourcedomain.com/\");\n        filterResult = filter.filter(targetURL, metadata, targetURL.toExternalForm());\n        Assert.assertEquals(targetURL.toExternalForm(), filterResult);\n    }\n}"

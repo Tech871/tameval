@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21"
+
+[repo_info]
+repository = "zeromicro/go-zero"
+sha = "6edfce63e396883d83ee74ceba2e0d9d11f0626d"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out rest/handler/authhandler.go rest/handler/authhandler_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting rest/handler/authhandler.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 85.0
+original_coverage = 85.0
+mutation_kill_rate = 17.0
+original_mutation_kill_rate = 17.0
+covered_lines = [ 44, 45, 46, 47, 48, 50, 51, 52, 53, 54, 55, 56, 57, 64, 70, 71, 72, 73, 75, 76, 80, 86, 87, 88, 89, 93, 94, 95, 96, 99, 100, 101, 102, 103, 105, 106, 107, 108, 109, 110, 111, 112, 115, 116, 117, 120,]
+missed_lines = [ 59, 60, 61, 62, 65, 66, 67, 68,]
+
+[input_info]
+test_file_path = "rest/handler/authhandler_test.go"
+focal_file_path = "rest/handler/authhandler.go"
+test_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/rest/handler/authhandler_test.go"
+focal_file_url = "https://github.com/zeromicro/go-zero/blob/6edfce63e396883d83ee74ceba2e0d9d11f0626d/rest/handler/authhandler.go"
+first_commit_date = "2020-07-31"
+last_commit_date = "2025-01-28"
+test_file_content = "package handler\n\nimport (\n\t\"bufio\"\n\t\"net\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/golang-jwt/jwt/v4\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestAuthHandlerFailed(t *testing.T) {\n\treq := httptest.NewRequest(http.MethodGet, \"http://localhost\", http.NoBody)\n\thandler := Authorize(\"B63F477D-BBA3-4E52-96D3-C0034C27694A\", WithUnauthorizedCallback(\n\t\tfunc(w http.ResponseWriter, r *http.Request, err error) {\n\t\t\tassert.NotNil(t, err)\n\t\t\tw.Header().Set(\"X-Test\", err.Error())\n\t\t\tw.WriteHeader(http.StatusUnauthorized)\n\t\t\t_, err = w.Write([]byte(\"content\"))\n\t\t\tassert.Nil(t, err)\n\t\t}))(\n\t\thttp.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tw.WriteHeader(http.StatusOK)\n\t\t}))\n\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusUnauthorized, resp.Code)\n}\n\nfunc TestAuthHandler(t *testing.T) {\n\tconst key = \"B63F477D-BBA3-4E52-96D3-C0034C27694A\"\n\treq := httptest.NewRequest(http.MethodGet, \"http://localhost\", http.NoBody)\n\ttoken, err := buildToken(key, map[string]any{\n\t\t\"key\": \"value\",\n\t}, 3600)\n\tassert.Nil(t, err)\n\treq.Header.Set(\"Authorization\", \"Bearer \"+token)\n\thandler := Authorize(key)(\n\t\thttp.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tw.Header().Set(\"X-Test\", \"test\")\n\t\t\t_, err := w.Write([]byte(\"content\"))\n\t\t\tassert.Nil(t, err)\n\n\t\t\tflusher, ok := w.(http.Flusher)\n\t\t\tassert.True(t, ok)\n\t\t\tflusher.Flush()\n\t\t}))\n\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusOK, resp.Code)\n\tassert.Equal(t, \"test\", resp.Header().Get(\"X-Test\"))\n\tassert.Equal(t, \"content\", resp.Body.String())\n}\n\nfunc TestAuthHandlerWithPrevSecret(t *testing.T) {\n\tconst (\n\t\tkey     = \"14F17379-EB8F-411B-8F12-6929002DCA76\"\n\t\tprevKey = \"B63F477D-BBA3-4E52-96D3-C0034C27694A\"\n\t)\n\treq := httptest.NewRequest(http.MethodGet, \"http://localhost\", http.NoBody)\n\ttoken, err := buildToken(key, map[string]any{\n\t\t\"key\": \"value\",\n\t}, 3600)\n\tassert.Nil(t, err)\n\treq.Header.Set(\"Authorization\", \"Bearer \"+token)\n\thandler := Authorize(key, WithPrevSecret(prevKey))(\n\t\thttp.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\t\tw.Header().Set(\"X-Test\", \"test\")\n\t\t\t_, err := w.Write([]byte(\"content\"))\n\t\t\tassert.Nil(t, err)\n\t\t}))\n\n\tresp := httptest.NewRecorder()\n\thandler.ServeHTTP(resp, req)\n\tassert.Equal(t, http.StatusOK, resp.Code)\n\tassert.Equal(t, \"test\", resp.Header().Get(\"X-Test\"))\n\tassert.Equal(t, \"content\", resp.Body.String())\n}\n\nfunc TestAuthHandler_NilError(t *testing.T) {\n\treq := httptest.NewRequest(http.MethodGet, \"http://localhost\", http.NoBody)\n\tresp := httptest.NewRecorder()\n\tassert.NotPanics(t, func() {\n\t\tunauthorized(resp, req, nil, nil)\n\t})\n}\n\nfunc buildToken(secretKey string, payloads map[string]any, seconds int64) (string, error) {\n\tnow := time.Now().Unix()\n\tclaims := make(jwt.MapClaims)\n\tclaims[\"exp\"] = now + seconds\n\tclaims[\"iat\"] = now\n\tfor k, v := range payloads {\n\t\tclaims[k] = v\n\t}\n\n\ttoken := jwt.New(jwt.SigningMethodHS256)\n\ttoken.Claims = claims\n\n\treturn token.SignedString([]byte(secretKey))\n}\n\ntype mockedHijackable struct {\n\t*httptest.ResponseRecorder\n}\n\nfunc (m mockedHijackable) Hijack() (net.Conn, *bufio.ReadWriter, error) {\n\treturn nil, nil, nil\n}\n"

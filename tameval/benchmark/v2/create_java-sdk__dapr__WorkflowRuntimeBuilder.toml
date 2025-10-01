@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dapr/java-sdk"
+sha = "57f6b96d60aefd07b736d747995addf0e40b95d1"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl sdk-workflows -Dtest=WorkflowRuntimeBuilderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl sdk-workflows -DtargetClasses=**.WorkflowRuntimeBuilder  -DtargetTests=**.WorkflowRuntimeBuilderTest  -DoutputFormats=XML"
+coverage_report_path = "sdk-workflows/target/jacoco-report/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "sdk-workflows/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 43.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 0.0
+covered_lines = [ 30, 33, 34, 35, 36, 43, 44, 52, 53, 59, 60, 61, 62, 63, 111, 113, 114, 115, 117, 119,]
+missed_lines = [ 56, 57, 71, 72, 73, 74, 76, 79, 80, 81, 83, 94, 95, 96, 98, 100, 130, 131, 132, 134, 136, 147, 149, 150, 151, 153, 155,]
+
+[input_info]
+test_file_path = "sdk-workflows/src/test/java/io/dapr/workflows/runtime/WorkflowRuntimeBuilderTest.java"
+focal_file_path = "sdk-workflows/src/main/java/io/dapr/workflows/runtime/WorkflowRuntimeBuilder.java"
+test_file_url = "https://github.com/dapr/java-sdk/blob/57f6b96d60aefd07b736d747995addf0e40b95d1/sdk-workflows/src/test/java/io/dapr/workflows/runtime/WorkflowRuntimeBuilderTest.java"
+focal_file_url = "https://github.com/dapr/java-sdk/blob/57f6b96d60aefd07b736d747995addf0e40b95d1/sdk-workflows/src/main/java/io/dapr/workflows/runtime/WorkflowRuntimeBuilder.java"
+first_commit_date = "2023-08-11"
+last_commit_date = "2025-02-03"
+test_file_content = "/*\n * Copyright 2024 The Dapr Authors\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *     http://www.apache.org/licenses/LICENSE-2.0\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\nlimitations under the License.\n*/\npackage io.dapr.workflows.runtime;\n\nimport io.dapr.workflows.Workflow;\nimport io.dapr.workflows.WorkflowActivity;\nimport io.dapr.workflows.WorkflowActivityContext;\nimport io.dapr.workflows.WorkflowStub;\nimport org.junit.jupiter.api.Test;\nimport org.slf4j.Logger;\n\nimport static org.junit.jupiter.api.Assertions.assertDoesNotThrow;\nimport static org.mockito.ArgumentMatchers.eq;\nimport static org.mockito.Mockito.mock;\nimport static org.mockito.Mockito.times;\nimport static org.mockito.Mockito.verify;\n\nimport java.io.ByteArrayOutputStream;\nimport java.io.PrintStream;\n\npublic class WorkflowRuntimeBuilderTest {\n  public static class TestWorkflow implements Workflow {\n    @Override\n    public WorkflowStub create() {\n      return ctx -> {\n      };\n    }\n  }\n\n  public static class TestActivity implements WorkflowActivity {\n    @Override\n    public Object run(WorkflowActivityContext ctx) {\n      return null;\n    }\n  }\n\n\n  @Test\n  public void registerValidWorkflowInstance() {\n    assertDoesNotThrow(() -> new WorkflowRuntimeBuilder().registerWorkflow(new TestWorkflow()));\n  }\n\n\n\n\n\n}\n"

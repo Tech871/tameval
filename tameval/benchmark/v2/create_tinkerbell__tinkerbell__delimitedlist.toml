@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "tinkerbell/tinkerbell"
+sha = "702865f012a2ed3cafbe215976ebdfc7b5c3d072"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/flag/delimitedlist/delimitedlist.go pkg/flag/delimitedlist/delimitedlist_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/flag/delimitedlist/delimitedlist.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 85.0
+original_coverage = 100.0
+mutation_kill_rate = 50.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 13, 14, 15, 18, 19, 20, 23, 24, 25, 28, 29, 30, 31, 32, 33, 37, 41,]
+missed_lines = [ 38, 39, 40,]
+
+[input_info]
+test_file_path = "pkg/flag/delimitedlist/delimitedlist_test.go"
+focal_file_path = "pkg/flag/delimitedlist/delimitedlist.go"
+test_file_url = "https://github.com/tinkerbell/tinkerbell/blob/702865f012a2ed3cafbe215976ebdfc7b5c3d072/pkg/flag/delimitedlist/delimitedlist_test.go"
+focal_file_url = "https://github.com/tinkerbell/tinkerbell/blob/702865f012a2ed3cafbe215976ebdfc7b5c3d072/pkg/flag/delimitedlist/delimitedlist.go"
+first_commit_date = "2025-05-14"
+last_commit_date = "2025-05-14"
+test_file_content = "package delimitedlist\n\nimport (\n\t\"testing\"\n\n\t\"github.com/google/go-cmp/cmp\"\n)\n\nfunc TestSpaceList(t *testing.T) {\n\ttests := map[string]struct {\n\t\tinput    string\n\t\twant     []string\n\t\tsource   string // \"Set\", \"FromEnv\", or \"FromFile\"\n\t\twantStr  string\n\t\tinitWith []string // initial values if any\n\t}{\n\t\t\"single value\": {\n\t\t\tinput:   \"value1\",\n\t\t\twant:    []string{\"value1\"},\n\t\t\tsource:  \"Set\",\n\t\t\twantStr: \"value1\",\n\t\t},\n\t\t\"multiple values\": {\n\t\t\tinput:   \"value1 value2 value3\",\n\t\t\twant:    []string{\"value1\", \"value2\", \"value3\"},\n\t\t\tsource:  \"Set\",\n\t\t\twantStr: \"value1 value2 value3\",\n\t\t},\n\t\t\"multiple values with extra spaces\": {\n\t\t\tinput:   \"  value1   value2    value3  \",\n\t\t\twant:    []string{\"value1\", \"value2\", \"value3\"},\n\t\t\tsource:  \"Set\",\n\t\t\twantStr: \"value1 value2 value3\",\n\t\t},\n\t\t\"from environment\": {\n\t\t\tinput:   \"env1 env2\",\n\t\t\twant:    []string{\"env1\", \"env2\"},\n\t\t\tsource:  \"FromEnv\",\n\t\t\twantStr: \"env1 env2\",\n\t\t},\n\t\t\"from file\": {\n\t\t\tinput:   \"file1 file2\",\n\t\t\twant:    []string{\"file1\", \"file2\"},\n\t\t\tsource:  \"FromFile\",\n\t\t\twantStr: \"file1 file2\",\n\t\t},\n\t\t\"append to existing values\": {\n\t\t\tinput:    \"value3 value4\",\n\t\t\tinitWith: []string{\"value1\", \"value2\"},\n\t\t\twant:     []string{\"value1\", \"value2\", \"value3\", \"value4\"},\n\t\t\tsource:   \"Set\",\n\t\t\twantStr:  \"value1 value2 value3 value4\",\n\t\t},\n\t\t\"empty input\": {\n\t\t\tinput:   \"\",\n\t\t\twant:    nil,\n\t\t\tsource:  \"Set\",\n\t\t\twantStr: \"\",\n\t\t},\n\t}\n\n\tfor name, tt := range tests {\n\t\tt.Run(name, func(t *testing.T) {\n\t\t\tvar target []string\n\t\t\tif tt.initWith != nil {\n\t\t\t\ttarget = append(target, tt.initWith...)\n\t\t\t}\n\n\t\t\tv := New(&target, ' ')\n\n\t\t\tvar err error\n\t\t\tswitch tt.source {\n\t\t\tcase \"FromEnv\":\n\t\t\t\terr = v.FromEnv(tt.input)\n\t\t\tcase \"FromFile\":\n\t\t\t\terr = v.FromFile(tt.input)\n\t\t\tdefault:\n\t\t\t\terr = v.Set(tt.input)\n\t\t\t}\n\n\t\t\tif err != nil {\n\t\t\t\tt.Errorf(\"unexpected error: %v\", err)\n\t\t\t}\n\n\t\t\tif diff := cmp.Diff(target, tt.want); diff != \"\" {\n\t\t\t\tt.Errorf(\"values mismatch (-got +want):\\n%s\", diff)\n\t\t\t}\n\n\t\t\tif diff := cmp.Diff(v.String(), tt.wantStr); diff != \"\" {\n\t\t\t\tt.Errorf(\"String() mismatch (-got +want):\\n%s\", diff)\n\t\t\t}\n\t\t})\n\t}\n}\n"

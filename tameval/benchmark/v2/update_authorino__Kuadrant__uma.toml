@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.8"
+
+[repo_info]
+repository = "Kuadrant/authorino"
+sha = "21d456d60269371848937208af54a83145957450"
+
+[run_info]
+docker_image = "golang:1.23.8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/evaluators/metadata/uma.go pkg/evaluators/metadata/uma_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/evaluators/metadata/uma.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 68.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 46.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/evaluators/metadata/uma_test.go"
+focal_file_path = "pkg/evaluators/metadata/uma.go"
+test_file_url = "https://github.com/Kuadrant/authorino/blob/21d456d60269371848937208af54a83145957450/pkg/evaluators/metadata/uma_test.go"
+focal_file_url = "https://github.com/Kuadrant/authorino/blob/21d456d60269371848937208af54a83145957450/pkg/evaluators/metadata/uma.go"
+first_commit_date = "2022-03-28"
+last_commit_date = "2025-06-17"
+test_file_content = "package metadata\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"testing\"\n\n\tmock_auth \"github.com/kuadrant/authorino/pkg/auth/mocks\"\n\t\"github.com/kuadrant/authorino/pkg/httptest\"\n\n\tenvoy_auth \"github.com/envoyproxy/go-control-plane/envoy/service/auth/v3\"\n\t\"github.com/golang/mock/gomock\"\n\t\"gotest.tools/assert\"\n)\n\ntype UMATest struct{}\n\nconst (\n\tumaServerHost = \"127.0.0.1:9003\"\n)\n\nvar (\n\tumaIssuer          = fmt.Sprintf(\"http://%v/uma\", umaServerHost)\n\tumaWellKnownConfig = fmt.Sprintf(`{\n\t\t\"issuer\": \"%v\",\n\t\t\"token_endpoint\": \"%v/pat\",\n\t\t\"resource_registration_endpoint\": \"%v/resource_set\"\n\t}`, umaIssuer, umaIssuer, umaIssuer)\n)\n\nfunc TestNewUMAMetadata(t *testing.T) {\n\thttpServer := httptest.NewHttpServerMock(umaServerHost, map[string]httptest.HttpServerMockResponseFunc{\n\t\t\"/uma/.well-known/uma2-configuration\": func() httptest.HttpServerMockResponse {\n\t\t\treturn httptest.HttpServerMockResponse{Status: 200, Body: umaWellKnownConfig}\n\t\t},\n\t})\n\tdefer httpServer.Close()\n\n\tuma, err := NewUMAMetadata(umaIssuer, \"client-id\", \"client-secret\")\n\n\tassert.NilError(t, err)\n\tassert.Equal(t, umaIssuer, uma.provider.issuer)\n}\n\nfunc TestUMAMetadataFailToDecodeConfig(t *testing.T) {\n\thttpServer := httptest.NewHttpServerMock(umaServerHost, map[string]httptest.HttpServerMockResponseFunc{\n\t\t\"/uma/.well-known/uma2-configuration\": func() httptest.HttpServerMockResponse { return httptest.HttpServerMockResponse{Status: 500} },\n\t})\n\tdefer httpServer.Close()\n\n\tuma, err := NewUMAMetadata(umaIssuer, \"client-id\", \"client-secret\")\n\n\tassert.ErrorContains(t, err, \"failed to decode uma provider discovery object\")\n\tassert.Check(t, uma == nil)\n}\n\nfunc TestUMACall(t *testing.T) {\n\tjsonResponse := func(body string) httptest.HttpServerMockResponseFunc {\n\t\treturn func() httptest.HttpServerMockResponse {\n\t\t\treturn httptest.HttpServerMockResponse{Status: 200, Headers: map[string]string{\"Context-Type\": \"application/json\"}, Body: body}\n\t\t}\n\t}\n\n\tresourceData := `{\"_id\":\"44f93c94-a8d0-4b33-8188-8173e86844d2\",\"name\":\"some-resource\",\"uris\":[\"/someresource\"]}`\n\thttpServer := httptest.NewHttpServerMock(umaServerHost, map[string]httptest.HttpServerMockResponseFunc{\n\t\t\"/uma/.well-known/uma2-configuration\":                    jsonResponse(umaWellKnownConfig),\n\t\t\"/uma/pat\":                                               jsonResponse(`{\"some-pat-claim\": \"some-value\"}`),\n\t\t\"/uma/resource_set?uri=/someresource\":                    jsonResponse(`[\"44f93c94-a8d0-4b33-8188-8173e86844d2\"]`),\n\t\t\"/uma/resource_set/44f93c94-a8d0-4b33-8188-8173e86844d2\": jsonResponse(resourceData),\n\t})\n\tdefer httpServer.Close()\n\n\tctrl := gomock.NewController(t)\n\tdefer ctrl.Finish()\n\n\tpipelineMock := mock_auth.NewMockAuthPipeline(ctrl)\n\trequest := &envoy_auth.AttributeContext_HttpRequest{Path: \"/someresource\"}\n\tpipelineMock.EXPECT().GetHttp().Return(request)\n\n\tuma, _ := NewUMAMetadata(umaIssuer, \"client-id\", \"client-secret\")\n\n\tobj, err := uma.Call(pipelineMock, context.TODO())\n\n\tdata, _ := json.Marshal(obj)\n\tassert.Equal(t, \"[\"+resourceData+\"]\", string(data))\n\tassert.NilError(t, err)\n}"

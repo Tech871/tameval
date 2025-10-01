@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "microsphere-projects/microsphere-java"
+sha = "b4576dbd7bad0fe918d235617d466ccd5434cc66"
+bench_version = 1
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl microsphere-java-core -Dtest=FunctionalTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl microsphere-java-core -DtargetClasses=**.Functional  -DtargetTests=**.FunctionalTest  -DoutputFormats=XML"
+coverage_report_path = "microsphere-java-core/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "microsphere-java-core/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 88.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 40, 42, 43, 44, 45, 48, 49, 51, 52, 53, 55, 59, 60, 62, 63, 67, 68, 70, 71, 74, 91, 99,]
+missed_lines = [ 79, 87, 95,]
+
+[input_info]
+test_file_path = "microsphere-java-core/src/test/java/io/microsphere/util/FunctionalTest.java"
+focal_file_path = "microsphere-java-core/src/main/java/io/microsphere/util/Functional.java"
+test_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/b4576dbd7bad0fe918d235617d466ccd5434cc66/microsphere-java-core/src/test/java/io/microsphere/util/FunctionalTest.java"
+focal_file_url = "https://github.com/microsphere-projects/microsphere-java/blob/b4576dbd7bad0fe918d235617d466ccd5434cc66/microsphere-java-core/src/main/java/io/microsphere/util/Functional.java"
+first_commit_date = "2024-06-22"
+last_commit_date = "2025-03-18"
+test_file_content = "/*\n * Licensed to the Apache Software Foundation (ASF) under one or more\n * contributor license agreements.  See the NOTICE file distributed with\n * this work for additional information regarding copyright ownership.\n * The ASF licenses this file to You under the Apache License, Version 2.0\n * (the \"License\"); you may not use this file except in compliance with\n * the License.  You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage io.microsphere.util;\n\nimport org.junit.jupiter.api.Test;\n\nimport static io.microsphere.util.Functional.value;\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\n/**\n * {@link Functional} Test\n *\n * @author <a href=\"mailto:mercyblitz@gmail.com\">Mercy<a/>\n * @see Functional\n * @since 1.0.0\n */\npublic class FunctionalTest {\n\n    private ValueHolder<Object> valueHolder = new ValueHolder();\n\n    @Test\n    public void test() {\n\n        assertValue(value(1).on(v -> v > 0), 1);\n\n        assertValue(value(1).on(v -> v > 0).as(String::valueOf), \"1\");\n\n        assertValue(value(1).on(v -> v < 0), null);\n\n        assertValue(value(1).on(v -> v < 0).on(v -> v > 0), null);\n\n        assertValue(value(1).on(v -> v < 0).as(String::valueOf), null);\n\n        assertValue(value(1).on(v -> v < 0).as(String::valueOf).as(Integer::new), null);\n\n    }\n\n    private <T> void assertValue(Functional<T> functional, T expected) {\n        functional.apply(valueHolder::setValue);\n        assertEquals(expected, valueHolder.getValue());\n        valueHolder.reset();\n    }\n\n}"

@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "ProtonMail/proton-bridge"
+sha = "42605c1923d73f0989027dce4a36c3681206f436"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/cookies/jar.go internal/cookies/jar_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/cookies/jar.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 79.0
+original_coverage = 79.0
+mutation_kill_rate = 34.0
+original_mutation_kill_rate = 59.0
+covered_lines = [ 46, 47, 52, 53, 58, 61, 62, 63, 64, 65, 66, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 81, 84, 85, 86, 87, 88, 89, 92, 93, 94, 95, 96, 101, 105, 106, 111, 112, 113, 115, 116, 121, 122, 123, 124, 127, 131, 132, 133, 134, 135, 136, 137, 140,]
+missed_lines = [ 48, 49, 50, 54, 55, 97, 98, 99, 107, 108, 109, 117, 118, 119,]
+
+[input_info]
+test_file_path = "internal/cookies/jar_test.go"
+focal_file_path = "internal/cookies/jar.go"
+test_file_url = "https://github.com/ProtonMail/proton-bridge/blob/42605c1923d73f0989027dce4a36c3681206f436/internal/cookies/jar_test.go"
+focal_file_url = "https://github.com/ProtonMail/proton-bridge/blob/42605c1923d73f0989027dce4a36c3681206f436/internal/cookies/jar.go"
+first_commit_date = "2020-08-12"
+last_commit_date = "2025-01-02"
+test_file_content = "// Copyright (c) 2025 Proton AG\n//\n// This file is part of Proton Mail Bridge.\n//\n// Proton Mail Bridge is free software: you can redistribute it and/or modify\n// it under the terms of the GNU General Public License as published by\n// the Free Software Foundation, either version 3 of the License, or\n// (at your option) any later version.\n//\n// Proton Mail Bridge is distributed in the hope that it will be useful,\n// but WITHOUT ANY WARRANTY; without even the implied warranty of\n// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n// GNU General Public License for more details.\n//\n// You should have received a copy of the GNU General Public License\n// along with Proton Mail Bridge. If not, see <https://www.gnu.org/licenses/>.\n\npackage cookies\n\nimport (\n\t\"errors\"\n\t\"io/fs\"\n\t\"net/http\"\n\t\"net/http/cookiejar\"\n\t\"net/http/httptest\"\n\t\"os\"\n\t\"path/filepath\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\n\nfunc TestJarLoad(t *testing.T) {\n\tts := getTestServer(t, []testCookie{\n\t\t{\"TestName1\", \"TestValue1\", 3600},\n\t\t{\"TestName2\", \"TestValue2\", 3600},\n\t\t{\"TestName3\", \"TestValue3\", 3600},\n\t})\n\tdefer ts.Close()\n\n\t// This will be our \"persistent storage\" from which the cookie jar should load cookies.\n\ts := newTestPersister(t)\n\n\t// This client saves cookies to persistent storage.\n\toldClient, jar := getClientWithJar(t, s)\n\n\t// Hit a server that sets some cookies.\n\tsetRes, err := oldClient.Get(ts.URL + \"/set\")\n\tif err != nil {\n\t\tt.FailNow()\n\t}\n\trequire.NoError(t, setRes.Body.Close())\n\n\t// Save the cookies.\n\trequire.NoError(t, jar.PersistCookies())\n\n\t// This client loads cookies from persistent storage.\n\tnewClient, _ := getClientWithJar(t, s)\n\n\t// Hit a server that checks the cookies are there.\n\tgetRes, err := newClient.Get(ts.URL + \"/get\")\n\tif err != nil {\n\t\tt.FailNow()\n\t}\n\trequire.NoError(t, getRes.Body.Close())\n}\n\n\ntype testCookie struct {\n\tname, value string\n\tmaxAge      int\n}\n\nfunc getClientWithJar(t *testing.T, persister Persister) (*http.Client, *Jar) {\n\tjar, err := cookiejar.New(nil)\n\trequire.NoError(t, err)\n\n\twrapper, err := NewCookieJar(jar, persister)\n\trequire.NoError(t, err)\n\n\treturn &http.Client{Jar: wrapper}, wrapper\n}\n\nfunc getTestServer(t *testing.T, wantCookies []testCookie) *httptest.Server {\n\tmux := http.NewServeMux()\n\n\tmux.HandleFunc(\"/set\", http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {\n\t\tfor _, cookie := range wantCookies {\n\t\t\thttp.SetCookie(w, &http.Cookie{\n\t\t\t\tName:   cookie.name,\n\t\t\t\tValue:  cookie.value,\n\t\t\t\tMaxAge: cookie.maxAge,\n\t\t\t})\n\t\t}\n\n\t\tw.WriteHeader(http.StatusOK)\n\t}))\n\n\tmux.HandleFunc(\"/get\", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {\n\t\trequire.Len(t, r.Cookies(), len(wantCookies))\n\n\t\tfor k, v := range r.Cookies() {\n\t\t\tassert.Equal(t, wantCookies[k].name, v.Name)\n\t\t\tassert.Equal(t, wantCookies[k].value, v.Value)\n\t\t}\n\n\t\tw.WriteHeader(http.StatusOK)\n\t}))\n\n\treturn httptest.NewServer(mux)\n}\n\ntype testPersister struct {\n\tpath string\n}\n\nfunc newTestPersister(tb testing.TB) *testPersister {\n\tpath := filepath.Join(tb.TempDir(), \"cookies.json\")\n\n\tif _, err := os.Stat(path); errors.Is(err, fs.ErrNotExist) {\n\t\tif err := os.WriteFile(path, []byte{}, 0o600); err != nil {\n\t\t\tpanic(err)\n\t\t}\n\t}\n\n\treturn &testPersister{path: path}\n}\n\nfunc (p *testPersister) GetCookies() ([]byte, error) {\n\treturn os.ReadFile(p.path)\n}\n\nfunc (p *testPersister) SetCookies(rawCookies []byte) error {\n\treturn os.WriteFile(p.path, rawCookies, 0o600)\n}\n"

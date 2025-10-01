@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.7"
+
+[repo_info]
+repository = "leptonai/gpud"
+sha = "1763d902486568b8db164ef3f832841ede2fd8de"
+bench_version = 1
+
+[run_info]
+docker_image = "golang:1.23.7"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out components/accelerator/nvidia/infiniband/dmesg_watcher.go components/accelerator/nvidia/infiniband/dmesg_watcher_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting components/accelerator/nvidia/infiniband/dmesg_watcher.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 45.0
+original_coverage = 100.0
+mutation_kill_rate = 50.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 35, 36, 37, 38, 39, 44, 45, 46, 47, 48,]
+missed_lines = [ 51, 52, 53, 54, 55, 57, 67, 68, 69, 70, 71, 72,]
+
+[input_info]
+test_file_path = "components/accelerator/nvidia/infiniband/dmesg_watcher_test.go"
+focal_file_path = "components/accelerator/nvidia/infiniband/dmesg_watcher.go"
+test_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/components/accelerator/nvidia/infiniband/dmesg_watcher_test.go"
+focal_file_url = "https://github.com/leptonai/gpud/blob/1763d902486568b8db164ef3f832841ede2fd8de/components/accelerator/nvidia/infiniband/dmesg_watcher.go"
+first_commit_date = "2025-02-28"
+last_commit_date = "2025-02-28"
+test_file_content = "package infiniband\n\nimport \"testing\"\n\n\n\n\n// Edge cases and special patterns\nfunc TestEdgeCases(t *testing.T) {\n\tt.Run(\"PCI power with different wattage formats\", func(t *testing.T) {\n\t\ttests := []struct {\n\t\t\tline string\n\t\t\twant bool\n\t\t}{\n\t\t\t{line: \"mlx5_core: Detected insufficient power on the PCIe slot (1W).\", want: true},\n\t\t\t{line: \"mlx5_core: Detected insufficient power on the PCIe slot (999W).\", want: true},\n\t\t\t{line: \"mlx5_core: Detected insufficient power on the PCIe slot (0W).\", want: true},\n\t\t\t// Should not match - invalid format\n\t\t\t{line: \"mlx5_core: Detected insufficient power on the PCIe slot (W).\", want: false},\n\t\t\t{line: \"mlx5_core: Detected insufficient power on the PCIe slot (27.5W).\", want: false},\n\t\t\t{line: \"mlx5_core: Detected insufficient power on the PCIe slot (27 W).\", want: false},\n\t\t}\n\n\t\tfor _, tt := range tests {\n\t\t\tif got := HasPCIPowerInsufficient(tt.line); got != tt.want {\n\t\t\t\tt.Errorf(\"HasPCIPowerInsufficient(%q) = %v, want %v\", tt.line, got, tt.want)\n\t\t\t}\n\t\t}\n\t})\n\n\tt.Run(\"High temperature with different patterns\", func(t *testing.T) {\n\t\ttests := []struct {\n\t\t\tline string\n\t\t\twant bool\n\t\t}{\n\t\t\t{line: \"Port module event: High Temperature alert detected\", want: true},\n\t\t\t{line: \"Port module event[error]: Severe High Temperature\", want: true},\n\t\t\t{line: \"Port module event - module 0: High Temperature warning\", want: true},\n\t\t\t// Should not match\n\t\t\t{line: \"Port module event: Temperature normal\", want: false},\n\t\t\t{line: \"High Temperature detected but not in a port module event\", want: false},\n\t\t}\n\n\t\tfor _, tt := range tests {\n\t\t\tif got := HasPortModuleHighTemperature(tt.line); got != tt.want {\n\t\t\t\tt.Errorf(\"HasPortModuleHighTemperature(%q) = %v, want %v\", tt.line, got, tt.want)\n\t\t\t}\n\t\t}\n\t})\n}\n"

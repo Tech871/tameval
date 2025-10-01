@@ -1,0 +1,44 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "youtype/mypy_boto3_builder"
+sha = "11d3850cb622dac08b62c07d4272002124855e83"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.mkdocs.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=mypy_boto3_builder/type_annotations/type_annotation.py -m pytest -q --junit-xml=test_output.xml tests/type_annotations/test_type_annotation.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target mypy_boto3_builder.type_annotations.type_annotation --unit-test tests.type_annotations.test_type_annotation --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target mypy_boto3_builder/type_annotations/type_annotation.py --unit-test tests/type_annotations/test_type_annotation.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 94.0
+original_coverage = 94.0
+mutation_kill_rate = 85.0
+original_mutation_kill_rate = 85.0
+covered_lines = [ 6, 7, 9, 10, 11, 12, 13, 14, 17, 26, 75, 83, 84, 85, 87, 89, 96, 98, 102, 104, 108, 109, 110, 111, 112, 114, 120, 126, 130,]
+missed_lines = [ 118, 124,]
+
+[input_info]
+test_file_path = "tests/type_annotations/test_type_annotation.py"
+focal_file_path = "mypy_boto3_builder/type_annotations/type_annotation.py"
+test_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/tests/type_annotations/test_type_annotation.py"
+focal_file_url = "https://github.com/youtype/mypy_boto3_builder/blob/11d3850cb622dac08b62c07d4272002124855e83/mypy_boto3_builder/type_annotations/type_annotation.py"
+first_commit_date = "2020-01-23"
+last_commit_date = "2025-05-28"
+test_file_content = "import pytest\n\nfrom mypy_boto3_builder.exceptions import TypeAnnotationError\nfrom mypy_boto3_builder.type_annotations.type import Type\nfrom mypy_boto3_builder.type_annotations.type_annotation import TypeAnnotation\n\n\nclass TestTypeAnnotation:\n    def setup_method(self) -> None:\n        self.any = TypeAnnotation(\"Any\")\n\n    def test_init(self) -> None:\n        assert self.any.get_import_name() == \"Any\"\n        assert hash(self.any)\n\n        with pytest.raises(TypeAnnotationError):\n            TypeAnnotation(\"str\")\n\n    def test_render(self) -> None:\n        assert self.any.render() == \"Any\"\n\n    def test_get_import_name(self) -> None:\n        assert self.any.get_import_name() == \"Any\"\n\n    def test_get_import_record(self) -> None:\n        import_records = sorted(self.any.get_import_records())\n        assert len(import_records) == 1\n        assert import_records[0].render() == \"from typing import Any\"\n\n    def test_get_import_records(self) -> None:\n        result = sorted(self.any.get_import_records())\n        assert len(result) == 1\n        assert result[0].render() == \"from typing import Any\"\n\n        result = sorted(TypeAnnotation(\"Literal\").get_import_records())\n        assert len(result) == 1\n        assert result[0].render() == \"from typing import Literal\"\n\n        result = sorted(Type.DictStrAny.get_import_records())\n        assert len(result) == 1\n        assert result[0].render() == \"from typing import Any\"\n\n    def test_copy(self) -> None:\n        assert self.any.copy().get_import_name() == \"Any\"\n\n    def test_no_fallback(self) -> None:\n        sample = TypeAnnotation(\"overload\")\n        import_records = sorted(sample.get_import_records())\n        assert len(import_records) == 1\n        assert import_records[0].render() == \"from typing import overload\"\n        assert import_records[0].fallback is None\n\n    def test_fallback(self) -> None:\n        sample = TypeAnnotation(\"NotRequired\")\n        assert sample.render() == \"NotRequired\"\n        import_records = sorted(sample.get_import_records())\n        assert len(import_records) == 1\n        assert import_records[0].render() == \"from typing import NotRequired\"\n\n        fallback = import_records[0].fallback\n        assert fallback is not None\n        assert fallback.render() == \"from typing_extensions import NotRequired\"\n"

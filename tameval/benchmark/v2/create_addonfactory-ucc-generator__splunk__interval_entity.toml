@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "splunk/addonfactory-ucc-generator"
+sha = "0ceda52ad4ba2548071b64914a75aae987787a86"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=splunk_add_on_ucc_framework/entity/interval_entity.py -m pytest -q --junit-xml=test_output.xml tests/unit/entity/test_interval_entity.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target splunk_add_on_ucc_framework.entity.interval_entity --unit-test tests.unit.entity.test_interval_entity --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target splunk_add_on_ucc_framework/entity/interval_entity.py --unit-test tests/unit/entity/test_interval_entity.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 92.0
+original_coverage = 100.0
+mutation_kill_rate = 96.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 15, 17, 19, 28, 29, 30, 32, 33, 46, 47, 49, 50, 51, 59, 60, 61, 63, 65, 66, 67, 70, 73, 74, 76, 78, 81, 87, 88, 89, 91, 92, 93, 94, 96,]
+missed_lines = [ 68, 71, 79,]
+
+[input_info]
+test_file_path = "tests/unit/entity/test_interval_entity.py"
+focal_file_path = "splunk_add_on_ucc_framework/entity/interval_entity.py"
+test_file_url = "https://github.com/splunk/addonfactory-ucc-generator/blob/0ceda52ad4ba2548071b64914a75aae987787a86/tests/unit/entity/test_interval_entity.py"
+focal_file_url = "https://github.com/splunk/addonfactory-ucc-generator/blob/0ceda52ad4ba2548071b64914a75aae987787a86/splunk_add_on_ucc_framework/entity/interval_entity.py"
+first_commit_date = "2024-05-20"
+last_commit_date = "2025-01-03"
+test_file_content = "from splunk_add_on_ucc_framework.entity import IntervalEntity\n\nfrom splunk_add_on_ucc_framework.entity.interval_entity import CRON_REGEX\n\n\n\n\n\n\n\n\ndef test_interval_migration_with_range():\n    definition = {\n        \"field\": \"interval\",\n        \"label\": \"Interval\",\n        \"type\": \"text\",\n        \"defaultValue\": 15,\n        \"help\": \"Some help\",\n        \"tooltip\": \"Some tooltip\",\n        \"required\": True,\n        \"validators\": [\n            {\n                \"errorMsg\": \"Interval must be either a non-negative number, CRON interval or -1.\",\n                \"pattern\": CRON_REGEX,\n                \"type\": \"regex\",\n            },\n            {\n                \"errorMsg\": \"Interval must be between 10 and 20\",\n                \"range\": [10, 20],\n                \"type\": \"number\",\n            },\n        ],\n    }\n\n    expected_definition = {\n        \"type\": \"interval\",\n        \"field\": \"interval\",\n        \"label\": \"Interval\",\n        \"required\": True,\n        \"defaultValue\": 15,\n        \"help\": \"Some help\",\n        \"tooltip\": \"Some tooltip\",\n        \"options\": {\n            \"range\": [10, 20],\n        },\n    }\n\n    entity = IntervalEntity.from_definition(definition)\n    assert entity == expected_definition\n    assert entity.long_form() == definition\n    assert entity.short_form() == expected_definition\n\n\n\n\ndef test_interval_migration_wrong_field():\n    definition = {\n        \"type\": \"text\",\n        \"field\": \"other_field\",\n        \"label\": \"Other field\",\n        \"validators\": [\n            {\n                \"errorMsg\": \"Other field must be either a non-negative number, CRON interval or -1.\",\n                \"pattern\": CRON_REGEX,\n                \"type\": \"regex\",\n            },\n        ],\n    }\n    assert IntervalEntity.from_definition(definition) is None\n"

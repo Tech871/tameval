@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.10"
+
+[repo_info]
+repository = "newrelic/newrelic-lambda-extension"
+sha = "45eb88862006c0bc3bab29bcac568f18d51e4c05"
+
+[run_info]
+docker_image = "golang:1.23.10"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out apm/metric_api.go apm/metric_api_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting apm/metric_api.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 24.0
+original_coverage = 73.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = 69.0
+covered_lines = [ 50, 51, 52, 53, 54, 56, 57, 58, 59, 60, 61, 62, 63, 64, 66, 69, 70, 71, 72, 73, 76, 80, 84, 88, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 108,]
+missed_lines = [ 77, 78, 79, 81, 82, 83, 85, 86, 87, 89, 90, 91, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 155, 156, 157, 160, 161, 162, 163, 164, 165, 166, 167, 168, 170, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 181, 183, 186, 187, 188, 189, 191, 192, 193, 195, 198, 199, 200, 201, 202, 203, 204, 205, 206, 207, 208, 209, 210, 211, 212, 213, 214, 215, 216, 217, 218, 219, 220, 221, 222, 223, 224, 225, 226, 227, 228,]
+
+[input_info]
+test_file_path = "apm/metric_api_test.go"
+focal_file_path = "apm/metric_api.go"
+test_file_url = "https://github.com/newrelic/newrelic-lambda-extension/blob/45eb88862006c0bc3bab29bcac568f18d51e4c05/apm/metric_api_test.go"
+focal_file_url = "https://github.com/newrelic/newrelic-lambda-extension/blob/45eb88862006c0bc3bab29bcac568f18d51e4c05/apm/metric_api.go"
+first_commit_date = "2025-06-06"
+last_commit_date = "2025-06-06"
+test_file_content = "package apm\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\nfunc TestParseLambdaReportLog(t *testing.T) {\n\ttests := []struct {\n\t\tname      string\n\t\tlogLine   string\n\t\twant      *LambdaMetrics\n\t\twantError bool\n\t}{\n\t\t{\n\t\t\tname:    \"Standard Report Log\",\n\t\t\tlogLine: \"RequestId: abc123 Duration: 123.45 ms Billed Duration: 200 ms Memory Size: 128 MB Max Memory Used: 64 MB\",\n\t\t\twant: &LambdaMetrics{\n\t\t\t\tRequestID:      \"abc123\",\n\t\t\t\tDuration:       123.45,\n\t\t\t\tBilledDuration: 200,\n\t\t\t\tMemorySize:     128,\n\t\t\t\tMaxMemoryUsed:  64,\n\t\t\t\tInitDuration:   nil,\n\t\t\t},\n\t\t\twantError: false,\n\t\t},\n\t\t{\n\t\t\tname:    \"Report Log With Init Duration\",\n\t\t\tlogLine: \"RequestId: abc123 Duration: 50.5 ms Billed Duration: 100 ms Memory Size: 256 MB Max Memory Used: 128 MB Init Duration: 250.00 ms\",\n\t\t\twant: &LambdaMetrics{\n\t\t\t\tRequestID:      \"abc123\",\n\t\t\t\tDuration:       50.5,\n\t\t\t\tBilledDuration: 100,\n\t\t\t\tMemorySize:     256,\n\t\t\t\tMaxMemoryUsed:  128,\n\t\t\t\tInitDuration:   func() *float64 { v := 250.00; return &v }(),\n\t\t\t},\n\t\t\twantError: false,\n\t\t},\n\t\t{\n\t\t\tname:      \"Malformed Log Line\",\n\t\t\tlogLine:   \"Not a valid report log\",\n\t\t\twant:      nil,\n\t\t\twantError: true,\n\t\t},\n\t\t{\n\t\t\tname:    \"Report Log With Zero Values\",\n\t\t\tlogLine: \"RequestId: xyz789 Duration: 0 ms Billed Duration: 0 ms Memory Size: 0 MB Max Memory Used: 0 MB\",\n\t\t\twant: &LambdaMetrics{\n\t\t\t\tRequestID:      \"xyz789\",\n\t\t\t\tDuration:       0,\n\t\t\t\tBilledDuration: 0,\n\t\t\t\tMemorySize:     0,\n\t\t\t\tMaxMemoryUsed:  0,\n\t\t\t\tInitDuration:   nil,\n\t\t\t},\n\t\t\twantError: false,\n\t\t},\n\t\t{\n\t\t\tname:    \"Report Log With Fault Fallback\",\n\t\t\tlogLine: \"RequestId: 123abc Status: Error ErrorType: Timeout\",\n\t\t\twant: &LambdaMetrics{\n\t\t\t\tRequestID: \"123abc\",\n\t\t\t\tError:     \"Error\",\n\t\t\t\tErrorType: \"Timeout\",\n\t\t\t},\n\t\t\twantError: false,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgot, err := ParseLambdaReportLog(tt.logLine)\n\t\t\tif tt.wantError {\n\t\t\t\tassert.Error(t, err)\n\t\t\t\tassert.Nil(t, got)\n\t\t\t} else {\n\t\t\t\tassert.NoError(t, err)\n\t\t\t\tassert.NotNil(t, got)\n\t\t\t\tassert.Equal(t, tt.want.RequestID, got.RequestID)\n\t\t\t\tassert.Equal(t, tt.want.Duration, got.Duration)\n\t\t\t\tassert.Equal(t, tt.want.BilledDuration, got.BilledDuration)\n\t\t\t\tassert.Equal(t, tt.want.MemorySize, got.MemorySize)\n\t\t\t\tassert.Equal(t, tt.want.MaxMemoryUsed, got.MaxMemoryUsed)\n\t\t\t\tif tt.want.InitDuration != nil {\n\t\t\t\t\tassert.NotNil(t, got.InitDuration)\n\t\t\t\t\tassert.InDelta(t, *tt.want.InitDuration, *got.InitDuration, 0.0001)\n\t\t\t\t} else {\n\t\t\t\t\tassert.Nil(t, got.InitDuration)\n\t\t\t\t}\n\t\t\t\tassert.Equal(t, tt.want.Error, got.Error)\n\t\t\t\tassert.Equal(t, tt.want.ErrorType, got.ErrorType)\n\t\t\t}\n\t\t})\n\t}\n}\n"

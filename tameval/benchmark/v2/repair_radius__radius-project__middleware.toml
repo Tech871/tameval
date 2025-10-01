@@ -1,0 +1,41 @@
+[meta]
+task = "repair"
+scenario = "repair_duplicate_entity"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "radius-project/radius"
+sha = "202e099e4d5cb300b34a39d5e9cc5aa2c04bda1d"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/armrpc/servicecontext/middleware.go pkg/armrpc/servicecontext/middleware_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/armrpc/servicecontext/middleware.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 86.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/armrpc/servicecontext/middleware_test.go"
+focal_file_path = "pkg/armrpc/servicecontext/middleware.go"
+test_file_url = "https://github.com/radius-project/radius/blob/202e099e4d5cb300b34a39d5e9cc5aa2c04bda1d/pkg/armrpc/servicecontext/middleware_test.go"
+focal_file_url = "https://github.com/radius-project/radius/blob/202e099e4d5cb300b34a39d5e9cc5aa2c04bda1d/pkg/armrpc/servicecontext/middleware.go"
+first_commit_date = "2022-06-07"
+last_commit_date = "2025-01-30"
+test_file_content = "/*\nCopyright 2023 The Radius Authors.\n\nLicensed under the Apache License, Version 2.0 (the \"License\");\nyou may not use this file except in compliance with the License.\nYou may obtain a copy of the License at\n\n    http:\n\nUnless required by applicable law or agreed to in writing, software\ndistributed under the License is distributed on an \"AS IS\" BASIS,\nWITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\nSee the License for the specific language governing permissions and\nlimitations under the License.\n*/\n\npackage servicecontext\n\nimport (\n\t\"context\"\n\t\"encoding/json\"\n\t\"fmt\"\n\t\"net/http\"\n\t\"net/http/httptest\"\n\t\"testing\"\n\n\t\"github.com/go-chi/chi/v5\"\n\tv1 \"github.com/radius-project/radius/pkg/armrpc/api/v1\"\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestARMRequestCtx(t *testing.T) {\n\toutOfBoundsTopParamError := v1.ErrorDetails{\n\t\tCode:    v1.CodeInvalid,\n\t\tMessage: fmt.Sprintf(\"unexpected error: %v\", v1.ErrTopQueryParamOutOfBounds),\n\t}\n\n\tinvalidTopParamError := v1.ErrorDetails{\n\t\tCode:    v1.CodeInvalid,\n\t\tMessage: \"unexpected error: strconv.Atoi: parsing \\\"xyz\\\": invalid syntax\",\n\t}\n\n\tarmRequestCtxTestCases := []struct {\n\t\tdesc string\n\t\turl  string\n\t\tcode int\n\t\tok   bool\n\t\tbody string\n\t\terr  *v1.ErrorDetails\n\t}{\n\t\t{\n\t\t\t\"get-env-success\",\n\t\t\t\"/subscriptions/00001b53-0000-0000-0000-00006235a42c/resourcegroups/radius-test-rg/providers/Applications.Core/environments/env0\",\n\t\t\thttp.StatusOK,\n\t\t\ttrue,\n\t\t\t\"00001b53-0000-0000-0000-00006235a42c\",\n\t\t\t&v1.ErrorDetails{},\n\t\t},\n\t\t{\n\t\t\t\"out-of-bounds-top-query-param\",\n\t\t\t\"/subscriptions/00001b53-0000-0000-0000-00006235a42c/resourcegroups/radius-test-rg/providers/Applications.Core/environments?top=10000\",\n\t\t\thttp.StatusBadRequest,\n\t\t\tfalse,\n\t\t\t\"\",\n\t\t\t&outOfBoundsTopParamError,\n\t\t},\n\t\t{\n\t\t\t\"bad-top-query-param\",\n\t\t\t\"/subscriptions/00001b53-0000-0000-0000-00006235a42c/resourcegroups/radius-test-rg/providers/Applications.Core/environments?top=xyz\",\n\t\t\thttp.StatusBadRequest,\n\t\t\tfalse,\n\t\t\t\"\",\n\t\t\t&invalidTopParamError,\n\t\t},\n\t}\n\n\tfor _, tt := range armRequestCtxTestCases {\n\t\tt.Run(tt.desc, func(t *testing.T) {\n\t\t\tconst testPathBase = \"/base\"\n\t\t\tw := httptest.NewRecorder()\n\t\t\tr := chi.NewRouter()\n\t\t\tr.MethodFunc(\n\t\t\t\thttp.MethodPut,\n\t\t\t\ttestPathBase+\"/subscriptions/{subscriptionID}/resourcegroups/{resourceGroup}/providers/{providerName}/{resourceType}/{resourceName}\",\n\t\t\t\tfunc(w http.ResponseWriter, r *http.Request) {\n\t\t\t\t\trpcCtx := v1.ARMRequestContextFromContext(r.Context())\n\t\t\t\t\t_, _ = w.Write([]byte(rpcCtx.ResourceID.ScopeSegments()[0].Name))\n\t\t\t\t})\n\n\t\t\thandler := ARMRequestCtx(testPathBase, v1.LocationGlobal)(r)\n\n\t\t\ttestUrl := testPathBase + tt.url\n\n\t\t\treq, err := http.NewRequestWithContext(context.Background(), http.MethodPut, testUrl, nil)\n\t\t\trequire.NoError(t, err)\n\t\t\thandler.ServeHTTP(w, req)\n\n\t\t\tassert.Equal(t, tt.code, w.Code)\n\n\t\t\tif !tt.ok {\n\t\t\t\terrResp := &v1.ErrorResponse{}\n\t\t\t\t_ = json.Unmarshal(w.Body.Bytes(), errResp)\n\t\t\t\tassert.Equal(t, tt.err, errResp.Error)\n\t\t\t} else {\n\t\t\t\tassert.Equal(t, tt.body, w.Body.String())\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc Test_ARMRequestCtx_with_empty_location_causes_panic(t *testing.T) {\n\trequire.Panics(t, func() {\n\t\tARMRequestCtx(\"/some/base/path\", \"\")\n\t})\n}\n\nfunc TestWithOperationType(t *testing.T) {\n\tw := httptest.NewRecorder()\n\tr := chi.NewRouter()\n\tr.MethodFunc(http.MethodGet, \"/\", func(w http.ResponseWriter, r *http.Request) {\n\t\trctx := v1.ARMRequestContextFromContext(r.Context())\n\t\trequire.Equal(t, \"Applications.Test\", rctx.OperationType.Type)\n\t\trequire.Equal(t, v1.OperationMethod(\"GET\"), rctx.OperationType.Method)\n\t\tw.WriteHeader(http.StatusOK)\n\t})\n\thandler := WithOperationType(v1.OperationType{Type: \"Applications.Test\", Method: \"GET\"})(r)\n\treq := httptest.NewRequest(http.MethodGet, \"/\", nil)\n\treq = req.WithContext(v1.WithARMRequestContext(req.Context(), &v1.ARMRequestContext{}))\n\thandler.ServeHTTP(w, req)\n}\n\nfunc Test_ARMRequestCtx_with_empty_location_causes_panic(t *testing.T) {\n\trequire.Panics(t, func() {\n\t\tARMRequestCtx(\"/some/base/path\", \"\")\n\t})\n}"

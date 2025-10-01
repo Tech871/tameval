@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "d-kuro/gwq"
+sha = "7fad1c9ddcea371f8f51c70758439d4c94e5de70"
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/cmd/status_sort.go internal/cmd/status_sort_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/cmd/status_sort.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 83.0
+original_coverage = 83.0
+mutation_kill_rate = 43.0
+original_mutation_kill_rate = 43.0
+covered_lines = [ 10, 11, 12, 13, 14, 15, 16, 17, 18, 21, 22, 23, 24, 25, 26, 27, 28, 29, 32, 33, 34, 35, 36, 37, 38, 39, 40, 43, 44, 45, 46, 47, 48, 49, 52, 53, 54, 55, 61, 62, 63, 64, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 91, 92, 93,]
+missed_lines = [ 19, 30, 41, 50, 56, 57, 58, 59, 65, 66, 67, 68,]
+
+[input_info]
+test_file_path = "internal/cmd/status_sort_test.go"
+focal_file_path = "internal/cmd/status_sort.go"
+test_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/cmd/status_sort_test.go"
+focal_file_url = "https://github.com/d-kuro/gwq/blob/7fad1c9ddcea371f8f51c70758439d4c94e5de70/internal/cmd/status_sort.go"
+first_commit_date = "2025-06-09"
+last_commit_date = "2025-06-14"
+test_file_content = "package cmd\n\nimport (\n\t\"testing\"\n\t\"time\"\n\n\t\"github.com/d-kuro/gwq/pkg/models\"\n)\n\nfunc TestSortStatuses(t *testing.T) {\n\tnow := time.Now()\n\n\ttests := []struct {\n\t\tname     string\n\t\tstatuses []*models.WorktreeStatus\n\t\tsortBy   string\n\t\twant     []string // expected branch order\n\t}{\n\t\t{\n\t\t\tname: \"sort by branch\",\n\t\t\tstatuses: []*models.WorktreeStatus{\n\t\t\t\t{Branch: \"feature/z\"},\n\t\t\t\t{Branch: \"feature/a\"},\n\t\t\t\t{Branch: \"main\"},\n\t\t\t},\n\t\t\tsortBy: \"branch\",\n\t\t\twant:   []string{\"feature/a\", \"feature/z\", \"main\"},\n\t\t},\n\t\t{\n\t\t\tname: \"sort by status\",\n\t\t\tstatuses: []*models.WorktreeStatus{\n\t\t\t\t{Branch: \"clean\", Status: models.WorktreeStatusClean},\n\t\t\t\t{Branch: \"conflict\", Status: models.WorktreeStatusConflict},\n\t\t\t\t{Branch: \"modified\", Status: models.WorktreeStatusModified},\n\t\t\t},\n\t\t\tsortBy: \"status\",\n\t\t\twant:   []string{\"conflict\", \"modified\", \"clean\"},\n\t\t},\n\t\t{\n\t\t\tname: \"sort by changes\",\n\t\t\tstatuses: []*models.WorktreeStatus{\n\t\t\t\t{Branch: \"few\", GitStatus: models.GitStatus{Modified: 1}},\n\t\t\t\t{Branch: \"many\", GitStatus: models.GitStatus{Modified: 10, Added: 5}},\n\t\t\t\t{Branch: \"none\", GitStatus: models.GitStatus{}},\n\t\t\t},\n\t\t\tsortBy: \"changes\",\n\t\t\twant:   []string{\"many\", \"few\", \"none\"},\n\t\t},\n\t\t{\n\t\t\tname: \"sort by activity\",\n\t\t\tstatuses: []*models.WorktreeStatus{\n\t\t\t\t{Branch: \"old\", LastActivity: now.Add(-72 * time.Hour)},\n\t\t\t\t{Branch: \"recent\", LastActivity: now.Add(-1 * time.Hour)},\n\t\t\t\t{Branch: \"middle\", LastActivity: now.Add(-24 * time.Hour)},\n\t\t\t},\n\t\t\tsortBy: \"activity\",\n\t\t\twant:   []string{\"recent\", \"middle\", \"old\"},\n\t\t},\n\t\t{\n\t\t\tname: \"sort by ahead\",\n\t\t\tstatuses: []*models.WorktreeStatus{\n\t\t\t\t{Branch: \"behind\", GitStatus: models.GitStatus{Ahead: 0}},\n\t\t\t\t{Branch: \"ahead\", GitStatus: models.GitStatus{Ahead: 5}},\n\t\t\t\t{Branch: \"more-ahead\", GitStatus: models.GitStatus{Ahead: 10}},\n\t\t\t},\n\t\t\tsortBy: \"ahead\",\n\t\t\twant:   []string{\"more-ahead\", \"ahead\", \"behind\"},\n\t\t},\n\t\t{\n\t\t\tname: \"sort by behind\",\n\t\t\tstatuses: []*models.WorktreeStatus{\n\t\t\t\t{Branch: \"up-to-date\", GitStatus: models.GitStatus{Behind: 0}},\n\t\t\t\t{Branch: \"behind\", GitStatus: models.GitStatus{Behind: 3}},\n\t\t\t\t{Branch: \"far-behind\", GitStatus: models.GitStatus{Behind: 10}},\n\t\t\t},\n\t\t\tsortBy: \"behind\",\n\t\t\twant:   []string{\"far-behind\", \"behind\", \"up-to-date\"},\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tsortStatuses(tt.statuses, tt.sortBy)\n\n\t\t\tfor i, expected := range tt.want {\n\t\t\t\tif tt.statuses[i].Branch != expected {\n\t\t\t\t\tt.Errorf(\"sortStatuses() index %d = %s, want %s\", i, tt.statuses[i].Branch, expected)\n\t\t\t\t}\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestGetStatusPriority(t *testing.T) {\n\ttests := []struct {\n\t\tstatus   models.WorktreeState\n\t\texpected int\n\t}{\n\t\t{models.WorktreeStatusConflict, 0},\n\t\t{models.WorktreeStatusModified, 1},\n\t\t{models.WorktreeStatusStaged, 2},\n\t\t{models.WorktreeStatusStale, 3},\n\t\t{models.WorktreeStatusClean, 4},\n\t\t{models.WorktreeState(\"unknown\"), 999},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(string(tt.status), func(t *testing.T) {\n\t\t\tgot := getStatusPriority(tt.status)\n\t\t\tif got != tt.expected {\n\t\t\t\tt.Errorf(\"getStatusPriority(%s) = %d, want %d\", tt.status, got, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestCountTotalChanges(t *testing.T) {\n\ttests := []struct {\n\t\tname     string\n\t\tstatus   models.GitStatus\n\t\texpected int\n\t}{\n\t\t{\n\t\t\tname:     \"no changes\",\n\t\t\tstatus:   models.GitStatus{},\n\t\t\texpected: 0,\n\t\t},\n\t\t{\n\t\t\tname: \"only modified\",\n\t\t\tstatus: models.GitStatus{\n\t\t\t\tModified: 5,\n\t\t\t},\n\t\t\texpected: 5,\n\t\t},\n\t\t{\n\t\t\tname: \"all types\",\n\t\t\tstatus: models.GitStatus{\n\t\t\t\tModified:  5,\n\t\t\t\tAdded:     3,\n\t\t\t\tDeleted:   2,\n\t\t\t\tUntracked: 4,\n\t\t\t\tStaged:    1,\n\t\t\t},\n\t\t\texpected: 15,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tgot := countTotalChanges(tt.status)\n\t\t\tif got != tt.expected {\n\t\t\t\tt.Errorf(\"countTotalChanges() = %d, want %d\", got, tt.expected)\n\t\t\t}\n\t\t})\n\t}\n}\n"

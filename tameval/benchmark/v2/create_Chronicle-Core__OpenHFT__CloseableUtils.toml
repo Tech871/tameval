@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "OpenHFT/Chronicle-Core"
+sha = "655bef412e78a19621250cb8661bd3851643f68d"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=CloseableUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.CloseableUtils  -DtargetTests=**.CloseableUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 54.0
+original_coverage = 54.0
+mutation_kill_rate = 20.0
+original_mutation_kill_rate = 20.0
+covered_lines = [ 30, 42, 43, 44, 45, 53, 54, 55, 57, 65, 66, 125, 126, 129, 132, 137, 138, 139, 140, 141, 142, 164, 174, 175, 179, 182, 184, 186, 187, 188, 191, 192, 194, 195, 197, 201, 202, 203, 204, 205, 206, 209, 210, 212, 214, 218, 219, 221, 224, 225, 229, 230, 231, 232, 234, 235, 236, 237, 240, 242, 243, 244, 255, 258, 259, 260, 261, 263, 264, 270, 271, 272, 273, 284, 286, 287, 288, 299, 311, 322, 324, 329, 332, 333, 334, 336, 344, 346, 347, 350, 351, 354, 355,]
+missed_lines = [ 82, 85, 88, 92, 93, 94, 99, 100, 101, 102, 104, 105, 108, 109, 110, 111, 112, 113, 127, 130, 145, 146, 148, 149, 152, 153, 154, 156, 158, 160, 161, 162, 163, 176, 177, 180, 189, 200, 211, 222, 227, 228, 241, 245, 247, 248, 249, 250, 251, 252, 253, 254, 262, 285, 300, 301, 302, 304, 305, 307, 308, 309, 313, 314, 316, 317, 318, 319, 320, 325, 326, 327, 330, 339, 340, 343, 345, 348, 352,]
+
+[input_info]
+test_file_path = "src/test/java/net/openhft/chronicle/core/internal/CloseableUtilsTest.java"
+focal_file_path = "src/main/java/net/openhft/chronicle/core/internal/CloseableUtils.java"
+test_file_url = "https://github.com/OpenHFT/Chronicle-Core/blob/655bef412e78a19621250cb8661bd3851643f68d/src/test/java/net/openhft/chronicle/core/internal/CloseableUtilsTest.java"
+focal_file_url = "https://github.com/OpenHFT/Chronicle-Core/blob/655bef412e78a19621250cb8661bd3851643f68d/src/main/java/net/openhft/chronicle/core/internal/CloseableUtils.java"
+first_commit_date = "2023-06-20"
+last_commit_date = "2024-05-28"
+test_file_content = "package net.openhft.chronicle.core.internal;\n\nimport net.openhft.chronicle.core.Jvm;\nimport net.openhft.chronicle.core.io.*;\nimport org.junit.After;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.net.HttpURLConnection;\nimport java.util.Set;\nimport java.util.concurrent.atomic.AtomicReference;\n\nimport static org.junit.Assert.*;\nimport static org.junit.Assume.assumeTrue;\nimport static org.mockito.Mockito.*;\n\npublic class CloseableUtilsTest {\n    private ManagedCloseable mockCloseable;\n    private AbstractCloseable anonCloseable;\n    private AutoCloseable mockAutoCloseable;\n    private HttpURLConnection mockHttpURLConnection;\n\n    @Before\n    public void mockitoNotSupportedOnJava21() {\n        assumeTrue(Jvm.majorVersion() <= 17);\n    }\n\n    @Before\n    public void setUp() {\n        anonCloseable = new AbstractCloseable() {\n            @Override\n            protected void performClose() {\n\n            }\n        };\n        mockitoNotSupportedOnJava21();\n        mockCloseable = mock(ManagedCloseable.class);\n        CloseableUtils.enableCloseableTracing();\n        mockAutoCloseable = mock(AutoCloseable.class);\n        mockHttpURLConnection = mock(HttpURLConnection.class);\n    }\n\n    @After\n    public void tearDown() {\n        CloseableUtils.disableCloseableTracing();\n        Closeable.closeQuietly(anonCloseable);\n    }\n\n    @Test\n    public void testAdd() {\n        CloseableUtils.add(mockCloseable);\n        AtomicReference<Set<Closeable>> closeablesRef = getCloseablesRef();\n        assertTrue(closeablesRef.get().contains(mockCloseable));\n    }\n\n    @Test\n    public void testEnableCloseableTracing() {\n        assertNotNull(getCloseablesRef().get());\n    }\n\n    @Test\n    public void testDisableCloseableTracing() {\n        CloseableUtils.disableCloseableTracing();\n        assertNull(getCloseablesRef().get());\n    }\n\n    // Private helper to access the private CLOSEABLES field in CloseableUtils\n    @SuppressWarnings(\"unchecked\")\n    private AtomicReference<Set<Closeable>> getCloseablesRef() {\n        try {\n            java.lang.reflect.Field field = CloseableUtils.class.getDeclaredField(\"CLOSEABLES\");\n            field.setAccessible(true);\n            //noinspection unchecked\n            return (AtomicReference<Set<Closeable>>) field.get(null);\n        } catch (NoSuchFieldException | IllegalAccessException e) {\n            throw new RuntimeException(e);\n        }\n    }\n\n    @Test\n    public void testWaitForCloseablesToClose() {\n        CloseableUtils.add(mockCloseable);\n        when(mockCloseable.isClosing()).thenReturn(true);\n\n        assertTrue(CloseableUtils.waitForCloseablesToClose(1000));\n    }\n\n    @Test(expected = IllegalStateException.class)\n    public void testWaitForCloseablesToCloseWithException() {\n        CloseableUtils.add(mockCloseable);\n        when(mockCloseable.isClosing()).thenReturn(false);\n        doThrow(IllegalStateException.class).when(mockCloseable).isClosing();\n\n        CloseableUtils.waitForCloseablesToClose(1000);\n    }\n\n    @Test\n    public void testAssertCloseablesClosed() {\n        CloseableUtils.add(mockCloseable);\n        when(mockCloseable.isClosed()).thenReturn(true);\n\n        CloseableUtils.assertCloseablesClosed();\n    }\n\n    @Test(expected = AssertionError.class)\n    public void testAssertCloseablesClosedWithOpenCloseables() {\n        CloseableUtils.add(mockCloseable);\n        when(mockCloseable.isClosed()).thenReturn(false);\n\n        CloseableUtils.assertCloseablesClosed();\n    }\n\n    @Test\n    public void testUnmonitor() {\n        CloseableUtils.add(mockCloseable);\n        CloseableUtils.unmonitor(mockCloseable);\n        AtomicReference<Set<Closeable>> closeablesRef = getCloseablesRef();\n        assertFalse(closeablesRef.get().contains(mockCloseable));\n    }\n\n    @Test\n    public void testIOToolsUnmonitor() {\n        IOTools.unmonitor(null);\n        IOTools.unmonitor(\"hello\");\n        CloseableUtils.add(anonCloseable);\n        IOTools.unmonitor(anonCloseable);\n        AtomicReference<Set<Closeable>> closeablesRef = getCloseablesRef();\n        assertFalse(closeablesRef.get().contains(mockCloseable));\n    }\n\n    @Test\n    public void testCloseQuietlyArray() {\n        Object[] array = {mock(Closeable.class), mock(Closeable.class)};\n\n        CloseableUtils.closeQuietly(array);\n\n        for (Object o : array) {\n            verify((Closeable) o, times(1)).close();\n        }\n    }\n\n    @Test\n    public void testCloseQuietlyAutoCloseable() throws Exception {\n        CloseableUtils.closeQuietly(mockAutoCloseable);\n\n        verify(mockAutoCloseable, times(1)).close();\n    }\n\n    @Test\n    public void testCloseQuietlyHttpURLConnection() {\n        CloseableUtils.closeQuietly(mockHttpURLConnection);\n\n        verify(mockHttpURLConnection, times(1)).disconnect();\n    }\n}\n"

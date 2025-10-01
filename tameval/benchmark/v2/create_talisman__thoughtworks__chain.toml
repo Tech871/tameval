@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "thoughtworks/talisman"
+sha = "12fab7055d7e640d5dae43209bafc48bf5ef1fd7"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out detector/chain.go detector/chain_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting detector/chain.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 88.0
+original_coverage = 88.0
+mutation_kill_rate = 67.0
+original_mutation_kill_rate = 67.0
+covered_lines = [ 25, 26, 27, 28, 31, 32, 33, 34, 35, 36, 37, 40, 41, 42, 43, 47, 48, 49, 50, 51, 52, 53, 58,]
+missed_lines = [ 54, 55, 56,]
+
+[input_info]
+test_file_path = "detector/chain_test.go"
+focal_file_path = "detector/chain.go"
+test_file_url = "https://github.com/thoughtworks/talisman/blob/12fab7055d7e640d5dae43209bafc48bf5ef1fd7/detector/chain_test.go"
+focal_file_url = "https://github.com/thoughtworks/talisman/blob/12fab7055d7e640d5dae43209bafc48bf5ef1fd7/detector/chain.go"
+first_commit_date = "2020-06-12"
+last_commit_date = "2025-03-21"
+test_file_content = "package detector\n\nimport (\n\t\"io/ioutil\"\n\t\"talisman/detector/filecontent\"\n\t\"talisman/detector/filename\"\n\t\"talisman/detector/helpers\"\n\t\"talisman/detector/pattern\"\n\t\"talisman/detector/severity\"\n\t\"talisman/gitrepo\"\n\t\"talisman/talismanrc\"\n\t\"testing\"\n\n\tlogr \"github.com/sirupsen/logrus\"\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc init() {\n\tlogr.SetOutput(ioutil.Discard)\n}\n\ntype FailingDetection struct{}\n\nfunc (v FailingDetection) Test(comparator helpers.IgnoreEvaluator, currentAdditions []gitrepo.Addition, ignoreConfig *talismanrc.TalismanRC, result *helpers.DetectionResults, additionCompletionCallback func()) {\n\tresult.Fail(\"some_file\", \"filecontent\", \"FAILED BY DESIGN\", []string{}, severity.Low)\n}\n\ntype PassingDetection struct{}\n\nfunc (p PassingDetection) Test(comparator helpers.IgnoreEvaluator, currentAdditions []gitrepo.Addition, ignoreConfig *talismanrc.TalismanRC, result *helpers.DetectionResults, additionCompletionCallback func()) {\n}\n\nfunc TestEmptyValidationChainPassesAllValidations(t *testing.T) {\n\tie := helpers.BuildIgnoreEvaluator(\"pre-push\", nil, gitrepo.RepoLocatedAt(\".\"))\n\tv := NewChain(ie)\n\tresults := helpers.NewDetectionResults()\n\tv.Test(nil, &talismanrc.TalismanRC{}, results)\n\tassert.False(t, results.HasFailures(), \"Empty validation chain is expected to always pass\")\n}\n\nfunc TestValidationChainWithFailingValidationAlwaysFails(t *testing.T) {\n\tie := helpers.BuildIgnoreEvaluator(\"pre-push\", nil, gitrepo.RepoLocatedAt(\".\"))\n\tv := NewChain(ie)\n\tv.AddDetector(PassingDetection{})\n\tv.AddDetector(FailingDetection{})\n\tresults := helpers.NewDetectionResults()\n\tv.Test(nil, &talismanrc.TalismanRC{}, results)\n\n\tassert.False(t, results.Successful(), \"Expected validation chain with a failure to fail.\")\n}\n\nfunc TestDefaultChainShouldCreateChainSpecifiedModeAndPresetDetectors(t *testing.T) {\n\ttalismanRC := &talismanrc.TalismanRC{\n\t\tThreshold:      severity.Medium,\n\t\tCustomPatterns: []talismanrc.PatternString{\"AKIA*\"},\n\t}\n\tie := helpers.BuildIgnoreEvaluator(\"pre-push\", talismanRC, gitrepo.RepoLocatedAt(\".\"))\n\tv := DefaultChain(talismanRC, ie)\n\tassert.Equal(t, 3, len(v.detectors))\n\n\tdefaultFileNameDetector := filename.DefaultFileNameDetector(talismanRC.Threshold)\n\tassert.Equal(t, defaultFileNameDetector, v.detectors[0])\n\n\texpectedFileContentDetector := filecontent.NewFileContentDetector(talismanRC)\n\tassert.Equal(t, expectedFileContentDetector, v.detectors[1])\n\n\texpectedPatternDetector := pattern.NewPatternDetector(talismanRC.CustomPatterns)\n\tassert.Equal(t, expectedPatternDetector, v.detectors[2])\n}\n"

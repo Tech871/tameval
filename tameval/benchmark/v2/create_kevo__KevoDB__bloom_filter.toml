@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.2"
+
+[repo_info]
+repository = "KevoDB/kevo"
+sha = "a0bcddabc1700e19208bd8adb99211654de65bc8"
+
+[run_info]
+docker_image = "golang:1.24.2"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/bloom_filter/bloom_filter.go pkg/bloom_filter/bloom_filter_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/bloom_filter/bloom_filter.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 41.0
+original_coverage = 88.0
+mutation_kill_rate = 29.0
+original_mutation_kill_rate = 66.0
+covered_lines = [ 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 42, 43, 44, 45, 46, 47, 48, 49, 50, 52, 58, 59, 60, 61, 62, 63, 64, 71, 171, 172, 173, 174, 175, 176, 177, 178, 179, 180, 183, 184, 185, 186, 187, 190, 191, 192, 193, 194, 215, 216, 217, 218, 219, 223, 224, 225, 226, 227,]
+missed_lines = [ 65, 66, 67, 75, 76, 77, 78, 79, 80, 81, 82, 84, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99, 100, 101, 102, 105, 106, 107, 108, 109, 110, 111, 112, 113, 114, 115, 116, 117, 118, 119, 120, 121, 122, 123, 124, 125, 128, 129, 130, 132, 136, 137, 138, 139, 140, 141, 142, 143, 144, 145, 146, 147, 149, 150, 151, 152, 153, 154, 155, 156, 157, 158, 160, 161, 162, 163, 164, 165, 166, 197, 198, 199, 202, 203, 204, 207, 208, 209, 210, 211,]
+
+[input_info]
+test_file_path = "pkg/bloom_filter/bloom_filter_test.go"
+focal_file_path = "pkg/bloom_filter/bloom_filter.go"
+test_file_url = "https://github.com/KevoDB/kevo/blob/a0bcddabc1700e19208bd8adb99211654de65bc8/pkg/bloom_filter/bloom_filter_test.go"
+focal_file_url = "https://github.com/KevoDB/kevo/blob/a0bcddabc1700e19208bd8adb99211654de65bc8/pkg/bloom_filter/bloom_filter.go"
+first_commit_date = "2025-04-24"
+last_commit_date = "2025-04-24"
+test_file_content = "package bloomfilter\n\nimport (\n\t\"fmt\"\n\t\"testing\"\n)\n\n\n\n\n\nfunc TestBloomFilterPerformance(t *testing.T) {\n\tif testing.Short() {\n\t\tt.Skip(\"Skipping performance test in short mode\")\n\t}\n\n\t// Create a large filter\n\tbf := NewBloomFilter(0.01, 1000000) // 1% FPR, 1 million elements\n\n\t// Insert a large number of elements\n\tfor i := 0; i < 1000000; i++ {\n\t\tkey := []byte(fmt.Sprintf(\"key-%d\", i))\n\t\tbf.Add(key)\n\t}\n\n\t// Verify all inserted elements are found\n\tfor i := 0; i < 1000; i++ { // Sample 1000 keys\n\t\tkey := []byte(fmt.Sprintf(\"key-%d\", i))\n\t\tif !bf.Contains(key) {\n\t\t\tt.Errorf(\"False negative: key %s should be in the filter\", key)\n\t\t}\n\t}\n}\n\nfunc BenchmarkBloomFilterAdd(b *testing.B) {\n\tbf := NewBloomFilter(0.01, uint64(b.N))\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\tkey := []byte(fmt.Sprintf(\"key-%d\", i))\n\t\tbf.Add(key)\n\t}\n}\n\nfunc BenchmarkBloomFilterContains(b *testing.B) {\n\tbf := NewBloomFilter(0.01, 1000000)\n\n\t// Insert some elements first\n\tfor i := 0; i < 1000000; i++ {\n\t\tkey := []byte(fmt.Sprintf(\"key-%d\", i))\n\t\tbf.Add(key)\n\t}\n\n\tb.ResetTimer()\n\n\tfor i := 0; i < b.N; i++ {\n\t\t// Mix of existing and non-existing keys\n\t\tkeyExists := i%2 == 0\n\t\tvar key []byte\n\t\tif keyExists {\n\t\t\tkey = []byte(fmt.Sprintf(\"key-%d\", i%1000000))\n\t\t} else {\n\t\t\tkey = []byte(fmt.Sprintf(\"non-existent-%d\", i))\n\t\t}\n\t\tbf.Contains(key)\n\t}\n}\n"

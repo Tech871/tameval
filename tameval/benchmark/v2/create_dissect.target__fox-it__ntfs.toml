@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "fox-it/dissect.target"
+sha = "86f4234cf0ad30186dd8bd27ac1a560298423ae9"
+bench_version = 2
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=dissect/target/filesystems/ntfs.py -m pytest -q --junit-xml=test_output.xml tests/filesystems/test_ntfs.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target dissect.target.filesystems.ntfs --unit-test tests.filesystems.test_ntfs --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target dissect/target/filesystems/ntfs.py --unit-test tests/filesystems/test_ntfs.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 67.0
+original_coverage = 67.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 2, 3, 4, 6, 7, 8, 9, 11, 17, 18, 26, 27, 29, 39, 40, 42, 43, 47, 48, 50, 51, 52, 53, 62, 63, 66, 67, 69, 70, 71, 73, 74, 76, 78, 85, 86, 89, 92, 93, 95, 109, 113, 118, 119, 122, 124, 125, 128, 130, 131, 132, 134, 151, 152, 154, 155, 157, 158, 159, 161, 162, 163, 164, 165, 166, 168, 172, 175, 192, 193, 195, 197, 198, 201, 202, 203, 204, 206, 208, 210, 215,]
+missed_lines = [ 44, 45, 54, 55, 56, 57, 58, 59, 75, 79, 87, 90, 96, 97, 99, 100, 101, 103, 104, 105, 107, 110, 111, 114, 115, 116, 120, 126, 138, 139, 141, 142, 143, 148, 149, 160, 170, 211, 212, 213, 216,]
+
+[input_info]
+test_file_path = "tests/filesystems/test_ntfs.py"
+focal_file_path = "dissect/target/filesystems/ntfs.py"
+test_file_url = "https://github.com/fox-it/dissect.target/blob/86f4234cf0ad30186dd8bd27ac1a560298423ae9/tests/filesystems/test_ntfs.py"
+focal_file_url = "https://github.com/fox-it/dissect.target/blob/86f4234cf0ad30186dd8bd27ac1a560298423ae9/dissect/target/filesystems/ntfs.py"
+first_commit_date = "2022-07-20"
+last_commit_date = "2025-04-16"
+test_file_content = "from __future__ import annotations\n\nimport io\nimport math\nfrom unittest.mock import Mock, patch\n\nimport pytest\nfrom dissect.ntfs.attr import Attribute, StandardInformation\nfrom dissect.ntfs.c_ntfs import c_ntfs\nfrom dissect.ntfs.exceptions import FileNotFoundError as NtfsFileNotFoundError\nfrom dissect.ntfs.mft import MftRecord\nfrom dissect.ntfs.util import AttributeMap\n\nfrom dissect.target.exceptions import FileNotFoundError\nfrom dissect.target.filesystem import VirtualFilesystem\nfrom dissect.target.filesystems.ntfs import NtfsFilesystem, NtfsFilesystemEntry\n\n\n@pytest.mark.parametrize(\n    (\"path\", \"expected_path\", \"expected_ads\"),\n    [\n        (\"test:data\", \"test\", \"data\"),\n        (\"test:$hello\", \"test\", \"$hello\"),\n        (\"test:$hello:$test\", \"test:$hello\", \"$test\"),\n    ],\n)\ndef test_ads_ntfs_filesystem(path: str, expected_path: str, expected_ads: str) -> None:\n    with patch(\"dissect.target.filesystems.ntfs.NTFS\"):\n        filesystem = NtfsFilesystem()\n        entry = filesystem.get(path)\n\n        assert entry.ads == expected_ads\n        assert entry.path == expected_path\n        filesystem.ntfs.mft.get.assert_called_once_with(expected_path, root=None)\n\n\n@pytest.mark.parametrize(\n    (\"ads\", \"name\", \"output\"),\n    [\n        (\"ads\", \"\", \"ads\"),\n        (\"ads\", \"test\", \"test\"),\n    ],\n)\ndef test_ntfs_fileentry_open(ads: str, name: str, output: str) -> None:\n    vfs = VirtualFilesystem()\n    mocked_entry = Mock()\n    mocked_entry.attributes = AttributeMap()\n    mocked_entry.is_dir.return_value = False\n    mocked_entry.is_symlink.return_value = False\n    mocked_entry.is_mount_point.return_value = False\n    entry = NtfsFilesystemEntry(vfs, \"some/random/path\", entry=mocked_entry)\n    entry.ads = ads\n    entry.open(name)\n\n    mocked_entry.open.assert_called_once_with(output)\n\n\ndef test_ntfs_unknown_file() -> None:\n    vfs = VirtualFilesystem()\n    mocked_entry = Mock()\n    mocked_entry.attributes = AttributeMap()\n    mocked_entry.is_dir.return_value = False\n    mocked_entry.is_symlink.return_value = False\n    mocked_entry.is_mount_point.return_value = False\n    mocked_entry.size.side_effect = [NtfsFileNotFoundError]\n    entry = NtfsFilesystemEntry(vfs, \"some/random/path\", entry=mocked_entry)\n    with pytest.raises(FileNotFoundError):\n        entry.stat()\n\n\n@pytest.mark.parametrize(\n    (\"cluster_size\", \"size\", \"resident\", \"expected_blks\"),\n    [\n        (0x1000, 0x343, False, 8),\n        (0x1000, 0x1001, False, 16),\n        (0x1000, 0, False, 0),\n        (0x1000, 0x2000, True, 0),\n    ],\n)\ndef test_stat_information(cluster_size: int, size: int, resident: bool, expected_blks: int) -> None:\n    ntfs = Mock(cluster_size=cluster_size)\n\n    entry = MftRecord()\n    entry.header = c_ntfs._FILE_RECORD_SEGMENT_HEADER()\n    entry.ntfs = ntfs\n    entry.segment = 42\n\n    attribute_record = c_ntfs._ATTRIBUTE_RECORD_HEADER()\n    attribute_record.FormCode = 0 if resident else 1\n    if resident:\n        attribute_record.Form.Resident.ValueLength = size\n    else:\n        attribute_record.Form.Nonresident.FileSize = size\n        # Needs to be a multiple of cluster_size\n        attribute_record.Form.Nonresident.AllocatedLength = math.ceil(size / cluster_size) * cluster_size\n\n    map = AttributeMap()\n    map[0x10] = StandardInformation(\n        io.BytesIO(\n            b\"\\xb5\\xc3S\\xbb\\xd1a\\xd8\\x01\\xc1H\\xedc$\\x04\\xdb\\x01d \\x0c\\xb0v\\xcc\\xd9\"\n            b\"\\x01\\xc1H\\xedc$\\x04\\xdb\\x01 \\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\"\n            b\"\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00%\\x03\\x00\\x00\\x00\\x00\\x00\\x00\\x00\"\n            b\"\\x00\\x00\\x00\\x00\\x92h8\\x00\\x00\\x00\\x00\"\n        )\n    )\n    map[0x80] = [Attribute.from_fh(io.BytesIO(attribute_record.dumps()))]\n\n    mock_fs = Mock()\n    with patch.object(entry, \"attributes\", map):\n        fs_entry = NtfsFilesystemEntry(mock_fs, \"some/path\", entry)\n\n        stat_info = fs_entry.lstat()\n\n        assert stat_info.st_mode == 33279\n        assert stat_info.st_ino == 42\n        assert stat_info.st_dev == id(mock_fs)\n        assert stat_info.st_nlink == 0\n        assert stat_info.st_uid == 0\n        assert stat_info.st_gid == 0\n        assert stat_info.st_size == size\n\n        assert stat_info.st_atime == 1726043227.939039\n        assert stat_info.st_atime_ns == 1726043227939040100\n        assert stat_info.st_mtime == 1726043227.939039\n        assert stat_info.st_mtime_ns == 1726043227939040100\n        assert stat_info.st_ctime == 1651900642.631773\n        assert stat_info.st_ctime_ns == 1651900642631774900\n        assert stat_info.st_birthtime == 1651900642.631773\n        assert stat_info.st_birthtime_ns == 1651900642631774900\n\n        assert stat_info.st_blksize == cluster_size\n        assert stat_info.st_blocks == expected_blks\n"

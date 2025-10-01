@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "sony/model_optimization"
+sha = "0c4bc5984cea42c5cde2b05d4f3032596b054a4c"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=model_compression_toolkit/core/common/collectors/histogram_collector.py -m pytest -q --junit-xml=test_output.xml tests/common_tests/function_tests/test_histogram_collector.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target model_compression_toolkit.core.common.collectors.histogram_collector --unit-test tests.common_tests.function_tests.test_histogram_collector --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target model_compression_toolkit/core/common/collectors/histogram_collector.py --unit-test tests/common_tests/function_tests/test_histogram_collector.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 24.0
+original_coverage = 81.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 54.0
+covered_lines = [ 15, 16, 17, 20, 43, 48, 60, 87, 105, 123, 135, 142, 149,]
+missed_lines = [ 34, 37, 39, 40, 54, 55, 56, 57, 58, 66, 68, 73, 74, 75, 77, 78, 79, 80, 82, 84, 85, 98, 99, 100, 102, 103, 116, 117, 118, 120, 121, 128, 131, 132, 133, 139, 140, 146, 147, 157, 158,]
+
+[input_info]
+test_file_path = "tests/common_tests/function_tests/test_histogram_collector.py"
+focal_file_path = "model_compression_toolkit/core/common/collectors/histogram_collector.py"
+test_file_url = "https://github.com/sony/model_optimization/blob/0c4bc5984cea42c5cde2b05d4f3032596b054a4c/tests/common_tests/function_tests/test_histogram_collector.py"
+focal_file_url = "https://github.com/sony/model_optimization/blob/0c4bc5984cea42c5cde2b05d4f3032596b054a4c/model_compression_toolkit/core/common/collectors/histogram_collector.py"
+first_commit_date = "2022-06-01"
+last_commit_date = "2025-03-02"
+test_file_content = "# Copyright 2021 Sony Semiconductors Israel, Inc. All rights reserved.\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#     http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n# ==============================================================================\n\n\nimport unittest\nimport numpy as np\nfrom model_compression_toolkit.common.collectors.histogram_collector import HistogramCollector, interpolate_histogram\n\n\nclass TestHistogramCollector(unittest.TestCase):\n\n    def test_same(self):\n        hc = HistogramCollector()\n        x = np.random.rand(1, 2, 3, 4)\n        for i in range(100):\n            hc.update(x)\n\n        self.assertTrue(np.isclose(np.max(x), hc.max(), atol=(x.max() - x.min()) / 2048))\n        self.assertTrue(np.isclose(np.min(x), hc.min()))\n\n    def test_update_hist(self):\n        hc = HistogramCollector()\n        x = 0.1 * np.random.rand(1, 2, 3, 4) + 0.1\n        hc.update(x)\n        for i in range(1000):\n            x = np.random.rand(1, 2, 3, 4)\n            hc.update(x)\n        self.assertTrue(hc.max() > 0.9)\n        self.assertTrue(hc.min() < 0.1)\n\n    def test_same_value(self):\n        hc = HistogramCollector()\n        x = np.ones([100, 100])\n        hc.update(x)\n        self.assertTrue(hc.max() == 1.0)\n        self.assertTrue(hc.min() == 1.0)\n\n    def test_inter_histogram(self):\n        x = np.random.rand(1, 2, 3, 4)\n        bins = np.linspace(-2, 2, num=100)\n        c, b = np.histogram(x, bins=10)\n        interpolate_histogram(bins, b, c)\n        self.assertTrue(True)  # Just check it works\n\n\nif __name__ == '__main__':\n    unittest.main()"

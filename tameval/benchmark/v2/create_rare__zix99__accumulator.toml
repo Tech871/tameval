@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23"
+
+[repo_info]
+repository = "zix99/rare"
+sha = "dbf03dd64fed323c2e7b3b36d97210f929fb64fa"
+
+[run_info]
+docker_image = "golang:1.23"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/aggregation/accumulator.go pkg/aggregation/accumulator_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/aggregation/accumulator.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 28.0
+original_coverage = 100.0
+mutation_kill_rate = 27.0
+original_mutation_kill_rate = 88.0
+covered_lines = [ 43, 50, 65, 66, 67, 68, 69, 70, 71, 72, 74, 84, 88, 89, 90, 91, 92, 127, 128, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 141, 145, 167, 172, 173, 174, 187, 188, 189, 190, 191, 235, 236, 237, 238, 239, 249, 254, 258, 259, 260,]
+missed_lines = [ 30, 31, 32, 33, 36, 37, 38, 39, 40, 44, 45, 46, 47, 48, 49, 75, 76, 77, 78, 79, 80, 81, 85, 86, 87, 95, 96, 97, 98, 99, 100, 101, 103, 104, 105, 106, 108, 109, 110, 111, 112, 113, 114, 115, 118, 119, 120, 121, 122, 123, 124, 142, 143, 144, 149, 150, 151, 152, 153, 157, 158, 159, 160, 163, 164, 165, 168, 169, 170, 176, 177, 178, 179, 180, 181, 183, 194, 195, 196, 197, 198, 199, 202, 203, 204, 205, 206, 207, 216, 217, 218, 219, 220, 221, 222, 223, 224, 227, 228, 229, 230, 231, 240, 241, 242, 243, 244, 245, 246, 247, 250, 251, 252, 263, 264, 265, 267, 268, 269, 272, 273, 274, 275, 276, 279, 280, 281, 282, 284, 285, 286, 288, 289, 290,]
+
+[input_info]
+test_file_path = "pkg/aggregation/accumulator_test.go"
+focal_file_path = "pkg/aggregation/accumulator.go"
+test_file_url = "https://github.com/zix99/rare/blob/dbf03dd64fed323c2e7b3b36d97210f929fb64fa/pkg/aggregation/accumulator_test.go"
+focal_file_url = "https://github.com/zix99/rare/blob/dbf03dd64fed323c2e7b3b36d97210f929fb64fa/pkg/aggregation/accumulator.go"
+first_commit_date = "2023-04-14"
+last_commit_date = "2025-06-08"
+test_file_content = "package aggregation\n\nimport (\n\t\"testing\"\n\n\t\"github.com/zix99/rare/pkg/aggregation/sorting\"\n\t\"github.com/zix99/rare/pkg/expressions/stdlib\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\n\n\n\nfunc TestFaltiGroupMatch(t *testing.T) {\n\taccum := NewAccumulatingGroup(stdlib.NewStdKeyBuilder())\n\tassert.NoError(t, accum.AddGroupExpr(\"test\", \"{badkey}\"))\n\taccum.Sample(\"100\")\n\tassert.Equal(t, 1, accum.GroupColCount())\n\tassert.Equal(t, []GroupKey{\"\"}, accum.Groups(sorting.ByName))\n}\n\n\nfunc TestParseGroupKey(t *testing.T) {\n\tassert.Equal(t, []string{}, GroupKey(\"\").Parts())\n\tassert.Equal(t, []string{\"a\"}, GroupKey(\"a\").Parts())\n\tassert.Equal(t, []string{\"b\", \"c\"}, GroupKey(\"b\\x00c\").Parts())\n}\n\n\n\nfunc BenchmarkAccumulatorContext(b *testing.B) {\n\tctx := exprAccumulatorContext{\n\t\tcurrent: \"123\",\n\t\tmatch:   \"1\\x002\\x003\",\n\t}\n\tfor i := 0; i < b.N; i++ {\n\t\tctx.GetMatch(3)\n\t}\n}\n\n// BenchmarkGroupKey-4   \t33043279\t        32.26 ns/op\t       0 B/op\t       0 allocs/op\nfunc BenchmarkGroupKey(b *testing.B) {\n\taccum := NewAccumulatingGroup(stdlib.NewStdKeyBuilder())\n\taccum.AddGroupExpr(\"key\", \"{1}\")\n\n\tctx := exprAccumulatorContext{\n\t\tmatch: \"123\",\n\t}\n\n\tfor i := 0; i < b.N; i++ {\n\t\taccum.buildGroupKey(&ctx)\n\t}\n}\n\n// BenchmarkSample-4   \t 4278193\t       278.8 ns/op\t      51 B/op\t       2 allocs/op\nfunc BenchmarkSample(b *testing.B) {\n\taccum := NewAccumulatingGroup(stdlib.NewStdKeyBuilder())\n\taccum.AddGroupExpr(\"key\", \"{0}\")\n\taccum.AddDataExpr(\"max\", \"{maxi {.} {0}}\", \"0\")\n\n\tfor i := 0; i < b.N; i++ {\n\t\taccum.Sample(\"123\")\n\t}\n}\n"

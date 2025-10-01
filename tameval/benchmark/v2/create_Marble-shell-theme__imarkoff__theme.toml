@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+
+[repo_info]
+repository = "imarkoff/Marble-shell-theme"
+sha = "2aeb348f1915b8d28cf7fb2081ff9458115d2f44"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=scripts/utils/theme/theme.py -m pytest -q --junit-xml=test_output.xml tests/utils/theme/test_theme.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target scripts.utils.theme.theme --unit-test tests.utils.theme.test_theme --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target scripts/utils/theme/theme.py --unit-test tests/utils/theme/test_theme.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 93.0
+original_coverage = 93.0
+mutation_kill_rate = 94.0
+original_mutation_kill_rate = 94.0
+covered_lines = [ 0, 1, 2, 3, 6, 14, 21, 22, 24, 25, 27, 28, 30, 32, 33, 35, 37, 38, 40, 42, 43, 44, 46, 51, 52, 54, 59, 60, 62, 67, 68, 70, 78, 80, 81, 84, 95, 100,]
+missed_lines = [ 75, 76, 82,]
+
+[input_info]
+test_file_path = "tests/utils/theme/test_theme.py"
+focal_file_path = "scripts/utils/theme/theme.py"
+test_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/tests/utils/theme/test_theme.py"
+focal_file_url = "https://github.com/imarkoff/Marble-shell-theme/blob/2aeb348f1915b8d28cf7fb2081ff9458115d2f44/scripts/utils/theme/theme.py"
+first_commit_date = "2025-04-10"
+last_commit_date = "2025-04-16"
+test_file_content = "import os.path\nimport unittest\nfrom unittest.mock import MagicMock\n\nfrom scripts import config\nfrom scripts.types.installation_color import InstallationColor\nfrom scripts.utils.theme.theme import Theme\n\n\nclass ThemeTestCase(unittest.TestCase):\n    def setUp(self):\n        self.mock_preparation = MagicMock()\n        self.mock_installer = MagicMock()\n\n        temp_folder = os.path.join(config.temp_tests_folder, \"theme_temp\")\n        destination_folder = os.path.join(temp_folder, \"theme_destination\")\n\n        self.mock_preparation.temp_folder = temp_folder\n        self.mock_preparation.combined_styles_location = os.path.join(temp_folder, \"styles.css\")\n        self.mock_installer.destination_folder = destination_folder\n        self.mock_installer.theme_type = \"gtk\"\n\n        self.theme = Theme(self.mock_preparation, self.mock_installer)\n\n    def test_default_initialization_works_correctly(self):\n        self.assertEqual(self.theme.modes, ['light', 'dark'])\n        self.assertFalse(self.theme.is_filled)\n\n    def test_initialization_with_specific_mode_works_correctly(self):\n        theme_light = Theme(self.mock_preparation, self.mock_installer, mode='light')\n        self.assertEqual(theme_light.modes, ['light'])\n\n    def test_initialization_with_is_filled_works_correctly(self):\n        theme_filled = Theme(self.mock_preparation, self.mock_installer, is_filled=True)\n        self.assertTrue(theme_filled.is_filled)\n\n    def test_properties_fetch_values_correctly(self):\n        temp_folder = os.path.join(config.temp_tests_folder, \"theme_temp\")\n        destination_folder = os.path.join(temp_folder, \"theme_destination\")\n\n        self.assertEqual(self.theme.temp_folder, temp_folder)\n        self.assertEqual(self.theme.destination_folder, destination_folder)\n        self.assertEqual(self.theme.main_styles, os.path.join(temp_folder, \"styles.css\"))\n        self.assertEqual(self.theme.theme_name, \"gtk\")\n\n    def test_add_operator_called_once_and_return_value(self):\n        result = self.theme + \"additional styles\"\n\n        self.mock_preparation.__iadd__.assert_called_once_with(\"additional styles\")\n        self.assertEqual(result, self.theme)\n\n    def test_mul_operator_called_once_and_return_value(self):\n        result = self.theme * \"/path/to/file\"\n\n        self.mock_preparation.__imul__.assert_called_once_with(\"/path/to/file\")\n        self.assertEqual(result, self.theme)\n\n    def test_add_to_start_called_once_and_return_value(self):\n        result = self.theme.add_to_start(\"starting content\")\n\n        self.mock_preparation.add_to_start.assert_called_once_with(\"starting content\")\n        self.assertEqual(result, self.theme)\n\n    def test_prepare_called_once(self):\n        self.theme.prepare()\n\n        self.mock_preparation.prepare.assert_called_once()\n\n    def test_install_without_optional_params_called_correctly(self):\n        self.theme.install(200, \"Green\")\n\n        args = self.mock_installer.install.call_args[0]\n        self.assertEqual(args[0].hue, 200)\n        self.assertIsNone(args[0].saturation)\n        self.assertEqual(args[1], \"Green\")\n        self.assertIsNone(args[2])\n\n    def test_install_with_optional_params_called_correctly(self):\n        self.theme.install(hue=180, name=\"Blue\", sat=0.5, destination=\"/custom/dest\")\n\n        self.mock_installer.install.assert_called_once()\n        args = self.mock_installer.install.call_args[0]\n\n        theme_color = args[0]\n        self.assertIsInstance(theme_color, InstallationColor)\n        self.assertEqual(theme_color.hue, 180)\n        self.assertEqual(theme_color.saturation, 0.5)\n        self.assertEqual(theme_color.modes, ['light', 'dark'])\n        self.assertEqual(args[1], \"Blue\")\n        self.assertEqual(args[2], \"/custom/dest\")\n"

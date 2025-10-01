@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.10"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "opensearch-project/opensearch-py-ml"
+sha = "899cb82c8a383925501258dd30098bfa612e8af5"
+
+[run_info]
+docker_image = "python:3.10"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-dev.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=opensearch_py_ml/ml_commons/cli/ml_models/azure_openai_model.py -m pytest -q --junit-xml=test_output.xml tests/cli/test_ml_models/test_azure_openai_model.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target opensearch_py_ml.ml_commons.cli.ml_models.azure_openai_model --unit-test tests.cli.test_ml_models.test_azure_openai_model --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target opensearch_py_ml/ml_commons/cli/ml_models/azure_openai_model.py --unit-test tests/cli/test_ml_models/test_azure_openai_model.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 7, 9, 11, 12, 15, 17, 28, 50, 54, 55, 58, 60, 63, 71, 74, 102, 130, 131, 134, 139, 142, 145, 149, 154, 159, 160, 165, 166, 169, 170, 171, 173, 176,]
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/cli/test_ml_models/test_azure_openai_model.py"
+focal_file_path = "opensearch_py_ml/ml_commons/cli/ml_models/azure_openai_model.py"
+test_file_url = "https://github.com/opensearch-project/opensearch-py-ml/blob/899cb82c8a383925501258dd30098bfa612e8af5/tests/cli/test_ml_models/test_azure_openai_model.py"
+focal_file_url = "https://github.com/opensearch-project/opensearch-py-ml/blob/899cb82c8a383925501258dd30098bfa612e8af5/opensearch_py_ml/ml_commons/cli/ml_models/azure_openai_model.py"
+first_commit_date = "2025-04-25"
+last_commit_date = "2025-04-25"
+test_file_content = "\n\nimport unittest\nfrom unittest.mock import Mock, patch\n\nfrom colorama import Fore, Style\n\nfrom opensearch_py_ml.ml_commons.cli.ml_models.azure_openai_model import (\n    AzureOpenAIModel,\n)\n\n\nclass TestAzureOpenAIModel(unittest.TestCase):\n\n    def setUp(self):\n        self.mock_helper = Mock()\n        self.mock_save_config = Mock()\n        self.azure_openai_model = AzureOpenAIModel()\n        self.api_key = \"test_api_key\"\n        self.resource_name = \"test_resource_name\"\n        self.deployment_name = \"test_deployment_name\"\n        self.api_version = \"test_api_version\"\n\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.set_trusted_endpoint\"\n    )\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.get_model_details\"\n    )\n    @patch(\"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.set_api_key\")\n    def test_create_connector_embedding(\n        self, mock_set_api_key, mock_get_model_details, mock_set_trusted_endpoint\n    ):\n        mock_get_model_details.return_value = \"1\"\n        mock_set_api_key.return_value = self.api_key\n\n        result = self.azure_openai_model.create_connector(\n            helper=self.mock_helper,\n            save_config_method=self.mock_save_config,\n            model_name=\"Embedding model\",\n            api_key=self.api_key,\n            resource_name=self.resource_name,\n            deployment_name=self.deployment_name,\n            api_version=self.api_version,\n        )\n\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.input_custom_model_details\"\n    )\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.set_trusted_endpoint\"\n    )\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.get_model_details\"\n    )\n    @patch(\"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.set_api_key\")\n    def test_create_connector_custom_model(\n        self,\n        mock_set_api_key,\n        mock_get_model_details,\n        mock_set_trusted_endpoint,\n        mock_custom_model,\n    ):\n        result = self.azure_openai_model.create_connector(\n            helper=self.mock_helper,\n            save_config_method=self.mock_save_config,\n            model_name=\"Custom model\",\n            api_key=self.api_key,\n            resource_name=self.resource_name,\n            deployment_name=self.deployment_name,\n            api_version=self.api_version,\n        )\n\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_setup.Setup.get_password_with_asterisks\",\n        return_value=\"test_api_key\",\n    )\n    @patch(\n        \"builtins.input\",\n        side_effect=[\n            \"1\",\n            \"test_resource_name\",\n            \"test_deployment_name\",\n            \"test_api_version\",\n        ],\n    )\n    def test_create_connector_select_model_interactive(\n        self, mock_input, mock_get_password\n    ):\n        result = self.azure_openai_model.create_connector(\n            helper=self.mock_helper, save_config_method=self.mock_save_config\n        )\n\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.input_custom_model_details\"\n    )\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.get_model_details\"\n    )\n    @patch(\"builtins.print\")\n    def test_create_connector_invalid_choice(\n        self, mock_print, mock_get_model_details, mock_custom_model\n    ):\n        self.azure_openai_model.create_connector(\n            helper=self.mock_helper,\n            save_config_method=self.mock_save_config,\n            model_name=\"Invalid Model\",\n            api_key=self.api_key,\n            resource_name=self.resource_name,\n            deployment_name=self.deployment_name,\n            api_version=self.api_version,\n        )\n\n    def test_create_connector_failure(self):\n        self.mock_helper.create_connector.return_value = None\n        result = self.azure_openai_model.create_connector(\n            helper=self.mock_helper,\n            save_config_method=self.mock_save_config,\n            model_name=\"Embedding model\",\n            api_key=self.api_key,\n            resource_name=self.resource_name,\n            deployment_name=self.deployment_name,\n            api_version=self.api_version,\n        )\n\n\nif __name__ == \"__main__\":\n    unittest.main()"

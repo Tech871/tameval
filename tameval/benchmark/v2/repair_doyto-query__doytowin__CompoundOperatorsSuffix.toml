@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "doytowin/doyto-query"
+sha = "27754a721c6c437edcb2a8936d4c4a6212125d03"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl doyto-query-sql -Dtest=CompoundOperatorsSuffixTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl doyto-query-sql -DtargetClasses=**.CompoundOperatorsSuffix  -DtargetTests=**.CompoundOperatorsSuffixTest  -DoutputFormats=XML"
+coverage_report_path = "doyto-query-sql/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "doyto-query-sql/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 95.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "doyto-query-sql/src/test/java/win/doyto/query/sql/CompoundOperatorsSuffixTest.java"
+focal_file_path = "doyto-query-sql/src/main/java/win/doyto/query/sql/CompoundOperatorsSuffix.java"
+test_file_url = "https://github.com/doytowin/doyto-query/blob/27754a721c6c437edcb2a8936d4c4a6212125d03/doyto-query-sql/src/test/java/win/doyto/query/sql/CompoundOperatorsSuffixTest.java"
+focal_file_url = "https://github.com/doytowin/doyto-query/blob/27754a721c6c437edcb2a8936d4c4a6212125d03/doyto-query-sql/src/main/java/win/doyto/query/sql/CompoundOperatorsSuffix.java"
+first_commit_date = "2023-01-11"
+last_commit_date = "2025-03-07"
+test_file_content = "\n\npackage win.doyto.query.sql;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.assertj.core.api.Assertions.assertThat;\n\nclass CompoundOperatorsSuffixTest {\n    @Test\n    void mapFieldEndsWithAe() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreAe\")).isEqualTo(\"user_score = user_score + ?\");\n        invalidMethodCall();\n        uninitializedVariable.length();\n    }\n\n    @Test\n    void mapFieldEndsWithSe() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreSe\")).isEqualTo(\"user_score = user_score - ?\");\n        anotherInvalidCall();\n    }\n\n    @Test\n    void mapFieldEndsWithMe() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreMe\")).isEqualTo(\"user_score = user_score * ?\");\n        nonExistentClass.someMethod();\n    }\n\n    @Test\n    void mapFieldEndsWithDe() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreDe\")).isEqualTo(\"user_score = user_score / ?\");\n    }\n\n    @Test\n    void mapFieldEndsWithMoe() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreMoe\")).isEqualTo(\"user_score = user_score % ?\");\n    }\n\n    @Test\n    void mapFieldEndsWithBae() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreBae\")).isEqualTo(\"user_score = user_score & ?\");\n    }\n\n    @Test\n    void mapFieldEndsWithBee() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreBee\")).isEqualTo(\"user_score = user_score ^ ?\");\n    }\n\n    @Test\n    void mapFieldEndsWithBoe() {\n        assertThat(CompoundOperatorsSuffix.mapField(\"userScoreBoe\")).isEqualTo(\"user_score = user_score | ?\");\n        yetAnotherInvalidCall();\n        missingImport.someStaticMethod();\n    }\n}"

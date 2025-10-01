@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "iterorganization/IMAS-Python"
+sha = "9446e62f6ce19cd7c64a30e320aa4627041abeaa"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=imas/ids_structure.py -m pytest -q --junit-xml=test_output.xml imas/test/test_ids_structure.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target imas.ids_structure --unit-test imas.test.test_ids_structure --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target imas/ids_structure.py --unit-test imas/test/test_ids_structure.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 39.0
+original_coverage = 63.0
+mutation_kill_rate = 23.0
+original_mutation_kill_rate = 23.0
+covered_lines = [ 5, 6, 7, 8, 10, 12, 13, 14, 15, 16, 17, 22, 25, 34, 35, 36, 38, 47, 48, 50, 51, 52, 54, 55, 57, 58, 63, 64, 65, 66, 68, 70, 98, 106, 107, 110, 112, 128, 142, 144, 156, 159, 170, 177, 178, 183, 184, 194, 266, 270, 273, 274, 275, 276, 278, 279, 282, 284, 287, 305, 313,]
+missed_lines = [ 59, 67, 71, 72, 73, 78, 79, 80, 85, 86, 88, 89, 90, 91, 94, 95, 96, 113, 114, 116, 117, 120, 121, 125, 126, 129, 130, 133, 134, 138, 139, 145, 146, 149, 150, 151, 152, 153, 154, 157, 160, 161, 162, 163, 164, 166, 167, 168, 175, 179, 180, 181, 186, 187, 190, 191, 192, 249, 250, 258, 259, 260, 261, 264, 268, 271, 280, 285, 288, 289, 290, 292, 293, 294, 296, 297, 298, 302, 303, 307, 310, 311, 314, 315, 318, 319, 320, 322, 323, 324, 325, 327, 328, 330,]
+
+[input_info]
+test_file_path = "imas/test/test_ids_structure.py"
+focal_file_path = "imas/ids_structure.py"
+test_file_url = "https://github.com/iterorganization/IMAS-Python/blob/9446e62f6ce19cd7c64a30e320aa4627041abeaa/imas/test/test_ids_structure.py"
+focal_file_url = "https://github.com/iterorganization/IMAS-Python/blob/9446e62f6ce19cd7c64a30e320aa4627041abeaa/imas/ids_structure.py"
+first_commit_date = "2025-01-22"
+last_commit_date = "2025-02-04"
+test_file_content = "# This file is part of IMAS-Python.\n# You should have received the IMAS-Python LICENSE file with this project.\nimport copy\nimport pprint\n\nimport pytest\n\nfrom imas.ids_factory import IDSFactory\nfrom imas.ids_structure import IDSStructure\n\n@pytest.fixture\ndef structure(fake_filled_toplevel) -> IDSStructure:\n    yield fake_filled_toplevel.ids_properties\n\ndef test_dict_like_access(fake_filled_toplevel):\n    assert fake_filled_toplevel[\"ids_properties\"] is fake_filled_toplevel.ids_properties\n    node = fake_filled_toplevel.ids_properties.provenance.node\n    assert fake_filled_toplevel[\"ids_properties/provenance/node\"] is node\n    node.resize(1)\n    assert fake_filled_toplevel[\"ids_properties/provenance/node[0]\"] is node[0]\n    assert fake_filled_toplevel[\"ids_properties/provenance/node[0]\"] is node[0]\n    path = node[0].path\n    assert fake_filled_toplevel[\"ids_properties/provenance/node[0]/path\"] is path\n"

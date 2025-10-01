@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "iterorganization/IMAS-Python"
+sha = "9446e62f6ce19cd7c64a30e320aa4627041abeaa"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=imas/ids_metadata.py -m pytest -q --junit-xml=test_output.xml imas/test/test_ids_metadata.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target imas.ids_metadata --unit-test imas.test.test_ids_metadata --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target imas/ids_metadata.py --unit-test imas/test/test_ids_metadata.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 84.0
+original_coverage = 92.0
+mutation_kill_rate = 48.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 4, 5, 6, 7, 8, 9, 10, 12, 13, 14, 15, 18, 32, 33, 36, 37, 40, 41, 44, 45, 48, 49, 59, 60, 66, 67, 70, 71, 72, 73, 76, 79, 80, 83, 88, 96, 97, 98, 100, 101, 102, 103, 104, 105, 106, 107, 108, 109, 110, 111, 114, 134, 140, 141, 142, 145, 146, 149, 150, 151, 152, 154, 158, 159, 162, 164, 165, 166, 167, 168, 169, 170, 172, 173, 175, 176, 178, 179, 181, 182, 183, 184, 186, 187, 191, 193, 196, 199, 203, 204, 205, 207, 208, 211, 212, 214, 215, 216, 219, 220, 221, 222, 223, 224, 225, 226, 229, 230, 233, 234, 235, 241, 242, 243, 246, 247, 255, 257, 259, 262, 265, 268, 271, 274, 277, 289, 290,]
+missed_lines = [ 185, 194, 202, 227, 228, 236, 260, 263, 266, 269, 272, 275, 278, 279, 280, 281, 282, 283, 287, 302, 303, 304, 305, 306,]
+
+[input_info]
+test_file_path = "imas/test/test_ids_metadata.py"
+focal_file_path = "imas/ids_metadata.py"
+test_file_url = "https://github.com/iterorganization/IMAS-Python/blob/9446e62f6ce19cd7c64a30e320aa4627041abeaa/imas/test/test_ids_metadata.py"
+focal_file_url = "https://github.com/iterorganization/IMAS-Python/blob/9446e62f6ce19cd7c64a30e320aa4627041abeaa/imas/ids_metadata.py"
+first_commit_date = "2025-01-22"
+last_commit_date = "2025-01-23"
+test_file_content = "from copy import deepcopy\n\nimport pytest\n\nfrom imas.ids_factory import IDSFactory\nfrom imas.ids_metadata import IDSType, get_toplevel_metadata\n\ndef test_metadata_cache(fake_structure_xml):\n    meta = get_toplevel_metadata(fake_structure_xml)\n    meta2 = get_toplevel_metadata(fake_structure_xml)\n    assert meta is meta2\n"

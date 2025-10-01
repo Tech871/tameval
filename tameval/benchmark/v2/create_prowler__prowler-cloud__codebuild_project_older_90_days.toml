@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "prowler-cloud/prowler"
+sha = "39e4d20b24b2b7150da7b29e75cce77c14fe046f"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=prowler/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days.py -m pytest -q --junit-xml=test_output.xml tests/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target prowler.providers.aws.services.codebuild.codebuild_project_older_90_days.codebuild_project_older_90_days --unit-test tests.providers.aws.services.codebuild.codebuild_project_older_90_days.codebuild_project_older_90_days_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target prowler/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days.py --unit-test tests/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 89.0
+original_coverage = 100.0
+mutation_kill_rate = 29.0
+original_mutation_kill_rate = 29.0
+covered_lines = [ 0, 2, 3, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 23, 25,]
+missed_lines = [ 18, 19,]
+
+[input_info]
+test_file_path = "tests/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days_test.py"
+focal_file_path = "prowler/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days.py"
+test_file_url = "https://github.com/prowler-cloud/prowler/blob/39e4d20b24b2b7150da7b29e75cce77c14fe046f/tests/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days_test.py"
+focal_file_url = "https://github.com/prowler-cloud/prowler/blob/39e4d20b24b2b7150da7b29e75cce77c14fe046f/prowler/providers/aws/services/codebuild/codebuild_project_older_90_days/codebuild_project_older_90_days.py"
+first_commit_date = "2022-12-13"
+last_commit_date = "2025-01-23"
+test_file_content = "from datetime import datetime, timedelta, timezone\nfrom unittest import mock\n\nfrom prowler.providers.aws.services.codebuild.codebuild_service import Project\n\nAWS_REGION = \"eu-west-1\"\nAWS_ACCOUNT_NUMBER = \"123456789012\"\n\nclass Test_codebuild_project_older_90_days:\n    def test_project_not_built_in_last_90_days(self):\n        codebuild_client = mock.MagicMock\n        project_name = \"test-project\"\n        project_arn = f\"arn:aws:codebuild:{AWS_REGION}:{AWS_ACCOUNT_NUMBER}:project/{project_name}\"\n        codebuild_client.projects = {\n            project_arn: Project(\n                name=project_name,\n                arn=project_arn,\n                region=\"eu-west-1\",\n                last_invoked_time=datetime.now(timezone.utc) - timedelta(days=100),\n                buildspec=None,\n                tags=[],\n            )\n        }\n\n        with (\n            mock.patch(\n                \"prowler.providers.aws.services.codebuild.codebuild_service.Codebuild\",\n                codebuild_client,\n            ),\n            mock.patch(\n                \"prowler.providers.aws.services.codebuild.codebuild_project_older_90_days.codebuild_project_older_90_days.codebuild_client\",\n                codebuild_client,\n            ),\n        ):\n            from prowler.providers.aws.services.codebuild.codebuild_project_older_90_days.codebuild_project_older_90_days import (\n                codebuild_project_older_90_days,\n            )\n\n            check = codebuild_project_older_90_days()\n            result = check.execute()\n\n            assert len(result) == 1\n            assert result[0].status == \"FAIL\"\n            assert (\n                result[0].status_extended\n                == f\"CodeBuild project {project_name} has not been invoked in the last 90 days.\"\n            )\n            assert result[0].resource_id == project_name\n            assert result[0].resource_arn == project_arn\n            assert result[0].resource_tags == []\n            assert result[0].region == AWS_REGION\n"

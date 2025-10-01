@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "Pipfile"
+
+[repo_info]
+repository = "GoogleCloudPlatform/gcpdiag"
+sha = "679c55e8715d535c797fc18cd20cda0ad3fc90ea"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install pipenv && pipenv lock && pipenv install --deploy --system --dev && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=gcpdiag/queries/gcs.py -m pytest -q --junit-xml=test_output.xml gcpdiag/queries/gcs_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target gcpdiag.queries.gcs --unit-test gcpdiag.queries.gcs_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target gcpdiag/queries/gcs.py --unit-test gcpdiag/queries/gcs_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 79.0
+original_coverage = 79.0
+mutation_kill_rate = 41.0
+original_mutation_kill_rate = 41.0
+covered_lines = [ 19, 20, 21, 22, 24, 25, 27, 28, 31, 32, 34, 37, 40, 41, 43, 44, 46, 47, 48, 53, 55, 57, 58, 59, 60, 62, 63, 66, 67, 70, 71, 75, 76, 84, 85, 88, 89, 90, 92, 93, 94, 98, 100, 104, 105, 106, 107, 109, 112, 113, 114, 115, 116, 117, 118, 122, 125, 128, 129, 130, 131, 133, 134, 136, 137, 138, 139, 141, 143, 147, 153, 157,]
+missed_lines = [ 49, 50, 64, 68, 77, 79, 80, 82, 86, 101, 119, 120, 121, 132, 140, 144, 151, 155, 156,]
+
+[input_info]
+test_file_path = "gcpdiag/queries/gcs_test.py"
+focal_file_path = "gcpdiag/queries/gcs.py"
+test_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/gcs_test.py"
+focal_file_url = "https://github.com/GoogleCloudPlatform/gcpdiag/blob/679c55e8715d535c797fc18cd20cda0ad3fc90ea/gcpdiag/queries/gcs.py"
+first_commit_date = "2022-01-03"
+last_commit_date = "2025-03-20"
+test_file_content = "# Copyright 2021 Google LLC\n#\n# Licensed under the Apache License, Version 2.0 (the \"License\");\n# you may not use this file except in compliance with the License.\n# You may obtain a copy of the License at\n#\n#      http://www.apache.org/licenses/LICENSE-2.0\n#\n# Unless required by applicable law or agreed to in writing, software\n# distributed under the License is distributed on an \"AS IS\" BASIS,\n# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n# See the License for the specific language governing permissions and\n# limitations under the License.\n\n# Lint as: python3\n\"\"\"Test code in gcs.py.\"\"\"\n\nfrom unittest import mock\n\nfrom gcpdiag import models\nfrom gcpdiag.queries import apis_stub, gcs\n\nDUMMY_PROJECT_NAME = 'gcpdiag-gcs1-aaaa'\nDUMMY_BUCKET_PATH = 'b/gcpdiag-gcs1bucket-aaaa'\nDUMMY_BUCKET_NAME = 'gcpdiag-gcs1bucket-aaaa'\nDUMMY_BUCKET_WITH_RETENTION_NAME = 'gcpdiag-gcs1bucket2-aaaa'\nDUMMY_BUCKET_PERM = 'projectEditor:gcpdiag-gcs1-aaaa'\nDUMMY_BUCKET_LABELS = {\n    'gcpdiag-gcs1bucket-aaaa': {},\n    'gcpdiag-gcs1bucket-labels-aaaa': {\n        'label1': 'value1'\n    },\n}\nFAKE_BUCKET_RESOURCE_DATA = {\n    'kind':\n        'storage#bucket',\n    'selfLink':\n        'https://www.googleapis.com/storage/v1/b/gcpdiag-gcs1bucket-aaaa',\n    'id':\n        'gcpdiag-gcs1bucket-aaaa',\n    'name':\n        'gcpdiag-gcs1bucket-aaaa',\n    'projectNumber':\n        '12340008',\n    'metageneration':\n        '9',\n    'location':\n        'US',\n    'storageClass':\n        'STANDARD',\n    'etag':\n        'CAE=',\n    'timeCreated':\n        '2016-07-12T15:05:45.473Z',\n    'updated':\n        '2022-06-22T10:25:28.219Z',\n    'locationType':\n        'multi-region',\n    'rpo':\n        'DEFAULT'\n}\n\n\n@mock.patch('gcpdiag.queries.apis.get_api', new=apis_stub.get_api_stub)\nclass TestGcs:\n  \"\"\"Test GCS\"\"\"\n\n  def test_get_buckets(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    buckets = gcs.get_buckets(context=context)\n    assert len(buckets) == 3\n    assert DUMMY_BUCKET_NAME in buckets\n\n  def test_get_bucket_iam_policy(self):\n    policy = gcs.get_bucket_iam_policy(DUMMY_PROJECT_NAME, DUMMY_BUCKET_PATH)\n    assert DUMMY_BUCKET_PERM in policy.get_members()\n\n  def test_bucket_labels(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    buckets = gcs.get_buckets(context=context)\n    for bucket_name, labels in DUMMY_BUCKET_LABELS.items():\n      assert buckets[bucket_name].labels == labels\n\n  def test_get_bucket_with_retention(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    bucket = gcs.get_bucket(context=context,\n                            bucket=DUMMY_BUCKET_WITH_RETENTION_NAME)\n    assert bucket.retention_policy.retention_period == 10\n\n  def test_get_uniform_access(self):\n    context = models.Context(project_id=DUMMY_PROJECT_NAME)\n    bucket = gcs.get_bucket(context=context,\n                            bucket=DUMMY_BUCKET_WITH_RETENTION_NAME)\n    assert bucket.is_uniform_access() is False\n    fake_bucket = gcs.Bucket(project_id=DUMMY_PROJECT_NAME,\n                             resource_data=FAKE_BUCKET_RESOURCE_DATA)\n    assert fake_bucket.is_uniform_access() is False\n"

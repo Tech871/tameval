@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "pytorch/captum"
+sha = "aff7603051094012c9cf1a739a0538c38a6986b2"
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=captum/module/binary_concrete_stochastic_gates.py -m pytest -q --junit-xml=test_output.xml tests/module/test_binary_concrete_stochastic_gates.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target captum.module.binary_concrete_stochastic_gates --unit-test tests.module.test_binary_concrete_stochastic_gates --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target captum/module/binary_concrete_stochastic_gates.py --unit-test tests/module/test_binary_concrete_stochastic_gates.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 91.0
+original_coverage = 100.0
+mutation_kill_rate = 98.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 3, 4, 6, 7, 8, 11, 12, 16, 17, 20, 55, 107, 114, 115, 116, 118, 121, 123, 126, 128, 131, 133, 136, 140, 151, 152, 155, 156, 164, 166, 168, 182, 191, 193, 194, 244, 248, 249, 250, 252,]
+missed_lines = [ 161, 162, 176, 180,]
+
+[input_info]
+test_file_path = "tests/module/test_binary_concrete_stochastic_gates.py"
+focal_file_path = "captum/module/binary_concrete_stochastic_gates.py"
+test_file_url = "https://github.com/pytorch/captum/blob/aff7603051094012c9cf1a739a0538c38a6986b2/tests/module/test_binary_concrete_stochastic_gates.py"
+focal_file_url = "https://github.com/pytorch/captum/blob/aff7603051094012c9cf1a739a0538c38a6986b2/captum/module/binary_concrete_stochastic_gates.py"
+first_commit_date = "2022-11-16"
+last_commit_date = "2025-06-17"
+test_file_content = "#!/usr/bin/env python3\n\n# pyre-strict\n\nimport unittest\n\nimport torch\nfrom captum.module.binary_concrete_stochastic_gates import BinaryConcreteStochasticGates\nfrom captum.testing.helpers import BaseTest\nfrom captum.testing.helpers.basic import assertTensorAlmostEqual\n\nclass TestBinaryConcreteStochasticGates(BaseTest):\n    testing_device: str = \"cpu\"\n\n    def setUp(self) -> None:\n        super().setUp()\n        if self.testing_device == \"cuda\" and not torch.cuda.is_available():\n            raise unittest.SkipTest(\"Skipping GPU test since CUDA not available.\")\n\n    def test_bcstg_1d_input_with_reg_reduction(self) -> None:\n\n        dim = 3\n        mean_bcstg = BinaryConcreteStochasticGates(dim, reg_reduction=\"mean\").to(\n            self.testing_device\n        )\n        none_bcstg = BinaryConcreteStochasticGates(dim, reg_reduction=\"none\").to(\n            self.testing_device\n        )\n        input_tensor = torch.tensor(\n            [\n                [0.0, 0.1, 0.2],\n                [0.3, 0.4, 0.5],\n            ]\n        ).to(self.testing_device)\n\n        mean_gated_input, mean_reg = mean_bcstg(input_tensor)\n        none_gated_input, none_reg = none_bcstg(input_tensor)\n        expected_mean_reg = 0.8316\n        expected_none_reg = torch.tensor([0.8321, 0.8310, 0.8325])\n\n        assertTensorAlmostEqual(self, mean_reg, expected_mean_reg)\n        assertTensorAlmostEqual(self, none_reg, expected_none_reg)\n\n    def test_get_gate_active_probs_1d_input(self) -> None:\n\n        dim = 3\n        bcstg = BinaryConcreteStochasticGates(dim).to(self.testing_device)\n        input_tensor = torch.tensor(\n            [\n                [0.0, 0.1, 0.2],\n                [0.3, 0.4, 0.5],\n            ]\n        ).to(self.testing_device)\n\n        bcstg(input_tensor)\n        gate_active_probs = bcstg.get_gate_active_probs()\n\n        expected_gate_active_probs = [0.8319, 0.8324, 0.8304]\n\n        assertTensorAlmostEqual(\n            self, gate_active_probs, expected_gate_active_probs, mode=\"max\"\n        )\n\n    def test_get_gate_active_probs_2d_input(self) -> None:\n\n        dim = 3 * 2\n        bcstg = BinaryConcreteStochasticGates(dim).to(self.testing_device)\n\n        # shape(2,3,2)\n        input_tensor = torch.tensor(\n            [\n                [\n                    [0.0, 0.1],\n                    [0.2, 0.3],\n                    [0.4, 0.5],\n                ],\n                [\n                    [0.6, 0.7],\n                    [0.8, 0.9],\n                    [1.0, 1.1],\n                ],\n            ]\n        ).to(self.testing_device)\n\n        bcstg(input_tensor)\n        gate_active_probs = bcstg.get_gate_active_probs()\n\n        expected_gate_active_probs = [0.8319, 0.8324, 0.8304, 0.8321, 0.8310, 0.8325]\n\n        assertTensorAlmostEqual(\n            self, gate_active_probs, expected_gate_active_probs, mode=\"max\"\n        )\n\n    def test_get_gate_active_probs_2d_input_with_mask(self) -> None:\n\n        dim = 3\n        mask = torch.tensor(\n            [\n                [0, 1],\n                [1, 1],\n                [0, 2],\n            ]\n        )\n        bcstg = BinaryConcreteStochasticGates(dim, mask=mask).to(self.testing_device)\n\n        input_tensor = torch.tensor(\n            [\n                [\n                    [0.0, 0.1],\n                    [0.2, 0.3],\n                    [0.4, 0.5],\n                ],\n                [\n                    [0.6, 0.7],\n                    [0.8, 0.9],\n                    [1.0, 1.1],\n                ],\n            ]\n        ).to(self.testing_device)\n\n        bcstg(input_tensor)\n        gate_active_probs = bcstg.get_gate_active_probs()\n\n        expected_gate_active_probs = [0.8319, 0.8324, 0.8304]\n\n        assertTensorAlmostEqual(\n            self, gate_active_probs, expected_gate_active_probs, mode=\"max\"\n        )\n\n    def test_from_pretrained(self) -> None:\n        log_alpha_param = torch.tensor([0.1, 0.2, 0.3, 0.4])\n        kwargs = {\n            \"mask\": torch.tensor([0, 1, 1, 0, 2, 3]),\n            \"reg_weight\": 0.1,\n            \"lower_bound\": -0.2,\n            \"upper_bound\": 1.2,\n        }\n        stg = BinaryConcreteStochasticGates._from_pretrained(log_alpha_param, **kwargs)\n\n        for key, expected_val in kwargs.items():\n            val = getattr(stg, key)\n            if isinstance(expected_val, torch.Tensor):\n                assertTensorAlmostEqual(self, val, expected_val, mode=\"max\")\n            else:\n                assert val == expected_val\n"

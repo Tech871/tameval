@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "tailscale/tailscale"
+sha = "6bbf98bef457b4403f27da79eb1861e6197ab539"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out util/clientmetric/clientmetric.go util/clientmetric/clientmetric_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting util/clientmetric/clientmetric.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 62.0
+original_coverage = 74.0
+mutation_kill_rate = 52.0
+original_mutation_kill_rate = 61.0
+covered_lines = [ 81, 90, 94, 95, 96, 101, 105, 111, 115, 120, 121, 122, 129, 130, 131, 132, 133, 134, 135, 136, 137, 138, 139, 140, 143, 144, 177, 181, 182, 183, 184, 187, 188, 189, 190, 191, 192, 195, 196, 197, 198, 199, 202, 203, 204, 205, 206, 211, 212, 213, 214, 215, 216, 320, 321, 322, 323, 324, 328, 329, 330, 331, 332, 333, 334, 335, 336, 337, 338, 339, 340, 342, 343, 344, 345, 346, 347, 348, 349, 350, 351, 353, 354, 355, 356, 357, 358, 359, 360, 361, 362, 363, 365, 366, 367, 368, 369, 373, 374, 375, 388, 389, 390, 391, 392, 393, 394, 395, 396, 397, 398, 403, 404, 405, 406, 407, 412, 413, 414, 415, 416, 419, 420, 421, 422, 423, 424, 425, 426, 427,]
+missed_lines = [ 83, 84, 85, 86, 87, 102, 103, 112, 113, 123, 124, 126, 127, 150, 151, 152, 153, 154, 155, 156, 157, 158, 159, 160, 161, 163, 168, 169, 170, 171, 172, 173, 178, 179, 221, 222, 223, 224, 225, 226, 234, 235, 236, 237, 238, 239, 240, 241, 248, 249, 250, 251, 252, 253, 254, 255, 256, 262, 263, 264, 265, 266, 270, 271, 272, 273, 274, 280, 281, 282, 283, 284, 285, 286, 288, 325, 326, 327, 433, 434, 435,]
+
+[input_info]
+test_file_path = "util/clientmetric/clientmetric_test.go"
+focal_file_path = "util/clientmetric/clientmetric.go"
+test_file_url = "https://github.com/tailscale/tailscale/blob/6bbf98bef457b4403f27da79eb1861e6197ab539/util/clientmetric/clientmetric_test.go"
+focal_file_url = "https://github.com/tailscale/tailscale/blob/6bbf98bef457b4403f27da79eb1861e6197ab539/util/clientmetric/clientmetric.go"
+first_commit_date = "2021-11-15"
+last_commit_date = "2025-01-24"
+test_file_content = "// Copyright (c) Tailscale Inc & AUTHORS\n// SPDX-License-Identifier: BSD-3-Clause\n\npackage clientmetric\n\nimport (\n\t\"testing\"\n\t\"time\"\n)\n\nfunc TestDeltaEncBuf(t *testing.T) {\n\tvar enc deltaEncBuf\n\tenc.writeName(\"one_one\", TypeCounter)\n\tenc.writeValue(1, 1)\n\tenc.writeName(\"two_zero\", TypeGauge)\n\tenc.writeValue(2, 0)\n\n\tenc.writeDelta(1, 63)\n\tenc.writeDelta(2, 64)\n\tenc.writeDelta(1, -65)\n\tenc.writeDelta(2, -64)\n\n\tgot := enc.buf.String()\n\tconst want = \"N0eone_oneS0202N1cgauge_two_zeroS0400I027eI048001I028101I047f\"\n\tif got != want {\n\t\tt.Errorf(\"error\\n got %q\\nwant %q\\n\", got, want)\n\t}\n}\n\nfunc clearMetrics() {\n\tmu.Lock()\n\tdefer mu.Unlock()\n\tmetrics = map[string]*Metric{}\n\tnumWireID = 0\n\tlastDelta = time.Time{}\n\tsorted = nil\n\tlastLogVal = nil\n\tunsorted = nil\n}\n\nfunc advanceTime() {\n\tmu.Lock()\n\tdefer mu.Unlock()\n\tlastDelta = time.Time{}\n}\n\nfunc TestEncodeLogTailMetricsDelta(t *testing.T) {\n\tclearMetrics()\n\n\tc1 := NewCounter(\"foo\")\n\tc2 := NewGauge(\"bar\")\n\tc1.Add(123)\n\tif got, want := EncodeLogTailMetricsDelta(), \"N06fooS02f601\"; got != want {\n\t\tt.Errorf(\"first = %q; want %q\", got, want)\n\t}\n\n\tc2.Add(456)\n\tadvanceTime()\n\tif got, want := EncodeLogTailMetricsDelta(), \"N12gauge_barS049007\"; got != want {\n\t\tt.Errorf(\"second = %q; want %q\", got, want)\n\t}\n\n\tadvanceTime()\n\tif got, want := EncodeLogTailMetricsDelta(), \"\"; got != want {\n\t\tt.Errorf(\"with no changes = %q; want %q\", got, want)\n\t}\n\n\tc1.Add(1)\n\tc2.Add(2)\n\tadvanceTime()\n\tif got, want := EncodeLogTailMetricsDelta(), \"I0202I0404\"; got != want {\n\t\tt.Errorf(\"with increments = %q; want %q\", got, want)\n\t}\n}\n\nfunc TestDisableDeltas(t *testing.T) {\n\tclearMetrics()\n\n\tc := NewCounter(\"foo\")\n\tc.DisableDeltas()\n\tc.Set(123)\n\n\tif got, want := EncodeLogTailMetricsDelta(), \"N06fooS02f601\"; got != want {\n\t\tt.Errorf(\"first = %q; want %q\", got, want)\n\t}\n\n\tc.Set(456)\n\tadvanceTime()\n\tif got, want := EncodeLogTailMetricsDelta(), \"S029007\"; got != want {\n\t\tt.Errorf(\"second = %q; want %q\", got, want)\n\t}\n}\n\nfunc TestWithFunc(t *testing.T) {\n\tclearMetrics()\n\n\tv := int64(123)\n\tNewCounterFunc(\"foo\", func() int64 { return v })\n\n\tif got, want := EncodeLogTailMetricsDelta(), \"N06fooS02f601\"; got != want {\n\t\tt.Errorf(\"first = %q; want %q\", got, want)\n\t}\n\n\tv = 456\n\tadvanceTime()\n\tif got, want := EncodeLogTailMetricsDelta(), \"I029a05\"; got != want {\n\t\tt.Errorf(\"second = %q; want %q\", got, want)\n\t}\n}"

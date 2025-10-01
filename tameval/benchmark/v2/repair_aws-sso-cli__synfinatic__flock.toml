@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Go"
+go_version = "1.23.0"
+
+[repo_info]
+repository = "synfinatic/aws-sso-cli"
+sha = "23193a6e70381add71c46ebf22c0a272b679f94e"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/storage/flock.go internal/storage/flock_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/storage/flock.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 100.0
+original_coverage = 100.0
+mutation_kill_rate = 23.0
+original_mutation_kill_rate = 23.0
+covered_lines = [ 33, 34, 35, 36, 37, 38, 44, 45, 46, 47, 48, 49, 50, 51, 53, 54, 55, 58, 59, 60, 61,]
+missed_lines = []
+
+[input_info]
+test_file_path = "internal/storage/flock_test.go"
+focal_file_path = "internal/storage/flock.go"
+test_file_url = "https://github.com/synfinatic/aws-sso-cli/blob/23193a6e70381add71c46ebf22c0a272b679f94e/internal/storage/flock_test.go"
+focal_file_url = "https://github.com/synfinatic/aws-sso-cli/blob/23193a6e70381add71c46ebf22c0a272b679f94e/internal/storage/flock.go"
+first_commit_date = "2024-11-30"
+last_commit_date = "2025-01-23"
+test_file_content = "package storage\n\nimport (\n\t\"fmt\"\n\t\"os\"\n\t\"path\"\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n\t\"github.com/synfinatic/aws-sso-cli/internal/config\"\n)\n\nfunc TestFlockFile(t *testing.T) {\n\tcfgDir := config.ConfigDir(false)\n\tassert.Equal(t, fmt.Sprintf(\"%s/storage.lock\", cfgDir), FlockFile(false))\n\n\td, err := os.MkdirTemp(\"\", \"test-flockfile\")\n\tassert.NoError(t, err)\n\tflockFile = path.Join(d, \"storage.lock\")\n\tassert.Equal(t, fmt.Sprintf(\"%s/storage.lock\", d), FlockFile(false))\n}\n\nfunc VerifyFlockFilePath(t *testing.T) {\n\tcfgDir := config.ConfigDir(false)\n\tassert.Equal(t, fmt.Sprintf(\"%s/storage.lock\", cfgDir), FlockFile(false))\n\n\td, err := os.MkdirTemp(\"\", \"test-flockfilepath\")\n\tassert.NoError(t, err)\n\tflockFile = path.Join(d, \"storage.lock\")\n\texpectedPath := path.Join(d, \"storage.lock\")\n\tassert.Equal(t, expectedPath, FlockFile(false))\n}\n\nfunc CheckFlockFileLocation(t *testing.T) {\n\tcfgDir := config.ConfigDir(true)\n\tassert.Equal(t, fmt.Sprintf(\"%s/storage.lock\", cfgDir), FlockFile(true))\n\n\td, err := os.MkdirTemp(\"\", \"test-flockfilelocation\")\n\tassert.NoError(t, err)\n\tflockFile = path.Join(d, \"storage.lock\")\n\tassert.Equal(t, fmt.Sprintf(\"%s/storage.lock\", d), FlockFile(true))\n}\n\nfunc TestFlockBlocker(t *testing.T) {\n\tFlockBlockerReset()\n\tassert.NoError(t, FlockBlocker())\n}\n\nfunc ConfirmFlockBlockerBehavior(t *testing.T) {\n\tFlockBlockerReset()\n\terr := FlockBlocker()\n\tassert.Nil(t, err)\n}"

@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_call"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "f4b6a3/uuid-creator"
+sha = "3f41c3e6ed9fa3c229303672960570281f35a125"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=DefaultClockSeqFunctionTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.DefaultClockSeqFunction  -DtargetTests=**.DefaultClockSeqFunctionTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 75.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/github/f4b6a3/uuid/factory/function/impl/DefaultClockSeqFunctionTest.java"
+focal_file_path = "src/main/java/com/github/f4b6a3/uuid/factory/function/impl/DefaultClockSeqFunction.java"
+test_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/test/java/com/github/f4b6a3/uuid/factory/function/impl/DefaultClockSeqFunctionTest.java"
+focal_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/main/java/com/github/f4b6a3/uuid/factory/function/impl/DefaultClockSeqFunction.java"
+first_commit_date = "2021-08-14"
+last_commit_date = "2025-03-29"
+test_file_content = "package com.github.f4b6a3.uuid.factory.function.impl;\n\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport com.github.f4b6a3.uuid.factory.function.ClockSeqFunction;\nimport com.github.f4b6a3.uuid.factory.standard.TimeBasedFactory;\nimport com.github.f4b6a3.uuid.util.UuidTime;\nimport com.github.f4b6a3.uuid.util.UuidUtil;\n\nimport java.time.Instant;\nimport java.util.HashSet;\nimport java.util.UUID;\n\nimport static org.junit.Assert.*;\n\npublic class DefaultClockSeqFunctionTest {\n\n\tprotected static final int THREAD_TOTAL = availableProcessors();\n\tprotected static final int CLOCK_SEQUENCE_MAX = 16384;\n\tprivate static final long CURRENT_TIMESTAMP = UuidTime.getGregTimestamp();\n\n\tprotected static final String DUPLICATE_UUID_MSG = \"A duplicate UUID was created\";\n\n\tprivate static int availableProcessors() {\n\t\tint processors = Runtime.getRuntime().availableProcessors();\n\t\tif (processors < 4) {\n\t\t\tprocessors = 4;\n\t\t}\n\t\treturn processors;\n\t}\n\n\t@Before\n\tpublic void before() {\n\t\tDefaultClockSeqFunction.POOL.clearPool();\n\t}\n\n\t@Test()\n\tpublic void testGetClockSequence1() {\n\n\t\tlong first = 0;\n\t\tlong last = 0;\n\n\t\tint max = DefaultClockSeqFunction.ClockSeqPool.POOL_MAX + 1;\n\t\tDefaultClockSeqFunction clockSequence = new DefaultClockSeqFunction();\n\n\t\tfirst = clockSequence.applyAsLong(CURRENT_TIMESTAMP);\n\n\t\tfor (int i = 0; i < max; i++) {\n\t\t\tlast = clockSequence.applyAsLong(CURRENT_TIMESTAMP);\n\t\t}\n\n\t\tassertEquals(first, last);\n\t}\n\n\t@Test\n\tpublic void testGetClockSequence2() {\n\n\t\tint first = 0;\n\t\tint last = 0;\n\n\t\tint max = DefaultClockSeqFunction.ClockSeqPool.POOL_MAX + 1;\n\t\tTimeBasedFactory factory = new TimeBasedFactory.Builder().withInstant(Instant.now()).build();\n\n\t\tUUID uuid = factory.create();\n\n\t\tfirst = UuidUtil.getClockSequence(uuid);\n\t\tfor (int i = 0; i < max; i++) {\n\t\t\tuuid = factory.create();\n\t\t\tlast = UuidUtil.getClockSequence(uuid);\n\t\t}\n\n\t\tassertEquals(first, last);\n\t}\n\n\t@Test\n\tpublic void testGetClockSequenceUnique1() {\n\n\t\tHashSet<Long> set = new HashSet<>();\n\t\tint max = DefaultClockSeqFunction.ClockSeqPool.POOL_MAX;\n\t\tDefaultClockSeqFunction clockSequence = new DefaultClockSeqFunction();\n\n\t\tfor (int i = 0; i < max; i++) {\n\t\t\tassertTrue(DUPLICATE_UUID_MSG, set.add(clockSequence.applyAsLong(CURRENT_TIMESTAMP)));\n\t\t}\n\t}\n\n\t@Test\n\tpublic void testGetClockSequenceUnique2() {\n\n\t\tHashSet<UUID> set = new HashSet<>();\n\t\tint max = DefaultClockSeqFunction.ClockSeqPool.POOL_MAX;\n\t\tTimeBasedFactory factory = new TimeBasedFactory.Builder().withInstant(Instant.now()).build();\n\n\t\tfor (int i = 0; i < max; i++) {\n\t\t\tassertTrue(DUPLICATE_UUID_MSG, set.add(factory.create()));\n\t\t}\n\t}\n\n\t@Test\n\tpublic void testGetClockSequenceIncremented() {\n\t\tlong oldTimestamp = 1000;\n\t\tlong newTimestamp = 999;\n\t\tDefaultClockSeqFunction clockSequence = new DefaultClockSeqFunction();\n\t\tlong oldSequence = clockSequence.applyAsLong(oldTimestamp);\n\t\tlong newSequence = clockSequence.applyAsLong(newTimestamp);\n\t\tassertEquals((oldSequence + 1) % CLOCK_SEQUENCE_MAX, newSequence);\n\t\toldTimestamp = 1000;\n\t\tnewTimestamp = 1000;\n\t\tclockSequence = new DefaultClockSeqFunction();\n\t\toldSequence = clockSequence.applyAsLong(oldTimestamp);\n\t\tnewSequence = clockSequence.applyAsLong(newTimestamp);\n\t\tassertEquals((oldSequence + 1) % CLOCK_SEQUENCE_MAX, newSequence);\n\t\toldTimestamp = 1000;\n\t\tnewTimestamp = 1001;\n\t\toldSequence = clockSequence.applyAsLong(oldTimestamp);\n\t\tnewSequence = clockSequence.applyAsLong(newTimestamp);\n\t\tassertEquals(oldSequence, newSequence);\n\t}\n\n\t@Test\n\tpublic void testNextClockSequenceInParallel() throws InterruptedException {\n\n\t\tThread[] threads = new Thread[CLOCK_SEQUENCE_MAX];\n\t\tfor (int i = 0; i < CLOCK_SEQUENCE_MAX; i++) {\n\t\t\tDefaultClockSeqFunction strategy = new DefaultClockSeqFunction();\n\t\t\tthreads[i] = new TestThread(strategy, i);\n\t\t\tthreads[i].start();\n\t\t}\n\t\tfor (Thread thread : threads) {\n\t\t\tthread.join();\n\t\t}\n\n\t\tHashSet<Integer> unique = new HashSet<>();\n\t\tfor (Integer i : TestThread.list) {\n\t\t\tunique.add(i);\n\t\t}\n\t\tassertEquals(\"Duplicate clock sequence\", CLOCK_SEQUENCE_MAX, unique.size());\n\t}\n\n\tprivate static class TestThread extends Thread {\n\n\t\tprivate int index;\n\t\tpublic static int[] list = new int[CLOCK_SEQUENCE_MAX];\n\n\t\tprivate ClockSeqFunction strategy;\n\n\t\tpublic TestThread(ClockSeqFunction strategy, int index) {\n\t\t\tthis.strategy = strategy;\n\t\t\tthis.index = index;\n\t\t}\n\n\t\t@Override\n\t\tpublic void run() {\n\t\t\tlist[index] = (int) strategy.applyAsLong(CURRENT_TIMESTAMP);\n\t\t}\n\t}\n\t@Test\n\tpublic void invalidCallsTest() {\n\t\tDefaultClockSeqFunction clockSequence = new DefaultClockSeqFunction();\n\t\tclockSequence.nonExistentMethod();\n\t\tclockSequence.applyAsLong(\"invalidArgument\");\n\t\tclockSequence.applyAsLong();\n\t\tDefaultClockSeqFunction.POOL.nonExistentMethod();\n\t\tclockSequence.sequence.nonExistentMethod();\n\t}\n}"

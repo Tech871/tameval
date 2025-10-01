@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.1"
+
+[repo_info]
+repository = "tinkerbell/tinkerbell"
+sha = "702865f012a2ed3cafbe215976ebdfc7b5c3d072"
+
+[run_info]
+docker_image = "golang:1.24.1"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out secondstar/internal/multi.go secondstar/internal/multi_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting secondstar/internal/multi.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 21.0
+original_coverage = 100.0
+mutation_kill_rate = 15.0
+original_mutation_kill_rate = 92.0
+covered_lines = [ 21, 22, 23, 24, 25, 26, 27,]
+missed_lines = [ 30, 31, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 45, 49, 50, 51, 52, 53, 56, 57, 58, 59, 60, 61, 62, 64, 65,]
+
+[input_info]
+test_file_path = "secondstar/internal/multi_test.go"
+focal_file_path = "secondstar/internal/multi.go"
+test_file_url = "https://github.com/tinkerbell/tinkerbell/blob/702865f012a2ed3cafbe215976ebdfc7b5c3d072/secondstar/internal/multi_test.go"
+focal_file_url = "https://github.com/tinkerbell/tinkerbell/blob/702865f012a2ed3cafbe215976ebdfc7b5c3d072/secondstar/internal/multi.go"
+first_commit_date = "2025-04-10"
+last_commit_date = "2025-04-10"
+test_file_content = "package internal\n\nimport (\n\t\"bytes\"\n\t\"io\"\n\t\"testing\"\n)\n\n// TestMultiWriterCreation tests basic creation of MultiWriter.\nfunc TestMultiWriterCreation(t *testing.T) {\n\ttests := []struct {\n\t\tname    string\n\t\twriters []io.Writer\n\t\twantLen int\n\t}{\n\t\t{\n\t\t\tname:    \"empty\",\n\t\t\twantLen: 0,\n\t\t},\n\t\t{\n\t\t\tname:    \"single writer\",\n\t\t\twriters: []io.Writer{bytes.NewBuffer(nil)},\n\t\t\twantLen: 1,\n\t\t},\n\t\t{\n\t\t\tname:    \"multiple writers\",\n\t\t\twriters: []io.Writer{bytes.NewBuffer(nil), bytes.NewBuffer(nil)},\n\t\t\twantLen: 2,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tmw := NewMultiWriter(tt.writers...)\n\t\t\tif len(mw.writers) != tt.wantLen {\n\t\t\t\tt.Errorf(\"expected %d writers, got %d\", tt.wantLen, len(mw.writers))\n\t\t\t}\n\t\t})\n\t}\n}\n\n// TestWriteSuccess tests successful writing to multiple writers.\n\n// TestWriteError tests error handling during writing.\n\n// TestAddRemove tests adding and removing writers.\n\n// TestConcurrentAccess tests thread safety.\n\n// errorWriter implements io.Writer and always returns an error.\ntype errorWriter struct {\n\terr error\n}\n\nfunc (ew *errorWriter) Write([]byte) (n int, err error) {\n\treturn 0, ew.err\n}\n\n// TestShortWrite tests handling of short writes.\n\n// shortWriter implements io.Writer and always performs a short write.\ntype shortWriter struct{}\n\nfunc (sw *shortWriter) Write(p []byte) (n int, err error) {\n\treturn len(p) - 1, nil // Always write one byte less than requested\n}\n"

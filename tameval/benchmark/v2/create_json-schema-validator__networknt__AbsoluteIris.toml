@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "networknt/json-schema-validator"
+sha = "a8bda4c9f43f17f657513083c0ae6f9690e51b9b"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AbsoluteIrisTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.AbsoluteIris  -DtargetTests=**.AbsoluteIrisTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 76.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 35, 36, 37, 38, 39, 40, 42, 43, 44, 45, 46, 48, 49, 50, 51, 53, 54, 55, 56, 61, 62, 63, 64, 65, 67, 68, 70, 73, 75, 76, 79, 80, 82, 84, 85, 88, 100, 110, 111, 112, 114, 116, 117, 118, 119, 123, 124, 128, 134, 135, 136, 163, 166, 167,]
+missed_lines = [ 27, 57, 58, 59, 90, 121, 122, 125, 138, 139, 140, 147, 148, 153, 155, 157, 158,]
+
+[input_info]
+test_file_path = "src/test/java/com/networknt/schema/utils/AbsoluteIrisTest.java"
+focal_file_path = "src/main/java/com/networknt/schema/utils/AbsoluteIris.java"
+test_file_url = "https://github.com/networknt/json-schema-validator/blob/a8bda4c9f43f17f657513083c0ae6f9690e51b9b/src/test/java/com/networknt/schema/utils/AbsoluteIrisTest.java"
+focal_file_url = "https://github.com/networknt/json-schema-validator/blob/a8bda4c9f43f17f657513083c0ae6f9690e51b9b/src/main/java/com/networknt/schema/utils/AbsoluteIris.java"
+first_commit_date = "2024-03-05"
+last_commit_date = "2024-03-05"
+test_file_content = "/*\n * Copyright (c) 2024 the original author or authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *      http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\npackage com.networknt.schema.utils;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\n\nimport java.net.MalformedURLException;\nimport java.net.URI;\nimport java.net.URL;\n\nimport org.junit.jupiter.api.Test;\n\nimport com.networknt.schema.AbsoluteIri;\n\n/**\n * Tests for AbsoluteIris.\n */\nclass AbsoluteIrisTest {\n    @Test\n    void uri() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://www.example.org/test\"));\n        assertEquals(\"https://www.example.org/test\", result);\n    }\n\n    @Test\n    void uriWithQueryString() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://www.example.org/test/?filter[test]=hello\"));\n        assertEquals(\"https://www.example.org/test/?filter%5Btest%5D=hello\", result);\n    }\n\n    @Test\n    void iriDomain() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://Bücher.example\"));\n        assertEquals(\"https://xn--bcher-kva.example\", result);\n    }\n\n    @Test\n    void iriDomainWithPath() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://Bücher.example/assets/produktdatenblätter.pdf\"));\n        result = URI.create(result).toASCIIString();\n        assertEquals(\"https://xn--bcher-kva.example/assets/produktdatenbl%C3%A4tter.pdf\", result);\n    }\n    \n    @Test\n    void uriDomainWithPath() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://www.example.org/assets/produktdatenblätter.pdf\"));\n        result = URI.create(result).toASCIIString();\n        assertEquals(\"https://www.example.org/assets/produktdatenbl%C3%A4tter.pdf\", result);\n    }\n\n    @Test\n    void iriDomainWithPathTrailingSlash() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://Bücher.example/assets/produktdatenblätter/\"));\n        assertEquals(\"https://xn--bcher-kva.example/assets/produktdatenbl%C3%A4tter/\", result);\n    }\n\n    @Test\n    void iriDomainWithQueryString() throws MalformedURLException {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"https://Bücher.example/assets/produktdatenblätter/?filter[test]=hello\"));\n        assertEquals(\"https://xn--bcher-kva.example/assets/produktdatenbl%C3%A4tter/?filter%5Btest%5D=hello\", result);\n        URL url = URI.create(result).toURL();\n        assertEquals(\"https\", url.getProtocol());\n        assertEquals(\"xn--bcher-kva.example\", url.getHost());\n        assertEquals(\"/assets/produktdatenbl%C3%A4tter/\", url.getPath());\n        assertEquals(\"filter%5Btest%5D=hello\", url.getQuery());\n    }\n    \n    @Test\n    void invalid() {\n        String result = AbsoluteIris.toUri(AbsoluteIri.of(\"www.example.org/test\"));\n        assertEquals(\"www.example.org/test\", result);\n    }\n}\n"

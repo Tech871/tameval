@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_invalid_constructor"
+
+[lang_info]
+lang = "Java"
+java_version = "1.8"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "apache/uniffle"
+sha = "e6f0941ad9768beb83ec330c964d20a3ce2e55e3"
+
+[run_info]
+docker_image = "maven:3.8.6-jdk-8"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl client -Dtest=PartitionDataReplicaRequirementTrackingTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl client -DtargetClasses=**.PartitionDataReplicaRequirementTracking  -DtargetTests=**.PartitionDataReplicaRequirementTrackingTest  -DoutputFormats=XML"
+coverage_report_path = "client/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "client/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 63.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "client/src/test/java/org/apache/uniffle/client/PartitionDataReplicaRequirementTrackingTest.java"
+focal_file_path = "client/src/main/java/org/apache/uniffle/client/PartitionDataReplicaRequirementTracking.java"
+test_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/client/src/test/java/org/apache/uniffle/client/PartitionDataReplicaRequirementTrackingTest.java"
+focal_file_url = "https://github.com/apache/uniffle/blob/e6f0941ad9768beb83ec330c964d20a3ce2e55e3/client/src/main/java/org/apache/uniffle/client/PartitionDataReplicaRequirementTracking.java"
+first_commit_date = "2024-04-17"
+last_commit_date = "2024-05-09"
+test_file_content = "\n\npackage org.apache.uniffle.client;\n\nimport java.util.Arrays;\nimport java.util.HashMap;\nimport java.util.List;\nimport java.util.Map;\n\nimport org.junit.jupiter.api.Test;\n\nimport org.apache.uniffle.common.ShuffleServerInfo;\n\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertTrue;\n\npublic class PartitionDataReplicaRequirementTrackingTest {\n\n  @Test\n  public void testSingleReplicaWithSingleShuffleServer() {\n    ShuffleServerInfo s1 = new ShuffleServerInfo(\"s1\", \"1.1.1.1\", 2);\n    ShuffleServerInfo s2 = new ShuffleServerInfo(\"s2\", \"1.1.1.1\", 3);\n\n    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory = new HashMap<>();\n\n    Map<Integer, List<ShuffleServerInfo>> partition0 =\n        inventory.computeIfAbsent(0, x -> new HashMap<>());\n    partition0.put(0, Arrays.asList(s1));\n\n    Map<Integer, List<ShuffleServerInfo>> partition1 =\n        inventory.computeIfAbsent(1, x -> new HashMap<>());\n    partition1.put(0, Arrays.asList(s2));\n\n    PartitionDataReplicaRequirementTracking tracking =\n        new PartitionDataReplicaRequirementTracking(1, inventory);\n    assertFalse(tracking.isSatisfied(0, 1));\n    assertFalse(tracking.isSatisfied(1, 1));\n\n    tracking.markPartitionOfServerSuccessful(0, s1);\n    assertTrue(tracking.isSatisfied(0, 1));\n    assertFalse(tracking.isSatisfied(1, 1));\n\n    tracking.markPartitionOfServerSuccessful(1, s2);\n    assertTrue(tracking.isSatisfied(0, 1));\n    assertTrue(tracking.isSatisfied(1, 1));\n  }\n\n  @Test\n  public void testSingleReplicaWithMultiServers() {\n    ShuffleServerInfo s1 = new ShuffleServerInfo(\"s1\", \"1.1.1.1\", 2);\n    ShuffleServerInfo s2 = new ShuffleServerInfo(\"s2\", \"1.1.1.1\", 3);\n\n    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory = new HashMap<>();\n\n    int partitionId = 0;\n    Map<Integer, List<ShuffleServerInfo>> partition0 =\n        inventory.computeIfAbsent(partitionId, x -> new HashMap<>());\n    partition0.put(partitionId, Arrays.asList(s1));\n    partition0.put(partitionId, Arrays.asList(s1, s2));\n\n    PartitionDataReplicaRequirementTracking tracking =\n        new PartitionDataReplicaRequirementTracking(1, inventory);\n    assertFalse(tracking.isSatisfied(partitionId, 1));\n    tracking.markPartitionOfServerSuccessful(partitionId, s1);\n    assertFalse(tracking.isSatisfied(partitionId, 1));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s1);\n    assertTrue(tracking.isSatisfied(partitionId, 1));\n  }\n\n  @Test\n  public void testMultipleReplicaWithSingleServer() {\n    ShuffleServerInfo s1 = new ShuffleServerInfo(\"s1\", \"1.1.1.1\", 2);\n    ShuffleServerInfo s2 = new ShuffleServerInfo(\"s2\", \"1.1.1.1\", 3);\n    ShuffleServerInfo s3 = new ShuffleServerInfo(\"s3\", \"1.1.1.1\", 3);\n\n    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory = new HashMap<>();\n    int partitionId = 1;\n\n    Map<Integer, List<ShuffleServerInfo>> partition1 =\n        inventory.computeIfAbsent(partitionId, x -> new HashMap<>());\n    partition1.put(0, Arrays.asList(s1));\n    partition1.put(1, Arrays.asList(s2));\n    partition1.put(2, Arrays.asList(s3));\n    PartitionDataReplicaRequirementTracking tracking =\n        new PartitionDataReplicaRequirementTracking(1, inventory);\n    assertFalse(tracking.isSatisfied(partitionId, 1));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s1);\n    assertTrue(tracking.isSatisfied(partitionId, 1));\n    assertFalse(tracking.isSatisfied(partitionId, 2));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s2);\n    assertTrue(tracking.isSatisfied(partitionId, 1));\n    assertTrue(tracking.isSatisfied(partitionId, 2));\n    assertFalse(tracking.isSatisfied(partitionId, 3));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s3);\n    assertTrue(tracking.isSatisfied(partitionId, 1));\n    assertTrue(tracking.isSatisfied(partitionId, 2));\n    assertTrue(tracking.isSatisfied(partitionId, 3));\n  }\n\n  @Test\n  public void testMultipleReplicaWithMultiServers() {\n    ShuffleServerInfo s1 = new ShuffleServerInfo(\"s1\", \"1.1.1.1\", 2);\n    ShuffleServerInfo s2 = new ShuffleServerInfo(\"s2\", \"1.1.1.1\", 3);\n    ShuffleServerInfo s3 = new ShuffleServerInfo(\"s3\", \"1.1.1.1\", 3);\n    ShuffleServerInfo s4 = new ShuffleServerInfo(\"s4\", \"1.1.1.1\", 3);\n\n    Map<Integer, Map<Integer, List<ShuffleServerInfo>>> inventory = new HashMap<>();\n    int partitionId = 0;\n\n    Map<Integer, List<ShuffleServerInfo>> partition1 =\n        inventory.computeIfAbsent(partitionId, x -> new HashMap<>());\n    partition1.put(0, Arrays.asList(s1, s2));\n    partition1.put(1, Arrays.asList(s3, s4));\n\n    PartitionDataReplicaRequirementTracking tracking =\n        new PartitionDataReplicaRequirementTracking(1, inventory);\n    assertFalse(tracking.isSatisfied(partitionId, 1));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s1);\n    tracking.markPartitionOfServerSuccessful(partitionId, s3);\n    assertFalse(tracking.isSatisfied(partitionId, 1));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s2);\n    assertTrue(tracking.isSatisfied(partitionId, 1));\n    assertFalse(tracking.isSatisfied(partitionId, 2));\n\n    tracking.markPartitionOfServerSuccessful(partitionId, s4);\n    assertTrue(tracking.isSatisfied(partitionId, 1));\n    assertTrue(tracking.isSatisfied(partitionId, 2));\n  }\n\n  @Test\n  public void testInvalidConstructorCalls() {\n    PartitionDataReplicaRequirementTracking tracking1 = new PartitionDataReplicaRequirementTracking(\"invalid\", new HashMap<>());\n    PartitionDataReplicaRequirementTracking tracking2 = new PartitionDataReplicaRequirementTracking(1);\n    PartitionDataReplicaRequirementTracking tracking3 = new PartitionDataReplicaRequirementTracking(new HashMap<>(), \"invalid\");\n    PartitionDataReplicaRequirementTracking tracking4 = new PartitionDataReplicaRequirementTracking();\n    PartitionDataReplicaRequirementTracking tracking5 = new PartitionDataReplicaRequirementTracking(1, \"invalid\");\n  }\n}"

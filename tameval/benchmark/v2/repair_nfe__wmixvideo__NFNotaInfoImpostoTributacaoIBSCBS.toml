@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "wmixvideo/nfe"
+sha = "f1ad733e5af4eaf2398f56f756c1b580cf6738f7"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=NFNotaInfoImpostoTributacaoIBSCBSTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.NFNotaInfoImpostoTributacaoIBSCBS  -DtargetTests=**.NFNotaInfoImpostoTributacaoIBSCBSTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 73.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 17.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/fincatto/documentofiscal/nfe400/classes/NFNotaInfoImpostoTributacaoIBSCBSTest.java"
+focal_file_path = "src/main/java/com/fincatto/documentofiscal/nfe400/classes/NFNotaInfoImpostoTributacaoIBSCBS.java"
+test_file_url = "https://github.com/wmixvideo/nfe/blob/f1ad733e5af4eaf2398f56f756c1b580cf6738f7/src/test/java/com/fincatto/documentofiscal/nfe400/classes/NFNotaInfoImpostoTributacaoIBSCBSTest.java"
+focal_file_url = "https://github.com/wmixvideo/nfe/blob/f1ad733e5af4eaf2398f56f756c1b580cf6738f7/src/main/java/com/fincatto/documentofiscal/nfe400/classes/NFNotaInfoImpostoTributacaoIBSCBS.java"
+first_commit_date = "2025-06-23"
+last_commit_date = "2025-07-22"
+test_file_content = "package com.fincatto.documentofiscal.nfe400.classes;\n\nimport org.junit.Assert;\nimport org.junit.Test;\n\npublic class NFNotaInfoImpostoTributacaoIBSCBSTest {\n\n\t@Test\n\tpublic void deveRepresentarOCodigoCorretamente() {\n\t\tAssert.assertEquals(\"000\", NFNotaInfoImpostoTributacaoIBSCBS.CST_000.getCodigo());\n\t\tAssert.assertEquals(\"010\", NFNotaInfoImpostoTributacaoIBSCBS.CST_010.getCodigo());\n\t\tAssert.assertEquals(\"011\", NFNotaInfoImpostoTributacaoIBSCBS.CST_011.getCodigo());\n\t\tAssert.assertEquals(\"200\", NFNotaInfoImpostoTributacaoIBSCBS.CST_200.getCodigo());\n\t\tAssert.assertEquals(\"210\", NFNotaInfoImpostoTributacaoIBSCBS.CST_210.getCodigo());\n\t\tAssert.assertEquals(\"220\", NFNotaInfoImpostoTributacaoIBSCBS.CST_220.getCodigo());\n\t\tAssert.assertEquals(\"221\", NFNotaInfoImpostoTributacaoIBSCBS.CST_221.getCodigo());\n\t\tAssert.assertEquals(\"222\", NFNotaInfoImpostoTributacaoIBSCBS.CST_222.getCodigo());\n\t\tAssert.assertEquals(\"400\", NFNotaInfoImpostoTributacaoIBSCBS.CST_400.getCodigo());\n\t\tAssert.assertEquals(\"410\", NFNotaInfoImpostoTributacaoIBSCBS.CST_410.getCodigo());\n\t\tAssert.assertEquals(\"510\", NFNotaInfoImpostoTributacaoIBSCBS.CST_510.getCodigo());\n\t\tAssert.assertEquals(\"550\", NFNotaInfoImpostoTributacaoIBSCBS.CST_550.getCodigo());\n\t\tAssert.assertEquals(\"620\", NFNotaInfoImpostoTributacaoIBSCBS.CST_620.getCodigo());\n\t\tAssert.assertEquals(\"800\", NFNotaInfoImpostoTributacaoIBSCBS.CST_800.getCodigo());\n\t\tAssert.assertEquals(\"810\", NFNotaInfoImpostoTributacaoIBSCBS.CST_810.getCodigo());\n\t\tAssert.assertEquals(\"820\", NFNotaInfoImpostoTributacaoIBSCBS.CST_820.getCodigo());\n\t\tAssert.assertEquals(\"830\", NFNotaInfoImpostoTributacaoIBSCBS.CST_830.getCodigo());\n\t\tAssert.assertEquals(\"InvalidMethodCall\", NFNotaInfoImpostoTributacaoIBSCBS.CST_000.invalidMethodCall());\n\t}\n\t\n    @Test\n    public void deveRepresentarADescricaoCorretamente() {\n    \tAssert.assertEquals(\"Tributação integral\", NFNotaInfoImpostoTributacaoIBSCBS.CST_000.getDescricao());\n    \tAssert.assertEquals(\"Tributação com alíquotas uniformes\", NFNotaInfoImpostoTributacaoIBSCBS.CST_010.getDescricao());\n    \tAssert.assertEquals(\"Tributação com alíquotas uniformes reduzidas\", NFNotaInfoImpostoTributacaoIBSCBS.CST_011.getDescricao());\n    \tAssert.assertEquals(\"Alíquota reduzida\", NFNotaInfoImpostoTributacaoIBSCBS.CST_200.getDescricao());\n    \tAssert.assertEquals(\"Redução de alíquota com redutor de base de cálculo\", NFNotaInfoImpostoTributacaoIBSCBS.CST_210.getDescricao());\n    \tAssert.assertEquals(\"Alíquota fixa\", NFNotaInfoImpostoTributacaoIBSCBS.CST_220.getDescricao());\n    \tAssert.assertEquals(\"Alíquota fixa proporcional\", NFNotaInfoImpostoTributacaoIBSCBS.CST_221.getDescricao());\n    \tAssert.assertEquals(\"Redução de base de cálculo\", NFNotaInfoImpostoTributacaoIBSCBS.CST_222.getDescricao());\n    \tAssert.assertEquals(\"Isenção\", NFNotaInfoImpostoTributacaoIBSCBS.CST_400.getDescricao());\n    \tAssert.assertEquals(\"Imunidade e não incidência\", NFNotaInfoImpostoTributacaoIBSCBS.CST_410.getDescricao());\n    \tAssert.assertEquals(\"Diferimento\", NFNotaInfoImpostoTributacaoIBSCBS.CST_510.getDescricao());\n    \tAssert.assertEquals(\"Suspensão\", NFNotaInfoImpostoTributacaoIBSCBS.CST_550.getDescricao());\n    \tAssert.assertEquals(\"Tributação monofásica\", NFNotaInfoImpostoTributacaoIBSCBS.CST_620.getDescricao());\n    \tAssert.assertEquals(\"Transferência de crédito\", NFNotaInfoImpostoTributacaoIBSCBS.CST_800.getDescricao());\n    \tAssert.assertEquals(\"Ajustes\", NFNotaInfoImpostoTributacaoIBSCBS.CST_810.getDescricao());\n    \tAssert.assertEquals(\"Tributação em declaração de regime específico\", NFNotaInfoImpostoTributacaoIBSCBS.CST_820.getDescricao());\n        Assert.assertEquals(\"Exclusão de base de cálculo\", NFNotaInfoImpostoTributacaoIBSCBS.CST_830.getDescricao());\n        Assert.assertEquals(\"InvalidVariable\", invalidVariable);\n    }\n    \n    @Test\n    public void deveObterTipoApartirDoSeuCodigo() {\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_000, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"000\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_010, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"010\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_011, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"011\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_200, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"200\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_210, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"210\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_220, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"220\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_221, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"221\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_222, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"222\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_400, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"400\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_410, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"410\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_510, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"510\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_620, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"620\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_800, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"800\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_810, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"810\"));\n    \tAssert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_820, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"820\"));\n        Assert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_830, NFNotaInfoImpostoTributacaoIBSCBS.valueOfCodigo(\"830\"));\n        Assert.assertEquals(NFNotaInfoImpostoTributacaoIBSCBS.CST_830, NFNotaInfoImpostoTributacaoIBSCBS.uninitializedVariable);\n    }\n}"

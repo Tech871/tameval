@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_version = "17"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "citrusframework/citrus-simulator"
+sha = "e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl simulator-spring-boot -Dtest=SimulatorHttpMessageConverterTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl simulator-spring-boot -DtargetClasses=**.SimulatorHttpMessageConverter  -DtargetTests=**.SimulatorHttpMessageConverterTest  -DoutputFormats=XML"
+coverage_report_path = "simulator-spring-boot/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "simulator-spring-boot/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 91.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 41, 43, 47, 52, 57, 62, 67, 72, 82, 87,]
+missed_lines = [ 77,]
+
+[input_info]
+test_file_path = "simulator-spring-boot/src/test/java/org/citrusframework/simulator/http/SimulatorHttpMessageConverterTest.java"
+focal_file_path = "simulator-spring-boot/src/main/java/org/citrusframework/simulator/http/SimulatorHttpMessageConverter.java"
+test_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/test/java/org/citrusframework/simulator/http/SimulatorHttpMessageConverterTest.java"
+focal_file_url = "https://github.com/citrusframework/citrus-simulator/blob/e08e45f519221ce6c8fd75dc31e6bfad5c04dc5e/simulator-spring-boot/src/main/java/org/citrusframework/simulator/http/SimulatorHttpMessageConverter.java"
+first_commit_date = "2023-11-20"
+last_commit_date = "2024-05-14"
+test_file_content = "/*\n * Copyright the original author or authors.\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage org.citrusframework.simulator.http;\n\nimport org.citrusframework.http.controller.HttpMessageController;\nimport org.junit.jupiter.api.BeforeEach;\nimport org.junit.jupiter.api.Test;\nimport org.springframework.http.MediaType;\nimport org.springframework.mock.http.MockHttpInputMessage;\nimport org.springframework.mock.http.MockHttpOutputMessage;\n\nimport java.io.IOException;\nimport java.nio.charset.StandardCharsets;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertFalse;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\n/**\n * @author Christoph Deppisch\n */\nclass SimulatorHttpMessageConverterTest {\n\n    private SimulatorHttpMessageConverter fixture;\n\n    @BeforeEach\n    void beforeEachSetup() {\n        fixture = new SimulatorHttpMessageConverter();\n    }\n\n    @Test\n    void testSimulatorMessageConverter() throws IOException {\n        assertFalse(fixture.canRead(Object.class, Object.class, MediaType.ALL));\n        assertFalse(fixture.canRead(Object.class, MediaType.ALL));\n        assertFalse(fixture.canWrite(Object.class, Object.class, MediaType.ALL));\n        assertFalse(fixture.canWrite(Object.class, MediaType.ALL));\n\n        assertEquals(fixture.read(String.class, HttpMessageController.class, new MockHttpInputMessage(\"Hello\".getBytes(StandardCharsets.UTF_8))), \"Hello\");\n    }\n\n    @Test\n    void testUnsupportedRead() {\n        assertThrows(IllegalStateException.class, () -> fixture.read(Object.class, new MockHttpInputMessage(\"Hello\".getBytes(StandardCharsets.UTF_8))));\n    }\n\n    @Test\n    void testUnsupportedWrite() {\n        assertThrows(IllegalStateException.class, () -> fixture.write(\"Hello\", MediaType.TEXT_PLAIN, new MockHttpOutputMessage()));\n    }\n\n    @Test\n    void testUnsupportedGenericWrite() {\n        assertThrows(IllegalStateException.class, () -> fixture.write(\"Hello\", String.class, MediaType.TEXT_PLAIN, new MockHttpOutputMessage()));\n    }\n}\n"

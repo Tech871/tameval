@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_asserts"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "flyteorg/flytekit"
+sha = "5503ee5e232fdbc633af39c7f4539a04906102fc"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r dev-requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=flytekit/exceptions/user.py -m pytest -q --junit-xml=test_output.xml tests/flytekit/unit/exceptions/test_user.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target flytekit.exceptions.user --unit-test tests.flytekit.unit.exceptions.test_user --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target flytekit/exceptions/user.py --unit-test tests/flytekit/unit/exceptions/test_user.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 0
+original_coverage = 83.0
+mutation_kill_rate = 0
+original_mutation_kill_rate = 70.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "tests/flytekit/unit/exceptions/test_user.py"
+focal_file_path = "flytekit/exceptions/user.py"
+test_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/tests/flytekit/unit/exceptions/test_user.py"
+focal_file_url = "https://github.com/flyteorg/flytekit/blob/5503ee5e232fdbc633af39c7f4539a04906102fc/flytekit/exceptions/user.py"
+first_commit_date = "2022-01-15"
+last_commit_date = "2025-03-17"
+test_file_content = "from flytekit.exceptions import base, user\n\n\ndef test_flyte_user_exception():\n    try:\n        base_exn = Exception(\"everywhere is bad\")\n        raise user.FlyteUserException(\"bad\") from base_exn\n    except Exception as e:\n\ndef test_flyte_user_runtime_exception():\n    try:\n        base_exn = Exception(\"everywhere is bad\")\n        raise user.FlyteUserRuntimeException(\"bad\") from base_exn\n    except Exception as e:\n\ndef test_flyte_type_exception():\n    try:\n        base_exn = Exception(\"Types need to be right!!!\")\n        raise user.FlyteTypeException(\n            \"int\", \"float\", received_value=1, additional_msg=\"That was a bad idea!\"\n        ) from base_exn\n    except Exception as e:\n\n    try:\n        base_exn = Exception(\"everyone is upset with you\")\n        raise user.FlyteTypeException(\n            \"int\",\n            (\"list\", \"set\"),\n            received_value=1,\n            additional_msg=\"That was a bad idea!\",\n        ) from base_exn\n    except Exception as e:\n\n    try:\n        base_exn = Exception(\"int != float\")\n        raise user.FlyteTypeException(\"int\", \"float\", additional_msg=\"That was a bad idea!\") from base_exn\n    except Exception as e:\n\n    try:\n        raise user.FlyteTypeException(\"int\", (\"list\", \"set\"), additional_msg=\"That was a bad idea!\")\n    except Exception as e:\n\n\ndef test_flyte_value_exception():\n    try:\n        base_exn = Exception(\"live up to expectations\")\n        raise user.FlyteValueException(-1, \"Expected a value > 0\") from base_exn\n    except user.FlyteValueException as e:\n\n\ndef test_flyte_assert():\n    try:\n        base_exn = Exception(\"!!!!!\")\n        raise user.FlyteAssertion(\"I ASSERT THAT THIS IS WRONG!\") from base_exn\n    except user.FlyteAssertion as e:\n\n\ndef test_flyte_validation_error():\n    try:\n        base_exn = Exception(\"somewhere else said this isn't valid\")\n        raise user.FlyteValidationException(\"I validated that your stuff was wrong.\") from base_exn\n    except user.FlyteValidationException as e:"

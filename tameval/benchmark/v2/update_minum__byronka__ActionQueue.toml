@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "byronka/minum"
+sha = "42416409b5fd3535c882b2a994cd9eb0be82260a"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ActionQueueTests && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ActionQueue  -DtargetTests=**.ActionQueueTests  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 71.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/renomad/minum/utils/ActionQueueTests.java"
+focal_file_path = "src/main/java/com/renomad/minum/queue/ActionQueue.java"
+test_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/test/java/com/renomad/minum/utils/ActionQueueTests.java"
+focal_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/main/java/com/renomad/minum/queue/ActionQueue.java"
+first_commit_date = "2024-07-01"
+last_commit_date = "2025-07-31"
+test_file_content = "package com.renomad.minum.utils;\n\nimport com.renomad.minum.Context;\nimport com.renomad.minum.logging.TestLogger;\nimport com.renomad.minum.testing.RegexUtils;\nimport org.junit.AfterClass;\nimport org.junit.BeforeClass;\nimport org.junit.Test;\n\nimport static com.renomad.minum.testing.TestFramework.*;\n\npublic class ActionQueueTests {\n\n    private static Context context;\n    private static TestLogger logger;\n\n    @BeforeClass\n    public static void init() {\n        context = buildTestingContext(\"unit_tests\");\n        logger = (TestLogger)context.getLogger();\n    }\n\n    @AfterClass\n    public static void cleanup() {\n        shutdownTestingContext(context);\n    }\n\n    /*\n     One major concern is that actions that are handled within ActionQueue\n     need to have a way to make exceptions known to the outside world. It's\n     a problem with multi-threaded code - too easy to miss exceptions.\n     */\n    @Test\n    public void test_ActionQueue_ErrorHandling() {\n        String message = \"This is a test of ActionQueue handling an error\";\n        var aq = new ActionQueue(\"Test ActionQueue\", context).initialize();\n\n        aq.enqueue(\"This should immediately fail\", () -> {\n            throw new RuntimeException(message);\n        });\n\n        // unavoidable race condition - if I check logger's list of messages without\n        // waiting, I will definitely get there before actionqueue.\n        MyThread.sleep(50);\n        String loggedMessage = logger.findFirstMessageThatContains(message);\n        assertTrue(!loggedMessage.isBlank(),\n                \"logged message must include expected message.  What was logged: \" + loggedMessage);\n    }\n\n    @Test\n    public void test_Stopping() {\n        var aq = new ActionQueue(\"Test ActionQueue\", context).initialize();\n        assertFalse(aq.isStopped());\n\n        aq.enqueue(\"testing action\", () -> {\n            MyThread.sleep(10);\n            System.out.println(\"a test message\");\n        });\n\n        aq.stop(0,0);\n        var msg = logger.findFirstMessageThatContains(\"Queue Test ActionQueue has\");\n        assertFalse(RegexUtils.find(\"Queue Test ActionQueue has .? elements left but we're done waiting\", msg).isEmpty());\n        assertTrue(aq.isStopped());\n        assertThrows(UtilsException.class,\n                \"failed to enqueue check if stopped - ActionQueue \\\"Test ActionQueue\\\" is stopped\",\n                () ->  aq.enqueue(\"check if stopped\", () -> System.out.println(\"testing if stopped\")));\n        assertEquals(aq.getQueue().size(), 0);\n    }\n}"

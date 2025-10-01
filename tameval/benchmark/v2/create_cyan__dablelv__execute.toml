@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Go"
+go_version = "1.21.3"
+
+[repo_info]
+repository = "dablelv/cyan"
+sha = "fcc58af2bdddc5303fa3360f2616ed0178089988"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out task/execute.go task/execute_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting task/execute.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 80.0
+original_coverage = 80.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 15, 16, 17, 18, 19, 21, 27, 28, 33, 34, 35, 36, 37, 38, 39, 40, 41, 46, 47, 52, 56, 57, 58, 59, 64, 65, 66, 67, 68, 70, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 90, 91, 92, 93, 96, 97, 98, 99, 100, 101,]
+missed_lines = [ 29, 30, 31, 42, 43, 44, 45, 48, 49, 50, 86, 87, 88,]
+
+[input_info]
+test_file_path = "task/execute_test.go"
+focal_file_path = "task/execute.go"
+test_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/task/execute_test.go"
+focal_file_url = "https://github.com/dablelv/cyan/blob/fcc58af2bdddc5303fa3360f2616ed0178089988/task/execute.go"
+first_commit_date = "2024-12-23"
+last_commit_date = "2025-04-23"
+test_file_content = "package task\n\nimport (\n\t\"context\"\n\t\"errors\"\n\t\"testing\"\n\n\t\"github.com/dablelv/cyan/internal/utest\"\n)\n\nfunc TestSeqExecute(t *testing.T) {\n\tctx := context.Background()\n\n\t{\n\t\tassert := utest.NewAssert(t, \"one of tasks failed\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terr := SeqExecute(ctx, tasks...)\n\t\tassert.IsNotNil(err)\n\t}\n\n\t{\n\t\tassert := utest.NewAssert(t, \"all tasks executed successfully\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terr := SeqExecute(ctx, tasks...)\n\t\tassert.IsNil(err)\n\t}\n}\n\nfunc TestConExecute(t *testing.T) {\n\tctx := context.Background()\n\n\t{\n\t\tassert := utest.NewAssert(t, \"one of tasks failed\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terr := ConExecute(ctx, 10, 0, tasks...)\n\t\tassert.IsNotNil(err)\n\t}\n\n\t{\n\t\tassert := utest.NewAssert(t, \"all tasks executed successfully\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terr := ConExecute(ctx, 10, 0, tasks...)\n\t\tassert.IsNil(err)\n\t}\n}\n\nfunc TestSeqExecuteAll(t *testing.T) {\n\tctx := context.Background()\n\n\t{\n\t\tassert := utest.NewAssert(t, \"one of tasks failed\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terr := SeqExecuteAll(ctx, tasks...)\n\t\tassert.Equal(len(err), 1)\n\t}\n\t{\n\t\tassert := utest.NewAssert(t, \"all tasks failed\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t}\n\t\terr := SeqExecuteAll(ctx, tasks...)\n\t\tassert.Equal(len(err), len(tasks))\n\t}\n\t{\n\t\tassert := utest.NewAssert(t, \"all tasks executed successfully\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terrs := SeqExecuteAll(ctx, tasks...)\n\t\tassert.Equal(len(errs), 0)\n\t}\n}\n\nfunc TestConExecuteAll(t *testing.T) {\n\tctx := context.Background()\n\t{\n\t\tassert := utest.NewAssert(t, \"one of tasks failed\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return nil },\n\t\t}\n\t\terr := ConExecuteAll(ctx, 10, tasks...)\n\t\tassert.Greater(len(err), 0)\n\t}\n\n\t{\n\t\tassert := utest.NewAssert(t, \"all tasks failed\")\n\t\ttasks := []Task{\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t\tfunc(ctx context.Context) error { return errors.New(\"err happeded\") },\n\t\t}\n\t\terr := ConExecuteAll(ctx, 10, tasks...)\n\t\tassert.Equal(len(err), len(tasks))\n\t}\n}\n"

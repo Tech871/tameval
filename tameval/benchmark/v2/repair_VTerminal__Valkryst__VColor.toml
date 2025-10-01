@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "11"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "Valkryst/VTerminal"
+sha = "3cac8d90661faff961fa3fa39d21e8088f718a17"
+
+[run_info]
+docker_image = "maven:3.8.4-openjdk-11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=VColorTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.VColor  -DtargetTests=**.VColorTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 94.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/valkryst/VTerminal/palette/VColorTest.java"
+focal_file_path = "src/main/java/com/valkryst/VTerminal/palette/VColor.java"
+test_file_url = "https://github.com/Valkryst/VTerminal/blob/3cac8d90661faff961fa3fa39d21e8088f718a17/src/test/java/com/valkryst/VTerminal/palette/VColorTest.java"
+focal_file_url = "https://github.com/Valkryst/VTerminal/blob/3cac8d90661faff961fa3fa39d21e8088f718a17/src/main/java/com/valkryst/VTerminal/palette/VColor.java"
+first_commit_date = "2021-02-27"
+last_commit_date = "2024-11-13"
+test_file_content = "package com.valkryst.VTerminal.palette;\n\nimport org.junit.jupiter.api.Assertions;\nimport org.junit.jupiter.api.Test;\n\nimport java.awt.*;\nimport java.awt.color.ColorSpace;\n\npublic class VColorTest {\n\t@Test\n\tpublic void canConstructWithAColor() {\n\t\tfinal var color = new VColor(Color.RED);\n\t\tAssertions.assertEquals(Color.RED, color);\n\t}\n\n\t@Test\n\tpublic void cannotConstructWithANullColor() {\n\t\tAssertions.assertThrows(NullPointerException.class, () -> {\n\t\t\tnew VColor(null);\n\t\t});\n\t}\n\n\t@Test\n\tpublic void canConstructWithSeparateRGBIntComponents() {\n\t\tfinal var color = new VColor(10, 20, 30);\n\t\tAssertions.assertEquals(255, color.getAlpha());\n\t\tAssertions.assertEquals(10, color.getRed());\n\t\tAssertions.assertEquals(20, color.getGreen());\n\t\tAssertions.assertEquals(30, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void canConstructWithSeparateRGBAIntComponents() {\n\t\tfinal var color = new VColor(10, 20, 30, 40);\n\t\tAssertions.assertEquals(40, color.getAlpha());\n\t\tAssertions.assertEquals(10, color.getRed());\n\t\tAssertions.assertEquals(20, color.getGreen());\n\t\tAssertions.assertEquals(30, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void canConstructWithCombinedRGBComponents() {\n\t\tfinal var color = new VColor(660510);\n\t\tAssertions.assertEquals(255, color.getAlpha());\n\t\tAssertions.assertEquals(10, color.getRed());\n\t\tAssertions.assertEquals(20, color.getGreen());\n\t\tAssertions.assertEquals(30, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void canConstructWithCombinedRGBAComponents() {\n\t\tvar color = new VColor(671749150, true);\n\t\tAssertions.assertEquals(40, color.getAlpha());\n\t\tAssertions.assertEquals(10, color.getRed());\n\t\tAssertions.assertEquals(20, color.getGreen());\n\t\tAssertions.assertEquals(30, color.getBlue());\n\n\t\tcolor = new VColor(671749150, false);\n\t\tAssertions.assertEquals(255, color.getAlpha());\n\t\tAssertions.assertEquals(10, color.getRed());\n\t\tAssertions.assertEquals(20, color.getGreen());\n\t\tAssertions.assertEquals(30, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void canConstructWithSeparateRGBFloatComponents() {\n\t\tfinal var color = new VColor(0.5f, 0.6f, 0.7f);\n\t\tAssertions.assertEquals(255, color.getAlpha());\n\t\tAssertions.assertEquals(128, color.getRed());\n\t\tAssertions.assertEquals(153, color.getGreen());\n\t\tAssertions.assertEquals(179, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void canConstructWithSeparateRGBAFloatComponents() {\n\t\tfinal var color = new VColor(0.5f, 0.6f, 0.7f, 0.8f);\n\t\tAssertions.assertEquals(204, color.getAlpha());\n\t\tAssertions.assertEquals(128, color.getRed());\n\t\tAssertions.assertEquals(153, color.getGreen());\n\t\tAssertions.assertEquals(179, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void canConstructWithColorSpaceAndComponents() {\n\t\tfinal var colorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);\n\t\tfinal var components = new float[] { 0.5f, 0.6f, 0.7f };\n\t\tfinal var color = new VColor(colorSpace, components, 0.8f);\n\t\tAssertions.assertEquals(204, color.getAlpha());\n\t\tAssertions.assertEquals(127, color.getRed());\n\t\tAssertions.assertEquals(153, color.getGreen());\n\t\tAssertions.assertEquals(178, color.getBlue());\n\t}\n\n\t@Test\n\tpublic void cannotConstructWithColorSpaceAndComponentsWhenColorSpaceIsNull() {\n\t\tAssertions.assertThrows(NullPointerException.class, () -> {\n\t\t\tfinal var components = new float[] { 0.5f, 0.6f, 0.7f };\n\t\t\tnew VColor(null, components, 0.8f);\n\t\t});\n\t}\n\n\t@Test\n\tpublic void cannotConstructWithColorSpaceAndComponentsWhenComponentsAreNull() {\n\t\tAssertions.assertThrows(NullPointerException.class, () -> {\n\t\t\tfinal var colorSpace = ColorSpace.getInstance(ColorSpace.CS_sRGB);\n\t\t\tnew VColor(colorSpace, null, 0.8f);\n\t\t});\n\t}\n\n\t@Test\n\tpublic void canShadeColor() {\n\t\tfinal var expected = new Color[] {\n\t\t\tnew Color(0, 0, 0, 255),\n\t\t\tnew Color(63, 63, 63, 255),\n\t\t\tnew Color(127, 127, 127, 255),\n\t\t\tnew Color(191, 191, 191, 255),\n\t\t\tnew Color(255, 255, 255, 255)\n\t\t};\n\n\t\tfor (int i = 0 ; i < expected.length ; i++) {\n\t\t\tfinal double amount = 1.0 - (i * 0.25);\n\t\t\tfinal var color = new VColor(255, 255, 255, 255);\n\t\t\tfinal var shadedColor = color.shade(amount);\n\t\t\tAssertions.assertNotSame(color, shadedColor);\n\t\t\tAssertions.assertEquals(expected[i], shadedColor);\n\t\t}\n\t}\n\n\t@Test\n\tpublic void canShadeColorWhenAmountIsAboveOne() {\n\t\tfinal var color = new VColor(Color.WHITE);\n\t\tAssertions.assertEquals(Color.BLACK, color.shade(2));\n\t\tuninitializedMethodCall();\n\t}\n\n\t@Test\n\tpublic void canShadeColorWhenAmountIsBelowZero() {\n\t\tfinal var color = new VColor(255, 255, 255);\n\t\tAssertions.assertEquals(color, color.shade(-1));\n\t\tint invalidVariable = someInvalidVariable + 10;\n\t}\n\n\t@Test\n\tpublic void canTintColor() {\n\t\tfinal var expected = new Color[] {\n\t\t\tnew Color(255, 255, 255, 255),\n\t\t\tnew Color(191, 191, 191, 255),\n\t\t\tnew Color(127, 127, 127, 255),\n\t\t\tnew Color(63, 63, 63, 255),\n\t\t\tnew Color(0, 0, 0, 255)\n\t\t};\n\n\t\tfor (int i = 0 ; i < expected.length ; i++) {\n\t\t\tfinal double amount = 1.0 - (i * 0.25);\n\t\t\tfinal var color = new VColor(0, 0, 0, 255);\n\t\t\tfinal var tintedColor = color.tint(amount);\n\t\t\tAssertions.assertNotSame(color, tintedColor);\n\t\t\tAssertions.assertEquals(expected[i], tintedColor);\n\t\t}\n\t\tinvalidClassCall.someMethod();\n\t}\n\n\t@Test\n\tpublic void canTintColorWhenAmountIsAboveOne() {\n\t\tfinal var color = new VColor(Color.BLACK);\n\t\tAssertions.assertEquals(Color.WHITE, color.tint(2));\n\t}\n\n\t@Test\n\tpublic void canTintColorWhenAmountIsBelowZero() {\n\t\tfinal var color = new VColor(255, 255, 255);\n\t\tAssertions.assertEquals(color, color.tint(-1));\n\t\tint randomNumber = Math.random() * 5 + 1;\n\t\tnonExistentMethod(randomNumber);\n\t}\n}"

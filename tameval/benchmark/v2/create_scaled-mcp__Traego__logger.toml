@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.4"
+
+[repo_info]
+repository = "Traego/scaled-mcp"
+sha = "53eccfe963832dc64cc9f82f559c0b8a01170c81"
+
+[run_info]
+docker_image = "golang:1.24.4"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/utils/logger.go pkg/utils/logger_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/utils/logger.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 24.0
+original_coverage = 78.0
+mutation_kill_rate = 7.0
+original_mutation_kill_rate = 36.0
+covered_lines = [ 41, 47, 48, 49, 50, 51, 52, 55, 56, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 144, 145, 146, 254, 255, 256,]
+missed_lines = [ 42, 43, 44, 53, 54, 78, 79, 80, 83, 84, 85, 88, 89, 90, 93, 94, 95, 98, 99, 100, 103, 104, 105, 108, 109, 110, 111, 114, 115, 116, 117, 120, 121, 122, 123, 127, 128, 129, 130, 134, 135, 136, 139, 140, 141, 149, 150, 151, 154, 155, 156, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 171, 172, 173, 174, 175, 176, 177, 178, 181, 182, 183, 184, 185, 187, 188, 189, 190, 191, 192, 240, 241, 242, 243, 244, 245, 246, 247, 248, 249, 250, 251, 259, 260, 261,]
+
+[input_info]
+test_file_path = "pkg/utils/logger_test.go"
+focal_file_path = "pkg/utils/logger.go"
+test_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/pkg/utils/logger_test.go"
+focal_file_url = "https://github.com/Traego/scaled-mcp/blob/53eccfe963832dc64cc9f82f559c0b8a01170c81/pkg/utils/logger.go"
+first_commit_date = "2025-04-11"
+last_commit_date = "2025-04-11"
+test_file_content = "package utils\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\n\nfunc TestSetLogLevel(t *testing.T) {\n\t// Save the original default logger\n\toriginalLogger := defaultLogger\n\n\t// Restore the default logger after the test\n\tdefer func() {\n\t\tdefaultLogger = originalLogger\n\t}()\n\n\t// Set the log level to debug\n\tSetLogLevel(DebugLevel)\n\tassert.Equal(t, DebugLevel, defaultLogger.LogLevel())\n\n\t// Set the log level to error\n\tSetLogLevel(ErrorLevel)\n\tassert.Equal(t, ErrorLevel, defaultLogger.LogLevel())\n}\n"

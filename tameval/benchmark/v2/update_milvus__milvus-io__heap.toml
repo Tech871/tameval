@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22"
+
+[repo_info]
+repository = "milvus-io/milvus"
+sha = "16efcda5c46748062abcfe563f70e1e2e53d0da1"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/util/typeutil/heap.go pkg/util/typeutil/heap_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/util/typeutil/heap.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 50.0
+original_coverage = 90.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 38, 39, 40, 43, 44, 45, 48, 51, 52, 53, 54, 55, 58, 59, 60, 61, 62, 63, 64, 67, 68, 69, 110, 111, 112, 122, 123, 124, 125, 126, 127, 128, 129, 130, 131, 134, 135, 136, 137, 138, 139, 140, 179, 180, 181, 184, 185, 186, 189, 190, 191, 194, 195, 196,]
+missed_lines = [ 76, 77, 78, 80, 81, 82, 84, 85, 86, 88, 89, 90, 92, 93, 94, 95, 96, 97, 98, 100, 101, 102, 115, 116, 117, 118, 119, 142, 143, 144, 145, 146, 147, 148, 149, 150, 151, 152, 153, 154, 155, 156, 159, 160, 161, 162, 163, 164, 165, 166, 167, 168, 169, 170,]
+
+[input_info]
+test_file_path = "pkg/util/typeutil/heap_test.go"
+focal_file_path = "pkg/util/typeutil/heap.go"
+test_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/pkg/util/typeutil/heap_test.go"
+focal_file_url = "https://github.com/milvus-io/milvus/blob/16efcda5c46748062abcfe563f70e1e2e53d0da1/pkg/util/typeutil/heap.go"
+first_commit_date = "2024-07-02"
+last_commit_date = "2025-01-10"
+test_file_content = "package typeutil\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/assert\"\n)\n\nfunc TestMinimumHeap(t *testing.T) {\n\th := []int{4, 5, 2}\n\theap := NewArrayBasedMinimumHeap(h)\n\tassert.Equal(t, 2, heap.Peek())\n\tassert.Equal(t, 3, heap.Len())\n\theap.Push(3)\n\tassert.Equal(t, 2, heap.Peek())\n\tassert.Equal(t, 4, heap.Len())\n\theap.Push(1)\n\tassert.Equal(t, 1, heap.Peek())\n\tassert.Equal(t, 5, heap.Len())\n\tfor i := 1; i <= 5; i++ {\n\t\tassert.Equal(t, i, heap.Peek())\n\t\tassert.Equal(t, i, heap.Pop())\n\t}\n}\n\nfunc TestMaximumHeap(t *testing.T) {\n\th := []int{4, 1, 2}\n\theap := NewArrayBasedMaximumHeap(h)\n\tassert.Equal(t, 4, heap.Peek())\n\tassert.Equal(t, 3, heap.Len())\n\theap.Push(3)\n\tassert.Equal(t, 4, heap.Peek())\n\tassert.Equal(t, 4, heap.Len())\n\theap.Push(5)\n\tassert.Equal(t, 5, heap.Peek())\n\tassert.Equal(t, 5, heap.Len())\n\tfor i := 5; i >= 1; i-- {\n\t\tassert.Equal(t, i, heap.Peek())\n\t\tassert.Equal(t, i, heap.Pop())\n\t}\n}"

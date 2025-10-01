@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ijpb/MorphoLibJ"
+sha = "7d691dff36baa0bbca6fd17f71c93d8414b75b17"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=AverageThicknessTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.AverageThickness  -DtargetTests=**.AverageThicknessTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 71.0
+original_coverage = 71.0
+mutation_kill_rate = 55.0
+original_mutation_kill_rate = 55.0
+covered_lines = [ 55, 88, 93, 96, 99, 102, 103, 104, 107, 108, 109, 111, 114, 117, 119, 122, 127, 130, 131, 136, 137, 139, 140, 141, 142, 143, 145, 159, 175,]
+missed_lines = [ 62, 64, 65, 69, 72, 75, 76, 77, 78, 80, 90, 124,]
+
+[input_info]
+test_file_path = "src/test/java/inra/ijpb/measure/region2d/AverageThicknessTest.java"
+focal_file_path = "src/main/java/inra/ijpb/measure/region2d/AverageThickness.java"
+test_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/test/java/inra/ijpb/measure/region2d/AverageThicknessTest.java"
+focal_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/main/java/inra/ijpb/measure/region2d/AverageThickness.java"
+first_commit_date = "2020-04-06"
+last_commit_date = "2025-01-09"
+test_file_content = "/*-\n * #%L\n * Mathematical morphology library and plugins for ImageJ/Fiji.\n * %%\n * Copyright (C) 2014 - 2024 INRA.\n * %%\n * This program is free software: you can redistribute it and/or modify\n * it under the terms of the GNU Lesser General Public License as\n * published by the Free Software Foundation, either version 3 of the\n * License, or (at your option) any later version.\n * \n * This program is distributed in the hope that it will be useful,\n * but WITHOUT ANY WARRANTY; without even the implied warranty of\n * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\n * GNU General Lesser Public License for more details.\n * \n * You should have received a copy of the GNU General Lesser Public\n * License along with this program.  If not, see\n * <http://www.gnu.org/licenses/lgpl-3.0.html>.\n * #L%\n */\n/**\n * \n */\npackage inra.ijpb.measure.region2d;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertTrue;\n\nimport org.junit.Test;\n\nimport ij.measure.Calibration;\nimport ij.process.ByteProcessor;\nimport ij.process.ImageProcessor;\nimport inra.ijpb.measure.region2d.AverageThickness.Result;\n\n/**\n * @author dlegland\n *\n */\npublic class AverageThicknessTest\n{\n\n    /**\n     * Test method for {@link inra.ijpb.measure.region2d.AverageThickness#analyzeRegions(ij.process.ImageProcessor, int[], ij.measure.Calibration)}.\n     */\n    @Test\n    public final void test_process_rectangle()\n    {\n        ImageProcessor image = new ByteProcessor(12, 8);\n        for (int y = 2; y <= 6; y++)\n        {\n            for (int x = 2; x <= 10; x++)\n            {\n                image.set(x, y, 255);\n            }\n        }\n        \n        AverageThickness op = new AverageThickness();\n        \n        int[] labels = new int[] {255};\n        Result[] results = op.analyzeRegions(image, labels, new Calibration());\n        \n        assertEquals(1, results.length);\n        \n        Result res = results[0];\n        assertTrue(res.meanDist > 2);\n        assertTrue(res.meanDist <= 3);\n    }\n\n    @Test\n    public final void test_process_ThinLines_TouchingLabels()\n    {\n        // Create a synthetic image containing 5 bars\n        // bar 1: x =  0 ->  2,  y = 0 -> 9, label 2\n        // bar 2: x =  3 -> 11,  y = 0 -> 2, label 3\n        // bar 3: x =  3 -> 11,  y = 3 -> 5, label 4\n        // bar 4: x =  3 -> 11,  y = 6 -> 8, label 5\n        // bar 5: x = 12 -> 14,  y = 0 -> 9, label 7\n        ImageProcessor image = new ByteProcessor(15, 9);\n        for (int i = 0; i < 9; i++)\n        {\n            for (int j = 0; j < 3; j++)\n            {\n                image.set(j, i, 2);\n                image.set(i+3, j, 3);\n                image.set(i+3, j+3, 4);\n                image.set(i+3, j+6, 5);\n                image.set(j+12, i, 7);\n            }\n        }\n//        System.out.println(\"Image:\");\n//        IJUtils.printImage(image);\n        \n        AverageThickness op = new AverageThickness();\n        \n        int[] labels = new int[] {2, 3, 4, 5, 7};\n        Result[] results = op.analyzeRegions(image, labels, new Calibration());\n        \n        assertEquals(5, results.length);\n        \n        for (int i = 0; i < labels.length; i++)\n        {\n            Result res = results[i];\n            assertTrue(res.meanDist > 1.5);\n            assertTrue(res.meanDist < 2.5);\n        }\n    }\n}\n"

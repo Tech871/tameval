@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_missed_dependencies"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "f4b6a3/uuid-creator"
+sha = "3f41c3e6ed9fa3c229303672960570281f35a125"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=BaseNRemainderDecoderTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.BaseNRemainderDecoder  -DtargetTests=**.BaseNRemainderDecoderTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 96.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 94.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/github/f4b6a3/uuid/codec/base/function/BaseNRemainderDecoderTest.java"
+focal_file_path = "src/main/java/com/github/f4b6a3/uuid/codec/base/function/BaseNRemainderDecoder.java"
+test_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/test/java/com/github/f4b6a3/uuid/codec/base/function/BaseNRemainderDecoderTest.java"
+focal_file_url = "https://github.com/f4b6a3/uuid-creator/blob/3f41c3e6ed9fa3c229303672960570281f35a125/src/main/java/com/github/f4b6a3/uuid/codec/base/function/BaseNRemainderDecoder.java"
+first_commit_date = "2021-05-02"
+last_commit_date = "2025-03-29"
+test_file_content = "package com.github.f4b6a3.uuid.codec.base.function;\n\nimport static org.junit.Assert.assertEquals;\n\nimport java.util.Arrays;\nimport java.util.UUID;\n\n\nimport com.github.f4b6a3.uuid.codec.base.Base62Codec;\n\npublic class BaseNRemainderDecoderTest {\n\n\tprivate static final int UUID_BYTES = 16;\n\n\t@Test\n\tpublic void testDecode() {\n\t\tfor (int i = 0; i < 1000; i++) {\n\t\t\tString string = getRandomString(Base62Codec.INSTANCE.getBase());\n\t\t\tUUID uuid = Base62Codec.INSTANCE.decode(string);\n\t\t\tbyte[] bytes = StandardBinaryCodec.INSTANCE.encode(uuid);\n\t\t\tassertEquals(Arrays.toString(decode(Base62Codec.INSTANCE.getBase(), string)), Arrays.toString(bytes));\n\t\t}\n\t}\n\n\t@Test\n\tpublic void testMultiply() {\n\n\t\tSplittableRandom seeder = new SplittableRandom(1);\n\t\tfor (int i = 0; i < 1000; i++) {\n\t\t\tbyte[] bytes = new byte[UUID_BYTES];\n\t\t\t(new Random(seeder.nextLong())).nextBytes(bytes);\n\t\t\tlong multiplier = seeder.nextInt() & 0x7fffffff;\n\t\t\tlong addend = seeder.nextInt() & 0x7fffffff;\n\n\t\t\tBigInteger number1 = new BigInteger(1, bytes);\n\t\t\tBigInteger product1 = number1.multiply(BigInteger.valueOf(multiplier)).add(BigInteger.valueOf(addend));\n\t\t\tbyte[] temp0 = product1.toByteArray();\n\t\t\tbyte[] temp1 = new byte[UUID_BYTES];\n\t\t\tint t0 = temp0.length;\n\t\t\tint t1 = temp1.length;\n\t\t\twhile (t0 > 0 && t1 > 0) {\n\t\t\t\ttemp1[--t1] = temp0[--t0];\n\t\t\t}\n\t\t\tbyte[] productBytes1 = temp1;\n\n\t\t\tlong[] number2 = toLongs(bytes);\n\t\t\tlong[] product2 = new long[] { 0, 0 };\n\t\t\tlong overflow2 = 0;\n\t\t\tlong[] answer0 = BaseNRemainderDecoder.multiply(number2[1], multiplier, addend);\n\t\t\tproduct2[1] = answer0[0];\n\t\t\toverflow2 = answer0[1];\n\t\t\tlong[] answer1 = BaseNRemainderDecoder.multiply(number2[0], multiplier, overflow2);\n\t\t\tproduct2[0] = answer1[0];\n\t\t\toverflow2 = answer1[1];\n\t\t\tbyte[] productBytes2 = fromLongs(product2);\n\n\t\t\tassertEquals(number1, new BigInteger(1, fromLongs(number2)));\n\t\t\tassertEquals(Arrays.toString(productBytes1), Arrays.toString(productBytes2));\n\t\t}\n\t}\n\n\tprotected static long[] toLongs(byte[] bytes) {\n\t\tUUID uuid = StandardBinaryCodec.INSTANCE.decode(bytes);\n\t\treturn new long[] { uuid.getMostSignificantBits(), uuid.getLeastSignificantBits() };\n\t}\n\n\tprotected static byte[] fromLongs(long[] longs) {\n\t\tUUID uuid = new UUID(longs[0], longs[1]);\n\t\treturn StandardBinaryCodec.INSTANCE.encode(uuid);\n\t}\n\n\tprivate String getRandomString(BaseN base) {\n\n\t\tSplittableRandom random = new SplittableRandom(1);\n\t\tchar[] chars = new char[base.getLength()];\n\n\t\tchars[0] = base.getPadding();\n\t\tfor (int i = 1; i < chars.length; i++) {\n\t\t\tchars[i] = base.getAlphabet().get(random.nextInt(base.getRadix()));\n\t\t}\n\n\t\treturn new String(chars);\n\t}\n\n\tprivate byte[] decode(BaseN base, String string) {\n\n\t\tchar[] chars = string.toCharArray();\n\t\tBigInteger number = BigInteger.ZERO;\n\n\t\tBigInteger n = BigInteger.valueOf(base.getRadix());\n\n\t\tfor (int c : chars) {\n\t\t\tfinal long value = base.getMap().get(c);\n\t\t\tnumber = n.multiply(number).add(BigInteger.valueOf(value));\n\t\t}\n\t\tbyte[] result = number.toByteArray();\n\t\tbyte[] buffer = new byte[UUID_BYTES];\n\t\tint r = result.length;\n\t\tint b = buffer.length;\n\t\twhile (b > 0 && r > 0) {\n\t\t\tbuffer[--b] = result[--r];\n\t\t}\n\n\t\treturn buffer;\n\t}\n}"

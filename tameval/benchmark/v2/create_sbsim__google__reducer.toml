@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "extend_test_file"
+
+[lang_info]
+lang = "Python"
+python_version = "3.11"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "google/sbsim"
+sha = "67c5bb018e54295f59ab2060962bbbeeb5db8412"
+
+[run_info]
+docker_image = "python:3.11"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=smart_control/utils/reducer.py -m pytest -q --junit-xml=test_output.xml smart_control/utils/reducer_test.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target smart_control.utils.reducer --unit-test smart_control.utils.reducer_test --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target smart_control/utils/reducer.py --unit-test smart_control/utils/reducer_test.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 92.0
+original_coverage = 92.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 19, 20, 21, 23, 24, 25, 27, 30, 31, 48, 49, 51, 52, 56, 59, 60, 64, 65, 68, 70, 71, 73, 75, 76, 77, 80, 81, 84, 87, 93, 94, 95, 97, 98, 100, 101, 102, 104, 105, 106, 107, 110, 112, 114, 125, 126, 128, 129, 131, 133, 135, 138, 139, 140, 142, 143, 146, 148, 149, 150, 151, 153, 154, 160, 161, 166, 167, 169, 172, 173, 174, 175, 176,]
+missed_lines = [ 33, 34, 35, 36, 43, 45,]
+
+[input_info]
+test_file_path = "smart_control/utils/reducer_test.py"
+focal_file_path = "smart_control/utils/reducer.py"
+test_file_url = "https://github.com/google/sbsim/blob/67c5bb018e54295f59ab2060962bbbeeb5db8412/smart_control/utils/reducer_test.py"
+focal_file_url = "https://github.com/google/sbsim/blob/67c5bb018e54295f59ab2060962bbbeeb5db8412/smart_control/utils/reducer.py"
+first_commit_date = "2024-08-21"
+last_commit_date = "2025-06-23"
+test_file_content = "\"\"\"Tests for reducer.\"\"\"\n\nfrom absl.testing import absltest\nimport numpy as np\nimport pandas as pd\n\nfrom smart_control.utils import reducer\n\n\nclass ReducerTest(absltest.TestCase):\n\n  def _get_test_observation_sequence(self):\n    return pd.DataFrame({\n        ('a', 'b'): [1, 2, 3],\n        ('d0', 'm0'): [76.0, 76.2, 75.0],\n        ('d1', 'm0'): [74.1, 75.2, 77.0],\n        ('d2', 'm0'): [73.1, 73.2, 74.0],\n        ('d1', 'm1'): [0.2, 0.22, 0.23],\n    })\n\n  def _get_test_median_reduced_sequence(self):\n    return pd.DataFrame({\n        ('a', 'b'): [1, 2, 3],\n        ('m0', 'median'): [74.1, 75.2, 75.0],\n        ('m1', 'median'): [0.2, 0.22, 0.23],\n    })\n\n  def _get_test_median_expanded_sequence(self):\n    return pd.DataFrame({\n        ('a', 'b'): [1, 2, 3],\n        ('d0', 'm0'): [74.1, 75.2, 75.0],\n        ('d1', 'm0'): [74.1, 75.2, 75.0],\n        ('d2', 'm0'): [74.1, 75.2, 75.0],\n        ('d1', 'm1'): [0.2, 0.22, 0.23],\n    })\n\n  def test_identity_reducer(self):\n    observation_sequence = self._get_test_observation_sequence()\n    identity_reducer = reducer.IdentityReducer()\n    rs = identity_reducer.reduce(observation_sequence)\n    pd.testing.assert_frame_equal(rs.reduced_sequence, observation_sequence)\n    pd.testing.assert_frame_equal(rs.expand(), observation_sequence)\n\n  def test_median_reducer_reduce(self):\n    observation_sequence = self._get_test_observation_sequence()\n    median_reduced_sequence = self._get_test_median_reduced_sequence()\n    passthrough_features = [('a', 'b')]\n    stats_funcs = [np.median]\n    stats_reducer = reducer.StatsReducer(\n        passthrough_features=passthrough_features, stats_funcs=stats_funcs\n    )\n    rs = stats_reducer.reduce(observation_sequence)\n    pd.testing.assert_frame_equal(rs.reduced_sequence, median_reduced_sequence)\n\n  def test_median_reducer_expand(self):\n    observation_sequence = self._get_test_observation_sequence()\n    median_expanded_sequence = self._get_test_median_expanded_sequence()\n    passthrough_features = [('a', 'b')]\n    stats_funcs = [np.median]\n    stats_reducer = reducer.StatsReducer(\n        passthrough_features=passthrough_features, stats_funcs=stats_funcs\n    )\n    reduced_sequence = stats_reducer.reduce(observation_sequence)\n    expanded_sequence = reduced_sequence.expand()\n    pd.testing.assert_frame_equal(expanded_sequence, median_expanded_sequence)\n\n  def test_empty_stats_funcs(self):\n    passthrough_features = [('a', 'b')]\n    with self.assertRaises(ValueError):\n      _ = reducer.StatsReducer(\n          passthrough_features=passthrough_features, stats_funcs=[]\n      )\n\n  def test_bad_func_reducer_reduce(self):\n    def bad_stats_func(a, axis=None, dtype=None, out=None):\n      raise ValueError('Bad stats function')\n\n    observation_sequence = self._get_test_observation_sequence()\n    passthrough_features = [('a', 'b')]\n\n    stats_funcs = [bad_stats_func]\n    stats_reducer = reducer.StatsReducer(\n        passthrough_features=passthrough_features, stats_funcs=stats_funcs\n    )\n    with self.assertRaises(ValueError):\n      _ = stats_reducer.reduce(observation_sequence)\n\n\nif __name__ == '__main__':\n  absltest.main()\n"

@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "byronka/minum"
+sha = "42416409b5fd3535c882b2a994cd9eb0be82260a"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=InputStreamUtilsTests && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.InputStreamUtils  -DtargetTests=**.InputStreamUtilsTests  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 59.0
+original_coverage = 93.0
+mutation_kill_rate = 44.0
+original_mutation_kill_rate = 65.0
+covered_lines = [ 18, 19, 20, 59, 60, 62, 64, 66, 67, 68, 70, 72, 73, 76, 77, 78, 79, 81, 82, 83, 85, 90, 91, 92, 93, 98,]
+missed_lines = [ 24, 25, 27, 28, 29, 30, 31, 32, 34, 35, 36, 37, 46, 49, 50, 51, 52, 54,]
+
+[input_info]
+test_file_path = "src/test/java/com/renomad/minum/web/InputStreamUtilsTests.java"
+focal_file_path = "src/main/java/com/renomad/minum/web/InputStreamUtils.java"
+test_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/test/java/com/renomad/minum/web/InputStreamUtilsTests.java"
+focal_file_url = "https://github.com/byronka/minum/blob/42416409b5fd3535c882b2a994cd9eb0be82260a/src/main/java/com/renomad/minum/web/InputStreamUtils.java"
+first_commit_date = "2023-08-29"
+last_commit_date = "2025-07-31"
+test_file_content = "package com.renomad.minum.web;\n\nimport com.renomad.minum.security.ForbiddenUseException;\nimport com.renomad.minum.state.Context;\nimport com.renomad.minum.utils.UtilsException;\nimport nl.jqno.equalsverifier.EqualsVerifier;\nimport org.junit.After;\nimport org.junit.Before;\nimport org.junit.Test;\n\nimport java.io.ByteArrayInputStream;\nimport java.io.IOException;\nimport java.io.InputStream;\nimport java.nio.charset.StandardCharsets;\n\nimport static com.renomad.minum.testing.TestFramework.*;\n\npublic class InputStreamUtilsTests {\n\n    private IInputStreamUtils inputStreamUtils;\n    private Context context;\n\n    @Before\n    public void init() {\n        context = buildTestingContext(\"input stream utils tests\");\n        inputStreamUtils = new InputStreamUtils(context.getConstants().maxReadLineSizeBytes);\n    }\n\n    @After\n    public void cleanup() {\n        shutdownTestingContext(context);\n    }\n\n    /**\n     * For the {@link InputStreamUtils#read(int, InputStream)}, if more bytes are sent than\n     * the buffer can hold, it will loop, draining the buffer.  The buffer is hardcoded,\n     * see the method in question for \"typicalBufferSize\"\n     */\n    @Test\n    public void testReadingLarge() {\n        inputStreamUtils = new InputStreamUtils(context.getConstants().maxReadLineSizeBytes);\n\n        ByteArrayInputStream inputStream = new ByteArrayInputStream(\"a\".repeat(10_000).getBytes(StandardCharsets.UTF_8));\n\n        byte[] result = inputStreamUtils.read(10_000, inputStream);\n\n        assertEqualByteArray(result, \"a\".repeat(10_000).getBytes(StandardCharsets.UTF_8));\n    }\n\n    @Test\n    public void testReading_EdgeCase_IOException() throws IOException {\n        try (InputStream inputStream = new InputStream() {\n\n            @Override\n            public int read() throws IOException {\n                throw new IOException(\"test exception only, no worries\");\n            }\n        }) {\n\n            var exception = assertThrows(UtilsException.class, () -> inputStreamUtils.read(2, inputStream));\n\n            assertEquals(exception.getMessage(), \"java.io.IOException: test exception only, no worries\");\n        }\n    }\n\n    /**\n     * The {@link InputStreamUtils#read(int, InputStream)} method is given an expected\n     * size of content to read.  If we are unable to read the quantity we were told, we\n     * will throw an exception about it.\n     * <p>\n     *     For example, if we are told to expect 10 bytes, but can only read 5 bytes, we\n     *     will throw the exception.\n     * </p>\n     */\n    @Test\n    public void testReading_EdgeCase_DifferentCount() throws IOException {\n        try (InputStream inputStream = new InputStream() {\n\n            private final byte[] sampleData = new byte[] {123};\n            int index = 0;\n\n            @Override\n            public int read() {\n                if (index < 1) {\n                    var data = sampleData[index] & 0xFF;\n                    index += 1;\n                    return data;\n                } else {\n                    return -1;\n                }\n            }\n        }) {\n\n            var exception = assertThrows(ForbiddenUseException.class, () -> inputStreamUtils.read(2, inputStream));\n\n            assertEquals(exception.getMessage(), \"length of bytes read (1) must be what we expected (2)\");\n        }\n    }\n\n    @Test\n    public void testEquals() {\n        EqualsVerifier.forClass(InputStreamUtils.class).verify();\n    }\n}"

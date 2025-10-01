@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Vaskivskyi/asusrouter"
+sha = "1f98018ace04703492b654cd02f4f3a4890cedcb"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=asusrouter/modules/endpoint/onboarding.py -m pytest -q --junit-xml=test_output.xml tests/modules/endpoint/test_onboarding.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target asusrouter.modules.endpoint.onboarding --unit-test tests.modules.endpoint.test_onboarding --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target asusrouter/modules/endpoint/onboarding.py --unit-test tests/modules/endpoint/test_onboarding.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 33.0
+original_coverage = 100.0
+mutation_kill_rate = 24.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 2, 4, 6, 7, 8, 9, 10, 12, 21, 29, 36, 48, 52, 58, 61, 64, 103, 144,]
+missed_lines = [ 40, 43, 45, 67, 70, 77, 78, 79, 80, 81, 82, 83, 96, 98, 100, 107, 108, 109, 110, 113, 114, 115, 116, 117, 118, 119, 122, 124, 125, 127, 148, 149, 151, 152, 154, 155,]
+
+[input_info]
+test_file_path = "tests/modules/endpoint/test_onboarding.py"
+focal_file_path = "asusrouter/modules/endpoint/onboarding.py"
+test_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/tests/modules/endpoint/test_onboarding.py"
+focal_file_url = "https://github.com/Vaskivskyi/asusrouter/blob/1f98018ace04703492b654cd02f4f3a4890cedcb/asusrouter/modules/endpoint/onboarding.py"
+first_commit_date = "2023-10-28"
+last_commit_date = "2025-08-10"
+test_file_content = "\"\"\"Tests for the onboarding endpoint module.\"\"\"\n\nfrom typing import Any\nfrom unittest.mock import patch\n\nimport pytest\n\nfrom asusrouter import AsusData\nfrom asusrouter.modules.aimesh import AiMeshDevice\nfrom asusrouter.modules.endpoint.onboarding import (\n    CONNECTION_TYPE,\n    process,\n    process_aimesh_node,\n    process_connection,\n    read,\n    read_preprocess,\n)\n\nCONTENT_RAW = (\n    \"get_onboardinglist = [{}][0];\\n\"\n    \"get_cfg_clientlist = [[{}]][0];\\n\"\n    \"get_onboardingstatus = [{}][0];\\n\"\n    \"get_wclientlist = [{}][0];\\n\"\n    \"get_wiredclientlist = [{}][0];\\n\"\n    \"get_allclientlist = [{}][0];\\n\"\n    'cfg_note = \"1\";\\n'\n    'cfg_obre = \"\";\\n'\n    \"\\n\"\n    \"\\n\"\n)\n\nCONTENT_PREPROCESSED = (\n    '{\"get_onboardinglist\":[{}],'\n    '\"get_cfg_clientlist\":[[{}]],'\n    '\"get_onboardingstatus\":[{}],'\n    '\"get_wclientlist\":[{}],'\n    '\"get_wiredclientlist\":[{}],'\n    '\"get_allclientlist\":[{}],'\n    '\"cfg_note\":\"1\",'\n    '\"cfg_obre\":\"\"}'\n)\n\nCONTENT_READ = {\n    \"get_onboardinglist\": [{}],\n    \"get_cfg_clientlist\": [[{}]],\n    \"get_onboardingstatus\": [{}],\n    \"get_wclientlist\": [{}],\n    \"get_wiredclientlist\": [{}],\n    \"get_allclientlist\": [{}],\n    \"cfg_note\": \"1\",\n    \"cfg_obre\": \"\",\n}\n\ndef test_read_preprocess() -> None:\n    \"\"\"Test read_preprocess function.\"\"\"\n\n    # Get the result\n    result = read_preprocess(CONTENT_RAW)\n\n    # Check the result\n    assert result == CONTENT_PREPROCESSED\n\nDATA_CLIENTLIST = [[{\"mac\": \"00:aa:11:bb:22:cc\", \"ip\": \"192.168.1.1\"}]]\nDATA_ALLCLIENTLIST = [\n    {\n        \"00:aa:11:bb:22:cc\": {\n            \"2G\": {\"00:aa:11:bb:22:dd\": {\"ip\": \"192.168.1.12\", \"rssi\": -34}}\n        }\n    }\n]\n\nRESULT_CLIENTLIST = {\n    \"00:aa:11:bb:22:cc\": AiMeshDevice(\n        status=False,\n        alias=None,\n        model=None,\n        product_id=None,\n        ip=\"192.168.1.1\",\n        fw=None,\n        fw_new=None,\n        mac=\"00:aa:11:bb:22:cc\",\n        ap={},\n        parent={},\n        type=\"router\",\n        level=0,\n        config=None,\n    ),\n}\n\nRESULT_ALLCLIENTLIST = {\n    \"00:aa:11:bb:22:dd\": {\n        \"connection_type\": None,\n        \"guest\": None,\n        \"ip\": \"192.168.1.12\",\n        \"mac\": \"00:aa:11:bb:22:dd\",\n        \"node\": \"00:aa:11:bb:22:cc\",\n        \"online\": True,\n        \"rssi\": -34,\n    }\n}\n"

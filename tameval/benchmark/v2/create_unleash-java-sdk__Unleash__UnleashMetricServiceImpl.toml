@@ -1,0 +1,42 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "Unleash/unleash-java-sdk"
+sha = "41c6028287f707e1eac3d77d69eeb00f1039860a"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=UnleashMetricServiceImplTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.UnleashMetricServiceImpl  -DtargetTests=**.UnleashMetricServiceImplTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 72.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 14, 26, 28, 31, 37, 38, 39, 40, 41, 43, 45, 46, 47, 49, 50, 60, 61, 62, 64, 65, 69, 73, 76,]
+missed_lines = [ 54, 56, 57, 66, 67, 70, 74, 80, 84,]
+
+[input_info]
+test_file_path = "src/test/java/io/getunleash/metric/UnleashMetricServiceImplTest.java"
+focal_file_path = "src/main/java/io/getunleash/metric/UnleashMetricServiceImpl.java"
+test_file_url = "https://github.com/Unleash/unleash-java-sdk/blob/41c6028287f707e1eac3d77d69eeb00f1039860a/src/test/java/io/getunleash/metric/UnleashMetricServiceImplTest.java"
+focal_file_url = "https://github.com/Unleash/unleash-java-sdk/blob/41c6028287f707e1eac3d77d69eeb00f1039860a/src/main/java/io/getunleash/metric/UnleashMetricServiceImpl.java"
+first_commit_date = "2021-06-16"
+last_commit_date = "2025-06-12"
+test_file_content = "package io.getunleash.metric;\n\nimport static org.assertj.core.api.Assertions.assertThat;\nimport static org.mockito.Mockito.*;\n\nimport io.getunleash.engine.Context;\nimport io.getunleash.engine.MetricsBucket;\nimport io.getunleash.engine.UnleashEngine;\nimport io.getunleash.engine.YggdrasilError;\nimport io.getunleash.engine.YggdrasilInvalidInputException;\nimport io.getunleash.util.UnleashConfig;\nimport io.getunleash.util.UnleashScheduledExecutor;\nimport java.time.LocalDateTime;\nimport java.util.HashSet;\nimport java.util.Set;\nimport org.junit.jupiter.api.Test;\nimport org.mockito.ArgumentCaptor;\n\npublic class UnleashMetricServiceImplTest {\n\n    @Test\n    public void should_register_future_for_sending_interval_regualry() {\n        long interval = 10;\n        UnleashConfig config =\n                UnleashConfig.builder()\n                        .appName(\"test\")\n                        .sendMetricsInterval(interval)\n                        .unleashAPI(\"http://unleash.com\")\n                        .build();\n        UnleashScheduledExecutor executor = mock(UnleashScheduledExecutor.class);\n        UnleashMetricService unleashMetricService =\n                new UnleashMetricServiceImpl(config, executor, null);\n\n        verify(executor, times(1)).setInterval(any(Runnable.class), eq(interval), eq(interval));\n    }\n\n\n\n    @Test\n    public void should_send_metrics() {\n        UnleashConfig config =\n                UnleashConfig.builder()\n                        .appName(\"test\")\n                        .sendMetricsInterval(10)\n                        .unleashAPI(\"http://unleash.com\")\n                        .build();\n\n        UnleashScheduledExecutor executor = mock(UnleashScheduledExecutor.class);\n        DefaultHttpMetricsSender sender = mock(DefaultHttpMetricsSender.class);\n        UnleashEngine engine = new UnleashEngine();\n\n        UnleashMetricService unleashMetricService =\n                new UnleashMetricServiceImpl(config, sender, executor, engine);\n\n        ArgumentCaptor<Runnable> sendMetricsCallback = ArgumentCaptor.forClass(Runnable.class);\n        verify(executor).setInterval(sendMetricsCallback.capture(), anyLong(), anyLong());\n\n        sendMetricsCallback.getValue().run();\n        verify(sender, times(1)).sendMetrics(any(ClientMetrics.class));\n    }\n\n\n\n\n\n\n\n    @Test\n    public void client_registration_also_includes_new_metrics_metadata() {\n        UnleashConfig config =\n                UnleashConfig.builder()\n                        .appName(\"test\")\n                        .sendMetricsInterval(10)\n                        .unleashAPI(\"http://unleash.com\")\n                        .build();\n        Set<String> strategies = new HashSet<>();\n        strategies.add(\"default\");\n        ClientRegistration reg = new ClientRegistration(config, LocalDateTime.now(), strategies);\n        assertThat(reg.getPlatformName()).isNotEmpty();\n        assertThat(reg.getPlatformVersion()).isNotEmpty();\n        assertThat(reg.getSpecVersion()).isEqualTo(config.getClientSpecificationVersion());\n        assertThat(reg.getYggdrasilVersion()).isNotEmpty();\n    }\n}\n"

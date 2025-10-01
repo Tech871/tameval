@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "dflib/dflib"
+sha = "9486d42d77375b4de8bf8df9770f2952225db1a4"
+bench_version = 1
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl dflib -Dtest=FloatValueMapperTest"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl dflib -DtargetClasses=**.FloatValueMapper  -DtargetTests=**.FloatValueMapperTest  -DoutputFormats=XML"
+coverage_report_path = "dflib/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "dflib/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 47.0
+original_coverage = 76.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 37, 62, 64, 65, 68, 69, 70, 73,]
+missed_lines = [ 16, 23, 30, 44, 51, 82, 90, 97, 105,]
+
+[input_info]
+test_file_path = "dflib/src/test/java/org/dflib/FloatValueMapperTest.java"
+focal_file_path = "dflib/src/main/java/org/dflib/FloatValueMapper.java"
+test_file_url = "https://github.com/dflib/dflib/blob/9486d42d77375b4de8bf8df9770f2952225db1a4/dflib/src/test/java/org/dflib/FloatValueMapperTest.java"
+focal_file_url = "https://github.com/dflib/dflib/blob/9486d42d77375b4de8bf8df9770f2952225db1a4/dflib/src/main/java/org/dflib/FloatValueMapper.java"
+first_commit_date = "2024-10-13"
+last_commit_date = "2025-01-18"
+test_file_content = "package org.dflib;\n\nimport org.junit.jupiter.api.Test;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertThrows;\n\npublic class FloatValueMapperTest {\n\n    @Deprecated\n    @Test\n    void fromObject() {\n\n        assertThrows(IllegalArgumentException.class, () -> FloatValueMapper.fromObject().map(null));\n        assertThrows(IllegalArgumentException.class, () -> FloatValueMapper.fromObject().map(\"\"));\n\n        // these are different from \"of()\" that doesn't throw on booleans\n        assertThrows(IllegalArgumentException.class, () -> FloatValueMapper.fromObject().map(Boolean.TRUE));\n        assertThrows(IllegalArgumentException.class, () -> FloatValueMapper.fromObject().map(Boolean.FALSE));\n\n        assertEquals(1.1f, FloatValueMapper.fromObject().map(1.1f));\n        assertEquals(-1.2f, FloatValueMapper.fromObject().map(-1.2f));\n        assertEquals(0.f, FloatValueMapper.fromObject().map(0.f));\n\n        assertEquals(100f, FloatValueMapper.fromObject().map(100L));\n        assertEquals(100f, FloatValueMapper.fromObject().map(100d));\n        assertEquals(100f, FloatValueMapper.fromObject().map(100));\n\n        assertEquals(1f, FloatValueMapper.fromObject().map(\"1\"));\n        assertEquals(-1f, FloatValueMapper.fromObject().map(\"-1\"));\n        assertEquals(0f, FloatValueMapper.fromObject().map(\"0\"));\n    }\n\n\n\n\n\n    @Test\n    void ofStr_forNull() {\n        assertEquals(-0.5f, FloatValueMapper.ofStr(-0.5f).map(null));\n        assertEquals(-0.5f, FloatValueMapper.ofStr(-0.5f).map(\"\"));\n\n        assertThrows(IllegalArgumentException.class, () -> FloatValueMapper.ofStr(-0.5f).map(\"true\"));\n        assertThrows(IllegalArgumentException.class, () -> FloatValueMapper.ofStr(-0.5f).map(\"false\"));\n\n        assertEquals(1.1f, FloatValueMapper.ofStr(-0.5f).map(\"1.1\"));\n        assertEquals(-1.2f, FloatValueMapper.ofStr(-0.5f).map(\"-1.2\"));\n        assertEquals(0.f, FloatValueMapper.ofStr(-0.5f).map(\"0\"));\n    }\n\n\n}\n"

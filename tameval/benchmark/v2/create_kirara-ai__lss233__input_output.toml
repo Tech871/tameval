@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "lss233/kirara-ai"
+sha = "8295a5deda0b289a3f70d946064b6c9a3e1b0753"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=kirara_ai/workflow/core/block/input_output.py -m pytest -q --junit-xml=test_output.xml tests/workflow_executor/test_input_output.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target kirara_ai.workflow.core.block.input_output --unit-test tests.workflow_executor.test_input_output --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target kirara_ai/workflow/core/block/input_output.py --unit-test tests/workflow_executor/test_input_output.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 86.0
+original_coverage = 100.0
+mutation_kill_rate = 0.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 3, 4, 13, 14, 15, 16, 17, 18, 20, 26, 27, 28, 29, 30, 31, 33, 34,]
+missed_lines = [ 21, 22, 23,]
+
+[input_info]
+test_file_path = "tests/workflow_executor/test_input_output.py"
+focal_file_path = "kirara_ai/workflow/core/block/input_output.py"
+test_file_url = "https://github.com/lss233/kirara-ai/blob/8295a5deda0b289a3f70d946064b6c9a3e1b0753/tests/workflow_executor/test_input_output.py"
+focal_file_url = "https://github.com/lss233/kirara-ai/blob/8295a5deda0b289a3f70d946064b6c9a3e1b0753/kirara_ai/workflow/core/block/input_output.py"
+first_commit_date = "2025-02-23"
+last_commit_date = "2025-02-23"
+test_file_content = "from kirara_ai.workflow.core.block.input_output import Input, Output\n\ndef test_output_validation():\n    \"\"\"Test output validation.\"\"\"\n    output_obj = Output(\n        name=\"output1\", label=\"输出1\", data_type=str, description=\"A string output\"\n    )\n    assert output_obj.validate(\"test\") is True\n    assert output_obj.validate(10) is False\n"

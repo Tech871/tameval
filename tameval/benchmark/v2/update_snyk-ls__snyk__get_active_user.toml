@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24"
+
+[repo_info]
+repository = "snyk/snyk-ls"
+sha = "cf5a04582d11c4040e39fda2c39fe0c4ebb7470f"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.24"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out domain/ide/command/get_active_user.go domain/ide/command/get_active_user_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting domain/ide/command/get_active_user.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 36.0
+original_coverage = 50.0
+mutation_kill_rate = 100.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 40, 41, 42, 43, 44,]
+missed_lines = [ 36, 37, 38, 45, 46, 47, 48, 50, 51,]
+
+[input_info]
+test_file_path = "domain/ide/command/get_active_user_test.go"
+focal_file_path = "domain/ide/command/get_active_user.go"
+test_file_url = "https://github.com/snyk/snyk-ls/blob/cf5a04582d11c4040e39fda2c39fe0c4ebb7470f/domain/ide/command/get_active_user_test.go"
+focal_file_url = "https://github.com/snyk/snyk-ls/blob/cf5a04582d11c4040e39fda2c39fe0c4ebb7470f/domain/ide/command/get_active_user.go"
+first_commit_date = "2023-04-27"
+last_commit_date = "2025-03-25"
+test_file_content = "/*\n * © 2023 Snyk Limited\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage command\n\nimport (\n\t\"encoding/json\"\n\t\"errors\"\n\t\"testing\"\n\n\t\"github.com/golang/mock/gomock\"\n\t\"github.com/stretchr/testify/assert\"\n\n\tlocalworkflows \"github.com/snyk/go-application-framework/pkg/local_workflows\"\n\t\"github.com/snyk/go-application-framework/pkg/workflow\"\n\n\t\"github.com/snyk/snyk-ls/infrastructure/authentication\"\n\t\"github.com/snyk/snyk-ls/internal/notification\"\n\t\"github.com/snyk/snyk-ls/internal/observability/error_reporting\"\n\t\"github.com/snyk/snyk-ls/internal/types\"\n\n\t\"github.com/snyk/snyk-ls/application/config\"\n\t\"github.com/snyk/snyk-ls/internal/testutil\"\n)\n\nfunc Test_getActiveUser_Execute_User_found(t *testing.T) {\n\tc := testutil.UnitTest(t)\n\tcmd := setupCommandWithAuthService(t, c)\n\n\texpectedUser, expectedUserData := whoamiWorkflowResponse(t)\n\n\tmockEngine, engineConfig := testutil.SetUpEngineMock(t, c)\n\tmockEngine.EXPECT().GetConfiguration().Return(engineConfig).AnyTimes()\n\tmockEngine.EXPECT().InvokeWithInputAndConfig(localworkflows.WORKFLOWID_REPORT_ANALYTICS, gomock.Any(), gomock.Any())\n\tmockEngine.EXPECT().InvokeWithConfig(localworkflows.WORKFLOWID_WHOAMI, gomock.Any()).Return(expectedUserData, nil)\n\n\tactualUser, err := cmd.Execute(t.Context())\n\n\tassert.NoErrorf(t, err, \"cmd.Execute() error = %v\", err)\n\tassert.Equal(t, expectedUser, actualUser)\n}\n\nfunc setupCommandWithAuthService(t *testing.T, c *config.Config) *getActiveUser {\n\tt.Helper()\n\tprovider := authentication.NewFakeCliAuthenticationProvider(c)\n\tprovider.IsAuthenticated = true\n\n\tcmd := &getActiveUser{\n\t\tcommand: types.CommandData{\n\t\t\tCommandId: types.GetActiveUserCommand,\n\t\t},\n\t\tauthenticationService: authentication.NewAuthenticationService(\n\t\t\tc,\n\t\t\tprovider,\n\t\t\terror_reporting.NewTestErrorReporter(),\n\t\t\tnotification.NewMockNotifier(),\n\t\t),\n\t}\n\treturn cmd\n}\n\nfunc Test_getActiveUser_Execute_Result_Empty(t *testing.T) {\n\tc := testutil.UnitTest(t)\n\tcmd := setupCommandWithAuthService(t, c)\n\n\tmockEngine, engineConfig := testutil.SetUpEngineMock(t, c)\n\tmockEngine.EXPECT().GetConfiguration().Return(engineConfig).AnyTimes()\n\tmockEngine.EXPECT().InvokeWithInputAndConfig(localworkflows.WORKFLOWID_REPORT_ANALYTICS, gomock.Any(), gomock.Any())\n\tmockEngine.EXPECT().InvokeWithConfig(localworkflows.WORKFLOWID_WHOAMI, gomock.Any()).Return([]workflow.Data{}, nil)\n\n\tactualUser, err := cmd.Execute(t.Context())\n\n\tassert.Errorf(t, err, \"cmd.Execute() error = %v\", err)\n\tassert.Empty(t, actualUser)\n}\n\nfunc Test_getActiveUser_Execute_Error_Result(t *testing.T) {\n\tc := testutil.UnitTest(t)\n\tcmd := setupCommandWithAuthService(t, c)\n\n\tmockEngine, engineConfig := testutil.SetUpEngineMock(t, c)\n\tmockEngine.EXPECT().GetConfiguration().Return(engineConfig).AnyTimes()\n\tmockEngine.EXPECT().InvokeWithInputAndConfig(localworkflows.WORKFLOWID_REPORT_ANALYTICS, gomock.Any(), gomock.Any())\n\ttestError := errors.New(\"test error\")\n\tmockEngine.EXPECT().InvokeWithConfig(localworkflows.WORKFLOWID_WHOAMI, gomock.Any()).Return([]workflow.Data{}, testError)\n\n\tactualUser, err := cmd.Execute(t.Context())\n\n\tassert.Errorf(t, err, \"cmd.Execute() error = %v\", err)\n\tassert.Empty(t, actualUser)\n}\n\nfunc whoamiWorkflowResponse(t *testing.T) (*authentication.ActiveUser, []workflow.Data) {\n\tt.Helper()\n\texpectedUser := authentication.ActiveUser{\n\t\tId:       \"id\",\n\t\tUserName: \"username\",\n\t}\n\texpectedUserJSON, err := json.Marshal(expectedUser)\n\tassert.NoError(t, err)\n\n\texpectedUserData := []workflow.Data{\n\t\tworkflow.NewData(\n\t\t\tworkflow.NewTypeIdentifier(localworkflows.WORKFLOWID_WHOAMI, \"payload\"),\n\t\t\t\"application/json\",\n\t\t\texpectedUserJSON),\n\t}\n\treturn &expectedUser, expectedUserData\n}"

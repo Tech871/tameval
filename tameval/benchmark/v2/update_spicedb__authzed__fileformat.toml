@@ -1,0 +1,41 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.24.0"
+
+[repo_info]
+repository = "authzed/spicedb"
+sha = "449c43d3c8dbb72defa98dfd097392c2fa137870"
+
+[run_info]
+docker_image = "golang:1.24.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/validationfile/fileformat.go pkg/validationfile/fileformat_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/validationfile/fileformat.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 0
+original_coverage = 54.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "pkg/validationfile/fileformat_test.go"
+focal_file_path = "pkg/validationfile/fileformat.go"
+test_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/pkg/validationfile/fileformat_test.go"
+focal_file_url = "https://github.com/authzed/spicedb/blob/449c43d3c8dbb72defa98dfd097392c2fa137870/pkg/validationfile/fileformat.go"
+first_commit_date = "2021-04-27"
+last_commit_date = "2025-04-21"
+test_file_content = "package validationfile\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n\n\t\"github.com/authzed/spicedb/pkg/spiceerrors\"\n)\n\nfunc TestDecodeValidationFile(t *testing.T) {\n\ttests := []struct {\n\t\tname                     string\n\t\tcontents                 string\n\t\texpectedError            string\n\t\texpectedRelCount         int\n\t\texpectedAssertTrueCount  int\n\t\texpectedAssertFalseCount int\n\t\texpectedValidationCount  int\n\t}{\n\t\t{\n\t\t\tname:                     \"empty\",\n\t\t\tcontents:                 \"\",\n\t\t\texpectedError:            \"\",\n\t\t\texpectedRelCount:         0,\n\t\t\texpectedAssertTrueCount:  0,\n\t\t\texpectedAssertFalseCount: 0,\n\t\t\texpectedValidationCount:  0,\n\t\t},\n\t\t{\n\t\t\tname: \"invalid schema\",\n\t\t\tcontents: `schema:\nfoo:\n\t- asdasd`,\n\t\t\texpectedError:            \"yaml: line 3: found character that cannot start any token\",\n\t\t\texpectedRelCount:         0,\n\t\t\texpectedAssertTrueCount:  0,\n\t\t\texpectedAssertFalseCount: 0,\n\t\t\texpectedValidationCount:  0,\n\t\t},\n\t\t{\n\t\t\tname: \"valid\",\n\t\t\tcontents: `\nschema: >-\n  definition user {}\n  definition document {\n      relation writer: user\n      relation reader: user\n      permission edit = writer\n      permission view = reader + edit\n  }\n\nrelationships: >-\n  document:firstdoc#writer@user:tom\n\n  document:firstdoc#reader@user:fred\n\n  document:seconddoc#reader@user:tom\n\nassertions:\n  assertTrue:\n    - document:firstdoc#view@user:tom\n    - document:firstdoc#view@user:fred\n    - document:seconddoc#view@user:tom\n  assertFalse:\n    - document:seconddoc#view@user:fred\n\nvalidation:\n  document:firstdoc#view:\n    - \"[user:tom] is <document:firstdoc#writer>\"\n    - \"[user:fred] is <document:firstdoc#reader>\"\n  document:seconddoc#view:\n    - \"[user:tom] is <document:seconddoc#reader>\"\n`,\n\t\t\texpectedError:            \"\",\n\t\t\texpectedRelCount:         3,\n\t\t\texpectedAssertTrueCount:  3,\n\t\t\texpectedAssertFalseCount: 1,\n\t\t\texpectedValidationCount:  2,\n\t\t},\n\t}\n\n\tfor _, tt := range tests {\n\t\ttt := tt\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tdecoded, err := DecodeValidationFile([]byte(tt.contents))\n\t\t\tif tt.expectedError != \"\" {\n\t\t\t\trequire.NotNil(t, err)\n\t\t\t\trequire.Equal(t, err.Error(), tt.expectedError)\n\t\t\t} else {\n\t\t\t\trequire.Nil(t, err)\n\n\t\t\t\trequire.NotNil(t, decoded)\n\t\t\t\trequire.Equal(t, len(decoded.Relationships.Relationships), tt.expectedRelCount)\n\n\t\t\t\trequire.Equal(t, len(decoded.Assertions.AssertTrue), tt.expectedAssertTrueCount)\n\t\t\t\trequire.Equal(t, len(decoded.Assertions.AssertFalse), tt.expectedAssertFalseCount)\n\t\t\t\trequire.Equal(t, len(decoded.ExpectedRelations.ValidationMap), tt.expectedValidationCount)\n\t\t\t}\n\t\t})\n\t}\n}\n\nfunc TestDecodeRelationshipsErrorLineNumber(t *testing.T) {\n\t_, err := DecodeValidationFile([]byte(`schema: >-\n  definition user {}\n\nrelationships: >-\n  document:firstdocwriter@user:tom\n\n  document:firstdoc#reader#user:fred\n`))\n\n\terrWithSource, ok := spiceerrors.AsErrorWithSource(err)\n\trequire.True(t, ok)\n\n\trequire.Equal(t, err.Error(), \"error parsing relationship `document:firstdocwriter@user:tom`: invalid relationship string\")\n\trequire.Equal(t, uint64(5), errWithSource.LineNumber)\n}\n\nfunc TestDecodeRelationshipsErrorLineNumberLater(t *testing.T) {\n\t_, err := DecodeValidationFile([]byte(`schema: >-\n  definition user {}\n\nrelationships: >-\n  document:firstdoc#writer@user:tom\n\n  document:firstdoc#readeruser:fred\n`))\n\n\terrWithSource, ok := spiceerrors.AsErrorWithSource(err)\n\trequire.True(t, ok)\n\n\trequire.Equal(t, err.Error(), \"error parsing relationship `document:firstdoc#readeruser:fred`: invalid relationship string\")\n\trequire.Equal(t, uint64(7), errWithSource.LineNumber)\n}\n\nfunc TestDecodeRelationshipsErrorLineNumberEventLater(t *testing.T) {\n\t_, err := DecodeValidationFile([]byte(`schema: >-\n  definition user {}\n\nrelationships: >-\n  document:firstdoc#writer@user:tom1\n\n  document:firstdoc#writer@user:tom2\n\n  document:firstdoc#writer@user:tom3\n\n  document:firstdoc#writer@user:tom4\n\n  document:firstdoc#readeruser:fred\n`))\n\n\terrWithSource, ok := spiceerrors.AsErrorWithSource(err)\n\trequire.True(t, ok)\n\n\trequire.Equal(t, err.Error(), \"error parsing relationship `document:firstdoc#readeruser:fred`: invalid relationship string\")\n\trequire.Equal(t, uint64(13), errWithSource.LineNumber)\n}\n\nfunc TestDecodeAssertionsErrorLineNumber(t *testing.T) {\n\t_, err := DecodeValidationFile([]byte(`\nschema: >-\n  definition user {}\n\nrelationships: >-\n  document:firstdoc#writer@user:tom\n\nassertions:\n  assertTrue: asdkjhasd\n    - document:firstdoc#view@user:tom\n    - document:firstdoc#view@user:fred\n    - document:seconddoc#view@user:tom\n  assertFalse:\n    - document:seconddoc#view@user:fred\n`))\n\n\terrWithSource, ok := spiceerrors.AsErrorWithSource(err)\n\trequire.True(t, ok)\n\n\trequire.Equal(t, err.Error(), \"unexpected value `asdkjha`\")\n\trequire.Equal(t, uint64(9), errWithSource.LineNumber)\n}\n\nfunc TestDecodeAssertionsErrorLineNumberSmallerToken(t *testing.T) {\n\t_, err := DecodeValidationFile([]byte(`\nschema: >-\n  definition user {}\n\nrelationships: >-\n  document:firstdoc#writer@user:tom\n\nassertions:\n  assertTrue: asdk\n    - document:firstdoc#view@user:tom\n    - document:firstdoc#view@user:fred\n    - document:seconddoc#view@user:tom\n  assertFalse:\n    - document:seconddoc#view@user:fred\n`))\n\n\terrWithSource, ok := spiceerrors.AsErrorWithSource(err)\n\trequire.True(t, ok)\n\n\trequire.Equal(t, err.Error(), \"unexpected value `asdk`\")\n\trequire.Equal(t, uint64(9), errWithSource.LineNumber)\n}"

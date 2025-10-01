@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.12"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "visivo-io/visivo"
+sha = "65f80739da9eae151e990b6d21751f8d904c80e9"
+
+[run_info]
+docker_image = "python:3.12"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=visivo/models/base/context_string.py -m pytest -q --junit-xml=test_output.xml tests/models/base/test_context_string.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target visivo.models.base.context_string --unit-test tests.models.base.test_context_string --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target visivo/models/base/context_string.py --unit-test tests/models/base/test_context_string.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 78.0
+original_coverage = 80.0
+mutation_kill_rate = 33.0
+original_mutation_kill_rate = 50.0
+covered_lines = [ 0, 2, 4, 6, 7, 8, 9, 10, 13, 21, 22, 24, 27, 34, 35, 37, 38, 39, 40, 42, 44, 45, 46, 47, 49, 51, 52, 53, 54, 56, 58, 65, 66, 71, 72, 73, 75, 76, 78, 79, 81, 83,]
+missed_lines = [ 25, 28, 29, 32, 59, 60, 61, 62, 63, 67, 77, 80,]
+
+[input_info]
+test_file_path = "tests/models/base/test_context_string.py"
+focal_file_path = "visivo/models/base/context_string.py"
+test_file_url = "https://github.com/visivo-io/visivo/blob/65f80739da9eae151e990b6d21751f8d904c80e9/tests/models/base/test_context_string.py"
+focal_file_url = "https://github.com/visivo-io/visivo/blob/65f80739da9eae151e990b6d21751f8d904c80e9/visivo/models/base/context_string.py"
+first_commit_date = "2024-11-07"
+last_commit_date = "2025-06-30"
+test_file_content = "from pydantic import Field\nfrom visivo.models.base.context_string import ContextString\nfrom visivo.models.base.base_model import BaseModel\nimport pytest\n\n\nclass MockStringModel(BaseModel):\n    ref: ContextString = Field(None, description=\"\")\n\n\ndef test_ContextString_ref_name():\n    context_string = ContextString(\"\")\n    assert context_string.get_reference() == None\n\n    context_string = ContextString(\"${ ref(Name) && ref(Name 2) }\")\n    assert context_string.get_reference() == None\n\n    context_string = ContextString(\"${ ref(Name) }\")\n    assert context_string.get_reference() == \"Name\"\n\n    context_string = ContextString(\"${ref(Name)}\")\n    assert context_string.get_reference() == \"Name\"\n\n    context_string = ContextString(\"${ref(Name).property }\")\n    assert context_string.get_reference() == \"Name\"\n\n    context_string = ContextString(\"${ref(Name)}.property[1]\")\n    assert context_string.get_reference() == \"Name\"\n\n\ndef test_ContextString_get_path():\n    context_string = ContextString(\"\")\n    assert context_string.get_path() == None\n\n    context_string = ContextString(\"${ project.name }\")\n    assert context_string.get_path() == \"project.name\"\n\n    context_string = ContextString(\"${project.dashboards[0].rows[1].items[2]}\")\n    assert context_string.get_path() == \"project.dashboards[0].rows[1].items[2]\"\n\n    context_string = ContextString(\"${ ref(Name) }\")\n    assert context_string.get_path() == None\n\n    context_string = ContextString(\"Regular string without path\")\n    assert context_string.get_path() == None\n\n\ndef test_ContextString_get_ref_props_path():\n    context_string = ContextString(\"\")\n    assert context_string.get_ref_props_path() == None\n\n    context_string = ContextString(\"${ ref(Name) }\")\n    assert context_string.get_ref_props_path() == \"\"\n\n    context_string = ContextString(\"${ ref(Name).property }\")\n    assert context_string.get_ref_props_path() == \".property\"\n\n    context_string = ContextString(\"${ ref(Name).nested.property }\")\n    assert context_string.get_ref_props_path() == \".nested.property\"\n\n    context_string = ContextString(\"${ ref(Name)[0] }\")\n    assert context_string.get_ref_props_path() == \"[0]\"\n\n    context_string = ContextString(\"${ ref(Name).list[0].property }\")\n    assert context_string.get_ref_props_path() == \".list[0].property\"\n\n    context_string = ContextString(\"Regular string without ref\")\n    assert context_string.get_ref_props_path() == None\n\n    context_string = ContextString(\"${ project.name }\")\n    assert context_string.get_ref_props_path() == None\n\n\ndef test_ContextString_as_field():\n    test_string_model = MockStringModel(**{\"ref\": \"${ ref(Name) }\"})\n    assert test_string_model.ref.get_reference() == \"Name\"\n\n    with pytest.raises(ValueError):\n        MockStringModel(**{\"ref\": \"{ ref(Name) }\"})\n\n\ndef test_ContextString_hash():\n    cs1 = ContextString(\"${ ref(Name) }\")\n    cs2 = ContextString(\"${ ref(Name) }\")\n    assert cs1.__hash__() == cs2.__hash__()\n\n    cs3 = ContextString(\"${ ref(OtherName) }\")\n    assert cs1.__hash__() != cs3.__hash__()\n\n    cs4 = ContextString(\"${ref(Name)}\")\n    cs5 = ContextString(\"${  ref(Name)  }\")\n    assert cs4.__hash__() == cs5.__hash__()\n\n    cs6 = ContextString(\"${ project.name }\")\n    cs7 = ContextString(\"${ project.id }\")\n    assert cs6.__hash__() != cs7.__hash__()"

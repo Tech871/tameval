@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = true
+
+[repo_info]
+repository = "nitrite/nitrite-java"
+sha = "32693e9538c4108c8c94b7a5b736ef96d9d7714c"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -pl nitrite -Dtest=NitriteDocumentTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -pl nitrite -DtargetClasses=**.NitriteDocument  -DtargetTests=**.NitriteDocumentTest  -DoutputFormats=XML"
+coverage_report_path = "nitrite/target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "nitrite/target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 19.0
+original_coverage = 45.0
+mutation_kill_rate = 13.0
+original_mutation_kill_rate = 35.0
+covered_lines = [ 46, 49, 50, 53, 54, 59, 60, 64, 69, 70, 76, 81, 83, 88, 94, 99, 100, 135, 140, 160, 173, 213, 229, 232, 233, 235, 236, 237, 254, 256, 266, 270, 273, 279, 280, 283, 285, 295, 296, 301, 302, 587, 609, 610, 611, 615, 620, 621,]
+missed_lines = [ 65, 77, 78, 79, 80, 89, 90, 92, 106, 110, 111, 112, 114, 115, 119, 120, 121, 123, 124, 128, 145, 148, 149, 150, 151, 153, 155, 163, 164, 165, 169, 170, 172, 178, 179, 180, 181, 182, 183, 185, 188, 189, 190, 193, 195, 198, 202, 204, 205, 206, 208, 218, 220, 223, 230, 240, 241, 242, 243, 244, 245, 247, 248, 251, 252, 253, 261, 275, 277, 288, 289, 298, 306, 308, 310, 315, 316, 318, 319, 320, 323, 325, 328, 331, 333, 335, 336, 339, 340, 343, 346, 349, 350, 352, 353, 354, 357, 359, 362, 365, 367, 369, 370, 371, 374, 376, 379, 380, 381, 382, 385, 386, 389, 390, 395, 396, 398, 401, 402, 403, 404, 407, 411, 412, 413, 415, 418, 421, 424, 427, 428, 429, 432, 433, 434, 438, 443, 444, 447, 448, 451, 453, 454, 455, 458, 459, 462, 466, 467, 468, 472, 474, 478, 481, 482, 487, 493, 497, 501, 504, 507, 509, 513, 516, 517, 522, 528, 533, 538, 541, 544, 546, 547, 549, 550, 551, 553, 554, 555, 557, 560, 561, 567, 568, 570, 577, 578, 579, 581, 591, 592, 593, 594, 595, 599, 600, 601, 602, 604, 626, 627,]
+
+[input_info]
+test_file_path = "nitrite/src/test/java/org/dizitart/no2/collection/NitriteDocumentTest.java"
+focal_file_path = "nitrite/src/main/java/org/dizitart/no2/collection/NitriteDocument.java"
+test_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/test/java/org/dizitart/no2/collection/NitriteDocumentTest.java"
+focal_file_url = "https://github.com/nitrite/nitrite-java/blob/32693e9538c4108c8c94b7a5b736ef96d9d7714c/nitrite/src/main/java/org/dizitart/no2/collection/NitriteDocument.java"
+first_commit_date = "2020-08-11"
+last_commit_date = "2025-03-04"
+test_file_content = "package org.dizitart.no2.collection;\n\nimport com.fasterxml.jackson.databind.introspect.AnnotatedMethodMap;\nimport org.dizitart.no2.exceptions.InvalidOperationException;\nimport org.dizitart.no2.exceptions.ValidationException;\nimport org.junit.Test;\n\nimport java.util.Set;\n\nimport static org.junit.Assert.*;\n\npublic class NitriteDocumentTest {\n    @Test\n    public void testPut() {\n        assertThrows(InvalidOperationException.class, () -> (new NitriteDocument()).put(\"\", \"value\"));\n    }\n\n    @Test\n    public void testPut2() {\n        NitriteDocument nitriteDocument = new NitriteDocument();\n        Document actualPutResult = nitriteDocument.put(\"_id\", 42);\n        assertSame(nitriteDocument, actualPutResult);\n        assertEquals(1, actualPutResult.size());\n    }\n\n    @Test\n    public void testGet() {\n        Class type = Object.class;\n        assertNull((new NitriteDocument()).<Object>get(null, type));\n    }\n\n    @Test\n    public void testGet2() {\n        Class type = Object.class;\n        assertNull((new NitriteDocument()).<Object>get(\"key\", type));\n    }\n\n    @Test\n    public void testGet3() {\n        assertNull((new NitriteDocument()).get(\"key\"));\n    }\n\n    @Test\n    public void testGetFields() {\n        NitriteDocument nitriteDocument = new NitriteDocument();\n        nitriteDocument.put(\"foo\", \"foo\");\n        Set<String> actualFields = nitriteDocument.getFields();\n        assertEquals(1, actualFields.size());\n        assertTrue(actualFields.contains(\"foo\"));\n    }\n\n    @Test\n    public void testGetFields2() {\n        NitriteDocument nitriteDocument = new NitriteDocument();\n        nitriteDocument.put(\"foo\", new NitriteDocument());\n        assertEquals(0, nitriteDocument.getFields().size());\n    }\n\n    @Test(expected = ValidationException.class)\n    public void testGetFields3() {\n        NitriteDocument nitriteDocument = new NitriteDocument();\n        nitriteDocument.put(\"foo\", new AnnotatedMethodMap());\n        assertEquals(1, nitriteDocument.getFields().size());\n    }\n\n    @Test\n    public void testGetFields4() {\n        assertEquals(0, (new NitriteDocument()).getFields().size());\n    }\n\n    @Test\n    public void testHasId() {\n        assertFalse((new NitriteDocument()).hasId());\n    }\n\n    @Test\n    public void testClone() {\n        assertEquals(0, (new NitriteDocument()).clone().size());\n    }\n\n    @Test\n    public void testContainsKey() {\n        assertFalse((new NitriteDocument()).containsKey(\"key\"));\n    }\n\n    @Test\n    public void testEquals() {\n        NitriteDocument nitriteDocument = new NitriteDocument();\n        nitriteDocument.put(\"foo\", \"foo\");\n        assertFalse(nitriteDocument.equals(new NitriteDocument()));\n    }\n\n    @Test\n    public void testEquals2() {\n        assertFalse((new NitriteDocument()).equals(\"other\"));\n    }\n\n    @Test\n    public void testEquals3() {\n        NitriteDocument nitriteDocument = new NitriteDocument();\n        assertTrue(nitriteDocument.equals(new NitriteDocument()));\n    }\n}\n"

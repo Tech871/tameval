@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "fox-it/dissect.target"
+sha = "12306a3a840971af7da3dbd338527eb3360dbbd9"
+bench_version = 1
+
+[run_info]
+docker_image = "python:3"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "(pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=dissect/target/plugins/general/plugins.py -m pytest -q --junit-xml=test_output.xml tests/plugins/general/test_plugins.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target dissect.target.plugins.general.plugins --unit-test tests.plugins.general.test_plugins --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target dissect/target/plugins/general/plugins.py --unit-test tests/plugins/general/test_plugins.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 29.0
+original_coverage = 59.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 100.0
+covered_lines = [ 0, 2, 3, 5, 6, 7, 8, 11, 53, 89, 95, 117, 146, 149, 152, 153, 158, 159,]
+missed_lines = [ 16, 17, 19, 24, 25, 26, 27, 28, 29, 38, 43, 50, 56, 57, 59, 60, 61, 72, 83, 84, 86, 90, 98, 99, 101, 102, 103, 105, 106, 108, 109, 111, 112, 114, 124, 125, 132, 133, 134, 135, 143, 150, 161, 162, 164,]
+
+[input_info]
+test_file_path = "tests/plugins/general/test_plugins.py"
+focal_file_path = "dissect/target/plugins/general/plugins.py"
+test_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/tests/plugins/general/test_plugins.py"
+focal_file_url = "https://github.com/fox-it/dissect.target/blob/12306a3a840971af7da3dbd338527eb3360dbbd9/dissect/target/plugins/general/plugins.py"
+first_commit_date = "2022-07-20"
+last_commit_date = "2025-02-26"
+test_file_content = "from unittest.mock import Mock, patch\n\nimport dissect.target.plugins.general.plugins as plugin\nfrom dissect.target.plugins.general.plugins import (\n    PluginListPlugin,\n    categorize_plugins,\n    dictify_module_recursive,\n    output_plugin_description_recursive,\n    update_dict_recursive,\n)\n\n\ndef test_dictify_module():\n    last_value = Mock()\n\n    output_dict = dictify_module_recursive([\"hello\", \"world\"], last_value)\n\n    assert output_dict == {\"hello\": {\"world\": last_value}}\n\n\ndef test_update_dict():\n    tmp_dictionary = dict()\n\n    update_dict_recursive(tmp_dictionary, dictify_module_recursive([\"hello\", \"world\"], None))\n    update_dict_recursive(tmp_dictionary, dictify_module_recursive([\"hello\", \"lawrence\"], None))\n\n    assert tmp_dictionary == {\"hello\": {\"world\": None, \"lawrence\": None}}\n\n\ndef test_plugin_description():\n    description = [x for x in output_plugin_description_recursive(PluginListPlugin, False)]\n    assert description == [\"plugins - Print all available plugins. (output: no output)\"]\n\n\ndef test_plugin_description_compacting():\n    module = dictify_module_recursive([\"hello\", \"world\"], PluginListPlugin)\n\n    description = [x for x in output_plugin_description_recursive(module, False)]\n    assert description == [\n        \"hello:\",\n        \"  world:\",\n        \"    plugins - Print all available plugins. (output: no output)\",\n    ]\n\n\ndef test_plugin_description_in_dict_multiple():\n    tmp_dictionary = dict()\n\n    update_dict_recursive(tmp_dictionary, dictify_module_recursive([\"hello\", \"world\", \"data\"], PluginListPlugin))\n    update_dict_recursive(tmp_dictionary, dictify_module_recursive([\"hello\", \"world\", \"data2\"], PluginListPlugin))\n\n    description = [x for x in output_plugin_description_recursive(tmp_dictionary, False)]\n    assert description == [\n        \"hello:\",\n        \"  world:\",\n        \"    data:\",\n        \"      plugins - Print all available plugins. (output: no output)\",\n        \"    data2:\",\n        \"      plugins - Print all available plugins. (output: no output)\",\n    ]\n\n\n@patch.object(plugin.plugin, \"load\")\n@patch.object(plugin, \"get_exported_plugins\")\ndef test_categorize_plugins(mocked_export, mocked_load):\n    mocked_export.return_value = [{\"module\": \"something.data\"}]\n    assert categorize_plugins() == {\"something\": {\"data\": mocked_load.return_value}}"

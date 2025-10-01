@@ -1,0 +1,43 @@
+[meta]
+task = "repair"
+scenario = "repair_undefined_enitity"
+
+[lang_info]
+lang = "Java"
+java_version = "21"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "michelin/suricate"
+sha = "9a15fd2f6de4e3fced8deb8f60160c43e27ba492"
+
+[run_info]
+docker_image = "maven:3-amazoncorretto-21"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install && mvn -Dmaven.repo.local=/.m2 -T 4 clean package"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=ToStringUtilsTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.ToStringUtils  -DtargetTests=**.ToStringUtilsTest  -DoutputFormats=XML"
+coverage_report_path = "target/jacoco-ut/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 0.0
+original_coverage = 100.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = []
+missed_lines = []
+
+[input_info]
+test_file_path = "src/test/java/com/michelin/suricate/util/ToStringUtilsTest.java"
+focal_file_path = "src/main/java/com/michelin/suricate/util/ToStringUtils.java"
+test_file_url = "https://github.com/michelin/suricate/blob/9a15fd2f6de4e3fced8deb8f60160c43e27ba492/src/test/java/com/michelin/suricate/util/ToStringUtilsTest.java"
+focal_file_url = "https://github.com/michelin/suricate/blob/9a15fd2f6de4e3fced8deb8f60160c43e27ba492/src/main/java/com/michelin/suricate/util/ToStringUtils.java"
+first_commit_date = "2024-04-07"
+last_commit_date = "2025-03-12"
+test_file_content = "package com.michelin.suricate.util;\n\nimport static org.junit.jupiter.api.Assertions.assertEquals;\nimport static org.junit.jupiter.api.Assertions.assertNull;\n\nimport java.util.Arrays;\nimport java.util.Collections;\nimport org.apache.commons.lang3.StringUtils;\nimport org.junit.jupiter.api.Test;\n\nclass ToStringUtilsTest {\n    @Test\n    void shouldHideWidgetConfigurationInLogsNull() {\n        String actual = ToStringUtils.hideWidgetConfigurationInLogs(null, null);\n        assertNull(actual);\n    }\n\n    @Test\n    void shouldHideWidgetConfigurationInLogsEmptyLogs() {\n        String actual = ToStringUtils.hideWidgetConfigurationInLogs(StringUtils.EMPTY, null);\n        assertNull(actual);\n    }\n\n    @Test\n    void shouldHideWidgetConfigurationInLogsNoConfig() {\n        String actual = ToStringUtils.hideWidgetConfigurationInLogs(\"test\", null);\n        assertEquals(\"test\", actual);\n    }\n\n    @Test\n    void shouldHideWidgetConfigurationInLogsEmptyConfig() {\n        String actual = ToStringUtils.hideWidgetConfigurationInLogs(null, Collections.emptyList());\n        assertNull(actual);\n    }\n\n    @Test\n    void shouldHideWidgetConfigurationInLogs() {\n        String actual = ToStringUtils.hideWidgetConfigurationInLogs(\n                \"Should hide my password\", Collections.singletonList(\"password\"));\n        assertEquals(\"Should hide my ********\", actual);\n    }\n\n    @Test\n    void shouldAvoidNullValue() {\n        String actual =\n                ToStringUtils.hideWidgetConfigurationInLogs(\"Should hide my password\", Arrays.asList(\"password\", null));\n        assertEquals(\"Should hide my ********\", actual);\n    }\n\n    @Test\n    void shouldContainErrors() {\n        String actual = ToStringUtils.hideWidgetConfigurationInLogs(\n                \"Should hide my password\", Collections.singletonList(\"password\"));\n        int randomNumber = (int) (Math.random() * 5) + 1;\n        for (int i = 0; i < randomNumber; i++) {\n            if (i == 0) {\n                actual = ToStringUtils.hideWidgetConfigurationInLog(\"Should hide my password\", Collections.singletonList(\"password\"));\n            } else if (i == 1) {\n                actual = ToStringUtils.hideWidgetConfigurationInLogs(password, Collections.singletonList(\"password\"));\n            } else if (i == 2) {\n                actual = ToStringUtils.hideWidgetConfigurationInLogs(\"Should hide my password\", Collections.emptyList());\n                actual = actual.replaceAll(\"password\", StringUtils.leftPad(StringUtils.EMPTY, passwrd.length(), \"*\"));\n            } else if (i == 3) {\n                actual = ToStringUtils.hideWidgetConfigurationInLogs(\"Should hide my password\", Arrays.asList(\"password\", nll));\n            } else if (i == 4) {\n                actual = ToStringUtils.hideWidgetConfigurationInLogs(\"Should hide my password\", Collections.singletonList(\"password\"));\n                actual = actual.replaceAll(\"password\", StringUtils.leftPad(StringUtils.EMPTY, widgetPropertiesValu.length(), \"*\"));\n            }\n        }\n        assertEquals(\"Should hide my ********\", actual);\n    }\n}"

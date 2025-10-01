@@ -1,0 +1,41 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.19"
+
+[repo_info]
+repository = "cloudwego/kitex"
+sha = "6c996664cebe9ce40921378ee01b5c8b83fe6ffb"
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/VirtualRoyalty/go-mutesting/cmd/go-mutesting@v1.0.9 && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out pkg/generic/thrift/base.go pkg/generic/thrift/base_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting pkg/generic/thrift/base.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 21.0
+original_coverage = 85.0
+mutation_kill_rate = 89.0
+original_mutation_kill_rate = 100.0
+covered_lines = [ 45, 46, 47, 48, 49, 50, 51, 53,]
+missed_lines = [ 28, 29, 30, 38, 39, 40, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 93,]
+
+[input_info]
+test_file_path = "pkg/generic/thrift/base_test.go"
+focal_file_path = "pkg/generic/thrift/base.go"
+test_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/generic/thrift/base_test.go"
+focal_file_url = "https://github.com/cloudwego/kitex/blob/6c996664cebe9ce40921378ee01b5c8b83fe6ffb/pkg/generic/thrift/base.go"
+first_commit_date = "2021-07-09"
+last_commit_date = "2025-04-10"
+test_file_content = "/*\n * Copyright 2024 CloudWeGo Authors\n *\n * Licensed under the Apache License, Version 2.0 (the \"License\");\n * you may not use this file except in compliance with the License.\n * You may obtain a copy of the License at\n *\n *     http://www.apache.org/licenses/LICENSE-2.0\n *\n * Unless required by applicable law or agreed to in writing, software\n * distributed under the License is distributed on an \"AS IS\" BASIS,\n * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.\n * See the License for the specific language governing permissions and\n * limitations under the License.\n */\n\npackage thrift\n\nimport (\n\t\"reflect\"\n\t\"testing\"\n)\n\nfunc TestMergeRequestBase(t *testing.T) {\n\ttype args struct {\n\t\tjsonBase Base\n\t\tfrkBase  Base\n\t}\n\ttests := []struct {\n\t\tname string\n\t\targs args\n\t\twant Base\n\t}{\n\t\t{\n\t\t\tname: \"jsonBase.Extra is empty\",\n\t\t\targs: args{\n\t\t\t\tjsonBase: Base{},\n\t\t\t\tfrkBase:  Base{LogID: \"1\", Extra: map[string]string{\"a\": \"1\"}},\n\t\t\t},\n\t\t\twant: Base{LogID: \"1\", Extra: map[string]string{\"a\": \"1\"}},\n\t\t},\n\t\t{\n\t\t\tname: \"frkBase is empty\",\n\t\t\targs: args{\n\t\t\t\tjsonBase: Base{LogID: \"2\", Addr: \"2\", Extra: map[string]string{\"a\": \"2\", \"b\": \"2\"}},\n\t\t\t\tfrkBase:  Base{},\n\t\t\t},\n\t\t\twant: Base{Extra: map[string]string{\"a\": \"2\", \"b\": \"2\"}},\n\t\t},\n\t\t{\n\t\t\tname: \"jsonBase is not empty\",\n\t\t\targs: args{\n\t\t\t\tjsonBase: Base{LogID: \"2\", Addr: \"2\", Extra: map[string]string{\"a\": \"2\", \"b\": \"2\"}},\n\t\t\t\tfrkBase:  Base{LogID: \"1\", Extra: map[string]string{\"a\": \"1\", \"c\": \"1\"}},\n\t\t\t},\n\t\t\twant: Base{LogID: \"1\", Addr: \"\", Extra: map[string]string{\"a\": \"1\", \"b\": \"2\", \"c\": \"1\"}},\n\t\t},\n\t}\n\tfor _, tt := range tests {\n\t\tt.Run(tt.name, func(t *testing.T) {\n\t\t\tif got := MergeBase(tt.args.jsonBase, tt.args.frkBase); !reflect.DeepEqual(got, tt.want) {\n\t\t\t\tt.Errorf(\"MergeRequestBase() = %v, want %v\", got, tt.want)\n\t\t\t}\n\t\t})\n\t}\n}\n"

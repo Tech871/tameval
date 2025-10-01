@@ -1,0 +1,42 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Go"
+go_version = "1.22.9"
+
+[repo_info]
+repository = "moov-io/watchman"
+sha = "22bcf074a0d10f741353e4e6ee37e1403825a6bc"
+bench_version = 2
+
+[run_info]
+docker_image = "golang:1.23.0"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "go mod download && go install github.com/zimmski/go-mutesting/cmd/go-mutesting@latest && go install github.com/jstemmer/go-junit-report@latest"
+test_run_command = "go test -v -failfast -coverprofile=coverage.out internal/prepare/pipeline_normalize.go internal/prepare/pipeline_normalize_test.go 2>&1 && go tool cover -func=coverage.out"
+mutation_run_command = "timeout {timeout} go-mutesting internal/prepare/pipeline_normalize.go"
+coverage_report_path = "coverage.out"
+coverage_report_type = "go_cover"
+mutation_report_path = "mutation_report.txt"
+mutation_report_type = "go-mutesting"
+
+[coverage]
+coverage = 80.0
+original_coverage = 93.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = nan
+covered_lines = [ 26, 27, 28, 29, 30, 31, 32, 33, 42, 43, 44, 45, 46, 47, 50, 51, 52, 53, 57, 58, 59, 60, 61, 66, 67, 68, 72, 73, 74, 75, 77, 78, 82, 85, 86, 87, 88,]
+missed_lines = [ 34, 35, 36, 37, 38, 39, 79, 80, 81,]
+
+[input_info]
+test_file_path = "internal/prepare/pipeline_normalize_test.go"
+focal_file_path = "internal/prepare/pipeline_normalize.go"
+test_file_url = "https://github.com/moov-io/watchman/blob/22bcf074a0d10f741353e4e6ee37e1403825a6bc/internal/prepare/pipeline_normalize_test.go"
+focal_file_url = "https://github.com/moov-io/watchman/blob/22bcf074a0d10f741353e4e6ee37e1403825a6bc/internal/prepare/pipeline_normalize.go"
+first_commit_date = "2025-01-03"
+last_commit_date = "2025-03-12"
+test_file_content = "// Copyright The Moov Authors\n// Use of this source code is governed by an Apache License\n// license that can be found in the LICENSE file.\n\npackage prepare\n\nimport (\n\t\"testing\"\n\n\t\"github.com/stretchr/testify/require\"\n)\n\nfunc TestPipeline__normalizeStep(t *testing.T) {\n\tgot := LowerAndRemovePunctuation(\"Nicolás Maduro\")\n\trequire.Equal(t, \"nicolas maduro\", got)\n}\n\n// TestLowerAndRemovePunctuation ensures we are trimming and UTF-8 normalizing strings\n// as expected. This is needed since our datafiles are normalized for us.\nfunc TestLowerAndRemovePunctuation(t *testing.T) {\n\ttests := []struct {\n\t\tname, input, expected string\n\t}{\n\t\t{\"remove accents\", \"nicolás maduro\", \"nicolas maduro\"},\n\t\t{\"convert IAcute\", \"Delcy Rodríguez\", \"delcy rodriguez\"},\n\t\t{\"issue 58\", \"Raúl Castro\", \"raul castro\"},\n\t\t{\"remove hyphen\", \"ANGLO-CARIBBEAN \", \"anglo caribbean\"},\n\t\t// Issue 483\n\t\t{\"issue 483 #1\", \"11420 CORP.\", \"11420 corp\"},\n\t\t{\"issue 483 #2\", \"11,420.2-1 CORP.\", \"114202 1 corp\"},\n\t}\n\tfor _, tc := range tests {\n\t\tguess := LowerAndRemovePunctuation(tc.input)\n\t\trequire.Equal(t, tc.expected, guess)\n\t}\n}"

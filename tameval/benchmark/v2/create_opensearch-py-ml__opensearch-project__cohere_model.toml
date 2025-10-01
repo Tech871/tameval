@@ -1,0 +1,43 @@
+[meta]
+task = "create"
+scenario = "add_new_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.10"
+python_cfg_file = "requirements.txt"
+
+[repo_info]
+repository = "opensearch-project/opensearch-py-ml"
+sha = "899cb82c8a383925501258dd30098bfa612e8af5"
+
+[run_info]
+docker_image = "python:3.10"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && pip install -r requirements-dev.txt && (pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=opensearch_py_ml/ml_commons/cli/ml_models/cohere_model.py -m pytest -q --junit-xml=test_output.xml tests/cli/test_ml_models/test_cohere_model.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target opensearch_py_ml.ml_commons.cli.ml_models.cohere_model --unit-test tests.cli.test_ml_models.test_cohere_model --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target opensearch_py_ml/ml_commons/cli/ml_models/cohere_model.py --unit-test tests/cli/test_ml_models/test_cohere_model.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 77.0
+original_coverage = 100.0
+mutation_kill_rate = 47.0
+original_mutation_kill_rate = 95.0
+covered_lines = [ 7, 8, 10, 12, 13, 16, 17, 24, 26, 30, 89, 92, 96, 97, 100, 142, 168, 169, 172, 175, 178, 180, 181, 185, 187, 190, 195, 196, 219, 220, 223, 224, 248,]
+missed_lines = [ 102, 105, 108, 111, 207, 208, 213, 214, 250, 251,]
+
+[input_info]
+test_file_path = "tests/cli/test_ml_models/test_cohere_model.py"
+focal_file_path = "opensearch_py_ml/ml_commons/cli/ml_models/cohere_model.py"
+test_file_url = "https://github.com/opensearch-project/opensearch-py-ml/blob/899cb82c8a383925501258dd30098bfa612e8af5/tests/cli/test_ml_models/test_cohere_model.py"
+focal_file_url = "https://github.com/opensearch-project/opensearch-py-ml/blob/899cb82c8a383925501258dd30098bfa612e8af5/opensearch_py_ml/ml_commons/cli/ml_models/cohere_model.py"
+first_commit_date = "2025-04-25"
+last_commit_date = "2025-04-25"
+test_file_content = "# SPDX-License-Identifier: Apache-2.0\n# The OpenSearch Contributors require contributions made to\n# this file be licensed under the Apache-2.0 license or a\n# compatible open source license.\n# Any modifications Copyright OpenSearch Contributors. See\n# GitHub history for details.\n\nimport unittest\nfrom unittest.mock import Mock, patch\n\nfrom colorama import Fore, Style\n\nfrom opensearch_py_ml.ml_commons.cli.ml_models.cohere_model import CohereModel\n\nclass TestCohereModel(unittest.TestCase):\n\n    def setUp(self):\n        self.mock_helper = Mock()\n        self.mock_save_config = Mock()\n        self.service_type = CohereModel.AMAZON_OPENSEARCH_SERVICE\n        self.cohere_model = CohereModel(service_type=self.service_type)\n        self.connector_role_prefix = \"test_role\"\n        self.api_key = \"test_api_key\"\n        self.connector_secret_name = \"test_secret_name\"\n\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.input_custom_model_details\"\n    )\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.set_trusted_endpoint\"\n    )\n    @patch(\n        \"opensearch_py_ml.ml_commons.cli.ml_models.model_base.ModelBase.get_model_details\"\n    )\n    def test_create_connector_custom_model(\n        self, mock_get_model_details, mock_set_trusted_endpoint, mock_custom_model\n    ):\n        \"\"\"Test creating a Cohere connector with custom model\"\"\"\n        self.mock_helper.create_connector_with_secret.return_value = (\n            \"test_connector_id\",\n            \"test_role_arn\",\n            \"test_secret_arn\",\n        )\n        mock_custom_model.return_value = {\n            \"name\": \"Custom Model\",\n            \"description\": \"Custom description\",\n            \"version\": \"1\",\n        }\n\n        result = self.cohere_model.create_connector(\n            helper=self.mock_helper,\n            save_config_method=self.mock_save_config,\n            connector_role_prefix=self.connector_role_prefix,\n            model_name=\"Custom model\",\n            api_key=self.api_key,\n            connector_secret_name=self.connector_secret_name,\n        )\n\n        # Verify method calls\n        mock_set_trusted_endpoint.assert_called_once_with(\n            self.mock_helper, \"^https://api\\\\.cohere\\\\.ai/.*$\"\n        )\n        mock_get_model_details.assert_called_once_with(\n            \"Cohere\", CohereModel.AMAZON_OPENSEARCH_SERVICE, \"Custom model\"\n        )\n        mock_custom_model.assert_called_once_with(external=True)\n        self.assertTrue(result)\n\nif __name__ == \"__main__\":\n    unittest.main()\n"

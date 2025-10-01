@@ -1,0 +1,42 @@
+[meta]
+task = "repair"
+scenario = "repair_no_new_covered_logic"
+
+[lang_info]
+lang = "Java"
+java_builder = "Maven"
+is_multi_module = false
+
+[repo_info]
+repository = "ijpb/MorphoLibJ"
+sha = "7d691dff36baa0bbca6fd17f71c93d8414b75b17"
+
+[run_info]
+docker_image = "maven:3.8.3-openjdk-17"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = []
+prebuild_command = "mvn -Dmaven.repo.local=/.m2 -T 4 clean install"
+test_run_command = "mvn clean -Dmaven.repo.local=/.m2 test -q -Dtest=MorphometricFeatures3DTest && mvn jacoco:report -Djacoco.append=false"
+mutation_run_command = "mvn -Dmaven.repo.local=/.m2 org.pitest:pitest-maven:mutationCoverage -DtargetClasses=**.MorphometricFeatures3D  -DtargetTests=**.MorphometricFeatures3DTest  -DoutputFormats=XML"
+coverage_report_path = "target/site/jacoco/jacoco.xml"
+coverage_report_type = "jacoco"
+mutation_report_path = "target/pit-reports/mutations.xml"
+mutation_report_type = "pitest"
+
+[coverage]
+coverage = 63.0
+original_coverage = 63.0
+mutation_kill_rate = 31.0
+original_mutation_kill_rate = 31.0
+covered_lines = [ 71, 74, 76, 78, 80, 82, 84, 86, 88, 90, 92, 94, 125, 126, 207, 208, 235, 248, 250, 252, 269, 270, 276, 277, 280, 283, 284, 287, 294, 296, 299, 300, 301, 302, 305, 309, 318, 320, 321, 322, 323, 325, 330, 332, 333, 335, 336, 339, 340, 341, 342, 346, 354, 368, 371, 374, 375, 377, 378, 381, 386, 388, 390, 394, 396, 398, 402, 404, 405, 407, 409, 412, 420, 428, 442, 444, 446, 447, 448, 449, 453, 471, 473, 475, 476, 477, 478, 482, 494, 495, 501, 503, 505, 524, 527, 529, 530, 531, 532, 533, 534, 535,]
+missed_lines = [ 104, 110, 115, 136, 137, 139, 141, 152, 162, 163, 170, 180, 181, 194, 221, 222, 289, 290, 311, 312, 313, 314, 327, 348, 349, 350, 351, 383, 414, 416, 422, 424, 430, 432, 433, 434, 435, 436, 437, 438, 455, 457, 458, 459, 460, 461, 462, 463, 464, 465, 466, 467, 484, 486, 487, 488, 489, 490, 510, 512, 514,]
+
+[input_info]
+test_file_path = "src/test/java/inra/ijpb/measure/region3d/MorphometricFeatures3DTest.java"
+focal_file_path = "src/main/java/inra/ijpb/measure/region3d/MorphometricFeatures3D.java"
+test_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/test/java/inra/ijpb/measure/region3d/MorphometricFeatures3DTest.java"
+focal_file_url = "https://github.com/ijpb/MorphoLibJ/blob/7d691dff36baa0bbca6fd17f71c93d8414b75b17/src/main/java/inra/ijpb/measure/region3d/MorphometricFeatures3D.java"
+first_commit_date = "2024-01-25"
+last_commit_date = "2024-10-29"
+test_file_content = "package inra.ijpb.measure.region3d;\n\nimport static org.junit.Assert.assertEquals;\nimport static org.junit.Assert.assertFalse;\nimport static org.junit.Assert.assertTrue;\n\nimport org.junit.Test;\n\nimport ij.ImagePlus;\nimport ij.ImageStack;\nimport ij.measure.ResultsTable;\nimport inra.ijpb.measure.region3d.MorphometricFeatures3D.Feature;\n\npublic class MorphometricFeatures3DTest\n{\n    @Test\n    public final void testContainsAny()\n    {\n        MorphometricFeatures3D morpho = new MorphometricFeatures3D()\n                .add(Feature.VOLUME)\n                .add(Feature.SURFACE_AREA)\n                .add(Feature.CENTROID);\n        \n        assertTrue(morpho.containsAny(Feature.EQUIVALENT_ELLIPSOID, Feature.EULER_NUMBER, Feature.VOLUME));\n        assertFalse(morpho.containsAny(Feature.EQUIVALENT_ELLIPSOID, Feature.EULER_NUMBER, Feature.SPHERICITY));\n    }\n\n    @Test\n    public final void testComputeTable()\n    {\n        ImageStack stack = ImageStack.create(8, 8, 8, 8);\n        stack.setVoxel(1, 1, 1, 1);\n        for (int i = 3; i < 7; i++)\n        {\n            stack.setVoxel(i, 1, 1, 3);\n            stack.setVoxel(1, i, 1, 5);\n            stack.setVoxel(1, 1, i, 7);\n        }\n        for (int i = 3; i < 7; i++)\n        {\n            for (int j = 3; j < 7; j++)\n            {\n                for (int k = 3; k < 7; k++)\n                {\n                    stack.setVoxel(i, j, k, 9);\n                }\n            }\n        }\n        ImagePlus imagePlus = new ImagePlus(\"image\", stack);\n        \n        MorphometricFeatures3D morpho = new MorphometricFeatures3D()\n                .add(Feature.VOLUME)\n                .add(Feature.SURFACE_AREA)\n                .add(Feature.CENTROID);\n        ResultsTable table = morpho.computeTable(imagePlus);\n        \n        assertEquals(5, table.getCounter());\n    }\n\n    @Test\n    public final void verifyComputeTableWithSelectedFeatures()\n    {\n        ImageStack stack = ImageStack.create(8, 8, 8, 8);\n        stack.setVoxel(1, 1, 1, 1);\n        for (int i = 3; i < 7; i++)\n        {\n            stack.setVoxel(i, 1, 1, 3);\n            stack.setVoxel(1, i, 1, 5);\n            stack.setVoxel(1, 1, i, 7);\n        }\n        for (int i = 3; i < 7; i++)\n        {\n            for (int j = 3; j < 7; j++)\n            {\n                for (int k = 3; k < 7; k++)\n                {\n                    stack.setVoxel(i, j, k, 9);\n                }\n            }\n        }\n        ImagePlus imagePlus = new ImagePlus(\"image\", stack);\n        \n        MorphometricFeatures3D morpho = new MorphometricFeatures3D()\n                .add(Feature.VOLUME)\n                .add(Feature.SURFACE_AREA)\n                .add(Feature.CENTROID);\n        ResultsTable table = morpho.computeTable(imagePlus);\n        \n        assertEquals(5, table.size());\n    }\n\n    @Test\n    public final void testComputeTable_Centroid()\n    {\n        ImagePlus image = createEightRegionsImage(); \n        MorphometricFeatures3D morpho = new MorphometricFeatures3D()\n                .add(Feature.CENTROID);\n        \n        ResultsTable table = morpho.computeTable(image);\n        \n        assertEquals(8, table.getCounter());\n        assertEquals(2, table.getLastColumn());\n    }\n    \n    @Test\n    public final void testComputeTable_Sphericity()\n    {\n        ImagePlus image = createEightRegionsImage(); \n        MorphometricFeatures3D morpho = new MorphometricFeatures3D()\n                .add(Feature.SPHERICITY);\n        \n        ResultsTable table = morpho.computeTable(image);\n        \n        assertEquals(8, table.getCounter());\n        assertEquals(0, table.getLastColumn());\n    }\n    \n    @Test\n    public final void testComputeTable_EllipsoidElongations()\n    {\n        ImagePlus image = createEightRegionsImage(); \n        MorphometricFeatures3D morpho = new MorphometricFeatures3D()\n                .add(Feature.ELLIPSOID_ELONGATIONS);\n        \n        ResultsTable table = morpho.computeTable(image);\n        \n        assertEquals(8, table.getCounter());\n        assertEquals(2, table.getLastColumn());\n    }\n    \n    private ImagePlus createEightRegionsImage()\n    {\n        ImageStack array = ImageStack.create(9, 9, 9, 8);\n        \n        array.setVoxel(1, 1, 1, 1);\n        \n        for (int i = 0; i < 5; i++)\n        {\n            array.setVoxel(i+2, 1, 1, 3);\n            array.setVoxel(1, i+2, 1, 5);\n            array.setVoxel(1, 1, i+2, 11);\n        }\n        \n        for (int i = 0; i < 5; i++)\n        {\n            for (int j = 0; j < 5; j++)\n            {\n                array.setVoxel(i+2, j+2, 1, 7);\n                array.setVoxel(i+2, 1, j+2, 13);\n                array.setVoxel(1, i+2, j+2, 17);\n            }\n        }\n        \n        for (int i = 0; i < 5; i++)\n        {\n            for (int j = 0; j < 5; j++)\n            {\n                for (int k = 0; k < 5; k++)\n                {\n                    array.setVoxel(i+2, j+2, k+2, 19);\n                }\n            }\n        }\n        \n        return new ImagePlus(\"labels\", array);\n    }\n}"

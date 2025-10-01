@@ -1,0 +1,43 @@
+[meta]
+task = "update"
+scenario = "update_test"
+
+[lang_info]
+lang = "Python"
+python_version = "3.13"
+python_cfg_file = "pyproject.toml"
+
+[repo_info]
+repository = "Tuxemon/Tuxemon"
+sha = "1431208586118b46e9d7860fd55618f0b117726d"
+
+[run_info]
+docker_image = "python:3.13"
+volumes_to_mount = [ "{proj_path}:/app", "{host}/.m2:/.m2", "{host}/.cache/pip:/.pip_cache", "{host}/.cache/go-build:/.go_cache", "{proj_path}/_HOME_/go:/go",]
+docker_wrap = "sudo docker run --rm -w /app -e PATH=_HOME_/.local/bin:$PATH -e PYTHONUSERBASE=_HOME_/.local/ -v {proj_path}:/app -v {host}/.m2:/.m2 -v {host}/.cache/pip:/.pip_cache -v {host}/.cache/go-build:/.go_cache -v {proj_path}/_HOME_/go:/go {img} sh -c '{cmd}'"
+env = [ "PATH=_HOME_/.local/bin:$PATH", "PYTHONUSERBASE=_HOME_/.local/",]
+prebuild_command = "pip install -r requirements.txt && (pip install .[all,test] && pip install git+https://github.com/Klema17/mutpy.git && pip install coverage pytest pytest_cov covdefaults Cython mock ddt pytest_mock testfixtures)"
+test_run_command = "coverage run --include=tuxemon/collision_manager.py -m pytest -q --junit-xml=test_output.xml tests/tuxemon/test_collision_manager.py && coverage xml -o coverage.xml --fail-under=0"
+mutation_run_command = "mut.py --target tuxemon.collision_manager --unit-test tests.tuxemon.test_collision_manager --runner pytest --report mutation_report.yaml"
+mutation_run_command_fallback = "mut.py --target tuxemon/collision_manager.py --unit-test tests/tuxemon/test_collision_manager.py --runner pytest --report mutation_report.yaml"
+coverage_report_path = "coverage.xml"
+coverage_report_type = "cobertura"
+mutation_report_path = "mutation_report.yaml"
+mutation_report_type = "mutpy"
+
+[coverage]
+coverage = 85.0
+original_coverage = 91.0
+mutation_kill_rate = nan
+original_mutation_kill_rate = 46.0
+covered_lines = [ 2, 4, 5, 6, 7, 9, 10, 11, 20, 23, 29, 34, 37, 38, 40, 55, 59, 74, 77, 80, 81, 82, 84, 95, 102, 119, 125, 137, 138, 140, 155, 162, 163, 166, 177, 179, 180, 183, 190, 191, 192, 194, 197, 204, 206, 207, 214, 217, 218, 219, 221, 235, 240, 241, 246, 247, 248, 249, 253, 257, 259, 262, 263, 264, 265, 273,]
+missed_lines = [ 75, 141, 142, 143, 145, 153, 164, 167, 174, 281, 282, 284,]
+
+[input_info]
+test_file_path = "tests/tuxemon/test_collision_manager.py"
+focal_file_path = "tuxemon/collision_manager.py"
+test_file_url = "https://github.com/Tuxemon/Tuxemon/blob/1431208586118b46e9d7860fd55618f0b117726d/tests/tuxemon/test_collision_manager.py"
+focal_file_url = "https://github.com/Tuxemon/Tuxemon/blob/1431208586118b46e9d7860fd55618f0b117726d/tuxemon/collision_manager.py"
+first_commit_date = "2025-06-08"
+last_commit_date = "2025-08-16"
+test_file_content = "# SPDX-License-Identifier: GPL-3.0\n# Copyright (c) 2014-2025 William Edwards <shadowapex@gmail.com>, Benjamin Bean <superman2k5@gmail.com>\nimport unittest\nfrom unittest.mock import MagicMock\n\nfrom tuxemon import prepare\nfrom tuxemon.collision_manager import CollisionManager\nfrom tuxemon.entity import Entity\nfrom tuxemon.map import RegionProperties\nfrom tuxemon.map_manager import MapManager\nfrom tuxemon.npc_manager import NPCManager\n\n\nclass TestCollisionManager(unittest.TestCase):\n\n    def setUp(self):\n        self.map_manager = MagicMock(spec=MapManager)\n        self.npc_manager = MagicMock(spec=NPCManager)\n        self.collision_manager = CollisionManager(\n            self.map_manager, self.npc_manager\n        )\n\n    def test_get_all_tile_properties(self):\n        surface_map = {\n            (0, 0): {\"label1\": 1.0, \"label2\": 2.0},\n            (1, 1): {\"label1\": 3.0, \"label3\": 4.0},\n        }\n        self.map_manager.surface_map = surface_map\n        result = self.collision_manager.get_all_tile_properties(\n            surface_map, \"label1\"\n        )\n        self.assertEqual(result, [(0, 0), (1, 1)])\n\n    def test_update_tile_property(self):\n        surface_map = {\n            (0, 0): {\"label1\": 1.0, \"label2\": 2.0},\n            (1, 1): {\"label1\": 3.0, \"label3\": 4.0},\n        }\n        self.map_manager.surface_map = surface_map\n        prepare.SURFACE_KEYS = [\"label1\", \"label2\", \"label3\"]\n        self.collision_manager.update_tile_property(\"label1\", 5.0)\n        self.assertEqual(self.map_manager.surface_map[(0, 0)][\"label1\"], 5.0)\n        self.assertEqual(self.map_manager.surface_map[(1, 1)][\"label1\"], 5.0)\n\n    def test_all_tiles_modified(self):\n        surface_map = {\n            (0, 0): {\"label1\": 5.0, \"label2\": 2.0},\n            (1, 1): {\"label1\": 5.0, \"label3\": 4.0},\n        }\n        self.map_manager.surface_map = surface_map\n        prepare.SURFACE_KEYS = [\"label1\", \"label2\", \"label3\"]\n        self.assertTrue(\n            self.collision_manager.all_tiles_modified(\"label1\", 5.0)\n        )\n\n    def test_check_collision_zones(self):\n        collision_map = {\n            (0, 0): RegionProperties([], [], [], None, \"label1\"),\n            (1, 1): RegionProperties([], [], [], None, \"label2\"),\n        }\n        self.map_manager.collision_map = collision_map\n        result = self.collision_manager.check_collision_zones(\n            collision_map, \"label1\"\n        )\n        self.assertEqual(result, [(0, 0)])\n\n    def test_add_collision(self):\n        entity = MagicMock(spec=Entity)\n        entity.isplayer = True\n        entity.tile_pos = (0, 0)\n        region = RegionProperties([], [], [], None, \"label1\")\n        self.map_manager.collision_map = {(0, 0): region}\n        self.collision_manager.add_collision(entity, (0.0, 0.0))\n        self.assertIsNotNone(self.map_manager.collision_map[(0, 0)].entity)\n\n    def test_remove_collision(self):\n        region = RegionProperties([], [], [], None, \"label1\")\n        self.map_manager.collision_map = {(0, 0): region}\n        self.collision_manager.remove_collision((0, 0))\n        self.assertNotIn((0, 0), self.map_manager.collision_map)\n\n    def test_add_collision_label(self):\n        collision_map = {\n            (0, 0): RegionProperties([], [], [], None, \"label1\"),\n            (1, 1): RegionProperties([], [], [], None, \"label2\"),\n        }\n        self.map_manager.collision_map = collision_map\n        self.collision_manager.add_collision_label(\"label1\")\n        self.assertEqual(self.map_manager.collision_map[(0, 0)].key, \"label1\")\n        self.assertEqual(self.map_manager.collision_map[(1, 1)].key, \"label2\")\n\n    def test_add_collision_position(self):\n        self.map_manager.collision_map = {}\n        self.collision_manager.add_collision_position(\"label1\", (0, 0))\n        self.assertIn((0, 0), self.map_manager.collision_map)\n        self.assertEqual(self.map_manager.collision_map[(0, 0)].key, \"label1\")\n\n    def test_remove_collision_label(self):\n        collision_map = {\n            (0, 0): RegionProperties([], [], [], None, \"label1\"),\n            (1, 1): RegionProperties([], [], [], None, \"label2\"),\n        }\n        self.map_manager.collision_map = collision_map\n        self.collision_manager.remove_collision_label(\"label1\")\n        self.assertEqual(self.map_manager.collision_map[(0, 0)].key, \"label1\")\n        self.assertEqual(self.map_manager.collision_map[(1, 1)].key, \"label2\")\n\n    def test_get_collision_map(self):\n        self.map_manager.collision_map = {\n            (0, 0): RegionProperties([], [], [], None, \"label1\")\n        }\n        self.map_manager.surface_map = {(0, 0): {\"label1\": 0.0}}\n        npc = MagicMock(spec=Entity)\n        npc.tile_pos = (0, 0)\n        self.npc_manager.get_all_entities.return_value = [npc]\n        collision_map = self.collision_manager.get_collision_map()\n        self.assertIn((0, 0), collision_map)\n\n    def test_get_region_properties(self):\n        region = RegionProperties([], [], [], None, \"label1\")\n        self.map_manager.collision_map = {(0, 0): region}\n        properties = self.collision_manager._get_region_properties(\n            (0, 0), \"label1\"\n        )\n        self.assertEqual(properties.key, \"label1\")"
