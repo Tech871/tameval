@@ -4,6 +4,8 @@
 
 TAM-Eval is an evaluation framework and benchmark for automated unit test maintenance.
 
+<img src="img/tam_eval_overview.png" width="1000">
+
 ## 🔥 Quick start
 
 0. You should have [Docker](https://www.docker.com/) installed
@@ -47,3 +49,14 @@ tameval/
     ├── outputs/  # dir for storing LLMs outputs
     └── results/  # dir for storing evaluation results
 ```
+
+## Additional Materials
+
+The `img` directory contains supplementary visual materials used for analysis and reporting:
+
+- Diagrams illustrating **error types** for **Attempt @1** and **Attempt @2**
+- Tables summarizing the **main results by tasks and scenarios** for **Attempt @3**
+
+These materials provide additional insights into model performance and error patterns across different evaluation attempts.
+
+![Benchmark construction pipeline](img/benchmark_construction_pipeline.png)
