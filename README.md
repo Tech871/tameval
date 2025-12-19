@@ -4,7 +4,9 @@
 
 TAM-Eval is an evaluation framework and benchmark for automated unit test maintenance.
 
-<img src="img/tam_eval_overview.png" width="1000">
+<figure align="center">
+    <img src="img/tam_eval_overview.png" width="1000">
+</figure>
 
 ## 🔥 Quick start
 
@@ -59,4 +61,12 @@ The `img` directory contains supplementary visual materials used for analysis an
 
 These materials provide additional insights into model performance and error patterns across different evaluation attempts.
 
-![Benchmark construction pipeline](img/benchmark_construction_pipeline.png)
+<figure align="center">
+    <img src="img/benchmark_construction_pipeline.png">
+    <figcaption><b>Benchmark construction pipeline</b></figcaption>
+</figure>
+
+<figure align="center">
+    <img src="img/unit-testing_related_benchmarks_comparison.png" width="1000">
+    <figcaption><b>Unit-testing related benchmarks comparison</b></figcaption>
+</figure>
