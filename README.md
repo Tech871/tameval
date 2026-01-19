@@ -71,3 +71,29 @@ These materials provide additional insights into model performance and error pat
   <img src="img/unit-testing_related_benchmarks_comparison.png" width="1000"><br>
   <em>Unit-testing related benchmarks comparison</em>
 </p>
+
+***
+### Error types
+
+<p align="center">
+  <img src="img/error_types_1.png" width="1000"><br>
+  <em>Error types (attempt 1)</em>
+</p>
+
+<p align="center">
+  <img src="img/error_types_2.png" width="1000"><br>
+  <em>Error types (attempt 2)</em>
+</p>
+
+***
+### Results
+
+<p align="center">
+  <img src="img/main_results_by_scenarios_3.png" width="1000"><br>
+  <em>Main results by scenarios (attempt 3)</em>
+</p>
+
+<p align="center">
+  <img src="img/main_results_by_task_3.png" width="1000"><br>
+  <em>Main results by task (attempt 3)</em>
+</p>
