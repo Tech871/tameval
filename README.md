@@ -89,6 +89,11 @@ These materials provide additional insights into model performance and error pat
 ### Results
 
 <p align="center">
+  <img src="img/main_results_3.png" width="700"><br>
+  <em>Main results (attempt 3)</em>
+</p>
+
+<p align="center">
   <img src="img/main_results_by_scenarios_3.png" width="1000"><br>
   <em>Main results by scenarios (attempt 3)</em>
 </p>
@@ -96,4 +101,9 @@ These materials provide additional insights into model performance and error pat
 <p align="center">
   <img src="img/main_results_by_task_3.png" width="1000"><br>
   <em>Main results by task (attempt 3)</em>
+</p>
+
+<p align="center">
+  <img src="img/main_results_by_lang_3.png" width="1000"><br>
+  <em>Main results by language (attempt 3)</em>
 </p>
